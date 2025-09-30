@@ -11,7 +11,9 @@
     "format:check": "biome format ."
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "circuit-json": "^0.0.267",
+    "kicadts": "^0.0.1"
   },
   "peerDependencies": {
     "typescript": "^5"
