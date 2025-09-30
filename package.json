@@ -11,9 +11,12 @@
     "format:check": "biome format ."
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@tscircuit/solver-utils": "^0.0.1",
     "@types/bun": "latest",
     "circuit-json": "^0.0.267",
-    "kicadts": "^0.0.1"
+    "kicadts": "^0.0.1",
+    "tscircuit": "^0.0.698"
   },
   "peerDependencies": {
     "typescript": "^5"
