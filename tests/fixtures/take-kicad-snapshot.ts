@@ -1,4 +1,8 @@
 import { $ } from "bun"
+import { tmpdir } from "node:os"
+import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { join } from "node:path"
+import sharp from "sharp"
 
 type FilePath = string
 type FileContent = Buffer
@@ -19,10 +23,83 @@ export const takeKicadSnapshot = async (params: {
   kicadFileContent?: string
   kicadFileType: "sch" | "pcb"
 }): Promise<KicadOutput> => {
+  const { kicadFilePath, kicadFileContent, kicadFileType } = params
+
   // Check to make sure kicad-cli is installed
   const kicadCliVersion = await $`kicad-cli --version`
 
   if (!kicadCliVersion.stdout.toString().trim().startsWith("9.")) {
     throw new Error("kicad-cli version 9.0.0 or higher is required")
+  }
+
+  // Create a temporary directory for working with files
+  const tempDir = await mkdtemp(join(tmpdir(), "kicad-snapshot-"))
+
+  let inputFilePath: string
+
+  try {
+    // Determine input file path
+    if (kicadFilePath) {
+      inputFilePath = kicadFilePath
+    } else if (kicadFileContent) {
+      inputFilePath = join(
+        tempDir,
+        `temp_file.kicad_${kicadFileType === "sch" ? "sch" : "pcb"}`,
+      )
+      await writeFile(inputFilePath, kicadFileContent)
+    } else {
+      throw new Error(
+        "Either kicadFilePath or kicadFileContent must be provided",
+      )
+    }
+
+    // Create output directory
+    const outputDir = join(tempDir, "output")
+
+    // Export to SVG
+    const exportCmd =
+      kicadFileType === "sch"
+        ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern --no-background-color`
+        : $`kicad-cli pcb export svg ${inputFilePath} -o ${outputDir} --layers F.Cu,B.Cu`
+
+    const exportResult = await exportCmd
+
+    if (exportResult.exitCode !== 0) {
+      throw new Error(
+        `kicad-cli export failed with exit code ${exportResult.exitCode}\nStderr: ${exportResult.stderr}`,
+      )
+    }
+
+    // Read generated SVG file
+    const svgFiles = await $`find ${outputDir} -name "*.svg"`.text()
+    const svgFilePaths = svgFiles
+      .trim()
+      .split("\n")
+      .filter((line) => line.length > 0)
+
+    if (svgFilePaths.length === 0) {
+      throw new Error("No SVG files were generated")
+    }
+
+    const generatedFileContent: Record<FilePath, FileContent> = {}
+
+    // Convert each SVG to PNG using sharp
+    for (const svgFilePath of svgFilePaths) {
+      const svgBuffer = await readFile(svgFilePath)
+      const pngBuffer = await sharp(svgBuffer).png().toBuffer()
+
+      const relativePath = svgFilePath
+        .replace(`${outputDir}/`, "")
+        .replace(".svg", ".png")
+      generatedFileContent[relativePath] = pngBuffer
+    }
+
+    return {
+      exitCode: 0,
+      generatedFileContent,
+    }
+  } finally {
+    // Cleanup temporary directory
+    await rm(tempDir, { recursive: true, force: true })
   }
 }
