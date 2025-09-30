@@ -1,2 +1,1 @@
-# circuit-json-kicad-converter
-
+# circuit-json-to-kicad
