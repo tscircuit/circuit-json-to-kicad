@@ -1,8 +1,8 @@
 {
-  "name": "circuit-json-kicad-converter",
-  "module": "index.ts",
+  "name": "circuit-json-to-kicad",
+  "main": "dist/index.js",
+  "version": "0.0.1",
   "type": "module",
-  "private": true,
   "devDependencies": {
     "@types/bun": "latest"
   },
