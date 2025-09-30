@@ -59,7 +59,7 @@ export const takeKicadSnapshot = async (params: {
     // Export to SVG
     const exportCmd =
       kicadFileType === "sch"
-        ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern --no-background-color`
+        ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
         : $`kicad-cli pcb export svg ${inputFilePath} -o ${outputDir} --layers F.Cu,B.Cu`
 
     const exportResult = await exportCmd
@@ -86,7 +86,9 @@ export const takeKicadSnapshot = async (params: {
     // Convert each SVG to PNG using sharp
     for (const svgFilePath of svgFilePaths) {
       const svgBuffer = await readFile(svgFilePath)
-      const pngBuffer = await sharp(svgBuffer).png().toBuffer()
+      const pngBuffer = await sharp(svgBuffer, { density: 100 })
+        .png()
+        .toBuffer()
 
       const relativePath = svgFilePath
         .replace(`${outputDir}/`, "")
