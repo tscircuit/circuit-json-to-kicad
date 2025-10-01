@@ -20,19 +20,18 @@ test("basics01", async () => {
 
   converter.runUntilFinished()
 
-  Bun.write("./debug-output/kicad.kicad_sch", converter.getOutput().getString())
+  Bun.write("./debug-output/kicad.kicad_sch", converter.getOutputString())
 
   const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutput().getString(),
+    kicadFileContent: converter.getOutputString(),
     kicadFileType: "sch",
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)
 
-  console.log(kicadSnapshot.generatedFileContent)
-  expect(kicadSnapshot.generatedFileContent).toBeDefined()
-
-  // TODO convert into KicadSch
+  expect(
+    kicadSnapshot.generatedFileContent["temp_file.png"],
+  ).toMatchPngSnapshot(import.meta.path)
 })
 
 /**
