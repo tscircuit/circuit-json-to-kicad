@@ -392,17 +392,18 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       pin.at = [x, y, angle]
       pin.length = 1.27
 
-      // Pin name
+      // Pin name - use the label from the port
       const nameFont = new TextEffectsFont()
       nameFont.size = { height: 1.27, width: 1.27 }
       const nameEffects = new TextEffects({ font: nameFont })
-      pin._sxName = new SymbolPinName({ value: "~", effects: nameEffects })
+      const pinName = port.labels?.[0] || "~"
+      pin._sxName = new SymbolPinName({ value: pinName, effects: nameEffects })
 
       // Pin number
       const numFont = new TextEffectsFont()
       numFont.size = { height: 1.27, width: 1.27 }
       const numEffects = new TextEffects({ font: numFont })
-      const pinNum = port.pinNumber?.toString() || port.labels?.[0] || `${i + 1}`
+      const pinNum = port.pinNumber?.toString() || `${i + 1}`
       pin._sxNumber = new SymbolPinNumber({
         value: pinNum,
         effects: numEffects,
