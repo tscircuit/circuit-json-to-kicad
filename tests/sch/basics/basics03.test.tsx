@@ -23,6 +23,9 @@ test("basics03", async () => {
           pin7: "VCC",
           pin8: "NC",
         }}
+        connections={{
+          pin1: "R1.pin1",
+        }}
       />
     </board>,
   )
@@ -30,13 +33,19 @@ test("basics03", async () => {
   await circuit.renderUntilSettled()
 
   const circuitJson = circuit.getCircuitJson()
-  // Bun.write("./debug-output/circuit.json", JSON.stringify(circuitJson, null, 2))
+  Bun.write(
+    "./debug-output/sch-basics03-circuit.json",
+    JSON.stringify(circuitJson, null, 2),
+  )
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
 
   converter.runUntilFinished()
 
-  // Bun.write("./debug-output/kicad.kicad_sch", converter.getOutputString())
+  Bun.write(
+    "./debug-output/sch-basics03-kicad.kicad_sch",
+    converter.getOutputString(),
+  )
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),

@@ -44,9 +44,18 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolsToCreate = new Set<string>()
 
     // Collect unique symbol names
+    // Also create symbols for chips without symbol_name
     for (const comp of schematicComponents) {
       if (comp.symbol_name) {
         symbolsToCreate.add(comp.symbol_name)
+      } else {
+        // For components without symbol_name (like chips), create a generic box symbol
+        const sourceComp = comp.source_component_id
+          ? db.source_component.get(comp.source_component_id)
+          : null
+        if (sourceComp?.ftype === "simple_chip") {
+          symbolsToCreate.add(`generic_chip_${comp.source_component_id}`)
+        }
       }
     }
 
@@ -54,20 +63,38 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Create a symbol for each unique symbol_name
     for (const symbolName of symbolsToCreate) {
-      const symbolData = symbols[symbolName as keyof typeof symbols]
-      if (!symbolData) {
-        console.warn(`Symbol ${symbolName} not found in schematic-symbols`)
-        continue
-      }
+      let symbolData = symbols[symbolName as keyof typeof symbols]
+      let exampleComp
+      let sourceComp
 
-      // Find a component using this symbol to get metadata
-      const exampleComp = schematicComponents.find(
-        (c) => c.symbol_name === symbolName,
-      )
-      const sourceComp =
-        exampleComp && exampleComp.source_component_id
-          ? db.source_component.get(exampleComp.source_component_id)
-          : null
+      // Check if this is a generic chip symbol
+      if (symbolName.startsWith("generic_chip_")) {
+        const sourceCompId = symbolName.replace("generic_chip_", "")
+        sourceComp = db.source_component.get(sourceCompId)
+        exampleComp = schematicComponents.find(
+          (c) => c.source_component_id === sourceCompId,
+        )
+
+        // Create generic box symbol data based on the schematic component
+        if (exampleComp) {
+          symbolData = this.createGenericChipSymbolData(exampleComp, db)
+        }
+      } else {
+        symbolData = symbols[symbolName as keyof typeof symbols]
+        if (!symbolData) {
+          console.warn(`Symbol ${symbolName} not found in schematic-symbols`)
+          continue
+        }
+
+        // Find a component using this symbol to get metadata
+        exampleComp = schematicComponents.find(
+          (c) => c.symbol_name === symbolName,
+        )
+        sourceComp =
+          exampleComp && exampleComp.source_component_id
+            ? db.source_component.get(exampleComp.source_component_id)
+            : null
+      }
 
       const libSymbol = this.createLibrarySymbolFromSchematicSymbol(
         symbolName,
@@ -78,9 +105,58 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
 
     libSymbols.symbols = librarySymbols
-    kicadSch.libSymbols = libSymbols
+    if (kicadSch) {
+      kicadSch.libSymbols = libSymbols
+    }
 
     this.finished = true
+  }
+
+  /**
+   * Create generic chip symbol data for chips without a symbol_name
+   */
+  private createGenericChipSymbolData(schematicComp: any, db: any): any {
+    // Get all ports for this component
+    const schematicPorts = db.schematic_port
+      .list()
+      .filter((p: any) => p.schematic_component_id === schematicComp.schematic_component_id)
+      .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
+
+    // Create box primitives based on component size
+    const width = schematicComp.size?.width || 1.5
+    const height = schematicComp.size?.height || 1
+
+    const boxPath = {
+      type: "path",
+      points: [
+        { x: -width / 2, y: -height / 2 },
+        { x: width / 2, y: -height / 2 },
+        { x: width / 2, y: height / 2 },
+        { x: -width / 2, y: height / 2 },
+        { x: -width / 2, y: -height / 2 },
+      ],
+    }
+
+    // Create ports from schematic ports
+    const ports = schematicPorts.map((port: any) => {
+      // Get port position relative to component center
+      const portX = port.center.x - schematicComp.center.x
+      const portY = port.center.y - schematicComp.center.y
+
+      return {
+        x: portX,
+        y: portY,
+        labels: [port.display_pin_label || `${port.pin_number || 1}`],
+        pinNumber: port.pin_number || 1,
+      }
+    })
+
+    return {
+      center: { x: 0, y: 0 },
+      primitives: [boxPath],
+      ports: ports,
+      size: { width, height },
+    }
   }
 
   /**
@@ -115,11 +191,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     this.addSymbolProperties(symbol, libId, sourceComp)
 
     // Create drawing subsymbol (unit 0, 1)
-    const drawingSymbol = this.createDrawingSubsymbol(libId, symbolData)
+    const isChip = sourceComp?.ftype === "simple_chip"
+    const drawingSymbol = this.createDrawingSubsymbol(libId, symbolData, isChip)
     symbol.subSymbols.push(drawingSymbol)
 
     // Create pin subsymbol (unit 1, 1)
-    const pinSymbol = this.createPinSubsymbol(libId, symbolData)
+    const pinSymbol = this.createPinSubsymbol(libId, symbolData, isChip)
     symbol.subSymbols.push(pinSymbol)
 
     // Set embedded_fonts
@@ -138,6 +215,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
     if (sourceComp?.ftype === "simple_capacitor") {
       return "Device:C"
+    }
+    if (sourceComp?.ftype === "simple_chip") {
+      return "Device:U"
     }
     // Default: use a generic name
     return `Custom:${symbolName}`
@@ -215,18 +295,21 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private getDescription(sourceComp: any): string {
     if (sourceComp?.ftype === "simple_resistor") return "Resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "Capacitor"
+    if (sourceComp?.ftype === "simple_chip") return "Integrated Circuit"
     return "Component"
   }
 
   private getKeywords(sourceComp: any): string {
     if (sourceComp?.ftype === "simple_resistor") return "R res resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "C cap capacitor"
+    if (sourceComp?.ftype === "simple_chip") return "U IC chip"
     return ""
   }
 
   private getFpFilters(sourceComp: any): string {
     if (sourceComp?.ftype === "simple_resistor") return "R_*"
     if (sourceComp?.ftype === "simple_capacitor") return "C_*"
+    if (sourceComp?.ftype === "simple_chip") return "*"
     return "*"
   }
 
@@ -237,6 +320,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createDrawingSubsymbol(
     libId: string,
     symbolData: any,
+    isChip: boolean = false,
   ): SchematicSymbol {
     const drawingSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_0_1`,
@@ -244,11 +328,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Convert schematic-symbols primitives to KiCad drawing elements
     // Scale symbols by the same factor as positions (from c2kMatSch) so they match the layout
-    const symbolScale = this.ctx.c2kMatSch.a // Extract scale from transformation matrix
+    const symbolScale = this.ctx.c2kMatSch?.a || 15 // Extract scale from transformation matrix
 
     for (const primitive of symbolData.primitives || []) {
       if (primitive.type === "path" && primitive.points) {
-        const polyline = this.createPolylineFromPoints(primitive.points, symbolScale)
+        // Use background fill for chip boxes to get yellow background
+        const fillType = isChip ? "background" : "none"
+        const polyline = this.createPolylineFromPoints(primitive.points, symbolScale, fillType)
         drawingSymbol.polylines.push(polyline)
       }
       // Note: schematic-symbols typically uses paths, not box primitives
@@ -263,6 +349,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createPolylineFromPoints(
     points: Array<{ x: number; y: number }>,
     scale: number,
+    fillType: "none" | "background" = "none",
   ): SymbolPolyline {
     const polyline = new SymbolPolyline()
 
@@ -277,9 +364,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     stroke.type = "default"
     polyline.stroke = stroke
 
-    // Set fill to none
+    // Set fill type
     const fill = new SymbolPolylineFill()
-    fill.type = "none"
+    fill.type = fillType
     polyline.fill = fill
 
     return polyline
@@ -288,7 +375,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   /**
    * Create the pin subsymbol
    */
-  private createPinSubsymbol(libId: string, symbolData: any): SchematicSymbol {
+  private createPinSubsymbol(libId: string, symbolData: any, isChip: boolean = false): SchematicSymbol {
     const pinSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_1_1`,
     })
@@ -301,7 +388,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       pin.pinGraphicStyle = "line"
 
       // Calculate pin position and angle
-      const { x, y, angle } = this.calculatePinPosition(port, symbolData.center)
+      const { x, y, angle } = this.calculatePinPosition(port, symbolData.center, symbolData.size, isChip)
       pin.at = [x, y, angle]
       pin.length = 1.27
 
@@ -315,7 +402,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       const numFont = new TextEffectsFont()
       numFont.size = { height: 1.27, width: 1.27 }
       const numEffects = new TextEffects({ font: numFont })
-      const pinNum = port.labels?.[0] || `${i + 1}`
+      const pinNum = port.pinNumber?.toString() || port.labels?.[0] || `${i + 1}`
       pin._sxNumber = new SymbolPinNumber({
         value: pinNum,
         effects: numEffects,
@@ -334,37 +421,56 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private calculatePinPosition(
     port: any,
     center: any,
+    size?: any,
+    isChip?: boolean,
   ): { x: number; y: number; angle: number } {
     // Extract scale from transformation matrix
-    const symbolScale = this.ctx.c2kMatSch.a
+    const symbolScale = this.ctx.c2kMatSch?.a || 15
 
     // Calculate position relative to center
     const dx = port.x - center.x
     const dy = port.y - center.y
 
-    // Scale position to match layout scale
-    const x = port.x * symbolScale
-    const y = port.y * symbolScale
+    let x = port.x * symbolScale
+    let y = port.y * symbolScale
+
+    // For chips, adjust pin position to be at the box edge
+    if (isChip && size) {
+      const halfWidth = (size.width / 2) * symbolScale
+      const halfHeight = (size.height / 2) * symbolScale
+
+      // Determine which edge the pin is on and snap to that edge
+      if (Math.abs(dx) > Math.abs(dy)) {
+        // Horizontal pin - snap x to edge, keep y
+        x = dx > 0 ? halfWidth : -halfWidth
+        y = dy * symbolScale
+      } else {
+        // Vertical pin - snap y to edge, keep x
+        x = dx * symbolScale
+        y = dy > 0 ? halfHeight : -halfHeight
+      }
+    }
 
     // Determine pin angle based on which side of the component
+    // Pin angle determines which direction the pin points (extends outward)
     let angle = 0
     if (Math.abs(dx) > Math.abs(dy)) {
       // Horizontal pin
       if (dx > 0) {
-        // Right side - pin points left (180°)
-        angle = 180
-      } else {
-        // Left side - pin points right (0°)
+        // Right side - pin points right (0°) outward from chip
         angle = 0
+      } else {
+        // Left side - pin points left (180°) outward from chip
+        angle = 180
       }
     } else {
       // Vertical pin
       if (dy > 0) {
-        // Top side - pin points down (270°)
-        angle = 270
-      } else {
-        // Bottom side - pin points up (90°)
+        // Top side - pin points up (90°) outward from chip
         angle = 90
+      } else {
+        // Bottom side - pin points down (270°) outward from chip
+        angle = 270
       }
     }
 
@@ -385,6 +491,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   }
 
   override getOutput(): KicadSch {
+    if (!this.ctx.kicadSch) {
+      throw new Error("kicadSch is not initialized")
+    }
     return this.ctx.kicadSch
   }
 }
