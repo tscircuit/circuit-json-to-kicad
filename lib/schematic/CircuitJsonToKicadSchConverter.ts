@@ -2,6 +2,7 @@ import type { CircuitJson } from "circuit-json"
 import { ConverterStage, type ConverterContext } from "../types"
 import { KicadSch } from "kicadts"
 import { cju } from "@tscircuit/circuit-json-util"
+import { compose, translate, scale } from "transformation-matrix"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
@@ -21,6 +22,14 @@ export class CircuitJsonToKicadSchConverter {
   }
 
   constructor(circuitJson: CircuitJson) {
+    // Create transformation matrix from circuit-json coordinates to KiCad schematic coordinates
+    // Circuit-json units are abstract (where a resistor is ~1 unit long)
+    // We scale by 25.4 for positions, and apply the same scale to symbol definitions
+    // to ensure symbols are proportionally sized for the layout
+    const CIRCUIT_JSON_SCALE = 30
+    const KICAD_CENTER_X = 95.25
+    const KICAD_CENTER_Y = 73.66
+
     this.ctx = {
       db: cju(circuitJson),
       circuitJson,
@@ -28,6 +37,10 @@ export class CircuitJsonToKicadSchConverter {
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
       }),
+      c2kMatSch: compose(
+        translate(KICAD_CENTER_X, KICAD_CENTER_Y),
+        scale(CIRCUIT_JSON_SCALE, CIRCUIT_JSON_SCALE),
+      ),
     }
     this.pipeline = [
       new InitializeSchematicStage(circuitJson, this.ctx),

@@ -1,6 +1,7 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import { Wire, Pts, Xy, Stroke, Junction, Uuid } from "kicadts"
+import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 
 /**
@@ -52,12 +53,20 @@ export class AddSchematicTracesStage extends ConverterStage<
   private createWireFromEdge(edge: any): Wire {
     const wire = new Wire()
 
-    // Convert circuit-json coordinates (inches) to KiCad coordinates (mm)
-    // KiCad default position is around 95.25, 73.66 for a centered component
-    const x1 = 95.25 + edge.from.x * 25.4
-    const y1 = 73.66 + edge.from.y * 25.4
-    const x2 = 95.25 + edge.to.x * 25.4
-    const y2 = 73.66 + edge.to.y * 25.4
+    // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
+    const from = applyToPoint(this.ctx.c2kMatSch, {
+      x: edge.from.x,
+      y: edge.from.y,
+    })
+    const to = applyToPoint(this.ctx.c2kMatSch, {
+      x: edge.to.x,
+      y: edge.to.y,
+    })
+
+    const x1 = from.x
+    const y1 = from.y
+    const x2 = to.x
+    const y2 = to.y
 
     // Create points for the wire
     const pts = new Pts([new Xy(x1, y1), new Xy(x2, y2)])
@@ -79,9 +88,11 @@ export class AddSchematicTracesStage extends ConverterStage<
    * Create a KiCad junction from a circuit-json junction point
    */
   private createJunction(junction: { x: number; y: number }): Junction {
-    // Convert circuit-json coordinates (inches) to KiCad coordinates (mm)
-    const x = 95.25 + junction.x * 25.4
-    const y = 73.66 + junction.y * 25.4
+    // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
+    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+      x: junction.x,
+      y: junction.y,
+    })
 
     const kicadJunction = new Junction({
       at: [x, y, 0],

@@ -243,15 +243,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     })
 
     // Convert schematic-symbols primitives to KiCad drawing elements
-    // schematic-symbols uses inches, KiCad uses mm (1 inch = 25.4mm)
-    const INCH_TO_MM = 25.4
+    // Scale symbols by the same factor as positions (from c2kMatSch) so they match the layout
+    const symbolScale = this.ctx.c2kMatSch.a // Extract scale from transformation matrix
 
     for (const primitive of symbolData.primitives || []) {
       if (primitive.type === "path" && primitive.points) {
-        const polyline = this.createPolylineFromPoints(
-          primitive.points,
-          INCH_TO_MM,
-        )
+        const polyline = this.createPolylineFromPoints(primitive.points, symbolScale)
         drawingSymbol.polylines.push(polyline)
       }
       // Note: schematic-symbols typically uses paths, not box primitives
@@ -269,7 +266,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   ): SymbolPolyline {
     const polyline = new SymbolPolyline()
 
-    // Convert points to KiCad Xy objects
+    // Scale points to match the c2kMatSch transformation scale
     const xyPoints = points.map((p) => new Xy(p.x * scale, p.y * scale))
     const pts = new Pts(xyPoints)
     polyline.points = pts
@@ -332,22 +329,22 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
   /**
    * Calculate KiCad pin position and rotation from schematic-symbols port
-   * Converts from schematic-symbols coordinates (inches) to KiCad (mm)
+   * Scale pins to match the c2kMatSch transformation scale
    */
   private calculatePinPosition(
     port: any,
     center: any,
   ): { x: number; y: number; angle: number } {
-    // schematic-symbols uses inches, KiCad uses mm
-    const INCH_TO_MM = 25.4
+    // Extract scale from transformation matrix
+    const symbolScale = this.ctx.c2kMatSch.a
 
-    // Calculate position relative to center in mm
-    const dx = (port.x - center.x) * INCH_TO_MM
-    const dy = (port.y - center.y) * INCH_TO_MM
+    // Calculate position relative to center
+    const dx = port.x - center.x
+    const dy = port.y - center.y
 
-    // Calculate position in mm (port is at the component, pin extends outward)
-    const x = port.x * INCH_TO_MM
-    const y = port.y * INCH_TO_MM
+    // Scale position to match layout scale
+    const x = port.x * symbolScale
+    const y = port.y * symbolScale
 
     // Determine pin angle based on which side of the component
     let angle = 0

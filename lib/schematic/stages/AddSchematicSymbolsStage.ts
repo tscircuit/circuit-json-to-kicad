@@ -14,6 +14,7 @@ import {
   TextEffectsJustify,
   EmbeddedFonts,
 } from "kicadts"
+import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 
 /**
@@ -44,10 +45,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       if (!sourceComponent) continue
 
-      // Convert circuit-json coordinates (mm) to KiCad coordinates (mm)
-      // KiCad default position is around 95.25, 73.66 for a centered component
-      const x = 95.25 + schematicComponent.center.x * 25.4 // Convert to mm and offset
-      const y = 73.66 + schematicComponent.center.y * 25.4 // Convert to mm and offset
+      // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
+      const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+        x: schematicComponent.center.x,
+        y: schematicComponent.center.y,
+      })
 
       const uuid = crypto.randomUUID()
 

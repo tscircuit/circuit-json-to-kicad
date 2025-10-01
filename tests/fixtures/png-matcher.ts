@@ -103,6 +103,10 @@ async function toMatchPngSnapshot(
       console.log(
         `✓ PNG snapshot matches (${diffPercentage.toFixed(3)}% difference, within ${ACCEPTABLE_DIFF_PERCENTAGE}% threshold)`,
       )
+      if (forceUpdate) {
+        console.log("Updating PNG snapshot at", filePath)
+        fs.writeFileSync(filePath, received)
+      }
       return {
         message: () =>
           `PNG snapshot matches (${diffPercentage.toFixed(3)}% difference)`,
