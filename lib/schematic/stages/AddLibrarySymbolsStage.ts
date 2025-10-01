@@ -177,14 +177,16 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       onBoard: true,
     })
 
-    // Setup pin numbers (hide)
+    // Setup pin numbers
     const pinNumbers = new SymbolPinNumbers()
-    pinNumbers.hide = true
+    // For chips, show pin numbers (outside); for other components, hide them
+    pinNumbers.hide = sourceComp?.ftype !== "simple_chip"
     symbol._sxPinNumbers = pinNumbers
 
-    // Setup pin names (offset 0)
+    // Setup pin names
     const pinNames = new SymbolPinNames()
-    pinNames.offset = 0
+    // For chips, use larger offset to position names well inside; for others, use 0
+    pinNames.offset = sourceComp?.ftype === "simple_chip" ? 1.27 : 0
     symbol._sxPinNames = pinNames
 
     // Add properties
@@ -390,7 +392,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       // Calculate pin position and angle
       const { x, y, angle } = this.calculatePinPosition(port, symbolData.center, symbolData.size, isChip)
       pin.at = [x, y, angle]
-      pin.length = 1.27
+      // For chips, use longer pins (2.54); for other components, use 1.27
+      pin.length = isChip ? 2.54 : 1.27
 
       // Pin name - use the label from the port
       const nameFont = new TextEffectsFont()
@@ -435,6 +438,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     let x = port.x * symbolScale
     let y = port.y * symbolScale
 
+    // Pin length for chips
+    const chipPinLength = 2.54
+
     // For chips, adjust pin position to be at the box edge
     if (isChip && size) {
       const halfWidth = (size.width / 2) * symbolScale
@@ -453,25 +459,52 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
 
     // Determine pin angle based on which side of the component
-    // Pin angle determines which direction the pin points (extends outward)
     let angle = 0
     if (Math.abs(dx) > Math.abs(dy)) {
       // Horizontal pin
       if (dx > 0) {
-        // Right side - pin points right (0°) outward from chip
-        angle = 0
+        // Right side
+        if (isChip) {
+          // For chips: pin starts outside box, points inward (left)
+          angle = 180
+          x = x + chipPinLength  // Move pin start position outward
+        } else {
+          // For other components: pin points outward (right)
+          angle = 0
+        }
       } else {
-        // Left side - pin points left (180°) outward from chip
-        angle = 180
+        // Left side
+        if (isChip) {
+          // For chips: pin starts outside box, points inward (right)
+          angle = 0
+          x = x - chipPinLength  // Move pin start position outward
+        } else {
+          // For other components: pin points outward (left)
+          angle = 180
+        }
       }
     } else {
       // Vertical pin
       if (dy > 0) {
-        // Top side - pin points up (90°) outward from chip
-        angle = 90
+        // Top side
+        if (isChip) {
+          // For chips: pin starts outside box, points inward (down)
+          angle = 270
+          y = y + chipPinLength  // Move pin start position outward
+        } else {
+          // For other components: pin points outward (up)
+          angle = 90
+        }
       } else {
-        // Bottom side - pin points down (270°) outward from chip
-        angle = 270
+        // Bottom side
+        if (isChip) {
+          // For chips: pin starts outside box, points inward (up)
+          angle = 90
+          y = y - chipPinLength  // Move pin start position outward
+        } else {
+          // For other components: pin points outward (down)
+          angle = 270
+        }
       }
     }
 
