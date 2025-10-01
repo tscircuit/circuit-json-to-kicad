@@ -90,12 +90,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         effects: this.createTextEffects(1.27, false),
       })
 
+      // Hide value for chips since reference is usually sufficient
+      const hideValue = sourceComponent.ftype === "simple_chip"
       const valueProperty = new SymbolProperty({
         key: "Value",
         value: value,
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
-        effects: this.createTextEffects(1.27, false),
+        effects: this.createTextEffects(1.27, hideValue),
       })
 
       const footprintProperty = new SymbolProperty({
@@ -164,12 +166,33 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   }
 
   /**
-   * Get text positions from schematic symbol definition
+   * Get text positions from schematic symbol definition or schematic_text elements
    */
   private getTextPositions(
     schematicComponent: any,
     symbolKicadPos: { x: number; y: number }
   ): { refTextPos: { x: number; y: number }; valTextPos: { x: number; y: number } } {
+    // First check if there are schematic_text elements for this component
+    const schematicTexts = this.ctx.db.schematic_text?.list?.()?.filter(
+      (t: any) => t.schematic_component_id === schematicComponent.schematic_component_id
+    ) || []
+
+    // Look for reference text (usually the component name like "U1")
+    const refText = schematicTexts.find((t: any) => t.text && t.text.length > 0)
+
+    if (refText && this.ctx.c2kMatSch) {
+      // Use the schematic_text position for reference
+      const refTextPos = applyToPoint(this.ctx.c2kMatSch, {
+        x: refText.position.x,
+        y: refText.position.y,
+      })
+
+      // For value, place it below the component (we'll hide it anyway for chips)
+      const valTextPos = { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
+
+      return { refTextPos, valTextPos }
+    }
+
     const symbolName = schematicComponent.symbol_name
     const symbol = (symbols as any)[symbolName]
 
