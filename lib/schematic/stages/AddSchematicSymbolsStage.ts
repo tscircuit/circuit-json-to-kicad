@@ -23,12 +23,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
-  _step(): void {
+  override _step(): void {
     const { kicadSch, db } = this.ctx
 
     // Get all source components
-    const resistors = db
-      .source_component
+    const resistors = db.source_component
       .list()
       .filter(
         (sc): sc is SourceSimpleResistor => sc.ftype === "simple_resistor",
@@ -51,8 +50,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Convert circuit-json coordinates (mm) to KiCad coordinates (mm)
       // KiCad default position is around 95.25, 73.66 for a centered component
-      const x = 95.25 + (schematicComponent.center.x * 25.4) // Convert to mm and offset
-      const y = 73.66 + (schematicComponent.center.y * 25.4) // Convert to mm and offset
+      const x = 95.25 + schematicComponent.center.x * 25.4 // Convert to mm and offset
+      const y = 73.66 + schematicComponent.center.y * 25.4 // Convert to mm and offset
 
       const uuid = crypto.randomUUID()
 
@@ -71,20 +70,22 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       symbol._sxLibId = new SymbolLibId("Device:R")
 
       // Add properties for this instance
+      // Position text labels above and below the resistor symbol
+      // The resistor symbol body is approximately 5mm tall, centered on the component
       const referenceProperty = new SymbolProperty({
         key: "Reference",
         value: resistor.name || "R?",
         id: 0,
-        at: [x + 2.54, y - 1.27, 0],
-        effects: this.createTextEffects(1.27, false, "left"),
+        at: [x, y - 6, 0],
+        effects: this.createTextEffects(1.27, false),
       })
 
       const valueProperty = new SymbolProperty({
         key: "Value",
         value: resistor.display_resistance || "R",
         id: 1,
-        at: [x + 2.54, y + 1.27, 0],
-        effects: this.createTextEffects(1.27, false, "left"),
+        at: [x, y + 6, 0],
+        effects: this.createTextEffects(1.27, false),
       })
 
       const footprintProperty = new SymbolProperty({
@@ -153,7 +154,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
    */
   private createTextEffects(
     size: number,
-    hide: boolean = false,
+    hide = false,
     justify?: "left" | "right",
   ): TextEffects {
     const font = new TextEffectsFont()
@@ -172,7 +173,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     return effects
   }
 
-  getOutput(): KicadSch {
+  override getOutput(): KicadSch {
     return this.ctx.kicadSch
   }
 }

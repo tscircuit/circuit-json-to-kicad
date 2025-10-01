@@ -11,6 +11,12 @@ test("basics01", async () => {
   circuit.add(
     <board>
       <resistor name="R1" resistance="1k" footprint="0402" />
+      <capacitor
+        name="C1"
+        capacitance="1uF"
+        footprint="0603"
+        connections={{ pin1: "R1.pin2" }}
+      />
     </board>,
   )
 
