@@ -1,5 +1,5 @@
 import type { CircuitJson } from "circuit-json"
-import { convertCircuitJsonToSchematicSvg } from "circuit-to-svg"
+import { convertCircuitJsonToSchematicSvg, convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import sharp from "sharp"
 
 export const takeCircuitJsonSnapshot = async (params: {
@@ -12,5 +12,10 @@ export const takeCircuitJsonSnapshot = async (params: {
     const png = await sharp(Buffer.from(svg)).png().toBuffer()
     return png
   }
-  throw new Error("PCB snapshot not yet implemented")
+  if (outputType === "pcb") {
+    const svg = await convertCircuitJsonToPcbSvg(circuitJson)
+    const png = await sharp(Buffer.from(svg)).png().toBuffer()
+    return png
+  }
+  throw new Error(`Unknown output type: ${outputType}`)
 }

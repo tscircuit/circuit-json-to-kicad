@@ -65,13 +65,13 @@ export class CircuitJsonToKicadSchConverter {
   }
 
   getOutput(): KicadSch {
-    return this.ctx.kicadSch
+    return this.ctx.kicadSch!
   }
 
   /**
    * Get the output as a string
    */
   getOutputString(): string {
-    return this.ctx.kicadSch.getString()
+    return this.ctx.kicadSch!.getString()
   }
 }
