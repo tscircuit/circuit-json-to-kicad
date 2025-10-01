@@ -97,7 +97,7 @@ async function toMatchPngSnapshot(
     const diffPercentage = (diffArea / totalPixels) * 100
 
     // Allow up to 5% pixel difference for cross-platform rendering variations
-    const ACCEPTABLE_DIFF_PERCENTAGE = 5.0
+    const ACCEPTABLE_DIFF_PERCENTAGE = 0.5
 
     if (diffPercentage <= ACCEPTABLE_DIFF_PERCENTAGE) {
       console.log(
