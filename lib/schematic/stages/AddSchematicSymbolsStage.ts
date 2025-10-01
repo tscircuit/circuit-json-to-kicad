@@ -16,6 +16,7 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
+import { symbols } from "schematic-symbols"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -72,14 +73,18 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const { reference, value, description } =
         this.getComponentMetadata(sourceComponent)
 
+      // Get text positions from schematic symbol definition
+      const { refTextPos, valTextPos } = this.getTextPositions(
+        schematicComponent,
+        { x, y }
+      )
+
       // Add properties for this instance
-      // Position text labels above and below the component symbol
-      // The symbol body is approximately 5mm tall, centered on the component
       const referenceProperty = new SymbolProperty({
         key: "Reference",
         value: reference,
         id: 0,
-        at: [x, y - 6, 0],
+        at: [refTextPos.x, refTextPos.y, 0],
         effects: this.createTextEffects(1.27, false),
       })
 
@@ -87,7 +92,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         key: "Value",
         value: value,
         id: 1,
-        at: [x, y + 6, 0],
+        at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(1.27, false),
       })
 
@@ -150,6 +155,56 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     kicadSch.symbols = symbols
 
     this.finished = true
+  }
+
+  /**
+   * Get text positions from schematic symbol definition
+   */
+  private getTextPositions(
+    schematicComponent: any,
+    symbolKicadPos: { x: number; y: number }
+  ): { refTextPos: { x: number; y: number }; valTextPos: { x: number; y: number } } {
+    const symbolName = schematicComponent.symbol_name
+    const symbol = (symbols as any)[symbolName]
+
+    // Default positions if symbol not found
+    if (!symbol) {
+      return {
+        refTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 },
+        valTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 },
+      }
+    }
+
+    // Find text primitives for REF and VAL
+    let refTextPrimitive = null
+    let valTextPrimitive = null
+
+    for (const primitive of symbol.primitives) {
+      if (primitive.type === "text") {
+        if (primitive.text === "{REF}") {
+          refTextPrimitive = primitive
+        } else if (primitive.text === "{VAL}") {
+          valTextPrimitive = primitive
+        }
+      }
+    }
+
+    // Calculate text positions by transforming the symbol-relative positions
+    const refTextPos = refTextPrimitive
+      ? applyToPoint(this.ctx.c2kMatSch, {
+          x: schematicComponent.center.x + refTextPrimitive.x,
+          y: schematicComponent.center.y + refTextPrimitive.y,
+        })
+      : { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 }
+
+    const valTextPos = valTextPrimitive
+      ? applyToPoint(this.ctx.c2kMatSch, {
+          x: schematicComponent.center.x + valTextPrimitive.x,
+          y: schematicComponent.center.y + valTextPrimitive.y,
+        })
+      : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
+
+    return { refTextPos, valTextPos }
   }
 
   /**
