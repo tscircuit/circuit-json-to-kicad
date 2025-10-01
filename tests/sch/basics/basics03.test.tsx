@@ -23,6 +23,9 @@ test("basics03", async () => {
           pin7: "VCC",
           pin8: "NC",
         }}
+        connections={{
+          pin1: "R1.pin1",
+        }}
       />
     </board>,
   )
