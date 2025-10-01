@@ -119,7 +119,10 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     // Get all ports for this component
     const schematicPorts = db.schematic_port
       .list()
-      .filter((p: any) => p.schematic_component_id === schematicComp.schematic_component_id)
+      .filter(
+        (p: any) =>
+          p.schematic_component_id === schematicComp.schematic_component_id,
+      )
       .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
 
     // Create box primitives based on component size
@@ -336,7 +339,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       if (primitive.type === "path" && primitive.points) {
         // Use background fill for chip boxes to get yellow background
         const fillType = isChip ? "background" : "none"
-        const polyline = this.createPolylineFromPoints(primitive.points, symbolScale, fillType)
+        const polyline = this.createPolylineFromPoints(
+          primitive.points,
+          symbolScale,
+          fillType,
+        )
         drawingSymbol.polylines.push(polyline)
       }
       // Note: schematic-symbols typically uses paths, not box primitives
@@ -377,7 +384,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   /**
    * Create the pin subsymbol
    */
-  private createPinSubsymbol(libId: string, symbolData: any, isChip: boolean = false): SchematicSymbol {
+  private createPinSubsymbol(
+    libId: string,
+    symbolData: any,
+    isChip: boolean = false,
+  ): SchematicSymbol {
     const pinSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_1_1`,
     })
@@ -390,7 +401,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       pin.pinGraphicStyle = "line"
 
       // Calculate pin position and angle
-      const { x, y, angle } = this.calculatePinPosition(port, symbolData.center, symbolData.size, isChip)
+      const { x, y, angle } = this.calculatePinPosition(
+        port,
+        symbolData.center,
+        symbolData.size,
+        isChip,
+      )
       pin.at = [x, y, angle]
       // For chips, use longer pins (2.54); for other components, use 1.27
       pin.length = isChip ? 2.54 : 1.27
@@ -467,7 +483,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (left)
           angle = 180
-          x = x + chipPinLength  // Move pin start position outward
+          x = x + chipPinLength // Move pin start position outward
         } else {
           // For other components: pin points outward (right)
           angle = 0
@@ -477,7 +493,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (right)
           angle = 0
-          x = x - chipPinLength  // Move pin start position outward
+          x = x - chipPinLength // Move pin start position outward
         } else {
           // For other components: pin points outward (left)
           angle = 180
@@ -490,7 +506,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (down)
           angle = 270
-          y = y + chipPinLength  // Move pin start position outward
+          y = y + chipPinLength // Move pin start position outward
         } else {
           // For other components: pin points outward (up)
           angle = 90
@@ -500,7 +516,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (up)
           angle = 90
-          y = y - chipPinLength  // Move pin start position outward
+          y = y - chipPinLength // Move pin start position outward
         } else {
           // For other components: pin points outward (down)
           angle = 270

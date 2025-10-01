@@ -78,7 +78,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
         schematicComponent,
-        { x, y }
+        { x, y },
       )
 
       // Add properties for this instance
@@ -135,7 +135,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Add pin instances with UUIDs based on schematic ports
       const schematicPorts = db.schematic_port
         .list()
-        .filter((p: any) => p.schematic_component_id === schematicComponent.schematic_component_id)
+        .filter(
+          (p: any) =>
+            p.schematic_component_id ===
+            schematicComponent.schematic_component_id,
+        )
         .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
 
       for (const port of schematicPorts) {
@@ -170,12 +174,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
    */
   private getTextPositions(
     schematicComponent: any,
-    symbolKicadPos: { x: number; y: number }
-  ): { refTextPos: { x: number; y: number }; valTextPos: { x: number; y: number } } {
+    symbolKicadPos: { x: number; y: number },
+  ): {
+    refTextPos: { x: number; y: number }
+    valTextPos: { x: number; y: number }
+  } {
     // First check if there are schematic_text elements for this component
-    const schematicTexts = this.ctx.db.schematic_text?.list?.()?.filter(
-      (t: any) => t.schematic_component_id === schematicComponent.schematic_component_id
-    ) || []
+    const schematicTexts =
+      this.ctx.db.schematic_text
+        ?.list?.()
+        ?.filter(
+          (t: any) =>
+            t.schematic_component_id ===
+            schematicComponent.schematic_component_id,
+        ) || []
 
     // Look for reference text (usually the component name like "U1")
     const refText = schematicTexts.find((t: any) => t.text && t.text.length > 0)
@@ -219,19 +231,21 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }
 
     // Calculate text positions by transforming the symbol-relative positions
-    const refTextPos = refTextPrimitive && this.ctx.c2kMatSch
-      ? applyToPoint(this.ctx.c2kMatSch, {
-          x: schematicComponent.center.x + refTextPrimitive.x,
-          y: schematicComponent.center.y + refTextPrimitive.y,
-        })
-      : { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 }
+    const refTextPos =
+      refTextPrimitive && this.ctx.c2kMatSch
+        ? applyToPoint(this.ctx.c2kMatSch, {
+            x: schematicComponent.center.x + refTextPrimitive.x,
+            y: schematicComponent.center.y + refTextPrimitive.y,
+          })
+        : { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 }
 
-    const valTextPos = valTextPrimitive && this.ctx.c2kMatSch
-      ? applyToPoint(this.ctx.c2kMatSch, {
-          x: schematicComponent.center.x + valTextPrimitive.x,
-          y: schematicComponent.center.y + valTextPrimitive.y,
-        })
-      : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
+    const valTextPos =
+      valTextPrimitive && this.ctx.c2kMatSch
+        ? applyToPoint(this.ctx.c2kMatSch, {
+            x: schematicComponent.center.x + valTextPrimitive.x,
+            y: schematicComponent.center.y + valTextPrimitive.y,
+          })
+        : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
     return { refTextPos, valTextPos }
   }

@@ -81,8 +81,8 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       ]
 
       // Transform corners to KiCad coordinates
-      const transformedCorners = corners.map(corner =>
-        applyToPoint(c2kMatPcb, corner)
+      const transformedCorners = corners.map((corner) =>
+        applyToPoint(c2kMatPcb, corner),
       )
 
       // Create 4 edge cut lines forming a rectangle

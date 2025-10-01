@@ -67,7 +67,8 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         top: "F.Cu",
         bottom: "B.Cu",
       }
-      const kicadLayer = layerMap[startPoint.layer] || startPoint.layer || "F.Cu"
+      const kicadLayer =
+        layerMap[startPoint.layer] || startPoint.layer || "F.Cu"
 
       // Create a segment
       const segment = new Segment({

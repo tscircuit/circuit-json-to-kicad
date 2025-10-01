@@ -108,9 +108,16 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       // Handle different pad shapes (circle pads have radius, rect pads have width/height)
       const padShape = pcbPad.shape === "circle" ? "circle" : "rect"
-      const padSize: [number, number] = pcbPad.shape === "circle"
-        ? ["radius" in pcbPad ? pcbPad.radius * 2 : 0.5, "radius" in pcbPad ? pcbPad.radius * 2 : 0.5]
-        : ["width" in pcbPad ? pcbPad.width : 0.5, "height" in pcbPad ? pcbPad.height : 0.5]
+      const padSize: [number, number] =
+        pcbPad.shape === "circle"
+          ? [
+              "radius" in pcbPad ? pcbPad.radius * 2 : 0.5,
+              "radius" in pcbPad ? pcbPad.radius * 2 : 0.5,
+            ]
+          : [
+              "width" in pcbPad ? pcbPad.width : 0.5,
+              "height" in pcbPad ? pcbPad.height : 0.5,
+            ]
 
       const pad = new FootprintPad({
         number: String(padNumber),

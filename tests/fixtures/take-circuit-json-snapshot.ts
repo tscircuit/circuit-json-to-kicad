@@ -1,5 +1,8 @@
 import type { CircuitJson } from "circuit-json"
-import { convertCircuitJsonToSchematicSvg, convertCircuitJsonToPcbSvg } from "circuit-to-svg"
+import {
+  convertCircuitJsonToSchematicSvg,
+  convertCircuitJsonToPcbSvg,
+} from "circuit-to-svg"
 import sharp from "sharp"
 
 export const takeCircuitJsonSnapshot = async (params: {

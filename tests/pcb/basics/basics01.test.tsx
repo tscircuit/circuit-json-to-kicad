@@ -24,7 +24,10 @@ test("pcb basics01", async () => {
   await circuit.renderUntilSettled()
 
   const circuitJson = circuit.getCircuitJson()
-  Bun.write("./debug-output/pcb-circuit.json", JSON.stringify(circuitJson, null, 2))
+  Bun.write(
+    "./debug-output/pcb-circuit.json",
+    JSON.stringify(circuitJson, null, 2),
+  )
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
 

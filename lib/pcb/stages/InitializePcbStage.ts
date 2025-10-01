@@ -1,6 +1,12 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Paper, PcbLayers, PcbLayerDefinition, PcbGeneral, Setup } from "kicadts"
+import {
+  Paper,
+  PcbLayers,
+  PcbLayerDefinition,
+  PcbGeneral,
+  Setup,
+} from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 
 /**
