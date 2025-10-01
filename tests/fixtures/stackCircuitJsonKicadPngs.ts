@@ -4,8 +4,8 @@ export const stackCircuitJsonKicadPngs = async (
   circuitJsonPng: Buffer,
   kicadPng: Buffer,
 ): Promise<Buffer> => {
-  const labelHeight = 40
   const labelFontSize = 24
+  const labelPadding = 8
 
   // Get metadata for both images
   const [cjMetadata, kicadMetadata] = await Promise.all([
@@ -20,49 +20,53 @@ export const stackCircuitJsonKicadPngs = async (
 
   // Calculate canvas dimensions
   const maxWidth = Math.max(cjWidth, kicadWidth)
-  const totalHeight = labelHeight + cjHeight + labelHeight + kicadHeight
+  const totalHeight = cjHeight + kicadHeight
 
-  // Create text labels as SVG
-  const createLabel = (text: string, width: number) => {
+  // Create text labels as SVG with black background and white text
+  const createLabel = (text: string) => {
+    // Approximate text width (rough estimate)
+    const textWidth = text.length * labelFontSize * 0.6
+    const boxWidth = textWidth + labelPadding * 2
+    const boxHeight = labelFontSize + labelPadding * 2
+
     return Buffer.from(`
-      <svg width="${width}" height="${labelHeight}">
-        <text x="50%" y="50%"
+      <svg width="${boxWidth}" height="${boxHeight}">
+        <rect width="100%" height="100%" fill="black"/>
+        <text x="${labelPadding}" y="${labelPadding + labelFontSize * 0.8}"
           font-family="Arial, sans-serif"
           font-size="${labelFontSize}"
           font-weight="bold"
-          fill="black"
-          text-anchor="middle"
-          dominant-baseline="middle">
+          fill="white">
           ${text}
         </text>
       </svg>
     `)
   }
 
-  const cjLabel = createLabel("Circuit JSON", maxWidth)
-  const kicadLabel = createLabel("KiCad", maxWidth)
+  const cjLabel = createLabel("Circuit JSON")
+  const kicadLabel = createLabel("KiCad")
 
-  // Create composite operations
+  // Create composite operations - images first, then labels on top
   const compositeOps = [
+    {
+      input: await sharp(circuitJsonPng).toBuffer(),
+      left: Math.floor((maxWidth - cjWidth) / 2),
+      top: 0,
+    },
+    {
+      input: await sharp(kicadPng).toBuffer(),
+      left: Math.floor((maxWidth - kicadWidth) / 2),
+      top: cjHeight,
+    },
     {
       input: await sharp(cjLabel).png().toBuffer(),
       left: 0,
       top: 0,
     },
     {
-      input: await sharp(circuitJsonPng).toBuffer(),
-      left: Math.floor((maxWidth - cjWidth) / 2),
-      top: labelHeight,
-    },
-    {
       input: await sharp(kicadLabel).png().toBuffer(),
       left: 0,
-      top: labelHeight + cjHeight,
-    },
-    {
-      input: await sharp(kicadPng).toBuffer(),
-      left: Math.floor((maxWidth - kicadWidth) / 2),
-      top: labelHeight + cjHeight + labelHeight,
+      top: cjHeight,
     },
   ]
 
