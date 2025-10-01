@@ -1,31 +1,28 @@
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, SourceSimpleResistor } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
+  EmbeddedFonts,
   LibSymbols,
+  Pts,
   SchematicSymbol,
-  SymbolProperty,
-  SymbolPin,
-  SymbolPinNumbers,
-  SymbolPinNames,
-  SymbolPinName,
-  SymbolPinNumber,
-  SymbolRectangle,
-  SymbolRectangleStart,
-  SymbolRectangleEnd,
-  SymbolRectangleFill,
-  SymbolFillType,
   Stroke,
-  StrokeType,
-  Width,
+  SymbolPin,
+  SymbolPinName,
+  SymbolPinNames,
+  SymbolPinNumber,
+  SymbolPinNumbers,
+  SymbolPolyline,
+  SymbolPolylineFill,
+  SymbolProperty,
   TextEffects,
   TextEffectsFont,
-  EmbeddedFonts,
+  Xy,
 } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
-import type { SourceSimpleResistor } from "circuit-json"
+import { ConverterStage } from "../../types"
+import { symbols } from "schematic-symbols"
 
 /**
- * Adds library symbol definitions (Device:R, etc.) to the lib_symbols section
+ * Adds library symbol definitions from schematic-symbols to the lib_symbols section
  */
 export class AddLibrarySymbolsStage extends ConverterStage<
   CircuitJson,
@@ -34,39 +31,71 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
-    // Get all source components
-    const resistors = db.source_component
-      .list()
-      .filter(
-        (sc): sc is SourceSimpleResistor => sc.ftype === "simple_resistor",
-      )
+    // Get all schematic components with symbol names
+    const schematicComponents = db.schematic_component.list()
 
-    if (resistors.length === 0) {
+    if (schematicComponents.length === 0) {
       this.finished = true
       return
     }
 
     // Create lib_symbols section
     const libSymbols = new LibSymbols()
-    const symbols: SchematicSymbol[] = []
+    const symbolsToCreate = new Set<string>()
 
-    // For now, we'll just create a Device:R symbol definition
-    // This is the library template that will be instantiated later
-    const resistorLibSymbol = this.createResistorLibrarySymbol()
-    symbols.push(resistorLibSymbol)
+    // Collect unique symbol names
+    for (const comp of schematicComponents) {
+      if (comp.symbol_name) {
+        symbolsToCreate.add(comp.symbol_name)
+      }
+    }
 
-    libSymbols.symbols = symbols
+    const librarySymbols: SchematicSymbol[] = []
+
+    // Create a symbol for each unique symbol_name
+    for (const symbolName of symbolsToCreate) {
+      const symbolData = symbols[symbolName as keyof typeof symbols]
+      if (!symbolData) {
+        console.warn(`Symbol ${symbolName} not found in schematic-symbols`)
+        continue
+      }
+
+      // Find a component using this symbol to get metadata
+      const exampleComp = schematicComponents.find(
+        (c) => c.symbol_name === symbolName,
+      )
+      const sourceComp =
+        exampleComp && exampleComp.source_component_id
+          ? db.source_component.get(exampleComp.source_component_id)
+          : null
+
+      const libSymbol = this.createLibrarySymbolFromSchematicSymbol(
+        symbolName,
+        symbolData,
+        sourceComp,
+      )
+      librarySymbols.push(libSymbol)
+    }
+
+    libSymbols.symbols = librarySymbols
     kicadSch.libSymbols = libSymbols
 
     this.finished = true
   }
 
   /**
-   * Creates the Device:R library symbol definition with drawing primitives and pins
+   * Convert schematic-symbols data to KiCad library symbol
    */
-  private createResistorLibrarySymbol(): SchematicSymbol {
+  private createLibrarySymbolFromSchematicSymbol(
+    symbolName: string,
+    symbolData: any,
+    sourceComp: any,
+  ): SchematicSymbol {
+    // Use Device:R as the library ID for now (we can make this more sophisticated later)
+    const libId = this.getLibraryId(symbolName, sourceComp)
+
     const symbol = new SchematicSymbol({
-      libraryId: "Device:R",
+      libraryId: libId,
       excludeFromSim: false,
       inBom: true,
       onBoard: true,
@@ -82,145 +111,15 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     pinNames.offset = 0
     symbol._sxPinNames = pinNames
 
-    // Add properties (Reference, Value, Footprint, Datasheet, Description, etc.)
-    const referenceProperty = new SymbolProperty({
-      key: "Reference",
-      value: "R",
-      id: 0,
-      at: [2.032, 0, 90],
-      effects: this.createTextEffects(1.27),
-    })
+    // Add properties
+    this.addSymbolProperties(symbol, libId, sourceComp)
 
-    const valueProperty = new SymbolProperty({
-      key: "Value",
-      value: "R",
-      id: 1,
-      at: [0, 0, 90],
-      effects: this.createTextEffects(1.27),
-    })
-
-    const footprintProperty = new SymbolProperty({
-      key: "Footprint",
-      value: "",
-      id: 2,
-      at: [-1.778, 0, 90],
-      effects: this.createTextEffects(1.27, true),
-    })
-
-    const datasheetProperty = new SymbolProperty({
-      key: "Datasheet",
-      value: "~",
-      id: 3,
-      at: [0, 0, 0],
-      effects: this.createTextEffects(1.27, true),
-    })
-
-    const descriptionProperty = new SymbolProperty({
-      key: "Description",
-      value: "Resistor",
-      id: 4,
-      at: [0, 0, 0],
-      effects: this.createTextEffects(1.27, true),
-    })
-
-    const keywordsProperty = new SymbolProperty({
-      key: "ki_keywords",
-      value: "R res resistor",
-      id: 5,
-      at: [0, 0, 0],
-      effects: this.createTextEffects(1.27, true),
-    })
-
-    const fpFiltersProperty = new SymbolProperty({
-      key: "ki_fp_filters",
-      value: "R_*",
-      id: 6,
-      at: [0, 0, 0],
-      effects: this.createTextEffects(1.27, true),
-    })
-
-    symbol.properties.push(
-      referenceProperty,
-      valueProperty,
-      footprintProperty,
-      datasheetProperty,
-      descriptionProperty,
-      keywordsProperty,
-      fpFiltersProperty,
-    )
-
-    // Create the R_0_1 subsymbol (drawing elements)
-    const drawingSymbol = new SchematicSymbol({
-      libraryId: "R_0_1",
-    })
-
-    // Add resistor rectangle drawing
-    const rectangle = new SymbolRectangle()
-    const start = new SymbolRectangleStart(-1.016, -2.54)
-    const end = new SymbolRectangleEnd(1.016, 2.54)
-    const stroke = new Stroke()
-    const width = new Width()
-    width.value = 0.254
-    stroke._sxWidth = width
-    const strokeType = new StrokeType()
-    strokeType.type = "default"
-    stroke._sxType = strokeType
-    const fill = new SymbolRectangleFill()
-    const fillType = new SymbolFillType("none")
-    fill._sxType = fillType
-
-    rectangle._sxStart = start
-    rectangle._sxEnd = end
-    rectangle._sxStroke = stroke
-    rectangle._sxFill = fill
-
-    drawingSymbol.rectangles.push(rectangle)
+    // Create drawing subsymbol (unit 0, 1)
+    const drawingSymbol = this.createDrawingSubsymbol(libId, symbolData)
     symbol.subSymbols.push(drawingSymbol)
 
-    // Create the R_1_1 subsymbol (pin definitions)
-    const pinSymbol = new SchematicSymbol({
-      libraryId: "R_1_1",
-    })
-
-    // Pin 1 (top)
-    const pin1 = new SymbolPin()
-    pin1.pinElectricalType = "passive"
-    pin1.pinGraphicStyle = "line"
-    pin1.at = [0, 3.81, 270]
-    pin1.length = 1.27
-
-    // Create the name with effects
-    const nameFont1 = new TextEffectsFont()
-    nameFont1.size = { height: 1.27, width: 1.27 }
-    const nameEffects1 = new TextEffects({ font: nameFont1 })
-    pin1._sxName = new SymbolPinName({ value: "~", effects: nameEffects1 })
-
-    // Create the number with effects
-    const numFont1 = new TextEffectsFont()
-    numFont1.size = { height: 1.27, width: 1.27 }
-    const numEffects1 = new TextEffects({ font: numFont1 })
-    pin1._sxNumber = new SymbolPinNumber({ value: "1", effects: numEffects1 })
-
-    // Pin 2 (bottom)
-    const pin2 = new SymbolPin()
-    pin2.pinElectricalType = "passive"
-    pin2.pinGraphicStyle = "line"
-    pin2.at = [0, -3.81, 90]
-    pin2.length = 1.27
-
-    // Create the name with effects
-    const nameFont2 = new TextEffectsFont()
-    nameFont2.size = { height: 1.27, width: 1.27 }
-    const nameEffects2 = new TextEffects({ font: nameFont2 })
-    pin2._sxName = new SymbolPinName({ value: "~", effects: nameEffects2 })
-
-    // Create the number with effects
-    const numFont2 = new TextEffectsFont()
-    numFont2.size = { height: 1.27, width: 1.27 }
-    const numEffects2 = new TextEffects({ font: numFont2 })
-    pin2._sxNumber = new SymbolPinNumber({ value: "2", effects: numEffects2 })
-
-    pinSymbol.pins.push(pin1, pin2)
+    // Create pin subsymbol (unit 1, 1)
+    const pinSymbol = this.createPinSubsymbol(libId, symbolData)
     symbol.subSymbols.push(pinSymbol)
 
     // Set embedded_fonts
@@ -230,21 +129,265 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   }
 
   /**
+   * Get KiCad library ID for a symbol
+   */
+  private getLibraryId(symbolName: string, sourceComp: any): string {
+    // Map common component types to KiCad library IDs
+    if (sourceComp?.ftype === "simple_resistor") {
+      return "Device:R"
+    }
+    if (sourceComp?.ftype === "simple_capacitor") {
+      return "Device:C"
+    }
+    // Default: use a generic name
+    return `Custom:${symbolName}`
+  }
+
+  /**
+   * Add properties to the library symbol
+   */
+  private addSymbolProperties(
+    symbol: SchematicSymbol,
+    libId: string,
+    sourceComp: any,
+  ): void {
+    const refPrefix = libId.split(":")[1]?.[0] || "U"
+
+    const properties = [
+      {
+        key: "Reference",
+        value: refPrefix,
+        id: 0,
+        at: [2.032, 0, 90],
+        hide: false,
+      },
+      { key: "Value", value: refPrefix, id: 1, at: [0, 0, 90], hide: false },
+      {
+        key: "Footprint",
+        value: "",
+        id: 2,
+        at: [-1.778, 0, 90],
+        hide: true,
+      },
+      {
+        key: "Datasheet",
+        value: "~",
+        id: 3,
+        at: [0, 0, 0],
+        hide: true,
+      },
+      {
+        key: "Description",
+        value: this.getDescription(sourceComp),
+        id: 4,
+        at: [0, 0, 0],
+        hide: true,
+      },
+      {
+        key: "ki_keywords",
+        value: this.getKeywords(sourceComp),
+        id: 5,
+        at: [0, 0, 0],
+        hide: true,
+      },
+      {
+        key: "ki_fp_filters",
+        value: this.getFpFilters(sourceComp),
+        id: 6,
+        at: [0, 0, 0],
+        hide: true,
+      },
+    ]
+
+    for (const prop of properties) {
+      symbol.properties.push(
+        new SymbolProperty({
+          key: prop.key,
+          value: prop.value,
+          id: prop.id,
+          at: prop.at as [number, number, number],
+          effects: this.createTextEffects(1.27, prop.hide),
+        }),
+      )
+    }
+  }
+
+  private getDescription(sourceComp: any): string {
+    if (sourceComp?.ftype === "simple_resistor") return "Resistor"
+    if (sourceComp?.ftype === "simple_capacitor") return "Capacitor"
+    return "Component"
+  }
+
+  private getKeywords(sourceComp: any): string {
+    if (sourceComp?.ftype === "simple_resistor") return "R res resistor"
+    if (sourceComp?.ftype === "simple_capacitor") return "C cap capacitor"
+    return ""
+  }
+
+  private getFpFilters(sourceComp: any): string {
+    if (sourceComp?.ftype === "simple_resistor") return "R_*"
+    if (sourceComp?.ftype === "simple_capacitor") return "C_*"
+    return "*"
+  }
+
+  /**
+   * Create the drawing subsymbol (primitives, no pins)
+   * Converts schematic-symbols primitives to KiCad drawing elements
+   */
+  private createDrawingSubsymbol(
+    libId: string,
+    symbolData: any,
+  ): SchematicSymbol {
+    const drawingSymbol = new SchematicSymbol({
+      libraryId: `${libId.split(":")[1]}_0_1`,
+    })
+
+    // Convert schematic-symbols primitives to KiCad drawing elements
+    // schematic-symbols uses inches, KiCad uses mm (1 inch = 25.4mm)
+    const INCH_TO_MM = 25.4
+
+    for (const primitive of symbolData.primitives || []) {
+      if (primitive.type === "path" && primitive.points) {
+        const polyline = this.createPolylineFromPoints(
+          primitive.points,
+          INCH_TO_MM,
+        )
+        drawingSymbol.polylines.push(polyline)
+      }
+      // Note: schematic-symbols typically uses paths, not box primitives
+    }
+
+    return drawingSymbol
+  }
+
+  /**
+   * Create a KiCad polyline from points
+   */
+  private createPolylineFromPoints(
+    points: Array<{ x: number; y: number }>,
+    scale: number,
+  ): SymbolPolyline {
+    const polyline = new SymbolPolyline()
+
+    // Convert points to KiCad Xy objects
+    const xyPoints = points.map((p) => new Xy(p.x * scale, p.y * scale))
+    const pts = new Pts(xyPoints)
+    polyline.points = pts
+
+    // KiCad polylines need stroke (use primitive setters)
+    const stroke = new Stroke()
+    stroke.width = 0.254
+    stroke.type = "default"
+    polyline.stroke = stroke
+
+    // Set fill to none
+    const fill = new SymbolPolylineFill()
+    fill.type = "none"
+    polyline.fill = fill
+
+    return polyline
+  }
+
+  /**
+   * Create the pin subsymbol
+   */
+  private createPinSubsymbol(libId: string, symbolData: any): SchematicSymbol {
+    const pinSymbol = new SchematicSymbol({
+      libraryId: `${libId.split(":")[1]}_1_1`,
+    })
+
+    // Convert schematic-symbols ports to KiCad pins
+    for (let i = 0; i < (symbolData.ports?.length || 0); i++) {
+      const port = symbolData.ports[i]
+      const pin = new SymbolPin()
+      pin.pinElectricalType = "passive"
+      pin.pinGraphicStyle = "line"
+
+      // Calculate pin position and angle
+      const { x, y, angle } = this.calculatePinPosition(port, symbolData.center)
+      pin.at = [x, y, angle]
+      pin.length = 1.27
+
+      // Pin name
+      const nameFont = new TextEffectsFont()
+      nameFont.size = { height: 1.27, width: 1.27 }
+      const nameEffects = new TextEffects({ font: nameFont })
+      pin._sxName = new SymbolPinName({ value: "~", effects: nameEffects })
+
+      // Pin number
+      const numFont = new TextEffectsFont()
+      numFont.size = { height: 1.27, width: 1.27 }
+      const numEffects = new TextEffects({ font: numFont })
+      const pinNum = port.labels?.[0] || `${i + 1}`
+      pin._sxNumber = new SymbolPinNumber({
+        value: pinNum,
+        effects: numEffects,
+      })
+
+      pinSymbol.pins.push(pin)
+    }
+
+    return pinSymbol
+  }
+
+  /**
+   * Calculate KiCad pin position and rotation from schematic-symbols port
+   * Converts from schematic-symbols coordinates (inches) to KiCad (mm)
+   */
+  private calculatePinPosition(
+    port: any,
+    center: any,
+  ): { x: number; y: number; angle: number } {
+    // schematic-symbols uses inches, KiCad uses mm
+    const INCH_TO_MM = 25.4
+
+    // Calculate position relative to center in mm
+    const dx = (port.x - center.x) * INCH_TO_MM
+    const dy = (port.y - center.y) * INCH_TO_MM
+
+    // Calculate position in mm (port is at the component, pin extends outward)
+    const x = port.x * INCH_TO_MM
+    const y = port.y * INCH_TO_MM
+
+    // Determine pin angle based on which side of the component
+    let angle = 0
+    if (Math.abs(dx) > Math.abs(dy)) {
+      // Horizontal pin
+      if (dx > 0) {
+        // Right side - pin points left (180°)
+        angle = 180
+      } else {
+        // Left side - pin points right (0°)
+        angle = 0
+      }
+    } else {
+      // Vertical pin
+      if (dy > 0) {
+        // Top side - pin points down (270°)
+        angle = 270
+      } else {
+        // Bottom side - pin points up (90°)
+        angle = 90
+      }
+    }
+
+    return { x, y, angle }
+  }
+
+  /**
    * Creates text effects for properties
    */
-  private createTextEffects(size: number, hide: boolean = false): TextEffects {
+  private createTextEffects(size: number, hide: boolean): TextEffects {
     const font = new TextEffectsFont()
     font.size = { height: size, width: size }
 
-    const effects = new TextEffects({
+    return new TextEffects({
       font: font,
       hiddenText: hide,
     })
-
-    return effects
   }
 
-  getOutput(): KicadSch {
+  override getOutput(): KicadSch {
     return this.ctx.kicadSch
   }
 }
