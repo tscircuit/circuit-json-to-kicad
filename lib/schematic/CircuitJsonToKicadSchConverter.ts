@@ -22,11 +22,7 @@ export class CircuitJsonToKicadSchConverter {
   }
 
   constructor(circuitJson: CircuitJson) {
-    // Create transformation matrix from circuit-json coordinates to KiCad schematic coordinates
-    // Circuit-json units are abstract (where a resistor is ~1 unit long)
-    // We scale by 25.4 for positions, and apply the same scale to symbol definitions
-    // to ensure symbols are proportionally sized for the layout
-    const CIRCUIT_JSON_SCALE = 30
+    const SCALE_CIRCUIT_JSON_FACTOR = 10
     const KICAD_CENTER_X = 95.25
     const KICAD_CENTER_Y = 73.66
 
@@ -39,7 +35,7 @@ export class CircuitJsonToKicadSchConverter {
       }),
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),
-        scale(CIRCUIT_JSON_SCALE, CIRCUIT_JSON_SCALE),
+        scale(SCALE_CIRCUIT_JSON_FACTOR, SCALE_CIRCUIT_JSON_FACTOR),
       ),
     }
     this.pipeline = [
