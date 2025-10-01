@@ -44,9 +44,18 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolsToCreate = new Set<string>()
 
     // Collect unique symbol names
+    // Also create symbols for chips without symbol_name
     for (const comp of schematicComponents) {
       if (comp.symbol_name) {
         symbolsToCreate.add(comp.symbol_name)
+      } else {
+        // For components without symbol_name (like chips), create a generic box symbol
+        const sourceComp = comp.source_component_id
+          ? db.source_component.get(comp.source_component_id)
+          : null
+        if (sourceComp?.ftype === "simple_chip") {
+          symbolsToCreate.add(`generic_chip_${comp.source_component_id}`)
+        }
       }
     }
 
@@ -54,20 +63,38 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Create a symbol for each unique symbol_name
     for (const symbolName of symbolsToCreate) {
-      const symbolData = symbols[symbolName as keyof typeof symbols]
-      if (!symbolData) {
-        console.warn(`Symbol ${symbolName} not found in schematic-symbols`)
-        continue
-      }
+      let symbolData = symbols[symbolName as keyof typeof symbols]
+      let exampleComp
+      let sourceComp
 
-      // Find a component using this symbol to get metadata
-      const exampleComp = schematicComponents.find(
-        (c) => c.symbol_name === symbolName,
-      )
-      const sourceComp =
-        exampleComp && exampleComp.source_component_id
-          ? db.source_component.get(exampleComp.source_component_id)
-          : null
+      // Check if this is a generic chip symbol
+      if (symbolName.startsWith("generic_chip_")) {
+        const sourceCompId = symbolName.replace("generic_chip_", "")
+        sourceComp = db.source_component.get(sourceCompId)
+        exampleComp = schematicComponents.find(
+          (c) => c.source_component_id === sourceCompId,
+        )
+
+        // Create generic box symbol data based on the schematic component
+        if (exampleComp) {
+          symbolData = this.createGenericChipSymbolData(exampleComp, db)
+        }
+      } else {
+        symbolData = symbols[symbolName as keyof typeof symbols]
+        if (!symbolData) {
+          console.warn(`Symbol ${symbolName} not found in schematic-symbols`)
+          continue
+        }
+
+        // Find a component using this symbol to get metadata
+        exampleComp = schematicComponents.find(
+          (c) => c.symbol_name === symbolName,
+        )
+        sourceComp =
+          exampleComp && exampleComp.source_component_id
+            ? db.source_component.get(exampleComp.source_component_id)
+            : null
+      }
 
       const libSymbol = this.createLibrarySymbolFromSchematicSymbol(
         symbolName,
@@ -81,6 +108,53 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     kicadSch.libSymbols = libSymbols
 
     this.finished = true
+  }
+
+  /**
+   * Create generic chip symbol data for chips without a symbol_name
+   */
+  private createGenericChipSymbolData(schematicComp: any, db: any): any {
+    // Get all ports for this component
+    const schematicPorts = db.schematic_port
+      .list()
+      .filter((p: any) => p.schematic_component_id === schematicComp.schematic_component_id)
+      .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
+
+    // Create box primitives based on component size
+    const width = schematicComp.size?.width || 1.5
+    const height = schematicComp.size?.height || 1
+
+    const boxPath = {
+      type: "path",
+      points: [
+        { x: -width / 2, y: -height / 2 },
+        { x: width / 2, y: -height / 2 },
+        { x: width / 2, y: height / 2 },
+        { x: -width / 2, y: height / 2 },
+        { x: -width / 2, y: -height / 2 },
+      ],
+    }
+
+    // Create ports from schematic ports
+    const ports = schematicPorts.map((port: any) => {
+      // Get port position relative to component center
+      const portX = port.center.x - schematicComp.center.x
+      const portY = port.center.y - schematicComp.center.y
+
+      return {
+        x: portX,
+        y: portY,
+        labels: [port.display_pin_label || `${port.pin_number || 1}`],
+        pinNumber: port.pin_number || 1,
+      }
+    })
+
+    return {
+      center: { x: 0, y: 0 },
+      primitives: [boxPath],
+      ports: ports,
+      size: { width, height },
+    }
   }
 
   /**
@@ -138,6 +212,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
     if (sourceComp?.ftype === "simple_capacitor") {
       return "Device:C"
+    }
+    if (sourceComp?.ftype === "simple_chip") {
+      return "Device:U"
     }
     // Default: use a generic name
     return `Custom:${symbolName}`
@@ -215,18 +292,21 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private getDescription(sourceComp: any): string {
     if (sourceComp?.ftype === "simple_resistor") return "Resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "Capacitor"
+    if (sourceComp?.ftype === "simple_chip") return "Integrated Circuit"
     return "Component"
   }
 
   private getKeywords(sourceComp: any): string {
     if (sourceComp?.ftype === "simple_resistor") return "R res resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "C cap capacitor"
+    if (sourceComp?.ftype === "simple_chip") return "U IC chip"
     return ""
   }
 
   private getFpFilters(sourceComp: any): string {
     if (sourceComp?.ftype === "simple_resistor") return "R_*"
     if (sourceComp?.ftype === "simple_capacitor") return "C_*"
+    if (sourceComp?.ftype === "simple_chip") return "*"
     return "*"
   }
 
@@ -315,7 +395,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       const numFont = new TextEffectsFont()
       numFont.size = { height: 1.27, width: 1.27 }
       const numEffects = new TextEffects({ font: numFont })
-      const pinNum = port.labels?.[0] || `${i + 1}`
+      const pinNum = port.pinNumber?.toString() || port.labels?.[0] || `${i + 1}`
       pin._sxNumber = new SymbolPinNumber({
         value: pinNum,
         effects: numEffects,

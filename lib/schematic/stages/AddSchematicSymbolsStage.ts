@@ -128,16 +128,18 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         descriptionProperty,
       )
 
-      // Add pin instances with UUIDs
-      const pin1 = new SymbolPin()
-      pin1.numberString = "1"
-      pin1.uuid = crypto.randomUUID()
+      // Add pin instances with UUIDs based on schematic ports
+      const schematicPorts = db.schematic_port
+        .list()
+        .filter((p: any) => p.schematic_component_id === schematicComponent.schematic_component_id)
+        .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
 
-      const pin2 = new SymbolPin()
-      pin2.numberString = "2"
-      pin2.uuid = crypto.randomUUID()
-
-      symbol.pins.push(pin1, pin2)
+      for (const port of schematicPorts) {
+        const pin = new SymbolPin()
+        pin.numberString = `${port.pin_number || 1}`
+        pin.uuid = crypto.randomUUID()
+        symbol.pins.push(pin)
+      }
 
       // Add instances section
       const instances = new SymbolInstances()
@@ -224,6 +226,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     if (sourceComp.ftype === "simple_diode") {
       return "Device:D"
     }
+    if (sourceComp.ftype === "simple_chip") {
+      return "Device:U"
+    }
     // Default: use a generic name
     return "Device:Component"
   }
@@ -267,6 +272,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         reference: name,
         value: "D",
         description: "Diode",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_chip") {
+      return {
+        reference: name,
+        value: name,
+        description: "Integrated Circuit",
       }
     }
 
