@@ -1,9 +1,6 @@
 import { test, expect } from "bun:test"
 import { Circuit } from "tscircuit"
-import {
-  CircuitJsonToKicadConverter,
-  CircuitJsonToKicadSchConverter,
-} from "lib"
+import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 
 test("basics01", async () => {
