@@ -1,5 +1,5 @@
 import type { CircuitJson } from "circuit-json"
-import { ConverterStage, type ConverterContext } from "./types"
+import { ConverterStage, type ConverterContext } from "../types"
 import { KicadSch } from "kicadts"
 import { cju } from "@tscircuit/circuit-json-util"
 
@@ -38,5 +38,15 @@ export class CircuitJsonToKicadSchConverter {
     if (this.currentStage.finished) {
       this.currentStageIndex++
     }
+  }
+
+  runUntilFinished() {
+    while (!this.finished) {
+      this.step()
+    }
+  }
+
+  getOutput(): KicadSch {
+    return this.ctx.kicadSch
   }
 }

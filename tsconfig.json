@@ -14,7 +14,8 @@
     "verbatimModuleSyntax": true,
     "noEmit": true,
     "paths": {
-      "kicadts": ["./node_modules/kicadts/dist/index.d.ts"]
+      "lib": ["./lib/index.ts"],
+      "lib/*": ["./lib/*"]
     },
 
     // Best practices
