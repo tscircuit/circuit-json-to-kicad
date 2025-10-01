@@ -3,6 +3,9 @@
   "main": "dist/index.js",
   "version": "0.0.1",
   "type": "module",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsup-node lib/index.ts --format esm --dts",
     "download-demos": "git clone --depth 1 --filter=blob:none --sparse git@gitlab.com:kicad/code/kicad.git kicad-demos && cd kicad-demos && git sparse-checkout set demos",

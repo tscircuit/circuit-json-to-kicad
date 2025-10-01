@@ -4,6 +4,7 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../fixtures/take-circuit-json-snapshot"
 import { stackPngsVertically } from "../fixtures/stackPngsVertically"
+import { stackCircuitJsonKicadPngs } from "../fixtures/stackCircuitJsonKicadPngs"
 
 test("basics01", async () => {
   const circuit = new Circuit()
@@ -32,10 +33,10 @@ test("basics01", async () => {
   expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
-    stackPngsVertically([
+    stackCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
-    ]),
+    ),
   ).toMatchPngSnapshot(import.meta.path)
 })
 

@@ -11,7 +11,7 @@ export const stackPngsVertically = async (pngs: Buffer[]): Promise<Buffer> => {
 
   // Get metadata for all images to determine dimensions
   const metadataList = await Promise.all(
-    pngs.map(async (png) => await sharp(png).metadata())
+    pngs.map(async (png) => await sharp(png).metadata()),
   )
 
   // Calculate the maximum width and total height
@@ -37,7 +37,7 @@ export const stackPngsVertically = async (pngs: Buffer[]): Promise<Buffer> => {
         left,
         top,
       }
-    })
+    }),
   )
 
   // Create a blank canvas and composite all images
