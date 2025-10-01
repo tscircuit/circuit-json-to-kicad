@@ -2,10 +2,18 @@ import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 
+// Type aliases for IDs to make context clearer
+export type SchematicPortId = string
+export type SchematicTraceId = string
+
 export interface ConverterContext {
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
   kicadSch: KicadSch
+
+  // Optional data that can be shared between stages
+  pinPositions?: Map<SchematicPortId, { x: number; y: number }>
+  wireConnections?: Map<SchematicTraceId, SchematicPortId[]>
 }
 
 export abstract class ConverterStage<Input, Output> {

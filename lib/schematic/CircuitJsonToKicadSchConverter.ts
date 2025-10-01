@@ -5,6 +5,7 @@ import { cju } from "@tscircuit/circuit-json-util"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
+import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 
 export class CircuitJsonToKicadSchConverter {
@@ -32,6 +33,7 @@ export class CircuitJsonToKicadSchConverter {
       new InitializeSchematicStage(circuitJson, this.ctx),
       new AddLibrarySymbolsStage(circuitJson, this.ctx),
       new AddSchematicSymbolsStage(circuitJson, this.ctx),
+      new AddSchematicTracesStage(circuitJson, this.ctx),
       new AddSheetInstancesStage(circuitJson, this.ctx),
     ]
   }

@@ -10,7 +10,7 @@ export class InitializeSchematicStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
-  _step(): void {
+  override _step(): void {
     const { kicadSch } = this.ctx
 
     // Set the version to the latest KiCad format
@@ -27,7 +27,7 @@ export class InitializeSchematicStage extends ConverterStage<
     this.finished = true
   }
 
-  getOutput(): KicadSch {
+  override getOutput(): KicadSch {
     return this.ctx.kicadSch
   }
 }
