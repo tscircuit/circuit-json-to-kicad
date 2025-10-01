@@ -105,7 +105,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
 
     libSymbols.symbols = librarySymbols
-    kicadSch.libSymbols = libSymbols
+    if (kicadSch) {
+      kicadSch.libSymbols = libSymbols
+    }
 
     this.finished = true
   }
@@ -189,11 +191,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     this.addSymbolProperties(symbol, libId, sourceComp)
 
     // Create drawing subsymbol (unit 0, 1)
-    const drawingSymbol = this.createDrawingSubsymbol(libId, symbolData)
+    const isChip = sourceComp?.ftype === "simple_chip"
+    const drawingSymbol = this.createDrawingSubsymbol(libId, symbolData, isChip)
     symbol.subSymbols.push(drawingSymbol)
 
     // Create pin subsymbol (unit 1, 1)
-    const pinSymbol = this.createPinSubsymbol(libId, symbolData)
+    const pinSymbol = this.createPinSubsymbol(libId, symbolData, isChip)
     symbol.subSymbols.push(pinSymbol)
 
     // Set embedded_fonts
@@ -317,6 +320,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createDrawingSubsymbol(
     libId: string,
     symbolData: any,
+    isChip: boolean = false,
   ): SchematicSymbol {
     const drawingSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_0_1`,
@@ -324,11 +328,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Convert schematic-symbols primitives to KiCad drawing elements
     // Scale symbols by the same factor as positions (from c2kMatSch) so they match the layout
-    const symbolScale = this.ctx.c2kMatSch.a // Extract scale from transformation matrix
+    const symbolScale = this.ctx.c2kMatSch?.a || 15 // Extract scale from transformation matrix
 
     for (const primitive of symbolData.primitives || []) {
       if (primitive.type === "path" && primitive.points) {
-        const polyline = this.createPolylineFromPoints(primitive.points, symbolScale)
+        // Use background fill for chip boxes to get yellow background
+        const fillType = isChip ? "background" : "none"
+        const polyline = this.createPolylineFromPoints(primitive.points, symbolScale, fillType)
         drawingSymbol.polylines.push(polyline)
       }
       // Note: schematic-symbols typically uses paths, not box primitives
@@ -343,6 +349,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createPolylineFromPoints(
     points: Array<{ x: number; y: number }>,
     scale: number,
+    fillType: "none" | "background" = "none",
   ): SymbolPolyline {
     const polyline = new SymbolPolyline()
 
@@ -357,9 +364,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     stroke.type = "default"
     polyline.stroke = stroke
 
-    // Set fill to none
+    // Set fill type
     const fill = new SymbolPolylineFill()
-    fill.type = "none"
+    fill.type = fillType
     polyline.fill = fill
 
     return polyline
@@ -368,7 +375,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   /**
    * Create the pin subsymbol
    */
-  private createPinSubsymbol(libId: string, symbolData: any): SchematicSymbol {
+  private createPinSubsymbol(libId: string, symbolData: any, isChip: boolean = false): SchematicSymbol {
     const pinSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_1_1`,
     })
@@ -381,7 +388,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       pin.pinGraphicStyle = "line"
 
       // Calculate pin position and angle
-      const { x, y, angle } = this.calculatePinPosition(port, symbolData.center)
+      const { x, y, angle } = this.calculatePinPosition(port, symbolData.center, symbolData.size, isChip)
       pin.at = [x, y, angle]
       pin.length = 1.27
 
@@ -414,37 +421,56 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private calculatePinPosition(
     port: any,
     center: any,
+    size?: any,
+    isChip?: boolean,
   ): { x: number; y: number; angle: number } {
     // Extract scale from transformation matrix
-    const symbolScale = this.ctx.c2kMatSch.a
+    const symbolScale = this.ctx.c2kMatSch?.a || 15
 
     // Calculate position relative to center
     const dx = port.x - center.x
     const dy = port.y - center.y
 
-    // Scale position to match layout scale
-    const x = port.x * symbolScale
-    const y = port.y * symbolScale
+    let x = port.x * symbolScale
+    let y = port.y * symbolScale
+
+    // For chips, adjust pin position to be at the box edge
+    if (isChip && size) {
+      const halfWidth = (size.width / 2) * symbolScale
+      const halfHeight = (size.height / 2) * symbolScale
+
+      // Determine which edge the pin is on and snap to that edge
+      if (Math.abs(dx) > Math.abs(dy)) {
+        // Horizontal pin - snap x to edge, keep y
+        x = dx > 0 ? halfWidth : -halfWidth
+        y = dy * symbolScale
+      } else {
+        // Vertical pin - snap y to edge, keep x
+        x = dx * symbolScale
+        y = dy > 0 ? halfHeight : -halfHeight
+      }
+    }
 
     // Determine pin angle based on which side of the component
+    // Pin angle determines which direction the pin points (extends outward)
     let angle = 0
     if (Math.abs(dx) > Math.abs(dy)) {
       // Horizontal pin
       if (dx > 0) {
-        // Right side - pin points left (180°)
-        angle = 180
-      } else {
-        // Left side - pin points right (0°)
+        // Right side - pin points right (0°) outward from chip
         angle = 0
+      } else {
+        // Left side - pin points left (180°) outward from chip
+        angle = 180
       }
     } else {
       // Vertical pin
       if (dy > 0) {
-        // Top side - pin points down (270°)
-        angle = 270
-      } else {
-        // Bottom side - pin points up (90°)
+        // Top side - pin points up (90°) outward from chip
         angle = 90
+      } else {
+        // Bottom side - pin points down (270°) outward from chip
+        angle = 270
       }
     }
 
@@ -465,6 +491,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   }
 
   override getOutput(): KicadSch {
+    if (!this.ctx.kicadSch) {
+      throw new Error("kicadSch is not initialized")
+    }
     return this.ctx.kicadSch
   }
 }
