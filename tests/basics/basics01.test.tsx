@@ -23,8 +23,10 @@ test("basics01", async () => {
 
   converter.runUntilFinished()
 
+  Bun.write("./debug-output/kicad.kicad_sch", converter.getOutput().getString())
+
   const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutput().toString(),
+    kicadFileContent: converter.getOutput().getString(),
     kicadFileType: "sch",
   })
 
