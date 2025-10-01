@@ -1,0 +1,16 @@
+import type { CircuitJson } from "circuit-json"
+import { convertCircuitJsonToSchematicSvg } from "circuit-to-svg"
+import sharp from "sharp"
+
+export const takeCircuitJsonSnapshot = async (params: {
+  circuitJson: CircuitJson
+  outputType: "pcb" | "schematic"
+}): Promise<Buffer> => {
+  const { circuitJson, outputType } = params
+  if (outputType === "schematic") {
+    const svg = await convertCircuitJsonToSchematicSvg(circuitJson)
+    const png = await sharp(svg).png().toBuffer()
+    return png
+  }
+  throw new Error("PCB snapshot not yet implemented")
+}
