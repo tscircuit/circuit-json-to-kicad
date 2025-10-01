@@ -22,7 +22,7 @@ export class CircuitJsonToKicadSchConverter {
   }
 
   constructor(circuitJson: CircuitJson) {
-    const SCALE_CIRCUIT_JSON_FACTOR = 10
+    const CIRCUIT_JSON_SCALE_FACTOR = 15
     const KICAD_CENTER_X = 95.25
     const KICAD_CENTER_Y = 73.66
 
@@ -35,7 +35,7 @@ export class CircuitJsonToKicadSchConverter {
       }),
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),
-        scale(SCALE_CIRCUIT_JSON_FACTOR, -SCALE_CIRCUIT_JSON_FACTOR),
+        scale(CIRCUIT_JSON_SCALE_FACTOR, -CIRCUIT_JSON_SCALE_FACTOR),
       ),
     }
     this.pipeline = [
