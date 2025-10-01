@@ -12,10 +12,10 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
-    "@tscircuit/solver-utils": "^0.0.1",
+    "@tscircuit/circuit-json-util": "^0.0.72",
     "@types/bun": "latest",
     "circuit-json": "^0.0.267",
-    "kicadts": "^0.0.1",
+    "kicadts": "^0.0.4",
     "sharp": "^0.34.4",
     "tscircuit": "^0.0.698"
   },
