@@ -9,7 +9,7 @@ export const takeCircuitJsonSnapshot = async (params: {
   const { circuitJson, outputType } = params
   if (outputType === "schematic") {
     const svg = await convertCircuitJsonToSchematicSvg(circuitJson)
-    const png = await sharp(svg).png().toBuffer()
+    const png = await sharp(Buffer.from(svg)).png().toBuffer()
     return png
   }
   throw new Error("PCB snapshot not yet implemented")
