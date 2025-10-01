@@ -64,8 +64,44 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // TODO: Add board outline from pcb_board if available
-    // For now, we'll skip board outline generation
+    // Add board outline from pcb_board
+    const pcbBoards = this.ctx.db.pcb_board?.list() || []
+
+    if (pcbBoards.length > 0) {
+      const board = pcbBoards[0]
+      const halfWidth = board.width / 2
+      const halfHeight = board.height / 2
+
+      // Define the 4 corners of the board relative to center
+      const corners = [
+        { x: board.center.x - halfWidth, y: board.center.y - halfHeight },
+        { x: board.center.x + halfWidth, y: board.center.y - halfHeight },
+        { x: board.center.x + halfWidth, y: board.center.y + halfHeight },
+        { x: board.center.x - halfWidth, y: board.center.y + halfHeight },
+      ]
+
+      // Transform corners to KiCad coordinates
+      const transformedCorners = corners.map(corner =>
+        applyToPoint(c2kMatPcb, corner)
+      )
+
+      // Create 4 edge cut lines forming a rectangle
+      for (let i = 0; i < transformedCorners.length; i++) {
+        const start = transformedCorners[i]
+        const end = transformedCorners[(i + 1) % transformedCorners.length]
+
+        const edgeLine = new GrLine({
+          start: { x: start.x, y: start.y },
+          end: { x: end.x, y: end.y },
+          layer: "Edge.Cuts",
+          width: 0.1,
+        })
+
+        const graphicLines = kicadPcb.graphicLines
+        graphicLines.push(edgeLine)
+        kicadPcb.graphicLines = graphicLines
+      }
+    }
 
     this.finished = true
   }

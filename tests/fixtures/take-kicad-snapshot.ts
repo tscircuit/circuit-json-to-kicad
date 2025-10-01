@@ -60,7 +60,7 @@ export const takeKicadSnapshot = async (params: {
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
-        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers F.Cu,B.Cu --mode-single`
+        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers F.Cu,B.Cu --mode-single --page-size-mode 2 --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
 
