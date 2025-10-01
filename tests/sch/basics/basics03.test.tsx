@@ -5,17 +5,24 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
-test("basics02", async () => {
+test("basics03", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board>
       <resistor name="R1" resistance="1k" footprint="0402" />
-      <capacitor
-        name="C1"
-        capacitance="1uF"
-        footprint="0603"
-        schRotation="90deg"
-        connections={{ pin1: "R1.pin2" }}
+      <chip
+        name="U1"
+        footprint="soic8"
+        pinLabels={{
+          pin1: "GND",
+          pin2: "IN1",
+          pin3: "IN2",
+          pin4: "AGND",
+          pin5: "OUT1",
+          pin6: "OUT2",
+          pin7: "VCC",
+          pin8: "NC",
+        }}
       />
     </board>,
   )
