@@ -17,6 +17,7 @@ test("basics01", async () => {
   await circuit.renderUntilSettled()
 
   const circuitJson = circuit.getCircuitJson()
+  Bun.write("./debug-output/circuit.json", JSON.stringify(circuitJson, null, 2))
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
 
