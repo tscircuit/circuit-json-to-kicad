@@ -1,6 +1,7 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
+import type { Matrix } from "transformation-matrix"
 
 // Type aliases for IDs to make context clearer
 export type SchematicPortId = string
@@ -10,6 +11,9 @@ export interface ConverterContext {
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
   kicadSch: KicadSch
+
+  /** Circuit JSON to KiCad schematic transformation matrix */
+  c2kMatSch: Matrix
 
   // Optional data that can be shared between stages
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>
