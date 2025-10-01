@@ -1,23 +1,33 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
-import type { KicadSch } from "kicadts"
+import type { KicadSch, KicadPcb } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 
 // Type aliases for IDs to make context clearer
 export type SchematicPortId = string
 export type SchematicTraceId = string
+export type PcbPortId = string
+export type PcbTraceId = string
 
 export interface ConverterContext {
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
-  kicadSch: KicadSch
+  kicadSch?: KicadSch
+  kicadPcb?: KicadPcb
 
   /** Circuit JSON to KiCad schematic transformation matrix */
-  c2kMatSch: Matrix
+  c2kMatSch?: Matrix
+
+  /** Circuit JSON to KiCad PCB transformation matrix */
+  c2kMatPcb?: Matrix
 
   // Optional data that can be shared between stages
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>
   wireConnections?: Map<SchematicTraceId, SchematicPortId[]>
+
+  // PCB-specific data
+  pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
+  pcbNetMap?: Map<string, number> // Circuit JSON net name to KiCad net number
 }
 
 export abstract class ConverterStage<Input, Output> {
