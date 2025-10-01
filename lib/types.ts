@@ -1,8 +1,10 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
+import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 
 export interface ConverterContext {
   db: CircuitJsonUtilObjects
+  circuitJson: CircuitJson
   kicadSch: KicadSch
 }
 

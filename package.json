@@ -15,7 +15,7 @@
     "@tscircuit/circuit-json-util": "^0.0.72",
     "@types/bun": "latest",
     "circuit-json": "^0.0.267",
-    "kicadts": "^0.0.4",
+    "kicadts": "^0.0.5",
     "sharp": "^0.34.4",
     "tscircuit": "^0.0.698"
   },
