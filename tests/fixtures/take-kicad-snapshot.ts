@@ -86,9 +86,35 @@ export const takeKicadSnapshot = async (params: {
     // Convert each SVG to PNG using sharp
     for (const svgFilePath of svgFilePaths) {
       const svgBuffer = await readFile(svgFilePath)
-      const pngBuffer = await sharp(svgBuffer, { density: 100 })
-        .png()
-        .toBuffer()
+      let pngProcessor = sharp(svgBuffer, { density: 100 })
+
+      // For PCB files, scale 3x and add black background
+      if (kicadFileType === "pcb") {
+        const metadata = await pngProcessor.metadata()
+        const width = (metadata.width || 0) * 3
+        const height = (metadata.height || 0) * 3
+
+        // Create black background
+        const blackBg = await sharp({
+          create: {
+            width,
+            height,
+            channels: 4,
+            background: { r: 0, g: 0, b: 0, alpha: 1 },
+          },
+        })
+          .png()
+          .toBuffer()
+
+        // Resize the PCB and composite on black background
+        const resizedPng = await pngProcessor
+          .resize(width, height, { fit: "fill" })
+          .toBuffer()
+
+        pngProcessor = sharp(blackBg).composite([{ input: resizedPng }])
+      }
+
+      const pngBuffer = await pngProcessor.png().toBuffer()
 
       const relativePath = svgFilePath
         .replace(`${outputDir}/`, "")
