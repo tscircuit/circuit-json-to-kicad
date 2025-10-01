@@ -1,0 +1,31 @@
+# Created using @tscircuit/plop (npm install -g @tscircuit/plop)
+name: Bun Test
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    # Skip test for PRs that not chore: bump version
+    if: "${{ github.event_name != 'pull_request' || github.event.pull_request.title != 'chore: bump version' }}"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Run tests
+        run: bun test
