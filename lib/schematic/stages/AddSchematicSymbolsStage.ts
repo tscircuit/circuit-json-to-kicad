@@ -1,4 +1,4 @@
-import type { CircuitJson, SourceSimpleResistor } from "circuit-json"
+import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
   SchematicSymbol,
@@ -26,27 +26,23 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
-    // Get all source components
-    const resistors = db.source_component
-      .list()
-      .filter(
-        (sc): sc is SourceSimpleResistor => sc.ftype === "simple_resistor",
-      )
+    // Get all schematic components
+    const schematicComponents = db.schematic_component.list()
 
-    if (resistors.length === 0) {
+    if (schematicComponents.length === 0) {
       this.finished = true
       return
     }
 
     const symbols: SchematicSymbol[] = []
 
-    // Place each resistor on the schematic
-    for (const resistor of resistors) {
-      const schematicComponent = db.schematic_component
-        .list()
-        .find((sc) => sc.source_component_id === resistor.source_component_id)
+    // Place each component on the schematic
+    for (const schematicComponent of schematicComponents) {
+      const sourceComponent = schematicComponent.source_component_id
+        ? db.source_component.get(schematicComponent.source_component_id)
+        : null
 
-      if (!schematicComponent) continue
+      if (!sourceComponent) continue
 
       // Convert circuit-json coordinates (mm) to KiCad coordinates (mm)
       // KiCad default position is around 95.25, 73.66 for a centered component
@@ -66,15 +62,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         fieldsAutoplaced: true,
       })
 
-      // Set lib_id for placed symbol instances (not inline name)
-      symbol._sxLibId = new SymbolLibId("Device:R")
+      // Get the appropriate library ID based on component type
+      const libId = this.getLibraryId(sourceComponent)
+      symbol._sxLibId = new SymbolLibId(libId)
+
+      // Get component metadata
+      const { reference, value, description } =
+        this.getComponentMetadata(sourceComponent)
 
       // Add properties for this instance
-      // Position text labels above and below the resistor symbol
-      // The resistor symbol body is approximately 5mm tall, centered on the component
+      // Position text labels above and below the component symbol
+      // The symbol body is approximately 5mm tall, centered on the component
       const referenceProperty = new SymbolProperty({
         key: "Reference",
-        value: resistor.name || "R?",
+        value: reference,
         id: 0,
         at: [x, y - 6, 0],
         effects: this.createTextEffects(1.27, false),
@@ -82,7 +83,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       const valueProperty = new SymbolProperty({
         key: "Value",
-        value: resistor.display_resistance || "R",
+        value: value,
         id: 1,
         at: [x, y + 6, 0],
         effects: this.createTextEffects(1.27, false),
@@ -106,7 +107,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       const descriptionProperty = new SymbolProperty({
         key: "Description",
-        value: "Resistor",
+        value: description,
         id: 4,
         at: [x, y, 0],
         effects: this.createTextEffects(1.27, true),
@@ -135,7 +136,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const instances = new SymbolInstances()
       const project = new SymbolInstancesProject("")
       const path = new SymbolInstancePath(`/${kicadSch.uuid?.value || ""}`)
-      path.reference = resistor.name || "R?"
+      path.reference = reference
       path.unit = 1
       project.paths.push(path)
       instances.projects.push(project)
@@ -147,6 +148,77 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     kicadSch.symbols = symbols
 
     this.finished = true
+  }
+
+  /**
+   * Get KiCad library ID for a component
+   */
+  private getLibraryId(sourceComp: any): string {
+    // Map common component types to KiCad library IDs
+    if (sourceComp.ftype === "simple_resistor") {
+      return "Device:R"
+    }
+    if (sourceComp.ftype === "simple_capacitor") {
+      return "Device:C"
+    }
+    if (sourceComp.ftype === "simple_inductor") {
+      return "Device:L"
+    }
+    if (sourceComp.ftype === "simple_diode") {
+      return "Device:D"
+    }
+    // Default: use a generic name
+    return "Device:Component"
+  }
+
+  /**
+   * Get component metadata (reference, value, description)
+   */
+  private getComponentMetadata(sourceComp: any): {
+    reference: string
+    value: string
+    description: string
+  } {
+    const name = sourceComp.name || "?"
+
+    if (sourceComp.ftype === "simple_resistor") {
+      return {
+        reference: name,
+        value: sourceComp.display_resistance || "R",
+        description: "Resistor",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_capacitor") {
+      return {
+        reference: name,
+        value: sourceComp.display_capacitance || "C",
+        description: "Capacitor",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_inductor") {
+      return {
+        reference: name,
+        value: sourceComp.display_inductance || "L",
+        description: "Inductor",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_diode") {
+      return {
+        reference: name,
+        value: "D",
+        description: "Diode",
+      }
+    }
+
+    // Default
+    return {
+      reference: name,
+      value: name,
+      description: "Component",
+    }
   }
 
   /**
