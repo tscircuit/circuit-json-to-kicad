@@ -6,6 +6,7 @@ export const stackCircuitJsonKicadPngs = async (
 ): Promise<Buffer> => {
   const labelFontSize = 24
   const labelPadding = 8
+  const kicadScaleFactor = 3 // Scale KiCad image 3x
 
   // Get metadata for both images
   const [cjMetadata, kicadMetadata] = await Promise.all([
@@ -15,8 +16,13 @@ export const stackCircuitJsonKicadPngs = async (
 
   const cjWidth = cjMetadata.width || 0
   const cjHeight = cjMetadata.height || 0
-  const kicadWidth = kicadMetadata.width || 0
-  const kicadHeight = kicadMetadata.height || 0
+  const kicadWidth = (kicadMetadata.width || 0) * kicadScaleFactor
+  const kicadHeight = (kicadMetadata.height || 0) * kicadScaleFactor
+
+  // Resize the KiCad image
+  const resizedKicadPng = await sharp(kicadPng)
+    .resize(kicadWidth, kicadHeight, { fit: "fill" })
+    .toBuffer()
 
   // Calculate canvas dimensions
   const maxWidth = Math.max(cjWidth, kicadWidth)
@@ -46,6 +52,18 @@ export const stackCircuitJsonKicadPngs = async (
   const cjLabel = createLabel("Circuit JSON")
   const kicadLabel = createLabel("KiCad")
 
+  // Create a black background for the KiCad section
+  const kicadBlackBackground = await sharp({
+    create: {
+      width: maxWidth,
+      height: kicadHeight,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 1 },
+    },
+  })
+    .png()
+    .toBuffer()
+
   // Create composite operations - images first, then labels on top
   const compositeOps = [
     {
@@ -54,7 +72,12 @@ export const stackCircuitJsonKicadPngs = async (
       top: 0,
     },
     {
-      input: await sharp(kicadPng).toBuffer(),
+      input: kicadBlackBackground,
+      left: 0,
+      top: cjHeight,
+    },
+    {
+      input: resizedKicadPng,
       left: Math.floor((maxWidth - kicadWidth) / 2),
       top: cjHeight,
     },
