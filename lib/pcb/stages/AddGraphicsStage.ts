@@ -69,23 +69,33 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     if (pcbBoards.length > 0) {
       const board = pcbBoards[0]
-      const halfWidth = board.width / 2
-      const halfHeight = board.height / 2
 
-      // Define the 4 corners of the board relative to center
-      const corners = [
-        { x: board.center.x - halfWidth, y: board.center.y - halfHeight },
-        { x: board.center.x + halfWidth, y: board.center.y - halfHeight },
-        { x: board.center.x + halfWidth, y: board.center.y + halfHeight },
-        { x: board.center.x - halfWidth, y: board.center.y + halfHeight },
-      ]
+      let corners: Array<{ x: number; y: number }>
+
+      // Check if board has a custom outline, otherwise use width/height to create rectangle
+      if (board.outline && board.outline.length > 0) {
+        // Use the custom outline points
+        corners = board.outline
+      } else {
+        // Fallback to rectangular outline based on width and height
+        const halfWidth = board.width / 2
+        const halfHeight = board.height / 2
+
+        // Define the 4 corners of the board relative to center
+        corners = [
+          { x: board.center.x - halfWidth, y: board.center.y - halfHeight },
+          { x: board.center.x + halfWidth, y: board.center.y - halfHeight },
+          { x: board.center.x + halfWidth, y: board.center.y + halfHeight },
+          { x: board.center.x - halfWidth, y: board.center.y + halfHeight },
+        ]
+      }
 
       // Transform corners to KiCad coordinates
       const transformedCorners = corners.map((corner) =>
         applyToPoint(c2kMatPcb, corner),
       )
 
-      // Create 4 edge cut lines forming a rectangle
+      // Create edge cut lines connecting the corners
       for (let i = 0; i < transformedCorners.length; i++) {
         const start = transformedCorners[i]
         const end = transformedCorners[(i + 1) % transformedCorners.length]
