@@ -58,7 +58,9 @@ export class AddSchematicTracesStage extends ConverterStage<
     const wire = new Wire()
 
     if (!this.ctx.c2kMatSch) {
-      throw new Error("Schematic transformation matrix not initialized in context")
+      throw new Error(
+        "Schematic transformation matrix not initialized in context",
+      )
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
@@ -97,7 +99,9 @@ export class AddSchematicTracesStage extends ConverterStage<
    */
   private createJunction(junction: { x: number; y: number }): Junction {
     if (!this.ctx.c2kMatSch) {
-      throw new Error("Schematic transformation matrix not initialized in context")
+      throw new Error(
+        "Schematic transformation matrix not initialized in context",
+      )
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
