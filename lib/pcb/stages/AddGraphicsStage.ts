@@ -70,6 +70,11 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (pcbBoards.length > 0) {
       const board = pcbBoards[0]
 
+      if (!board) {
+        this.finished = true
+        return
+      }
+
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
@@ -99,6 +104,8 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       for (let i = 0; i < transformedCorners.length; i++) {
         const start = transformedCorners[i]
         const end = transformedCorners[(i + 1) % transformedCorners.length]
+
+        if (!start || !end) continue
 
         const edgeLine = new GrLine({
           start: { x: start.x, y: start.y },

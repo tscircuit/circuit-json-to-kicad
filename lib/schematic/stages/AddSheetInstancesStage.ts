@@ -1,7 +1,7 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
-  SheetInstancesRoot,
+  SheetInstances,
   SheetInstancesRootPath,
   SheetInstancesRootPage,
   EmbeddedFonts,
@@ -15,18 +15,21 @@ export class AddSheetInstancesStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
-  _step(): void {
+  override _step(): void {
     const { kicadSch } = this.ctx
 
-    // Create sheet_instances section using SheetInstancesRoot
-    const sheetInstances = new SheetInstancesRoot()
+    if (!kicadSch) {
+      throw new Error("KicadSch instance not initialized in context")
+    }
+
+    // Create sheet_instances section using SheetInstances
+    const sheetInstances = new SheetInstances()
 
     // Add root path
     const path = new SheetInstancesRootPath()
     path.value = "/"
 
-    const page = new SheetInstancesRootPage()
-    page.value = "1"
+    const page = new SheetInstancesRootPage("1")
 
     // Set pages array directly instead of pushing
     path.pages = [page]
@@ -40,7 +43,7 @@ export class AddSheetInstancesStage extends ConverterStage<
     this.finished = true
   }
 
-  getOutput(): KicadSch {
-    return this.ctx.kicadSch
+  override getOutput(): KicadSch {
+    return this.ctx.kicadSch!
   }
 }

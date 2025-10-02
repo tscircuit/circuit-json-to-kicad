@@ -14,6 +14,10 @@ export class AddSchematicTracesStage extends ConverterStage<
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
+    if (!kicadSch) {
+      throw new Error("KicadSch instance not initialized in context")
+    }
+
     // Get all schematic traces
     const schematicTraces = db.schematic_trace.list()
 
@@ -53,6 +57,10 @@ export class AddSchematicTracesStage extends ConverterStage<
   private createWireFromEdge(edge: any): Wire {
     const wire = new Wire()
 
+    if (!this.ctx.c2kMatSch) {
+      throw new Error("Schematic transformation matrix not initialized in context")
+    }
+
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
     const from = applyToPoint(this.ctx.c2kMatSch, {
       x: edge.from.x,
@@ -88,6 +96,10 @@ export class AddSchematicTracesStage extends ConverterStage<
    * Create a KiCad junction from a circuit-json junction point
    */
   private createJunction(junction: { x: number; y: number }): Junction {
+    if (!this.ctx.c2kMatSch) {
+      throw new Error("Schematic transformation matrix not initialized in context")
+    }
+
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
     const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
       x: junction.x,
@@ -106,6 +118,6 @@ export class AddSchematicTracesStage extends ConverterStage<
   }
 
   override getOutput(): KicadSch {
-    return this.ctx.kicadSch
+    return this.ctx.kicadSch!
   }
 }

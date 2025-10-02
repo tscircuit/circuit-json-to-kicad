@@ -13,6 +13,10 @@ export class InitializeSchematicStage extends ConverterStage<
   override _step(): void {
     const { kicadSch } = this.ctx
 
+    if (!kicadSch) {
+      throw new Error("KicadSch instance not initialized in context")
+    }
+
     // Set the version to the latest KiCad format
     kicadSch.version = 20250114
 
@@ -28,6 +32,6 @@ export class InitializeSchematicStage extends ConverterStage<
   }
 
   override getOutput(): KicadSch {
-    return this.ctx.kicadSch
+    return this.ctx.kicadSch!
   }
 }
