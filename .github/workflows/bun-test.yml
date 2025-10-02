@@ -27,7 +27,15 @@ jobs:
       - name: Install dependencies
         run: bun install
       
-      - run: bun run download-demos
+      - name: Cache kicad-demos
+        id: cache-kicad-demos
+        uses: actions/cache@v4
+        with:
+          path: kicad-demos
+          key: kicad-demos
+      - name: Download kicad-demos if not cached
+        if: steps.cache-kicad-demos.outputs.cache-hit != 'true'
+        run: bun run download-demos
 
       - name: Run tests
         run: bun test
