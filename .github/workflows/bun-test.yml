@@ -19,8 +19,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      - name: Cache KiCad packages
+        id: cache-kicad
+        uses: actions/cache@v4
+        with:
+          path: |
+            /var/cache/apt/archives
+            /usr/share/kicad
+            /usr/bin/kicad-cli
+          key: kicad-${{ runner.os }}-9.0
 
       - name: Install KiCad CLI
+        if: steps.cache-kicad.outputs.cache-hit != 'true'
         run: |
           sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
           sudo apt update
