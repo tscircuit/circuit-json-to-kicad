@@ -11,6 +11,9 @@ jobs:
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    container:
+      image: ghcr.io/kicad/kicad:9.0
+      options: --user root
 
     # Skip test for PRs that not chore: bump version
     if: "${{ github.event_name != 'pull_request' || github.event.pull_request.title != 'chore: bump version' }}"
@@ -18,23 +21,6 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-
-      - name: Cache KiCad packages
-        id: cache-kicad
-        uses: actions/cache@v4
-        with:
-          path: |
-            /var/cache/apt/archives
-            /usr/share/kicad
-            /usr/bin/kicad-cli
-          key: kicad-${{ runner.os }}-9.0
-
-      - name: Install KiCad CLI
-        if: steps.cache-kicad.outputs.cache-hit != 'true'
-        run: |
-          sudo add-apt-repository --yes ppa:kicad/kicad-9.0-releases
-          sudo apt update
-          sudo apt install --yes kicad
 
       - name: Setup bun
         uses: oven-sh/setup-bun@v2
@@ -56,3 +42,14 @@ jobs:
 
       - name: Run tests
         run: bun test
+
+      - name: Upload snapshot artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-snapshots
+          path: |
+            tests/**/__snapshots__/*.snap.png
+            tests/**/__snapshots__/*.snap.svg
+            tests/**/__snapshots__/*.diff.png
+          if-no-files-found: ignore
