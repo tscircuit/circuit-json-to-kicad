@@ -111,7 +111,7 @@ export class AddSchematicTracesStage extends ConverterStage<
     })
 
     const kicadJunction = new Junction({
-      at: [x, y, 0],
+      at: [x, y],
       diameter: 0, // 0 means use default diameter
     })
 
