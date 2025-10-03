@@ -15,7 +15,8 @@
     "noEmit": true,
     "paths": {
       "lib": ["./lib/index.ts"],
-      "lib/*": ["./lib/*"]
+      "lib/*": ["./lib/*"],
+      "tests/*": ["./tests/*"]
     },
 
     // Best practices

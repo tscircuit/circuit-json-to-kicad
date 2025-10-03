@@ -3,7 +3,7 @@ import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicad
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import circuitJson from "./fixtures/led-water-accelerometer.json"
+import circuitJson from "tests/assets/led-water-accelerometer.json"
 
 test("pcb basics01", async () => {
   Bun.write(
