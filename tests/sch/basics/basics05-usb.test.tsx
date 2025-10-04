@@ -26,7 +26,10 @@ test("pcb basics01", async () => {
 
   expect(
     stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({ circuitJson: circuitJson as any, outputType: "schematic" }),
+      await takeCircuitJsonSnapshot({
+        circuitJson: circuitJson as any,
+        outputType: "schematic",
+      }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
