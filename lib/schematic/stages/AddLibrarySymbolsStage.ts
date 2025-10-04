@@ -20,6 +20,7 @@ import {
 } from "kicadts"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
+import { getLibraryId } from "../schematic-utils"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section
@@ -100,6 +101,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         symbolName,
         symbolData,
         sourceComp,
+        exampleComp,
       )
       librarySymbols.push(libSymbol)
     }
@@ -169,9 +171,10 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     symbolName: string,
     symbolData: any,
     sourceComp: any,
+    schematicComp: any,
   ): SchematicSymbol {
     // Use Device:R as the library ID for now (we can make this more sophisticated later)
-    const libId = this.getLibraryId(symbolName, sourceComp)
+    const libId = getLibraryId(sourceComp, schematicComp)
 
     const symbol = new SchematicSymbol({
       libraryId: libId,
@@ -208,24 +211,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     symbol._sxEmbeddedFonts = new EmbeddedFonts(false)
 
     return symbol
-  }
-
-  /**
-   * Get KiCad library ID for a symbol
-   */
-  private getLibraryId(symbolName: string, sourceComp: any): string {
-    // Map common component types to KiCad library IDs
-    if (sourceComp?.ftype === "simple_resistor") {
-      return "Device:R"
-    }
-    if (sourceComp?.ftype === "simple_capacitor") {
-      return "Device:C"
-    }
-    if (sourceComp?.ftype === "simple_chip") {
-      return "Device:U"
-    }
-    // Default: use a generic name
-    return `Custom:${symbolName}`
   }
 
   /**
