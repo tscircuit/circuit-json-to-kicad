@@ -5,7 +5,7 @@ import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapsh
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import circuitJson from "tests/assets/usb.json"
 
-test("pcb basics01", async () => {
+test("sch basics05", async () => {
   Bun.write(
     "./debug-output/pcb-circuit.json",
     JSON.stringify(circuitJson, null, 2),
