@@ -1,6 +1,6 @@
 # circuit-json-to-kicad
 
-Convert [Circuit JSON](https://github.com/tscircuit/circuit-json) files to KiCad schematic (`.kicad_sch`) and PCB (`.kicad_pcb`) files.
+Convert [Circuit JSON](https://github.com/tscircuit/circuit-json) files to KiCad schematic (`.kicad_sch`), PCB (`.kicad_pcb`), and project (`.kicad_pro`) files.
 
 Circuit JSON is an open-source file format for describing electronic circuits. This library enables you to generate KiCad-compatible files from Circuit JSON, allowing you to use KiCad's powerful PCB design tools with circuits defined in code.
 
@@ -47,6 +47,26 @@ const kicadPcbContent = converter.getOutputString()
 
 // Write to file
 Bun.write("output.kicad_pcb", kicadPcbContent)
+```
+
+### Generating a KiCad Project
+
+```typescript
+import { CircuitJsonToKicadProConverter } from "circuit-json-to-kicad"
+
+const circuitJson = /* your circuit JSON */
+
+const converter = new CircuitJsonToKicadProConverter(circuitJson, {
+  projectName: "my_project",
+  schematicFilename: "my_project.kicad_sch",
+  pcbFilename: "my_project.kicad_pcb",
+})
+
+converter.runUntilFinished()
+
+const kicadProjectContent = converter.getOutputString()
+
+Bun.write("my_project.kicad_pro", kicadProjectContent)
 ```
 
 ### Complete Example with tscircuit
@@ -102,6 +122,7 @@ Bun.write("output.kicad_pcb", pcbConverter.getOutputString())
   - Vias
   - Board outlines and graphics
   - Net assignments
+- **Project Generation**: Produce KiCad project files (`.kicad_pro`) that reference the generated schematic and PCB outputs
 
 ## Development
 
