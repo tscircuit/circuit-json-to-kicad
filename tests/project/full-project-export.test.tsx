@@ -59,5 +59,4 @@ test("exports full KiCad project with .kicad_pro, .kicad_sch, and .kicad_pcb fil
   Bun.write("./debug-output/kicad.kicad_pro", proContent)
   Bun.write("./debug-output/kicad.kicad_sch", schContent)
   Bun.write("./debug-output/kicad.kicad_pcb", pcbContent)
-
 })
