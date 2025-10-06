@@ -12,24 +12,24 @@ export function getLibraryId(
   }
 
   if (sourceComp.ftype === "simple_resistor") {
-    return "Device:R"
+    return `Device:R_${sourceComp.source_component_id}`
   }
   if (sourceComp.ftype === "simple_capacitor") {
-    return "Device:C"
+    return `Device:C_${sourceComp.source_component_id}`
   }
   if (sourceComp.ftype === "simple_inductor") {
-    return "Device:L"
+    return `Device:L_${sourceComp.source_component_id}`
   }
   if (sourceComp.ftype === "simple_diode") {
-    return "Device:D"
+    return `Device:D_${sourceComp.source_component_id}`
   }
   if (sourceComp.ftype === "simple_chip") {
-    return "Device:U"
+    return `Device:U_${sourceComp.source_component_id}`
   }
 
   if (schematicComp.symbol_name) {
     return `Custom:${schematicComp.symbol_name}`
   }
 
-  return "Device:Component"
+  return `Device:Component_${sourceComp.source_component_id}`
 }
