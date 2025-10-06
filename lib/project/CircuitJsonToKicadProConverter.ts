@@ -1,6 +1,5 @@
 import type { CircuitJson } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
-import { randomUUID } from "crypto"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
@@ -145,7 +144,7 @@ export class CircuitJsonToKicadProConverter {
         },
         last_opened_board: pcbFilename,
       },
-      sheets: [[randomUUID(), "Root"]],
+      sheets: [[Math.random().toString(36).substring(2, 15), "Root"]],
     }
   }
 
