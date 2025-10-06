@@ -17,7 +17,6 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../schematic-utils"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -68,7 +67,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       })
 
       // Get the appropriate library ID based on component type
-      const libId = getLibraryId(sourceComponent, schematicComponent)
+      const libId = this.getLibraryId(sourceComponent)
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
 
