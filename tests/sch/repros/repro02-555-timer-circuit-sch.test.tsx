@@ -5,12 +5,7 @@ import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapsh
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import circuitJson from "tests/assets/555-timer-circuit.json"
 
-test("pcb basics01", async () => {
-  Bun.write(
-    "./debug-output/pcb-circuit.json",
-    JSON.stringify(circuitJson, null, 2),
-  )
-
+test("sch repro02", async () => {
   const converter = new CircuitJsonToKicadSchConverter(circuitJson as any)
 
   converter.runUntilFinished()

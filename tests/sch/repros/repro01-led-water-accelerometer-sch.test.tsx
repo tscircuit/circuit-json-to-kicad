@@ -6,11 +6,6 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import circuitJson from "tests/assets/led-water-accelerometer.json"
 
 test("pcb basics01", async () => {
-  Bun.write(
-    "./debug-output/pcb-circuit.json",
-    JSON.stringify(circuitJson, null, 2),
-  )
-
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
 
   converter.runUntilFinished()
