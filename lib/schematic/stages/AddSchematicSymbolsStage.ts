@@ -17,7 +17,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../schematic-utils"
+import { getLibraryId } from "../getLibraryId"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
