@@ -29,7 +29,7 @@ export class CircuitJsonToKicadSchConverter {
 
     const db = cju(circuitJson)
 
-    const {x: centerX, y: centerY} = getSchematicBoundsAndCenter(db)
+    const { center } = getSchematicBoundsAndCenter(db)
 
     this.ctx = {
       db,
@@ -41,7 +41,7 @@ export class CircuitJsonToKicadSchConverter {
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),
         scale(CIRCUIT_JSON_SCALE_FACTOR, -CIRCUIT_JSON_SCALE_FACTOR),
-        translate(-centerX, -centerY),
+        translate(-center.x, -center.y),
       ),
     }
     this.pipeline = [

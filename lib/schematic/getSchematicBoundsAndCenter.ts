@@ -1,5 +1,4 @@
-import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util";
-
+import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 
 export function getSchematicBoundsAndCenter(db: CircuitJsonUtilObjects) {
   const schematicComponents = db.schematic_component.list()
@@ -39,7 +38,15 @@ export function getSchematicBoundsAndCenter(db: CircuitJsonUtilObjects) {
   const centerY = (minY + maxY) / 2
 
   return {
-    x: centerX,
-    y: centerY,
+    center: {
+      x: centerX,
+      y: centerY,
+    },
+    bounds: {
+      minX,
+      minY,
+      maxX,
+      maxY,
+    },
   }
 }
