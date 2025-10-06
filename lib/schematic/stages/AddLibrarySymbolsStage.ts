@@ -46,6 +46,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Collect unique symbol names
     // Also create symbols for chips without symbol_name
+    // console.log(JSON.stringify(schematicComponents));
     for (const comp of schematicComponents) {
       if (comp.symbol_name) {
         symbolsToCreate.add(comp.symbol_name)
@@ -394,7 +395,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       )
       pin.at = [x, y, angle]
       // For chips, use longer pins (2.54); for other components, use 1.27
-      pin.length = isChip ? 2.54 : 1.27
+      pin.length = isChip ? 6.0 : 1.27
 
       // Pin name - use the label from the port
       const nameFont = new TextEffectsFont()
@@ -440,7 +441,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     let y = port.y * symbolScale
 
     // Pin length for chips
-    const chipPinLength = 2.54
+    const chipPinLength = 6.0
 
     // For chips, adjust pin position to be at the box edge
     if (isChip && size) {
