@@ -8,6 +8,7 @@ import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
+import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
 
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
@@ -26,8 +27,12 @@ export class CircuitJsonToKicadSchConverter {
     const KICAD_CENTER_X = 95.25
     const KICAD_CENTER_Y = 73.66
 
+    const db = cju(circuitJson)
+
+    const { center } = getSchematicBoundsAndCenter(db)
+
     this.ctx = {
-      db: cju(circuitJson),
+      db,
       circuitJson,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
@@ -36,6 +41,7 @@ export class CircuitJsonToKicadSchConverter {
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),
         scale(CIRCUIT_JSON_SCALE_FACTOR, -CIRCUIT_JSON_SCALE_FACTOR),
+        translate(-center.x, -center.y),
       ),
     }
     this.pipeline = [
