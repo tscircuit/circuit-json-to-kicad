@@ -8,6 +8,7 @@ import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
+import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
 
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
@@ -28,31 +29,7 @@ export class CircuitJsonToKicadSchConverter {
 
     const db = cju(circuitJson)
 
-    // Calculate the center of the schematic components to center the schematic
-    // on the page.
-    const schematicComponents = db.schematic_component.list()
-
-    let minX = Infinity
-    let minY = Infinity
-    let maxX = -Infinity
-    let maxY = -Infinity
-
-    if (schematicComponents.length > 0) {
-      for (const component of schematicComponents) {
-        minX = Math.min(minX, component.center.x)
-        minY = Math.min(minY, component.center.y)
-        maxX = Math.max(maxX, component.center.x)
-        maxY = Math.max(maxY, component.center.y)
-      }
-    } else {
-      minX = 0
-      minY = 0
-      maxX = 0
-      maxY = 0
-    }
-
-    const centerX = (minX + maxX) / 2
-    const centerY = (minY + maxY) / 2
+    const {x: centerX, y: centerY} = getSchematicBoundsAndCenter(db)
 
     this.ctx = {
       db,
