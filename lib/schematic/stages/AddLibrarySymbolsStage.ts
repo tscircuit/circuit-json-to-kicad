@@ -20,7 +20,7 @@ import {
 } from "kicadts"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../schematic-utils"
+import { getLibraryId } from "../getLibraryId"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section
@@ -42,67 +42,42 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Create lib_symbols section
     const libSymbols = new LibSymbols()
-    const symbolsToCreate = new Set<string>()
-
-    // Collect unique symbol names
-    // Also create symbols for chips without symbol_name
-    // console.log(JSON.stringify(schematicComponents));
-    for (const comp of schematicComponents) {
-      if (comp.symbol_name) {
-        symbolsToCreate.add(comp.symbol_name)
-      } else {
-        // For components without symbol_name (like chips), create a generic box symbol
-        const sourceComp = comp.source_component_id
-          ? db.source_component.get(comp.source_component_id)
-          : null
-        if (sourceComp?.ftype === "simple_chip") {
-          symbolsToCreate.add(`generic_chip_${comp.source_component_id}`)
-        }
-      }
-    }
-
     const librarySymbols: SchematicSymbol[] = []
 
-    // Create a symbol for each unique symbol_name
-    for (const symbolName of symbolsToCreate) {
-      let symbolData = symbols[symbolName as keyof typeof symbols]
-      let exampleComp
-      let sourceComp
+    // Create a symbol for each component instance
+    for (const schematicComponent of schematicComponents) {
+      const sourceComp = schematicComponent.source_component_id
+        ? db.source_component.get(schematicComponent.source_component_id)
+        : null
 
-      // Check if this is a generic chip symbol
+      if (!sourceComp) continue
+
+      const symbolName =
+        schematicComponent.symbol_name ||
+        (sourceComp.ftype === "simple_chip"
+          ? `generic_chip_${schematicComponent.source_component_id}`
+          : null)
+
+      if (!symbolName) {
+        continue
+      }
+
+      let symbolData
+
       if (symbolName.startsWith("generic_chip_")) {
-        const sourceCompId = symbolName.replace("generic_chip_", "")
-        sourceComp = db.source_component.get(sourceCompId)
-        exampleComp = schematicComponents.find(
-          (c) => c.source_component_id === sourceCompId,
-        )
-
-        // Create generic box symbol data based on the schematic component
-        if (exampleComp) {
-          symbolData = this.createGenericChipSymbolData(exampleComp, db)
-        }
+        symbolData = this.createGenericChipSymbolData(schematicComponent, db)
       } else {
         symbolData = symbols[symbolName as keyof typeof symbols]
         if (!symbolData) {
-          console.warn(`Symbol ${symbolName} not found in schematic-symbols`)
           continue
         }
-
-        // Find a component using this symbol to get metadata
-        exampleComp = schematicComponents.find(
-          (c) => c.symbol_name === symbolName,
-        )
-        sourceComp =
-          exampleComp && exampleComp.source_component_id
-            ? db.source_component.get(exampleComp.source_component_id)
-            : null
       }
 
       const libSymbol = this.createLibrarySymbolFromSchematicSymbol(
         symbolName,
         symbolData,
         sourceComp,
-        exampleComp,
+        schematicComponent,
       )
       librarySymbols.push(libSymbol)
     }

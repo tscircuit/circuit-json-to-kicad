@@ -3,10 +3,10 @@ import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicad
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import circuitJson from "tests/assets/led-water-accelerometer.json"
+import circuitJson from "tests/assets/555-timer-circuit.json"
 
-test("pcb basics01", async () => {
-  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
+test("sch repro02", async () => {
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any)
 
   converter.runUntilFinished()
 
@@ -21,7 +21,10 @@ test("pcb basics01", async () => {
 
   expect(
     stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
+      await takeCircuitJsonSnapshot({
+        circuitJson: circuitJson as any,
+        outputType: "schematic",
+      }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
