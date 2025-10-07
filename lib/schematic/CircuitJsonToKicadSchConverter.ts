@@ -24,8 +24,9 @@ export class CircuitJsonToKicadSchConverter {
 
   constructor(circuitJson: CircuitJson) {
     const CIRCUIT_JSON_SCALE_FACTOR = 15
-    const KICAD_CENTER_X = 95.25
-    const KICAD_CENTER_Y = 73.66
+    // A4 page dimensions
+    const KICAD_CENTER_Y = 105
+    const KICAD_CENTER_X = 148.5
 
     const db = cju(circuitJson)
 
