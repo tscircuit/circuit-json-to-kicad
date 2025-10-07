@@ -495,6 +495,21 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     // Use transformation matrix to scale the point
     const scaleMatrix = createScaleMatrix(symbolScale, symbolScale)
     const scaled = applyToPoint(scaleMatrix, { x: dx, y: dy })
+    // Determine pin orientation FIRST (before scaling/snapping)
+    // For chips with size info, use normalized distances to handle non-square components
+    let isHorizontalPin: boolean
+    if (isChip && size) {
+      // Use normalized distances: compare distance as a fraction of half-width vs half-height
+      const halfWidth = size.width / 2
+      const halfHeight = size.height / 2
+      const normalizedDx = Math.abs(dx) / halfWidth
+      const normalizedDy = Math.abs(dy) / halfHeight
+      isHorizontalPin = normalizedDx > normalizedDy
+    } else {
+      // Fallback for non-chips or when size is unavailable
+      isHorizontalPin = Math.abs(dx) > Math.abs(dy)
+    }
+
     let x = scaled.x
     let y = scaled.y
 
@@ -506,8 +521,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       const halfWidth = (size.width / 2) * symbolScale
       const halfHeight = (size.height / 2) * symbolScale
 
-      // Determine which edge the pin is on and snap to that edge
-      if (Math.abs(dx) > Math.abs(dy)) {
+      // Snap pins to edges based on orientation (use isHorizontalPin, not raw dx/dy)
+      if (isHorizontalPin) {
         // Horizontal pin - snap x to edge, keep y
         x = dx > 0 ? halfWidth : -halfWidth
         y = dy * symbolScale
@@ -518,9 +533,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       }
     }
 
-    // Determine pin angle based on which side of the component
+    // Determine pin angle based on orientation
     let angle = 0
-    if (Math.abs(dx) > Math.abs(dy)) {
+    if (isHorizontalPin) {
       // Horizontal pin
       if (dx > 0) {
         // Right side
