@@ -232,47 +232,34 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }
 
     // Calculate text positions by transforming the symbol-relative positions
+    // Need to subtract symbol center to match the normalized geometry
+    const symbolCenter = symbol.center || { x: 0, y: 0 }
+
     const refTextPos =
       refTextPrimitive && this.ctx.c2kMatSch
         ? applyToPoint(this.ctx.c2kMatSch, {
-            x: schematicComponent.center.x + refTextPrimitive.x,
-            y: schematicComponent.center.y + refTextPrimitive.y,
+            x:
+              schematicComponent.center.x +
+              (refTextPrimitive.x - symbolCenter.x),
+            y:
+              schematicComponent.center.y +
+              (refTextPrimitive.y - symbolCenter.y),
           })
         : { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 }
 
     const valTextPos =
       valTextPrimitive && this.ctx.c2kMatSch
         ? applyToPoint(this.ctx.c2kMatSch, {
-            x: schematicComponent.center.x + valTextPrimitive.x,
-            y: schematicComponent.center.y + valTextPrimitive.y,
+            x:
+              schematicComponent.center.x +
+              (valTextPrimitive.x - symbolCenter.x),
+            y:
+              schematicComponent.center.y +
+              (valTextPrimitive.y - symbolCenter.y),
           })
         : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
     return { refTextPos, valTextPos }
-  }
-
-  /**
-   * Get KiCad library ID for a component
-   */
-  private getLibraryId(sourceComp: any): string {
-    // Map common component types to KiCad library IDs
-    if (sourceComp.ftype === "simple_resistor") {
-      return "Device:R"
-    }
-    if (sourceComp.ftype === "simple_capacitor") {
-      return "Device:C"
-    }
-    if (sourceComp.ftype === "simple_inductor") {
-      return "Device:L"
-    }
-    if (sourceComp.ftype === "simple_diode") {
-      return "Device:D"
-    }
-    if (sourceComp.ftype === "simple_chip") {
-      return "Device:U"
-    }
-    // Default: use a generic name
-    return "Device:Component"
   }
 
   /**
