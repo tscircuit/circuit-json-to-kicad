@@ -238,16 +238,24 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     const refTextPos =
       refTextPrimitive && this.ctx.c2kMatSch
         ? applyToPoint(this.ctx.c2kMatSch, {
-            x: schematicComponent.center.x + (refTextPrimitive.x - symbolCenter.x),
-            y: schematicComponent.center.y + (refTextPrimitive.y - symbolCenter.y),
+            x:
+              schematicComponent.center.x +
+              (refTextPrimitive.x - symbolCenter.x),
+            y:
+              schematicComponent.center.y +
+              (refTextPrimitive.y - symbolCenter.y),
           })
         : { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 }
 
     const valTextPos =
       valTextPrimitive && this.ctx.c2kMatSch
         ? applyToPoint(this.ctx.c2kMatSch, {
-            x: schematicComponent.center.x + (valTextPrimitive.x - symbolCenter.x),
-            y: schematicComponent.center.y + (valTextPrimitive.y - symbolCenter.y),
+            x:
+              schematicComponent.center.x +
+              (valTextPrimitive.x - symbolCenter.x),
+            y:
+              schematicComponent.center.y +
+              (valTextPrimitive.y - symbolCenter.y),
           })
         : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
