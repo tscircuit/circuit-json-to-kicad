@@ -303,6 +303,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         const polyline = this.createPolylineFromPoints(
           primitive.points,
           symbolScale,
+          symbolData.center,
           fillType,
         )
         drawingSymbol.polylines.push(polyline)
@@ -319,12 +320,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createPolylineFromPoints(
     points: Array<{ x: number; y: number }>,
     scale: number,
+    center: { x: number; y: number } | undefined,
     fillType: "none" | "background" = "none",
   ): SymbolPolyline {
     const polyline = new SymbolPolyline()
 
     // Scale points to match the c2kMatSch transformation scale
-    const xyPoints = points.map((p) => new Xy(p.x * scale, p.y * scale))
+    const cx = center?.x ?? 0
+    const cy = center?.y ?? 0
+    const xyPoints = points.map(
+      (p) => new Xy((p.x - cx) * scale, (p.y - cy) * scale),
+    )
     const pts = new Pts(xyPoints)
     polyline.points = pts
 
@@ -409,11 +415,14 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolScale = this.ctx.c2kMatSch?.a || 15
 
     // Calculate position relative to center
-    const dx = port.x - center.x
-    const dy = port.y - center.y
+    const cx = center?.x ?? 0
+    const cy = center?.y ?? 0
 
-    let x = port.x * symbolScale
-    let y = port.y * symbolScale
+    const dx = (port.x ?? 0) - cx
+    const dy = (port.y ?? 0) - cy
+
+    let x = dx * symbolScale
+    let y = dy * symbolScale
 
     // Pin length for chips
     const chipPinLength = 6.0
