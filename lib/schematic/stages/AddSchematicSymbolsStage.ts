@@ -252,30 +252,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   }
 
   /**
-   * Get KiCad library ID for a component
-   */
-  private getLibraryId(sourceComp: any): string {
-    // Map common component types to KiCad library IDs
-    if (sourceComp.ftype === "simple_resistor") {
-      return "Device:R"
-    }
-    if (sourceComp.ftype === "simple_capacitor") {
-      return "Device:C"
-    }
-    if (sourceComp.ftype === "simple_inductor") {
-      return "Device:L"
-    }
-    if (sourceComp.ftype === "simple_diode") {
-      return "Device:D"
-    }
-    if (sourceComp.ftype === "simple_chip") {
-      return "Device:U"
-    }
-    // Default: use a generic name
-    return "Device:Component"
-  }
-
-  /**
    * Get component metadata (reference, value, description)
    */
   private getComponentMetadata(sourceComp: any): {

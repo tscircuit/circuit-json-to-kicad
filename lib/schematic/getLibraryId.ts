@@ -1,7 +1,7 @@
-import type { AnySourceComponent, SchematicComponent } from "circuit-json"
+import type { SourceComponentBase, SchematicComponent } from "circuit-json"
 
 export function getLibraryId(
-  sourceComp: AnySourceComponent,
+  sourceComp: SourceComponentBase,
   schematicComp: SchematicComponent,
 ): string {
   if (sourceComp.type !== "source_component") {

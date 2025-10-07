@@ -1,4 +1,8 @@
-import type { CircuitJson, SourceSimpleResistor } from "circuit-json"
+import type {
+  CircuitJson,
+  SchematicComponent,
+  SourceComponentBase,
+} from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
   EmbeddedFonts,
@@ -73,12 +77,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         }
       }
 
-      const libSymbol = this.createLibrarySymbolFromSchematicSymbol(
-        symbolName,
+      const libSymbol = this.createLibrarySymbolFromSchematicSymbol({
         symbolData,
         sourceComp,
         schematicComponent,
-      )
+      })
       librarySymbols.push(libSymbol)
     }
 
@@ -143,14 +146,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   /**
    * Convert schematic-symbols data to KiCad library symbol
    */
-  private createLibrarySymbolFromSchematicSymbol(
-    symbolName: string,
-    symbolData: any,
-    sourceComp: any,
-    schematicComp: any,
-  ): SchematicSymbol {
+  private createLibrarySymbolFromSchematicSymbol({
+    symbolData,
+    sourceComp,
+    schematicComponent,
+  }: {
+    symbolData: any
+    sourceComp: SourceComponentBase
+    schematicComponent: SchematicComponent
+  }): SchematicSymbol {
     // Use Device:R as the library ID for now (we can make this more sophisticated later)
-    const libId = getLibraryId(sourceComp, schematicComp)
+    const libId = getLibraryId(sourceComp, schematicComponent)
 
     const symbol = new SchematicSymbol({
       libraryId: libId,
@@ -286,7 +292,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createDrawingSubsymbol(
     libId: string,
     symbolData: any,
-    isChip: boolean = false,
+    isChip = false,
   ): SchematicSymbol {
     const drawingSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_0_1`,
@@ -348,7 +354,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createPinSubsymbol(
     libId: string,
     symbolData: any,
-    isChip: boolean = false,
+    isChip = false,
   ): SchematicSymbol {
     const pinSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_1_1`,
