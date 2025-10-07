@@ -3,7 +3,6 @@ import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { stackPngsVertically } from "../../fixtures/stackPngsVertically"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test("basics01", async () => {
