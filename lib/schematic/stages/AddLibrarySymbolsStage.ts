@@ -25,6 +25,7 @@ import {
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
+import { applyToPoint, scale as createScaleMatrix } from "transformation-matrix"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section
@@ -66,7 +67,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         continue
       }
 
-      let symbolData
+      let symbolData: any
 
       if (symbolName.startsWith("generic_chip_")) {
         symbolData = this.createGenericChipSymbolData(schematicComponent, db)
@@ -182,11 +183,20 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Create drawing subsymbol (unit 0, 1)
     const isChip = sourceComp?.ftype === "simple_chip"
-    const drawingSymbol = this.createDrawingSubsymbol(libId, symbolData, isChip)
+    const drawingSymbol = this.createDrawingSubsymbol({
+      libId,
+      symbolData,
+      isChip,
+    })
     symbol.subSymbols.push(drawingSymbol)
 
     // Create pin subsymbol (unit 1, 1)
-    const pinSymbol = this.createPinSubsymbol(libId, symbolData, isChip)
+    const pinSymbol = this.createPinSubsymbol({
+      libId,
+      symbolData,
+      isChip,
+      schematicComponent,
+    })
     symbol.subSymbols.push(pinSymbol)
 
     // Set embedded_fonts
@@ -289,11 +299,15 @@ export class AddLibrarySymbolsStage extends ConverterStage<
    * Create the drawing subsymbol (primitives, no pins)
    * Converts schematic-symbols primitives to KiCad drawing elements
    */
-  private createDrawingSubsymbol(
-    libId: string,
-    symbolData: any,
-    isChip = false,
-  ): SchematicSymbol {
+  private createDrawingSubsymbol({
+    libId,
+    symbolData,
+    isChip,
+  }: {
+    libId: string
+    symbolData: any
+    isChip: boolean
+  }): SchematicSymbol {
     const drawingSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_0_1`,
     })
@@ -306,11 +320,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       if (primitive.type === "path" && primitive.points) {
         // Use background fill for chip boxes to get yellow background
         const fillType = isChip ? "background" : "none"
-        const polyline = this.createPolylineFromPoints(
-          primitive.points,
-          symbolScale,
-          fillType,
-        )
+        const polyline = this.createPolylineFromPoints({
+          points: primitive.points,
+          scale: symbolScale,
+          center: symbolData.center,
+          fillType: fillType,
+        })
         drawingSymbol.polylines.push(polyline)
       }
       // Note: schematic-symbols typically uses paths, not box primitives
@@ -322,15 +337,29 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   /**
    * Create a KiCad polyline from points
    */
-  private createPolylineFromPoints(
-    points: Array<{ x: number; y: number }>,
-    scale: number,
-    fillType: "none" | "background" = "none",
-  ): SymbolPolyline {
+  private createPolylineFromPoints({
+    points,
+    scale,
+    center,
+    fillType,
+  }: {
+    points: Array<{ x: number; y: number }>
+    scale: number
+    center: { x: number; y: number } | undefined
+    fillType: "none" | "background"
+  }): SymbolPolyline {
     const polyline = new SymbolPolyline()
 
     // Scale points to match the c2kMatSch transformation scale
-    const xyPoints = points.map((p) => new Xy(p.x * scale, p.y * scale))
+    const cx = center?.x ?? 0
+    const cy = center?.y ?? 0
+
+    // Use transformation matrix for scaling
+    const scaleMatrix = createScaleMatrix(scale, scale)
+    const xyPoints = points.map((p) => {
+      const translated = applyToPoint(scaleMatrix, { x: p.x - cx, y: p.y - cy })
+      return new Xy(translated.x, translated.y)
+    })
     const pts = new Pts(xyPoints)
     polyline.points = pts
 
@@ -351,11 +380,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   /**
    * Create the pin subsymbol
    */
-  private createPinSubsymbol(
-    libId: string,
-    symbolData: any,
-    isChip = false,
-  ): SchematicSymbol {
+  private createPinSubsymbol({
+    libId,
+    symbolData,
+    isChip,
+    schematicComponent,
+  }: {
+    libId: string
+    symbolData: any
+    isChip: boolean
+    schematicComponent?: SchematicComponent
+  }): SchematicSymbol {
     const pinSymbol = new SchematicSymbol({
       libraryId: `${libId.split(":")[1]}_1_1`,
     })
@@ -373,6 +408,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         symbolData.center,
         symbolData.size,
         isChip,
+        i,
+        schematicComponent,
       )
       pin.at = [x, y, angle]
       // For chips, use longer pins (2.54); for other components, use 1.27
@@ -410,16 +447,56 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     center: any,
     size?: any,
     isChip?: boolean,
+    portIndex?: number,
+    schematicComponent?: SchematicComponent,
   ): { x: number; y: number; angle: number } {
     // Extract scale from transformation matrix
     const symbolScale = this.ctx.c2kMatSch?.a || 15
 
-    // Calculate position relative to center
-    const dx = port.x - center.x
-    const dy = port.y - center.y
+    // Get the actual port position from circuit JSON if available
+    let portX = port.x ?? 0
+    let portY = port.y ?? 0
+    let usingCircuitJsonPort = false
 
-    let x = port.x * symbolScale
-    let y = port.y * symbolScale
+    if (portIndex !== undefined && schematicComponent) {
+      const schematicPorts = this.ctx.db.schematic_port
+        .list()
+        .filter(
+          (p: any) =>
+            p.schematic_component_id ===
+            schematicComponent.schematic_component_id,
+        )
+        .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
+
+      if (schematicPorts[portIndex]) {
+        const schPort = schematicPorts[portIndex]
+        // Use circuit JSON schematic_port position relative to component center
+        // These are already relative to component center, no need to subtract template center
+        portX = schPort.center.x - schematicComponent.center.x
+        portY = schPort.center.y - schematicComponent.center.y
+        usingCircuitJsonPort = true
+      }
+    }
+
+    let dx: number
+    let dy: number
+    if (usingCircuitJsonPort) {
+      // Circuit JSON positions are already relative to component center
+      dx = portX
+      dy = portY
+    } else {
+      // Template positions need center subtraction
+      const cx = center?.x ?? 0
+      const cy = center?.y ?? 0
+      dx = portX - cx
+      dy = portY - cy
+    }
+
+    // Use transformation matrix to scale the point
+    const scaleMatrix = createScaleMatrix(symbolScale, symbolScale)
+    const scaled = applyToPoint(scaleMatrix, { x: dx, y: dy })
+    let x = scaled.x
+    let y = scaled.y
 
     // Pin length for chips
     const chipPinLength = 6.0
