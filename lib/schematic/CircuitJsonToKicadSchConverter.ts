@@ -6,6 +6,7 @@ import { compose, translate, scale } from "transformation-matrix"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
+import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
@@ -49,6 +50,7 @@ export class CircuitJsonToKicadSchConverter {
       new InitializeSchematicStage(circuitJson, this.ctx),
       new AddLibrarySymbolsStage(circuitJson, this.ctx),
       new AddSchematicSymbolsStage(circuitJson, this.ctx),
+      new AddSchematicNetLabelsStage(circuitJson, this.ctx),
       new AddSchematicTracesStage(circuitJson, this.ctx),
       new AddSheetInstancesStage(circuitJson, this.ctx),
     ]

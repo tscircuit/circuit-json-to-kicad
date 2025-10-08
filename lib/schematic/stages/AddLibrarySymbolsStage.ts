@@ -1,5 +1,6 @@
 import type {
   CircuitJson,
+  SchematicNetLabel,
   SchematicComponent,
   SourceComponentBase,
 } from "circuit-json"
@@ -37,53 +38,43 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
-    // Get all schematic components with symbol names
-    const schematicComponents = db.schematic_component.list()
-
-    if (schematicComponents.length === 0) {
-      this.finished = true
-      return
-    }
-
     // Create lib_symbols section
     const libSymbols = new LibSymbols()
     const librarySymbols: SchematicSymbol[] = []
 
-    // Create a symbol for each component instance
+    // Process schematic components
+    const schematicComponents = db.schematic_component.list()
     for (const schematicComponent of schematicComponents) {
-      const sourceComp = schematicComponent.source_component_id
-        ? db.source_component.get(schematicComponent.source_component_id)
-        : null
-
-      if (!sourceComp) continue
-
-      const symbolName =
-        schematicComponent.symbol_name ||
-        (sourceComp.ftype === "simple_chip"
-          ? `generic_chip_${schematicComponent.source_component_id}`
-          : null)
-
-      if (!symbolName) {
-        continue
+      const libSymbol = this.createLibrarySymbolForComponent(schematicComponent)
+      if (libSymbol) {
+        librarySymbols.push(libSymbol)
       }
+    }
 
-      let symbolData: any
+    // Process schematic net labels with symbol names
+    const netLabels = db.schematic_net_label?.list?.() || []
+    for (const netLabel of netLabels) {
+      if (netLabel.symbol_name) {
+        const isPower = netLabel.source_net_id
+          ? db.source_net.get(netLabel.source_net_id)?.is_power
+          : false
+        const isGround = netLabel.source_net_id
+          ? db.source_net.get(netLabel.source_net_id)?.is_ground
+          : false
 
-      if (symbolName.startsWith("generic_chip_")) {
-        symbolData = this.createGenericChipSymbolData(schematicComponent, db)
-      } else {
-        symbolData = symbols[symbolName as keyof typeof symbols]
-        if (!symbolData) {
-          continue
+        const isPowerOrGround = isPower || isGround
+
+        if (isPowerOrGround) {
+          const libSymbol = this.createLibrarySymbolForNetLabel({
+            netLabel,
+            isPower: isPower ?? false,
+            isGround: isGround ?? false,
+          })
+          if (libSymbol) {
+            librarySymbols.push(libSymbol)
+          }
         }
       }
-
-      const libSymbol = this.createLibrarySymbolFromSchematicSymbol({
-        symbolData,
-        sourceComp,
-        schematicComponent,
-      })
-      librarySymbols.push(libSymbol)
     }
 
     libSymbols.symbols = librarySymbols
@@ -92,6 +83,94 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
 
     this.finished = true
+  }
+
+  /**
+   * Create library symbol for a schematic component
+   */
+  private createLibrarySymbolForComponent(
+    schematicComponent: SchematicComponent,
+  ): SchematicSymbol | null {
+    const { db } = this.ctx
+
+    const sourceComp = schematicComponent.source_component_id
+      ? db.source_component.get(schematicComponent.source_component_id)
+      : null
+
+    if (!sourceComp) return null
+
+    const symbolName =
+      schematicComponent.symbol_name ||
+      (sourceComp.ftype === "simple_chip"
+        ? `generic_chip_${schematicComponent.source_component_id}`
+        : null)
+
+    if (!symbolName) return null
+
+    const symbolData = this.getSymbolData(symbolName, schematicComponent)
+    if (!symbolData) return null
+
+    const libId = getLibraryId(sourceComp, schematicComponent)
+    const isChip = sourceComp.ftype === "simple_chip"
+
+    return this.createLibrarySymbol({
+      libId,
+      symbolData,
+      isChip,
+      schematicComponent,
+      description: this.getDescription(sourceComp),
+      keywords: this.getKeywords(sourceComp),
+      fpFilters: this.getFpFilters(sourceComp),
+    })
+  }
+
+  /**
+   * Create library symbol for a schematic net label with symbol_name
+   */
+  private createLibrarySymbolForNetLabel({
+    netLabel,
+    isPower,
+    isGround,
+  }: {
+    netLabel: SchematicNetLabel
+    isPower: boolean
+    isGround: boolean
+  }): SchematicSymbol | null {
+    const symbolName = netLabel.symbol_name
+    if (!symbolName) return null
+
+    const symbolData = symbols[symbolName as keyof typeof symbols]
+    if (!symbolData) return null
+
+    const libId = `Custom:${symbolName}`
+
+    return this.createLibrarySymbol({
+      libId,
+      symbolData,
+      isChip: false,
+      schematicComponent: undefined,
+      description: isPower
+        ? "Power net label"
+        : isGround
+          ? "Ground net label"
+          : "Net symbol",
+      keywords: isPower ? "power net" : isGround ? "ground net" : "net",
+      fpFilters: "",
+    })
+  }
+
+  /**
+   * Get symbol data from schematic-symbols or generate for generic chips
+   */
+  private getSymbolData(
+    symbolName: string,
+    schematicComponent: SchematicComponent,
+  ): any {
+    if (symbolName.startsWith("generic_chip_")) {
+      return this.createGenericChipSymbolData(schematicComponent, this.ctx.db)
+    }
+
+    return symbols[symbolName as keyof typeof symbols] || null
   }
 
   /**
@@ -145,20 +224,26 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   }
 
   /**
-   * Convert schematic-symbols data to KiCad library symbol
+   * Create a KiCad library symbol from symbol data
+   * This is the core method that handles both components and net labels
    */
-  private createLibrarySymbolFromSchematicSymbol({
+  private createLibrarySymbol({
+    libId,
     symbolData,
-    sourceComp,
+    isChip,
     schematicComponent,
+    description,
+    keywords,
+    fpFilters,
   }: {
+    libId: string
     symbolData: any
-    sourceComp: SourceComponentBase
-    schematicComponent: SchematicComponent
+    isChip: boolean
+    schematicComponent?: SchematicComponent
+    description: string
+    keywords: string
+    fpFilters: string
   }): SchematicSymbol {
-    // Use Device:R as the library ID for now (we can make this more sophisticated later)
-    const libId = getLibraryId(sourceComp, schematicComponent)
-
     const symbol = new SchematicSymbol({
       libraryId: libId,
       excludeFromSim: false,
@@ -169,20 +254,25 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     // Setup pin numbers
     const pinNumbers = new SymbolPinNumbers()
     // For chips, show pin numbers (outside); for other components, hide them
-    pinNumbers.hide = sourceComp?.ftype !== "simple_chip"
+    pinNumbers.hide = !isChip
     symbol._sxPinNumbers = pinNumbers
 
     // Setup pin names
     const pinNames = new SymbolPinNames()
     // For chips, use larger offset to position names well inside; for others, use 0
-    pinNames.offset = sourceComp?.ftype === "simple_chip" ? 1.27 : 0
+    pinNames.offset = isChip ? 1.27 : 0
     symbol._sxPinNames = pinNames
 
     // Add properties
-    this.addSymbolProperties(symbol, libId, sourceComp)
+    this.addSymbolProperties({
+      symbol,
+      libId,
+      description,
+      keywords,
+      fpFilters,
+    })
 
     // Create drawing subsymbol (unit 0, 1)
-    const isChip = sourceComp?.ftype === "simple_chip"
     const drawingSymbol = this.createDrawingSubsymbol({
       libId,
       symbolData,
@@ -208,11 +298,19 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   /**
    * Add properties to the library symbol
    */
-  private addSymbolProperties(
-    symbol: SchematicSymbol,
-    libId: string,
-    sourceComp: any,
-  ): void {
+  private addSymbolProperties({
+    symbol,
+    libId,
+    description,
+    keywords,
+    fpFilters,
+  }: {
+    symbol: SchematicSymbol
+    libId: string
+    description: string
+    keywords: string
+    fpFilters: string
+  }): void {
     const refPrefix = libId.split(":")[1]?.[0] || "U"
 
     const properties = [
@@ -240,21 +338,21 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       },
       {
         key: "Description",
-        value: this.getDescription(sourceComp),
+        value: description,
         id: 4,
         at: [0, 0, 0],
         hide: true,
       },
       {
         key: "ki_keywords",
-        value: this.getKeywords(sourceComp),
+        value: keywords,
         id: 5,
         at: [0, 0, 0],
         hide: true,
       },
       {
         key: "ki_fp_filters",
-        value: this.getFpFilters(sourceComp),
+        value: fpFilters,
         id: 6,
         at: [0, 0, 0],
         hide: true,
