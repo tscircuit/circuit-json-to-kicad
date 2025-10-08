@@ -116,7 +116,8 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const symLibId = new SymbolLibId(libId)
     ;(symbol as any)._sxLibId = symLibId
 
-    const isUpSymbol = symbolName.includes("_up") || symbolName.toLowerCase().includes("vcc")
+    const isUpSymbol =
+      symbolName.includes("_up") || symbolName.toLowerCase().includes("vcc")
     const referenceOffset = isUpSymbol ? -4 : 4
     const valueOffset = isUpSymbol ? -6 : 6
 
