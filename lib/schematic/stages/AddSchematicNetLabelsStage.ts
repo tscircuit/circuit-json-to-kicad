@@ -116,12 +116,16 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const symLibId = new SymbolLibId(libId)
     ;(symbol as any)._sxLibId = symLibId
 
+    const isUpSymbol = symbolName.includes("_up") || symbolName.toLowerCase().includes("vcc")
+    const referenceOffset = isUpSymbol ? -4 : 4
+    const valueOffset = isUpSymbol ? -6 : 6
+
     // Add properties
     const referenceProperty = new SymbolProperty({
       key: "Reference",
       value: labelText, // Use the label text as the reference
       id: 0,
-      at: [x, y - 6, 0],
+      at: [x, y + referenceOffset, 0],
       effects: this.createTextEffects(1.27, false),
     })
 
@@ -129,7 +133,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Value",
       value: labelText,
       id: 1,
-      at: [x, y + 6, 0],
+      at: [x, y + valueOffset, 0],
       effects: this.createTextEffects(1.27, true),
     })
 
