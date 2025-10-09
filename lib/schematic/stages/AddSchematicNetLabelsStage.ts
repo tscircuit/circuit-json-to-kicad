@@ -10,16 +10,18 @@ import {
   SymbolInstancePath,
   TextEffects,
   TextEffectsFont,
-  Label,
+  TextEffectsJustify,
+  GlobalLabel,
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 
 /**
- * Adds schematic net labels (symbols like VCC/GND from schematic-symbols, and text labels) to the schematic
+ * Adds schematic net labels to the schematic
  *
- * Net labels with symbol_name are treated as regular schematic components using schematic-symbols
- * Net labels without symbol_name are treated as text labels
+ * Net labels with symbol_name are treated as power/ground symbols (e.g., VCC, GND from schematic-symbols)
+ * Net labels without symbol_name are converted to KiCad global labels
+ * All use anchor_position as the primary coordinate source for positioning
  */
 export class AddSchematicNetLabelsStage extends ConverterStage<
   CircuitJson,
@@ -42,14 +44,14 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     }
 
     const symbols: SchematicSymbol[] = []
-    const labels: Label[] = []
+    const globalLabels: GlobalLabel[] = []
 
     for (const netLabel of netLabels) {
       const labelText = netLabel.text || ""
       const symbolName = netLabel.symbol_name
 
       if (symbolName) {
-        // Create a component symbol using the schematic-symbols symbol
+        // Create a power/ground symbol using the schematic-symbols symbol
         const symbol = this.createSymbolFromNetLabel(
           netLabel,
           labelText,
@@ -59,10 +61,10 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
           symbols.push(symbol)
         }
       } else {
-        // Create a regular text label
-        const label = this.createLabel(netLabel, labelText)
+        // Create a regular global label
+        const label = this.createGlobalLabel(netLabel, labelText)
         if (label) {
-          labels.push(label)
+          globalLabels.push(label)
         }
       }
     }
@@ -74,8 +76,11 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     }
 
     // Add labels to the schematic
-    if (kicadSch && labels.length > 0) {
-      kicadSch.labels = [...(kicadSch.labels || []), ...labels]
+    if (kicadSch && globalLabels.length > 0) {
+      kicadSch.globalLabels = [
+        ...(kicadSch.globalLabels || []),
+        ...globalLabels,
+      ]
     }
 
     this.finished = true
@@ -83,7 +88,8 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
   /**
    * Create a KiCad symbol instance from a net label with a symbol_name
-   * These are treated like regular components (e.g., rail_up, rail_down, vcc_up, ground_down)
+   * These are treated like power/ground symbols (e.g., vcc_up, ground_down)
+   * Uses anchor_position as the primary coordinate source
    */
   private createSymbolFromNetLabel(
     netLabel: any,
@@ -93,9 +99,10 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     if (!this.ctx.c2kMatSch) return null
 
     // Transform circuit-json coordinates to KiCad coordinates
+    // Use anchor_position as primary source, fallback to center if not available
     const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
-      x: netLabel.center?.x || netLabel.anchor_position?.x || 0,
-      y: netLabel.center?.y || netLabel.anchor_position?.y || 0,
+      x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
+      y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     })
 
     const uuid = crypto.randomUUID()
@@ -191,25 +198,59 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
   }
 
   /**
-   * Create a KiCad label from a schematic_net_label without a symbol
+   * Create a KiCad global label from a schematic_net_label without a symbol_name
+   * Uses anchor_position as the primary coordinate source for the arrow anchor point
    */
-  private createLabel(netLabel: any, labelText: string): Label | null {
-    if (!this.ctx.c2kMatSch) return null
+  private createGlobalLabel(
+    netLabel: any,
+    labelText: string,
+  ): GlobalLabel | null {
+    if (!this.ctx.c2kMatSch || !this.ctx.kicadSch) return null
 
     // Transform circuit-json coordinates to KiCad coordinates
+    // Use anchor_position as primary source, fallback to center if not available
     const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
-      x: netLabel.center?.x || netLabel.anchor_position?.x || 0,
-      y: netLabel.center?.y || netLabel.anchor_position?.y || 0,
+      x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
+      y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     })
 
-    const label = new Label({
+    // Map anchor_side to KiCad angle and justify
+    const anchorSide = netLabel.anchor_side || "left"
+    const angleMap: Record<string, number> = {
+      left: 0, // Anchor on left, arrow points right
+      right: 180, // Anchor on right, arrow points left
+      top: 270, // Anchor on top, arrow points down
+      bottom: 90, // Anchor on bottom, arrow points up
+    }
+    const angle = angleMap[anchorSide] || 0
+
+    // Justify matches the arrow direction
+    const justifyMap: Record<
+      string,
+      { horizontal?: "left" | "right"; vertical?: "top" | "bottom" }
+    > = {
+      left: { horizontal: "left" }, // Anchor on left, text on left
+      right: { horizontal: "right" }, // Anchor on right, text on right
+      top: { vertical: "top" }, // Anchor on top, text on top
+      bottom: { vertical: "bottom" }, // Anchor on bottom, text on bottom
+    }
+    const justify = justifyMap[anchorSide] || {}
+
+    // Create text effects with justify
+    const effects = this.createTextEffects(1.27, false)
+    if (Object.keys(justify).length > 0) {
+      effects.justify = new TextEffectsJustify(justify)
+    }
+
+    const globalLabel = new GlobalLabel({
       value: labelText,
-      at: [x, y, 0],
-      effects: this.createTextEffects(1.27, false),
+      at: [x, y, angle],
+      effects: effects,
       uuid: crypto.randomUUID(),
+      fieldsAutoplaced: true,
     })
 
-    return label
+    return globalLabel
   }
 
   /**
