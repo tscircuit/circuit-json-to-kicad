@@ -5,6 +5,7 @@ import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
+import { createNpthPadFromCircuitJson } from "./utils/CreateNpthPadFromCircuitJson"
 import { createFpTextFromCircuitJson } from "./utils/CreateFpTextFromCircuitJson"
 
 /**
@@ -124,6 +125,25 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       if (pad) {
         fpPads.push(pad)
         padNumber++
+      }
+    }
+
+    // Add non-plated holes (pcb_hole elements)
+    const pcbHoles =
+      this.ctx.db.pcb_hole
+        ?.list()
+        .filter(
+          (hole: any) => hole.subcircuit_id === component.subcircuit_id,
+        ) || []
+
+    // Convert non-plated holes to NPTH pads
+    for (const pcbHole of pcbHoles) {
+      const pad = createNpthPadFromCircuitJson({
+        pcbHole,
+        componentCenter: component.center,
+      })
+      if (pad) {
+        fpPads.push(pad)
       }
     }
 
