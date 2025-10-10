@@ -14,9 +14,8 @@ export function createThruHolePadFromCircuitJson({
     return null
   }
 
-  // Calculate pad position relative to component center
   const relativeX = platedHole.x - componentCenter.x
-  const relativeY = platedHole.y - componentCenter.y
+  const relativeY = -(platedHole.y - componentCenter.y)
 
   // Determine pad shape based on plated hole shape
   let padShape: "circle" | "oval" | "rect" = "circle"
