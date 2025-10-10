@@ -1,5 +1,6 @@
 import type { PcbSilkscreenText } from "circuit-json"
 import { FpText, TextEffects, TextEffectsFont } from "kicadts"
+import { applyToPoint, rotate, identity } from "transformation-matrix"
 
 /**
  * Creates a KiCad fp_text (footprint text) element from a circuit JSON pcb_silkscreen_text
@@ -7,9 +8,11 @@ import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 export function createFpTextFromCircuitJson({
   textElement,
   componentCenter,
+  componentRotation = 0,
 }: {
   textElement: PcbSilkscreenText
   componentCenter: { x: number; y: number }
+  componentRotation?: number
 }): FpText | null {
   if (!textElement.text || !textElement.anchor_position) {
     return null
@@ -17,9 +20,23 @@ export function createFpTextFromCircuitJson({
 
   // Calculate position relative to component center
   // FpText positions are relative to the footprint origin
+  const relativeX = textElement.anchor_position.x - componentCenter.x
+  const relativeY = -(textElement.anchor_position.y - componentCenter.y)
+
+  // Apply component rotation to text position using transformation matrix
+  const rotationMatrix =
+    componentRotation !== 0
+      ? rotate((componentRotation * Math.PI) / 180)
+      : identity()
+
+  const rotatedPos = applyToPoint(rotationMatrix, {
+    x: relativeX,
+    y: relativeY,
+  })
+
   const relativePosition = {
-    x: textElement.anchor_position.x - componentCenter.x,
-    y: -(textElement.anchor_position.y - componentCenter.y),
+    x: rotatedPos.x,
+    y: rotatedPos.y,
   }
 
   // Map circuit JSON layer names to KiCad layer names

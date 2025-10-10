@@ -1,14 +1,17 @@
 import { FootprintPad, PadDrill } from "kicadts"
 import type { PcbPlatedHole } from "circuit-json"
+import { applyToPoint, rotate, identity } from "transformation-matrix"
 
 export function createThruHolePadFromCircuitJson({
   platedHole,
   componentCenter,
   padNumber,
+  componentRotation = 0,
 }: {
   platedHole: PcbPlatedHole
   componentCenter: { x: number; y: number }
   padNumber: number
+  componentRotation?: number
 }): FootprintPad | null {
   if (!("x" in platedHole && "y" in platedHole)) {
     return null
@@ -16,6 +19,17 @@ export function createThruHolePadFromCircuitJson({
 
   const relativeX = platedHole.x - componentCenter.x
   const relativeY = -(platedHole.y - componentCenter.y)
+
+  // Apply component rotation to pad position using transformation matrix
+  const rotationMatrix =
+    componentRotation !== 0
+      ? rotate((componentRotation * Math.PI) / 180)
+      : identity()
+
+  const rotatedPos = applyToPoint(rotationMatrix, {
+    x: relativeX,
+    y: relativeY,
+  })
 
   // Determine pad shape based on plated hole shape
   let padShape: "circle" | "oval" | "rect" = "circle"
@@ -88,7 +102,7 @@ export function createThruHolePadFromCircuitJson({
     number: String(padNumber),
     padType: "thru_hole",
     shape: padShape,
-    at: [relativeX, relativeY, rotation],
+    at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
     drill: drill,
     layers: ["*.Cu", "*.Mask"],
