@@ -3,6 +3,7 @@ import type { KicadPcb } from "kicadts"
 import { GrLine } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
+import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 
 /**
  * Adds graphics (silkscreen, board outline, etc.) to the PCB from circuit JSON
@@ -61,6 +62,23 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         const graphicLines = kicadPcb.graphicLines
         graphicLines.push(grLine)
         kicadPcb.graphicLines = graphicLines
+      }
+    }
+
+    // Get PCB silkscreen text if they exist
+    const pcbSilkscreenTexts = this.ctx.db.pcb_silkscreen_text?.list() || []
+
+    for (const textElement of pcbSilkscreenTexts) {
+      const grText = createGrTextFromCircuitJson({
+        textElement,
+        transformationMatrix: c2kMatPcb,
+      })
+
+      if (grText) {
+        // Add the graphics text to the PCB
+        const graphicTexts = kicadPcb.graphicTexts || []
+        graphicTexts.push(grText)
+        kicadPcb.graphicTexts = graphicTexts
       }
     }
 

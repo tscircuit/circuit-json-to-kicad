@@ -18,7 +18,7 @@ export function createSmdPadFromCircuitJson({
 
   // Calculate pad position relative to component center
   const relativeX = pcbPad.x - componentCenter.x
-  const relativeY = pcbPad.y - componentCenter.y
+  const relativeY = -(pcbPad.y - componentCenter.y)
 
   // Map layer names
   const layerMap: Record<string, string> = {
