@@ -96,13 +96,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Convert SMD pads
     for (const pcbPad of pcbPads) {
-      const pad = createSmdPadFromCircuitJson(
-        {
-          pcbPad,
-          componentCenter: component.center,
-          padNumber,
-        },
-      )
+      const pad = createSmdPadFromCircuitJson({
+        pcbPad,
+        componentCenter: component.center,
+        padNumber,
+      })
       fpPads.push(pad)
       padNumber++
     }
@@ -117,13 +115,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Convert plated holes to through-hole pads
     for (const platedHole of pcbPlatedHoles) {
-      const pad = createThruHolePadFromCircuitJson(
-        {
-          platedHole,
-          componentCenter: component.center,
-          padNumber,
-        },
-      )
+      const pad = createThruHolePadFromCircuitJson({
+        platedHole,
+        componentCenter: component.center,
+        padNumber,
+      })
       if (pad) {
         fpPads.push(pad)
         padNumber++
