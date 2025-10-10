@@ -1,8 +1,10 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Footprint, At, Property, FpText, FootprintPad } from "kicadts"
+import { Footprint, FpText } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
+import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
+import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -91,51 +93,39 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const fpPads = footprint.fpPads
     let padNumber = 1
+
+    // Convert SMD pads
     for (const pcbPad of pcbPads) {
-      if (!("x" in pcbPad && "y" in pcbPad)) {
-        throw new Error("no support for polygon pads (or any pads w/o X/Y) yet")
-      }
-      // Calculate pad position relative to component center
-      const relativeX = pcbPad.x - component.center.x
-      const relativeY = pcbPad.y - component.center.y
-
-      // Map layer names
-      const layerMap: Record<string, string> = {
-        top: "F.Cu",
-        bottom: "B.Cu",
-      }
-      const padLayer = layerMap[pcbPad.layer] || "F.Cu"
-
-      // Handle different pad shapes (circle pads have radius, rect pads have width/height)
-      const padShape = pcbPad.shape === "circle" ? "circle" : "rect"
-      const padSize: [number, number] =
-        pcbPad.shape === "circle"
-          ? [
-              "radius" in pcbPad ? pcbPad.radius * 2 : 0.5,
-              "radius" in pcbPad ? pcbPad.radius * 2 : 0.5,
-            ]
-          : [
-              "width" in pcbPad ? pcbPad.width : 0.5,
-              "height" in pcbPad ? pcbPad.height : 0.5,
-            ]
-
-      const pad = new FootprintPad({
-        number: String(padNumber),
-        padType: "smd",
-        shape: padShape,
-        at: [relativeX, relativeY, 0],
-        size: padSize,
-        layers: [
-          `${padLayer}`,
-          `${padLayer === "F.Cu" ? "F" : "B"}.Paste`,
-          `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
-        ],
-        uuid: crypto.randomUUID(),
+      const pad = createSmdPadFromCircuitJson({
+        pcbPad,
+        componentCenter: component.center,
+        padNumber,
       })
-
       fpPads.push(pad)
       padNumber++
     }
+
+    // Add pads from pcb_plated_hole elements
+    const pcbPlatedHoles =
+      this.ctx.db.pcb_plated_hole
+        ?.list()
+        .filter(
+          (hole: any) => hole.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    // Convert plated holes to through-hole pads
+    for (const platedHole of pcbPlatedHoles) {
+      const pad = createThruHolePadFromCircuitJson({
+        platedHole,
+        componentCenter: component.center,
+        padNumber,
+      })
+      if (pad) {
+        fpPads.push(pad)
+        padNumber++
+      }
+    }
+
     footprint.fpPads = fpPads
 
     // Add the footprint to the PCB
