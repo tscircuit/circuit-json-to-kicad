@@ -5,6 +5,7 @@ import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
+import { createFpTextFromCircuitJson } from "./utils/CreateFpTextFromCircuitJson"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -60,27 +61,27 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       uuid: crypto.randomUUID(),
     })
 
-    // Add required Reference and Value fp_text elements
-    const refText = new FpText({
-      type: "reference",
-      text: componentName,
-      position: [0, -1.5, 0],
-      layer: "F.SilkS",
-      uuid: crypto.randomUUID(),
-    })
-
-    const valueText = new FpText({
-      type: "value",
-      text: footprintName,
-      position: [0, 1.5, 0],
-      layer: "F.Fab",
-      uuid: crypto.randomUUID(),
-    })
-
     // fpTexts is a getter/setter, so we need to get, modify, and set
     const fpTexts = footprint.fpTexts
-    fpTexts.push(refText)
-    fpTexts.push(valueText)
+
+    // Add silkscreen text elements associated with this component
+    const pcbSilkscreenTexts =
+      this.ctx.db.pcb_silkscreen_text
+        ?.list()
+        .filter(
+          (text: any) => text.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const textElement of pcbSilkscreenTexts) {
+      const fpText = createFpTextFromCircuitJson({
+        textElement,
+        componentCenter: component.center,
+      })
+      if (fpText) {
+        fpTexts.push(fpText)
+      }
+    }
+
     footprint.fpTexts = fpTexts
 
     // Add pads from pcb_smtpad elements
