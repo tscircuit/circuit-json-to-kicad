@@ -45,9 +45,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       : null
 
     const footprintName = sourceComponent?.ftype || "Unknown"
-    const componentName =
-      sourceComponent?.name || `Component_${this.componentsProcessed}`
-
     // Transform the component position to KiCad coordinates
     const transformedPos = applyToPoint(c2kMatPcb, {
       x: component.center.x,
@@ -77,6 +74,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       const fpText = createFpTextFromCircuitJson({
         textElement,
         componentCenter: component.center,
+        componentRotation: component.rotation || 0,
       })
       if (fpText) {
         fpTexts.push(fpText)
@@ -102,6 +100,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         pcbPad,
         componentCenter: component.center,
         padNumber,
+        componentRotation: component.rotation || 0,
       })
       fpPads.push(pad)
       padNumber++
@@ -121,6 +120,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         platedHole,
         componentCenter: component.center,
         padNumber,
+        componentRotation: component.rotation || 0,
       })
       if (pad) {
         fpPads.push(pad)
@@ -141,6 +141,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       const pad = createNpthPadFromCircuitJson({
         pcbHole,
         componentCenter: component.center,
+        componentRotation: component.rotation || 0,
       })
       if (pad) {
         fpPads.push(pad)

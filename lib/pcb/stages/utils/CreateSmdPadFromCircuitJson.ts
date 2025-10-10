@@ -1,5 +1,6 @@
 import type { PcbSmtPad } from "circuit-json"
 import { FootprintPad } from "kicadts"
+import { applyToPoint, rotate, identity } from "transformation-matrix"
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
  */
@@ -7,10 +8,12 @@ export function createSmdPadFromCircuitJson({
   pcbPad,
   componentCenter,
   padNumber,
+  componentRotation = 0,
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
   padNumber: number
+  componentRotation?: number
 }): FootprintPad {
   if (!("x" in pcbPad && "y" in pcbPad)) {
     throw new Error("no support for polygon pads (or any pads w/o X/Y) yet")
@@ -19,6 +22,17 @@ export function createSmdPadFromCircuitJson({
   // Calculate pad position relative to component center
   const relativeX = pcbPad.x - componentCenter.x
   const relativeY = -(pcbPad.y - componentCenter.y)
+
+  // Apply component rotation to pad position using transformation matrix
+  const rotationMatrix =
+    componentRotation !== 0
+      ? rotate((componentRotation * Math.PI) / 180)
+      : identity()
+
+  const rotatedPos = applyToPoint(rotationMatrix, {
+    x: relativeX,
+    y: relativeY,
+  })
 
   // Map layer names
   const layerMap: Record<string, string> = {
@@ -44,7 +58,7 @@ export function createSmdPadFromCircuitJson({
     number: String(padNumber),
     padType: "smd",
     shape: padShape,
-    at: [relativeX, relativeY, 0],
+    at: [rotatedPos.x, rotatedPos.y, 0],
     size: padSize,
     layers: [
       `${padLayer}`,

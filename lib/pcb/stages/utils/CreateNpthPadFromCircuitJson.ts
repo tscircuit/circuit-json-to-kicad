@@ -1,12 +1,15 @@
 import { FootprintPad, PadDrill } from "kicadts"
 import type { PcbHole } from "circuit-json"
+import { applyToPoint, rotate, identity } from "transformation-matrix"
 
 export function createNpthPadFromCircuitJson({
   pcbHole,
   componentCenter,
+  componentRotation = 0,
 }: {
   pcbHole: PcbHole
   componentCenter: { x: number; y: number }
+  componentRotation?: number
 }): FootprintPad | null {
   if (!("x" in pcbHole && "y" in pcbHole)) {
     return null
@@ -14,6 +17,17 @@ export function createNpthPadFromCircuitJson({
 
   const relativeX = pcbHole.x - componentCenter.x
   const relativeY = -(pcbHole.y - componentCenter.y)
+
+  // Apply component rotation to hole position using transformation matrix
+  const rotationMatrix =
+    componentRotation !== 0
+      ? rotate((componentRotation * Math.PI) / 180)
+      : identity()
+
+  const rotatedPos = applyToPoint(rotationMatrix, {
+    x: relativeX,
+    y: relativeY,
+  })
 
   // Determine pad shape based on hole shape
   let padShape: "circle" | "oval" | "rect" = "circle"
@@ -51,7 +65,7 @@ export function createNpthPadFromCircuitJson({
     number: "", // Non-plated holes have no pad number
     padType: "np_thru_hole",
     shape: padShape,
-    at: [relativeX, relativeY, 0],
+    at: [rotatedPos.x, rotatedPos.y, 0],
     size: padSize,
     drill: drill,
     layers: ["*.Cu", "*.Mask"],
