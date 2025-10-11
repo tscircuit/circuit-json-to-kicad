@@ -41,12 +41,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     // Create lib_symbols section
     const libSymbols = new LibSymbols()
     const librarySymbols: SchematicSymbol[] = []
+    const addedSymbols = new Set<string>()
 
     // Process schematic components
     const schematicComponents = db.schematic_component.list()
     for (const schematicComponent of schematicComponents) {
       const libSymbol = this.createLibrarySymbolForComponent(schematicComponent)
       if (libSymbol) {
+        if (addedSymbols.has(libSymbol.libraryId!)) {
+          continue
+        }
+        addedSymbols.add(libSymbol.libraryId!)
         librarySymbols.push(libSymbol)
       }
     }
@@ -71,6 +76,10 @@ export class AddLibrarySymbolsStage extends ConverterStage<
             isGround: isGround ?? false,
           })
           if (libSymbol) {
+            if (addedSymbols.has(libSymbol.libraryId!)) {
+              continue
+            }
+            addedSymbols.add(libSymbol.libraryId!)
             librarySymbols.push(libSymbol)
           }
         }
