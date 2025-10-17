@@ -2,6 +2,7 @@ import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch, KicadPcb } from "kicadts"
 import type { Matrix } from "transformation-matrix"
+import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
 
 // Type aliases for IDs to make context clearer
 export type SchematicPortId = string
@@ -20,6 +21,9 @@ export interface ConverterContext {
 
   /** Circuit JSON to KiCad PCB transformation matrix */
   c2kMatPcb?: Matrix
+
+  /** Selected paper size for schematic */
+  schematicPaperSize?: PaperDimensions
 
   // Optional data that can be shared between stages
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>

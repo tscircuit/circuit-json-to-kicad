@@ -25,13 +25,26 @@ export class CircuitJsonToKicadSchConverter {
 
   constructor(circuitJson: CircuitJson) {
     const CIRCUIT_JSON_SCALE_FACTOR = 15
-    // A4 page dimensions
-    const KICAD_CENTER_Y = 105 // 210mm / 2
-    const KICAD_CENTER_X = 148.5 // 297mm / 2
 
     const db = cju(circuitJson)
 
-    const { center } = getSchematicBoundsAndCenter(db)
+    const { center, bounds } = getSchematicBoundsAndCenter(db)
+
+    // Calculate the size of the schematic in KiCad coordinates (mm)
+    const schematicWidthMm =
+      (bounds.maxX - bounds.minX) * CIRCUIT_JSON_SCALE_FACTOR
+    const schematicHeightMm =
+      (bounds.maxY - bounds.minY) * CIRCUIT_JSON_SCALE_FACTOR
+
+    // Select appropriate paper size based on content
+    const paperSize = selectSchematicPaperSize(
+      schematicWidthMm,
+      schematicHeightMm,
+    )
+
+    // Use the center of the selected paper size
+    const KICAD_CENTER_X = paperSize.width / 2
+    const KICAD_CENTER_Y = paperSize.height / 2
 
     this.ctx = {
       db,
@@ -40,6 +53,7 @@ export class CircuitJsonToKicadSchConverter {
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
       }),
+      schematicPaperSize: paperSize,
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),
         scale(CIRCUIT_JSON_SCALE_FACTOR, -CIRCUIT_JSON_SCALE_FACTOR),
