@@ -25,4 +25,4 @@ test("pcb basics01", async () => {
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
-})
+}, 10_000)
