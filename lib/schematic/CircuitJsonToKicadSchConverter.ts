@@ -10,6 +10,7 @@ import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
+import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
