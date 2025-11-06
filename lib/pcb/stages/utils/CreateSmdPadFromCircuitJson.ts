@@ -7,7 +7,13 @@ import {
   Xy,
   PadOptions,
 } from "kicadts"
-import { applyToPoint, rotate, identity } from "transformation-matrix"
+import {
+  applyToPoint,
+  compose,
+  translate,
+  scale,
+  rotate,
+} from "transformation-matrix"
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
  */
@@ -38,19 +44,17 @@ export function createSmdPadFromCircuitJson({
     throw new Error("Pad must have either x/y coordinates or points array")
   }
 
-  // Calculate pad position relative to component center
-  const relativeX = padX - componentCenter.x
-  const relativeY = -(padY - componentCenter.y)
-
-  // Apply component rotation to pad position using transformation matrix
-  const rotationMatrix =
+  const cj2kicadMatrix = compose(
     componentRotation !== 0
       ? rotate((componentRotation * Math.PI) / 180)
-      : identity()
+      : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    scale(1, -1), // Flip Y-axis
+    translate(-componentCenter.x, -componentCenter.y),
+  )
 
-  const rotatedPos = applyToPoint(rotationMatrix, {
-    x: relativeX,
-    y: relativeY,
+  const rotatedPos = applyToPoint(cj2kicadMatrix, {
+    x: padX,
+    y: padY,
   })
 
   // Map layer names
@@ -76,12 +80,14 @@ export function createSmdPadFromCircuitJson({
     // For polygon pads, use custom shape with primitives
     const points = pcbPad.points as Array<{ x: number; y: number }>
 
-    // Convert points from absolute coordinates to relative coordinates
-    // (relative to the pad center which is at padX, padY)
+    const pointTransformMatrix = compose(
+      scale(1, -1), // Flip Y-axis
+      translate(-padX, -padY),
+    )
+
     const relativePoints = points.map((p) => {
-      const relX = p.x - padX
-      const relY = -(p.y - padY) // Flip Y coordinate for KiCad
-      return new Xy(relX, relY)
+      const transformed = applyToPoint(pointTransformMatrix, { x: p.x, y: p.y })
+      return new Xy(transformed.x, transformed.y)
     })
 
     // Create the polygon primitive
