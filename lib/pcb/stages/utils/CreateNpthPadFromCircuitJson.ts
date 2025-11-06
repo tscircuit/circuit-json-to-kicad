@@ -56,7 +56,7 @@ export function createNpthPadFromCircuitJson({
   } else {
     // Default fallback for unknown shapes
     padShape = "circle"
-    const diameter = pcbHole.hole_diameter || 1.0
+    const diameter = "hole_diameter" in pcbHole ? pcbHole.hole_diameter : 1.0
     padSize = [diameter, diameter]
     drill = new PadDrill({ diameter: diameter })
   }

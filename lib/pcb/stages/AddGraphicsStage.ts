@@ -102,8 +102,8 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         corners = board.outline
       } else {
         // Fallback to rectangular outline based on width and height
-        const halfWidth = board.width / 2
-        const halfHeight = board.height / 2
+        const halfWidth = board.width ? board.width / 2 : 0
+        const halfHeight = board.height ? board.height / 2 : 0
 
         // Define the 4 corners of the board relative to center
         corners = [
