@@ -37,12 +37,34 @@ export function createThruHolePadFromCircuitJson({
   let drill: PadDrill
   let rotation = 0
 
+  const hasHoleOffset =
+    "hole_offset_x" in platedHole || "hole_offset_y" in platedHole
+
+  let drillOffset: { x: number; y: number } | undefined
+
+  if (hasHoleOffset) {
+    const rawOffset = {
+      x: (platedHole as any).hole_offset_x ?? 0,
+      y: (platedHole as any).hole_offset_y ?? 0,
+    }
+
+    if (rawOffset.x !== 0 || rawOffset.y !== 0) {
+      const rotatedOffset = applyToPoint(rotationMatrix, {
+        x: rawOffset.x,
+        y: -rawOffset.y,
+      })
+
+      drillOffset = rotatedOffset
+    }
+  }
+
   if (platedHole.shape === "circle") {
     // Circular plated hole
     padShape = "circle"
     padSize = [platedHole.outer_diameter, platedHole.outer_diameter]
     drill = new PadDrill({
       diameter: platedHole.hole_diameter,
+      offset: drillOffset,
     })
   } else if (platedHole.shape === "pill" || platedHole.shape === "oval") {
     // Pill-shaped plated hole (oval)
@@ -55,6 +77,7 @@ export function createThruHolePadFromCircuitJson({
       oval: true,
       diameter: platedHole.hole_width,
       width: platedHole.hole_height,
+      offset: drillOffset,
     })
   } else if (platedHole.shape === "pill_hole_with_rect_pad") {
     // Pill hole with rectangular pad
@@ -67,6 +90,7 @@ export function createThruHolePadFromCircuitJson({
       oval: true,
       diameter: platedHole.hole_width,
       width: platedHole.hole_height,
+      offset: drillOffset,
     })
   } else if (platedHole.shape === "circular_hole_with_rect_pad") {
     // Circular hole with rectangular pad
@@ -77,6 +101,7 @@ export function createThruHolePadFromCircuitJson({
     ]
     drill = new PadDrill({
       diameter: platedHole.hole_diameter,
+      offset: drillOffset,
     })
   } else if (platedHole.shape === "rotated_pill_hole_with_rect_pad") {
     // Rotated pill hole with rectangular pad
@@ -89,13 +114,14 @@ export function createThruHolePadFromCircuitJson({
       oval: true,
       diameter: platedHole.hole_width,
       width: platedHole.hole_height,
+      offset: drillOffset,
     })
     rotation = (platedHole as any).rect_ccw_rotation || 0
   } else {
     // Default fallback
     padShape = "circle"
     padSize = [1.6, 1.6]
-    drill = new PadDrill({ diameter: 0.8 })
+    drill = new PadDrill({ diameter: 0.8, offset: drillOffset })
   }
 
   return new FootprintPad({
