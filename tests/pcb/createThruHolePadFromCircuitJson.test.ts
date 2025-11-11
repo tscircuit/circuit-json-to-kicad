@@ -30,8 +30,9 @@ test("createThruHolePadFromCircuitJson applies hole offset without rotation", ()
   const drill = pad!.drill
   expect(drill).toBeDefined()
   expect(drill!.offset).toBeDefined()
-  expect(drill!.offset!.x).toBeCloseTo(0.2)
-  expect(drill!.offset!.y).toBeCloseTo(-0.1)
+  // KiCad drill offset: X is inverted (negative X = right), Y matches Circuit JSON direction
+  expect(drill!.offset!.x).toBeCloseTo(-0.2)
+  expect(drill!.offset!.y).toBeCloseTo(0.1)
 })
 
 test("createThruHolePadFromCircuitJson rotates hole offset with component", () => {
@@ -63,6 +64,7 @@ test("createThruHolePadFromCircuitJson rotates hole offset with component", () =
   const drill = pad!.drill
   expect(drill).toBeDefined()
   expect(drill!.offset).toBeDefined()
+  // After 90° rotation, (-0.2, 0) becomes (0, -0.2) due to rotation matrix
   expect(drill!.offset!.x).toBeCloseTo(0, 5)
-  expect(drill!.offset!.y).toBeCloseTo(0.2)
+  expect(drill!.offset!.y).toBeCloseTo(-0.2)
 })
