@@ -6,6 +6,7 @@ import {
   Pts,
   Xy,
   PadOptions,
+  PadNet,
 } from "kicadts"
 import {
   applyToPoint,
@@ -14,6 +15,7 @@ import {
   scale,
   rotate,
 } from "transformation-matrix"
+import type { PcbNetInfo } from "../../../types"
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
  */
@@ -22,11 +24,13 @@ export function createSmdPadFromCircuitJson({
   componentCenter,
   padNumber,
   componentRotation = 0,
+  netInfo,
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
   padNumber: number
   componentRotation?: number
+  netInfo?: PcbNetInfo
 }): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
@@ -135,6 +139,10 @@ export function createSmdPadFromCircuitJson({
   }
   if (padPrimitives) {
     pad.primitives = padPrimitives
+  }
+
+  if (netInfo) {
+    pad.net = new PadNet(netInfo.id, netInfo.name)
   }
 
   return pad

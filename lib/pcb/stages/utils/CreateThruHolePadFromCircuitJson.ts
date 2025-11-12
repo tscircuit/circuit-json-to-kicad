@@ -1,17 +1,20 @@
-import { FootprintPad, PadDrill } from "kicadts"
+import { FootprintPad, PadDrill, PadNet } from "kicadts"
 import type { PcbPlatedHole } from "circuit-json"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
+import type { PcbNetInfo } from "../../../types"
 
 export function createThruHolePadFromCircuitJson({
   platedHole,
   componentCenter,
   padNumber,
   componentRotation = 0,
+  netInfo,
 }: {
   platedHole: PcbPlatedHole
   componentCenter: { x: number; y: number }
   padNumber: number
   componentRotation?: number
+  netInfo?: PcbNetInfo
 }): FootprintPad | null {
   if (!("x" in platedHole && "y" in platedHole)) {
     return null
@@ -126,7 +129,7 @@ export function createThruHolePadFromCircuitJson({
     drill = new PadDrill({ diameter: 0.8, offset: drillOffset })
   }
 
-  return new FootprintPad({
+  const pad = new FootprintPad({
     number: String(padNumber),
     padType: "thru_hole",
     shape: padShape,
@@ -137,4 +140,10 @@ export function createThruHolePadFromCircuitJson({
     removeUnusedLayers: false,
     uuid: crypto.randomUUID(),
   })
+
+  if (netInfo) {
+    pad.net = new PadNet(netInfo.id, netInfo.name)
+  }
+
+  return pad
 }

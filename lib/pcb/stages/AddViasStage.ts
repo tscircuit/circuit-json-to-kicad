@@ -1,7 +1,11 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Via, ViaNet } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
+import {
+  ConverterStage,
+  type ConverterContext,
+  type PcbNetInfo,
+} from "../../types"
 import { applyToPoint } from "transformation-matrix"
 
 /**
@@ -41,10 +45,53 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       y: via.y,
     })
 
-    // Determine net number
-    let netNumber = 0
-    if (pcbNetMap && via.net_name) {
-      netNumber = pcbNetMap.get(via.net_name) ?? 0
+    let netInfo: PcbNetInfo | undefined
+    if (pcbNetMap) {
+      let connectivityKey: string | undefined =
+        via.subcircuit_connectivity_map_key
+
+      if (!connectivityKey && via.pcb_trace_id) {
+        const pcbTrace = this.ctx.db.pcb_trace?.get(via.pcb_trace_id)
+        if (pcbTrace) {
+          if ("subcircuit_connectivity_map_key" in pcbTrace) {
+            connectivityKey = (pcbTrace as any).subcircuit_connectivity_map_key
+          }
+          if (!connectivityKey && pcbTrace.source_trace_id) {
+            const sourceTrace = this.ctx.db.source_trace?.get(
+              pcbTrace.source_trace_id,
+            )
+            if (sourceTrace) {
+              if ("subcircuit_connectivity_map_key" in sourceTrace) {
+                connectivityKey = (sourceTrace as any)
+                  .subcircuit_connectivity_map_key
+              }
+              if (
+                !connectivityKey &&
+                sourceTrace.connected_source_net_ids?.length
+              ) {
+                for (const sourceNetId of sourceTrace.connected_source_net_ids) {
+                  const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
+                  if (sourceNet?.subcircuit_connectivity_map_key) {
+                    connectivityKey = sourceNet.subcircuit_connectivity_map_key
+                    break
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+
+      if (!connectivityKey && via.connection_name) {
+        const sourceNet = this.ctx.db.source_net?.get(via.connection_name)
+        if (sourceNet?.subcircuit_connectivity_map_key) {
+          connectivityKey = sourceNet.subcircuit_connectivity_map_key
+        }
+      }
+
+      if (connectivityKey) {
+        netInfo = pcbNetMap.get(connectivityKey)
+      }
     }
 
     // Create a via
@@ -53,7 +100,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       size: via.outer_diameter || 0.8,
       drill: via.hole_diameter || 0.4,
       layers: ["F.Cu", "B.Cu"],
-      net: new ViaNet(netNumber),
+      net: new ViaNet(netInfo?.id ?? 0, netInfo?.name),
     })
 
     // Add the via to the PCB
