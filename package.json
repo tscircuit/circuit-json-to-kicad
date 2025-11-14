@@ -8,6 +8,7 @@
   ],
   "scripts": {
     "build": "tsup-node lib/index.ts --format esm --dts",
+    "build:site": "bun build ./site/index.html --outdir site-build",
     "download-demos": "git clone --depth 1 --filter=blob:none --sparse https://gitlab.com/kicad/code/kicad.git kicad-demos && cd kicad-demos && git sparse-checkout set demos",
     "typecheck": "bunx tsc --noEmit",
     "format": "biome format --write .",

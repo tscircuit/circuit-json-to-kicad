@@ -11,6 +11,7 @@ import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createNpthPadFromCircuitJson } from "./utils/CreateNpthPadFromCircuitJson"
 import { createFpTextFromCircuitJson } from "./utils/CreateFpTextFromCircuitJson"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -72,12 +73,13 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       y: component.center.y,
     })
 
-    // Create a footprint with UUID and required properties
+    // Create a footprint with deterministic UUID
+    const footprintData = `footprint:${component.pcb_component_id}:${transformedPos.x},${transformedPos.y}`
     const footprint = new Footprint({
       libraryLink: `tscircuit:${footprintName}`,
       layer: "F.Cu",
       at: [transformedPos.x, transformedPos.y, component.rotation || 0],
-      uuid: crypto.randomUUID(),
+      uuid: generateDeterministicUuid(footprintData),
     })
 
     // fpTexts is a getter/setter, so we need to get, modify, and set
@@ -124,6 +126,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         padNumber,
         componentRotation: component.rotation || 0,
         netInfo,
+        componentId: component.pcb_component_id,
       })
       fpPads.push(pad)
       padNumber++
@@ -146,6 +149,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         padNumber,
         componentRotation: component.rotation || 0,
         netInfo,
+        componentId: component.pcb_component_id,
       })
       if (pad) {
         fpPads.push(pad)

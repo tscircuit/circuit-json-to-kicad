@@ -7,6 +7,7 @@ import {
   type PcbNetInfo,
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 
 /**
  * Adds traces (segments/tracks) to the PCB from circuit JSON
@@ -105,14 +106,15 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       const kicadLayer =
         layerMap[startPoint.layer] || startPoint.layer || "F.Cu"
 
-      // Create a segment
+      // Create a segment with deterministic UUID
+      const segmentData = `segment:${transformedStart.x},${transformedStart.y}:${transformedEnd.x},${transformedEnd.y}:${kicadLayer}:${netInfo?.id ?? 0}`
       const segment = new Segment({
         start: { x: transformedStart.x, y: transformedStart.y },
         end: { x: transformedEnd.x, y: transformedEnd.y },
         layer: kicadLayer,
         width: trace.width || 0.25,
         net: new SegmentNet(netInfo?.id ?? 0),
-        uuid: crypto.randomUUID(),
+        uuid: generateDeterministicUuid(segmentData),
       })
 
       // Add the segment to the PCB
