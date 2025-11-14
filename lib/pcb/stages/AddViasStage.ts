@@ -7,6 +7,7 @@ import {
   type PcbNetInfo,
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 
 /**
  * Adds vias to the PCB from circuit JSON
@@ -94,14 +95,15 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Create a via
+    // Create a via with deterministic UUID
+    const viaData = `via:${transformedPos.x},${transformedPos.y}:${via.outer_diameter || 0.8}:${via.hole_diameter || 0.4}:${netInfo?.id ?? 0}`
     const kicadVia = new Via({
       at: [transformedPos.x, transformedPos.y],
       size: via.outer_diameter || 0.8,
       drill: via.hole_diameter || 0.4,
       layers: ["F.Cu", "B.Cu"],
       net: new ViaNet(netInfo?.id ?? 0),
-      uuid: crypto.randomUUID(),
+      uuid: generateDeterministicUuid(viaData),
     })
 
     // Add the via to the PCB
