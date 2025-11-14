@@ -16,6 +16,8 @@ import {
   rotate,
 } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
+import { generateDeterministicUuid } from "./generateDeterministicUuid"
+
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
  */
@@ -25,12 +27,14 @@ export function createSmdPadFromCircuitJson({
   padNumber,
   componentRotation = 0,
   netInfo,
+  componentId,
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
   padNumber: number
   componentRotation?: number
   netInfo?: PcbNetInfo
+  componentId?: string
 }): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
@@ -119,6 +123,8 @@ export function createSmdPadFromCircuitJson({
     ]
   }
 
+  // Generate deterministic UUID for pad
+  const padData = `pad:${componentId}:${padNumber}:${rotatedPos.x},${rotatedPos.y}`
   const pad = new FootprintPad({
     number: String(padNumber),
     padType: "smd",
@@ -130,7 +136,7 @@ export function createSmdPadFromCircuitJson({
       `${padLayer === "F.Cu" ? "F" : "B"}.Paste`,
       `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
     ],
-    uuid: crypto.randomUUID(),
+    uuid: generateDeterministicUuid(padData),
   })
 
   // Add custom pad options and primitives if this is a polygon pad
