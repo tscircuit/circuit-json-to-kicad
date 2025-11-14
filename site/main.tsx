@@ -44,7 +44,11 @@ uploadArea.addEventListener("drop", (e) => {
   e.preventDefault()
   uploadArea.classList.remove("dragover")
 
-  if (e.dataTransfer && e.dataTransfer.files.length > 0 && e.dataTransfer.files[0]) {
+  if (
+    e.dataTransfer &&
+    e.dataTransfer.files.length > 0 &&
+    e.dataTransfer.files[0]
+  ) {
     handleFile(e.dataTransfer.files[0])
   }
 })
@@ -68,7 +72,10 @@ async function handleFile(file: File) {
     convertBtn.disabled = false
     showStatus("File loaded successfully! Ready to convert.", "success")
   } catch (error) {
-    showStatus(`Error reading file: ${error instanceof Error ? error.message : String(error)}`, "error")
+    showStatus(
+      `Error reading file: ${error instanceof Error ? error.message : String(error)}`,
+      "error",
+    )
     convertBtn.disabled = true
     circuitJson = null
   }
@@ -114,7 +121,10 @@ convertBtn.addEventListener("click", async () => {
     showStatus("Conversion complete! Files downloaded.", "success")
     convertBtn.disabled = false
   } catch (error) {
-    showStatus(`Error during conversion: ${error instanceof Error ? error.message : String(error)}`, "error")
+    showStatus(
+      `Error during conversion: ${error instanceof Error ? error.message : String(error)}`,
+      "error",
+    )
     convertBtn.disabled = false
     console.error(error)
   }
