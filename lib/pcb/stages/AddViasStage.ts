@@ -100,7 +100,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       size: via.outer_diameter || 0.8,
       drill: via.hole_diameter || 0.4,
       layers: ["F.Cu", "B.Cu"],
-      net: new ViaNet(netInfo?.id ?? 0, netInfo?.name),
+      net: new ViaNet(netInfo?.id ?? 0),
+      uuid: crypto.randomUUID(),
     })
 
     // Add the via to the PCB
