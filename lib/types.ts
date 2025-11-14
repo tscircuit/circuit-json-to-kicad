@@ -10,6 +10,11 @@ export type SchematicTraceId = string
 export type PcbPortId = string
 export type PcbTraceId = string
 
+export interface PcbNetInfo {
+  id: number
+  name: string
+}
+
 export interface ConverterContext {
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
@@ -31,7 +36,7 @@ export interface ConverterContext {
 
   // PCB-specific data
   pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
-  pcbNetMap?: Map<string, number> // Circuit JSON net name to KiCad net number
+  pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key to KiCad net metadata
 }
 
 export abstract class ConverterStage<Input, Output> {

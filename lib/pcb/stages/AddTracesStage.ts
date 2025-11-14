@@ -1,7 +1,11 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Segment, SegmentNet } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
+import {
+  ConverterStage,
+  type ConverterContext,
+  type PcbNetInfo,
+} from "../../types"
 import { applyToPoint } from "transformation-matrix"
 
 /**
@@ -55,11 +59,42 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         y: endPoint.y,
       })
 
-      // Determine net number
-      let netNumber = 0
+      let netInfo: PcbNetInfo | undefined
       if (pcbNetMap) {
-        const netName = `Net-${trace.pcb_trace_id}`
-        netNumber = pcbNetMap.get(netName) ?? 0
+        let connectivityKey: string | undefined =
+          trace.subcircuit_connectivity_map_key
+
+        if (!connectivityKey && trace.source_trace_id) {
+          const sourceTrace = this.ctx.db.source_trace?.get(
+            trace.source_trace_id,
+          )
+          if (sourceTrace) {
+            connectivityKey = sourceTrace.subcircuit_connectivity_map_key
+            if (
+              !connectivityKey &&
+              sourceTrace.connected_source_net_ids?.length
+            ) {
+              for (const sourceNetId of sourceTrace.connected_source_net_ids) {
+                const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
+                if (sourceNet?.subcircuit_connectivity_map_key) {
+                  connectivityKey = sourceNet.subcircuit_connectivity_map_key
+                  break
+                }
+              }
+            }
+          }
+        }
+
+        if (!connectivityKey && typeof trace.connection_name === "string") {
+          const sourceNet = this.ctx.db.source_net?.get(trace.connection_name)
+          if (sourceNet?.subcircuit_connectivity_map_key) {
+            connectivityKey = sourceNet.subcircuit_connectivity_map_key
+          }
+        }
+
+        if (connectivityKey) {
+          netInfo = pcbNetMap.get(connectivityKey)
+        }
       }
 
       // Map circuit JSON layer names to KiCad layer names
@@ -76,7 +111,8 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         end: { x: transformedEnd.x, y: transformedEnd.y },
         layer: kicadLayer,
         width: trace.width || 0.25,
-        net: new SegmentNet(netNumber),
+        net: new SegmentNet(netInfo?.id ?? 0),
+        uuid: crypto.randomUUID(),
       })
 
       // Add the segment to the PCB

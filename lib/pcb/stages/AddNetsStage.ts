@@ -1,7 +1,11 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
+import {
+  ConverterStage,
+  type ConverterContext,
+  type PcbNetInfo,
+} from "../../types"
 
 /**
  * Adds nets to the PCB from circuit JSON connections
@@ -15,41 +19,75 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     // Initialize the net map in context if it doesn't exist
-    if (!this.ctx.pcbNetMap) {
-      this.ctx.pcbNetMap = new Map()
+    this.ctx.pcbNetMap = new Map()
+
+    const netNameByKey = new Map<string, string>()
+
+    const sourceNets = this.ctx.db.source_net?.list() ?? []
+    for (const sourceNet of sourceNets) {
+      const connectivityKey =
+        sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
+      if (!connectivityKey) continue
+
+      const candidateName = sourceNet.name || sourceNet.source_net_id || ""
+      const netName =
+        candidateName && candidateName.trim().length > 0
+          ? candidateName
+          : connectivityKey
+
+      netNameByKey.set(connectivityKey, netName)
     }
 
-    // Get all PCB traces to identify unique nets
-    const pcbTraces = this.ctx.db.pcb_trace.list()
+    const sourceTraces = this.ctx.db.source_trace?.list() ?? []
+    for (const sourceTrace of sourceTraces) {
+      let connectivityKey = sourceTrace.subcircuit_connectivity_map_key
 
-    // Collect unique net names
-    const netNames = new Set<string>()
+      if (!connectivityKey && sourceTrace.connected_source_net_ids?.length) {
+        for (const sourceNetId of sourceTrace.connected_source_net_ids) {
+          const connectedNet = this.ctx.db.source_net?.get(sourceNetId)
+          if (
+            connectedNet?.subcircuit_connectivity_map_key &&
+            connectedNet.subcircuit_connectivity_map_key.length > 0
+          ) {
+            connectivityKey = connectedNet.subcircuit_connectivity_map_key
+            break
+          }
+        }
+      }
 
-    // Add ground net (net 0 is always the ground/no-net in KiCad)
-    netNames.add("GND")
+      if (!connectivityKey) continue
 
-    // Extract net names from traces
-    for (const trace of pcbTraces) {
-      // Use trace route as a basis for net naming, or generate from connected ports
-      if (trace.route && trace.route.length > 0) {
-        // Create a net name based on the trace ID or connected components
-        const netName = `Net-${trace.pcb_trace_id}`
-        netNames.add(netName)
+      if (!netNameByKey.has(connectivityKey)) {
+        const candidateName =
+          sourceTrace.display_name || sourceTrace.source_trace_id || ""
+        const netName =
+          candidateName && candidateName.trim().length > 0
+            ? candidateName
+            : connectivityKey
+
+        netNameByKey.set(connectivityKey, netName)
       }
     }
 
-    // Add nets to the PCB
-    let netNumber = 0
-    for (const netName of Array.from(netNames).sort()) {
-      const net = new PcbNet(netNumber, netName)
-      const nets = kicadPcb.nets
-      nets.push(net)
-      kicadPcb.nets = nets
+    const sortedEntries = Array.from(netNameByKey.entries()).sort((a, b) =>
+      a[0].localeCompare(b[0]),
+    )
 
-      // Store in the net map for use by other stages
-      this.ctx.pcbNetMap.set(netName, netNumber)
+    const nets: PcbNet[] = []
+    nets.push(new PcbNet(0, ""))
+
+    let netNumber = 1
+    for (const [connectivityKey, netName] of sortedEntries) {
+      const pcbNet = new PcbNet(netNumber, netName)
+      nets.push(pcbNet)
+
+      const netInfo: PcbNetInfo = { id: netNumber, name: netName }
+      this.ctx.pcbNetMap.set(connectivityKey, netInfo)
+
       netNumber++
     }
+
+    kicadPcb.nets = nets
 
     this.finished = true
   }

@@ -1,7 +1,11 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FpText } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
+import {
+  ConverterStage,
+  type ConverterContext,
+  type PcbNetInfo,
+} from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
@@ -14,6 +18,23 @@ import { createFpTextFromCircuitJson } from "./utils/CreateFpTextFromCircuitJson
 export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
+
+  private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
+    if (!pcbPortId) return undefined
+    const pcbPort = this.ctx.db.pcb_port?.get(pcbPortId)
+    if (!pcbPort) return undefined
+
+    const sourcePortId = pcbPort.source_port_id
+    if (!sourcePortId) return undefined
+
+    const sourcePort = this.ctx.db.source_port?.get(sourcePortId)
+    if (!sourcePort) return undefined
+
+    const connectivityKey = sourcePort.subcircuit_connectivity_map_key
+    if (!connectivityKey) return undefined
+
+    return this.ctx.pcbNetMap?.get(connectivityKey)
+  }
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
@@ -96,11 +117,13 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Convert SMD pads
     for (const pcbPad of pcbPads) {
+      const netInfo = this.getNetInfoForPcbPort(pcbPad.pcb_port_id)
       const pad = createSmdPadFromCircuitJson({
         pcbPad,
         componentCenter: component.center,
         padNumber,
         componentRotation: component.rotation || 0,
+        netInfo,
       })
       fpPads.push(pad)
       padNumber++
@@ -116,11 +139,13 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Convert plated holes to through-hole pads
     for (const platedHole of pcbPlatedHoles) {
+      const netInfo = this.getNetInfoForPcbPort(platedHole.pcb_port_id)
       const pad = createThruHolePadFromCircuitJson({
         platedHole,
         componentCenter: component.center,
         padNumber,
         componentRotation: component.rotation || 0,
+        netInfo,
       })
       if (pad) {
         fpPads.push(pad)
