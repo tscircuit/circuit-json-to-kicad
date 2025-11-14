@@ -171,7 +171,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         pcbHole,
         componentCenter: component.center,
         componentRotation: component.rotation || 0,
-        componentId: component.pcb_component_id,
       })
       if (pad) {
         fpPads.push(pad)

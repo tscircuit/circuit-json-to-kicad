@@ -6,19 +6,19 @@ function simpleHash(str: string): string {
   let hash = 0
   for (let i = 0; i < str.length; i++) {
     const char = str.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
+    hash = (hash << 5) - hash + char
     hash = hash & hash // Convert to 32bit integer
   }
 
   // Generate more bits by hashing multiple times with different seeds
-  let result = ''
+  let result = ""
   for (let i = 0; i < 4; i++) {
     let h = hash
     for (let j = 0; j < str.length; j++) {
-      h = ((h << 5) - h) + str.charCodeAt(j) + i * 31
+      h = (h << 5) - h + str.charCodeAt(j) + i * 31
       h = h & h
     }
-    result += Math.abs(h).toString(16).padStart(8, '0')
+    result += Math.abs(h).toString(16).padStart(8, "0")
   }
 
   return result
