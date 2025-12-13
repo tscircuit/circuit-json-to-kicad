@@ -6,6 +6,7 @@ on:
   push:
     branches:
       - main
+      - '!version-bumps/**'
 
 jobs:
   test:
@@ -15,8 +16,6 @@ jobs:
       image: ghcr.io/kicad/kicad:9.0
       options: --user root
 
-    # Skip test for PRs that not chore: bump version
-    if: "${{ github.event_name != 'pull_request' || github.event.pull_request.title != 'chore: bump version' }}"
 
     steps:
       - name: Checkout code
