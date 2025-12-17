@@ -1,6 +1,6 @@
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, CadComponent } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FpText } from "kicadts"
+import { Footprint, FpText, FootprintModel } from "kicadts"
 import {
   ConverterStage,
   type ConverterContext,
@@ -35,6 +35,65 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (!connectivityKey) return undefined
 
     return this.ctx.pcbNetMap?.get(connectivityKey)
+  }
+
+  /**
+   * Gets the cad_component associated with a pcb_component
+   */
+  private getCadComponentForPcbComponent(
+    pcbComponentId: string,
+  ): CadComponent | undefined {
+    const cadComponents = this.ctx.db.cad_component?.list() || []
+    return cadComponents.find(
+      (cad: CadComponent) => cad.pcb_component_id === pcbComponentId,
+    )
+  }
+
+  /**
+   * Creates FootprintModel instances from a cad_component's 3D model URLs
+   */
+  private create3DModelsFromCadComponent(
+    cadComponent: CadComponent,
+    componentCenter: { x: number; y: number },
+  ): FootprintModel[] {
+    const models: FootprintModel[] = []
+
+    // Get the model URL - prefer STEP, fallback to WRL
+    const modelUrl = cadComponent.model_step_url || cadComponent.model_wrl_url
+    if (!modelUrl) return models
+
+    // Create the FootprintModel with the URL path
+    const model = new FootprintModel(modelUrl)
+
+    // Calculate offset relative to footprint center
+    // cad_component.position is world position, we need offset from footprint origin
+    // KiCad Y-axis is flipped relative to circuit-json
+    if (cadComponent.position) {
+      model.offset = {
+        x: (cadComponent.position.x || 0) - componentCenter.x,
+        y: -((cadComponent.position.y || 0) - componentCenter.y),
+        z: cadComponent.position.z || 0,
+      }
+    }
+
+    // Apply rotation from cad_component if specified
+    // KiCad uses degrees for rotation
+    if (cadComponent.rotation) {
+      model.rotate = {
+        x: cadComponent.rotation.x || 0,
+        y: cadComponent.rotation.y || 0,
+        z: cadComponent.rotation.z || 0,
+      }
+    }
+
+    // Apply scale factor if specified
+    if (cadComponent.model_unit_to_mm_scale_factor) {
+      const scale = cadComponent.model_unit_to_mm_scale_factor
+      model.scale = { x: scale, y: scale, z: scale }
+    }
+
+    models.push(model)
+    return models
   }
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
@@ -178,6 +237,20 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     footprint.fpPads = fpPads
+
+    // Add 3D models from cad_component if available
+    const cadComponent = this.getCadComponentForPcbComponent(
+      component.pcb_component_id,
+    )
+    if (cadComponent) {
+      const models = this.create3DModelsFromCadComponent(
+        cadComponent,
+        component.center,
+      )
+      if (models.length > 0) {
+        footprint.models = models
+      }
+    }
 
     // Add the footprint to the PCB
     // Note: footprints is a getter/setter, so we need to get, modify, and set
