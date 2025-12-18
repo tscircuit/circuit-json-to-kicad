@@ -7,7 +7,7 @@ import {
   type SymbolEntry,
   type FootprintEntry,
 } from "../types"
-import { InitializeLibraryStage } from "./stages/InitializeLibraryStage"
+import { GenerateKicadSchAndPcbStage } from "./stages/GenerateKicadSchAndPcbStage"
 import { ExtractSymbolsStage } from "./stages/ExtractSymbolsStage"
 import { ExtractFootprintsStage } from "./stages/ExtractFootprintsStage"
 import { GenerateSymbolLibraryStage } from "./stages/GenerateSymbolLibraryStage"
@@ -45,7 +45,7 @@ export class CircuitJsonToKicadLibraryConverter {
     }
 
     this.pipeline = [
-      new InitializeLibraryStage(circuitJson, this.ctx),
+      new GenerateKicadSchAndPcbStage(circuitJson, this.ctx),
       new ExtractSymbolsStage(circuitJson, this.ctx),
       new ExtractFootprintsStage(circuitJson, this.ctx),
       new GenerateSymbolLibraryStage(circuitJson, this.ctx),
