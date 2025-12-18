@@ -113,6 +113,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const libId = getLibraryId(sourceComp, schematicComponent)
     const isChip = sourceComp.ftype === "simple_chip"
 
+    // Get footprint name for symbol-footprint linkage
+    const footprintName = sourceComp.ftype || ""
+
     return this.createLibrarySymbol({
       libId,
       symbolData,
@@ -121,6 +124,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       description: this.getDescription(sourceComp),
       keywords: this.getKeywords(sourceComp),
       fpFilters: this.getFpFilters(sourceComp),
+      footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
     })
   }
 
@@ -235,6 +239,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     description,
     keywords,
     fpFilters,
+    footprintRef = "",
   }: {
     libId: string
     symbolData: any
@@ -243,6 +248,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     description: string
     keywords: string
     fpFilters: string
+    footprintRef?: string
   }): SchematicSymbol {
     const symbol = new SchematicSymbol({
       libraryId: libId,
@@ -270,6 +276,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       description,
       keywords,
       fpFilters,
+      footprintRef,
     })
 
     // Create drawing subsymbol (unit 0, 1)
@@ -304,12 +311,14 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     description,
     keywords,
     fpFilters,
+    footprintRef = "",
   }: {
     symbol: SchematicSymbol
     libId: string
     description: string
     keywords: string
     fpFilters: string
+    footprintRef?: string
   }): void {
     const refPrefix = libId.split(":")[1]?.[0] || "U"
 
@@ -324,7 +333,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       { key: "Value", value: refPrefix, id: 1, at: [0, 0, 90], hide: false },
       {
         key: "Footprint",
-        value: "",
+        value: footprintRef,
         id: 2,
         at: [-1.778, 0, 90],
         hide: true,
