@@ -29,10 +29,10 @@ export class ExtractFootprintsStage extends ConverterStage<
   KicadLibraryOutput
 > {
   override _step(): void {
-    const pcbContent = this.ctx.pcbContent
+    const kicadPcbString = this.ctx.kicadPcbString
     const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
 
-    if (!pcbContent) {
+    if (!kicadPcbString) {
       throw new Error(
         "PCB content not available. Run InitializeLibraryStage first.",
       )
@@ -41,7 +41,7 @@ export class ExtractFootprintsStage extends ConverterStage<
     const uniqueFootprints = new Map<string, FootprintEntry>()
 
     try {
-      const parsed = parseKicadSexpr(pcbContent)
+      const parsed = parseKicadSexpr(kicadPcbString)
       const pcb = parsed.find(
         (node): node is KicadPcb => node instanceof KicadPcb,
       )

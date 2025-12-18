@@ -21,14 +21,14 @@ export class InitializeLibraryStage extends ConverterStage<
       this.ctx.circuitJson,
     )
     schConverter.runUntilFinished()
-    this.ctx.schematicContent = schConverter.getOutputString()
+    this.ctx.kicadSchString = schConverter.getOutputString()
 
     // Generate PCB to extract footprints
     const pcbConverter = new CircuitJsonToKicadPcbConverter(
       this.ctx.circuitJson,
     )
     pcbConverter.runUntilFinished()
-    this.ctx.pcbContent = pcbConverter.getOutputString()
+    this.ctx.kicadPcbString = pcbConverter.getOutputString()
 
     this.finished = true
   }

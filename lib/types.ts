@@ -60,8 +60,8 @@ export interface ConverterContext {
   // Library-specific data
   libraryName?: string
   fpLibraryName?: string
-  schematicContent?: string
-  pcbContent?: string
+  kicadSchString?: string
+  kicadPcbString?: string
   symbolEntries?: SymbolEntry[]
   footprintEntries?: FootprintEntry[]
   libraryOutput?: KicadLibraryOutput

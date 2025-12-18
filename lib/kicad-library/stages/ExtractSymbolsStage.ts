@@ -15,7 +15,7 @@ export class ExtractSymbolsStage extends ConverterStage<
   KicadLibraryOutput
 > {
   override _step(): void {
-    const schContent = this.ctx.schematicContent
+    const schContent = this.ctx.kicadSchString
     const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
 
     if (!schContent) {
