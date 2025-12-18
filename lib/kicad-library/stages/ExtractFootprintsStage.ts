@@ -34,7 +34,7 @@ export class ExtractFootprintsStage extends ConverterStage<
 
     if (!kicadPcbString) {
       throw new Error(
-        "PCB content not available. Run InitializeLibraryStage first.",
+        "PCB content not available. Run GenerateKicadSchAndPcbStage first.",
       )
     }
 

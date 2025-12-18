@@ -20,7 +20,7 @@ export class ExtractSymbolsStage extends ConverterStage<
 
     if (!schContent) {
       throw new Error(
-        "Schematic content not available. Run InitializeLibraryStage first.",
+        "Schematic content not available. Run GenerateKicadSchAndPcbStage first.",
       )
     }
 
