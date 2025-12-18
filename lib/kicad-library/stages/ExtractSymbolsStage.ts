@@ -1,5 +1,5 @@
 import type { CircuitJson } from "circuit-json"
-import { parseKicadSexpr, KicadSch } from "kicadts"
+import { parseKicadSexpr, KicadSch, SchematicSymbol } from "kicadts"
 import {
   ConverterStage,
   type ConverterContext,
@@ -16,6 +16,7 @@ export class ExtractSymbolsStage extends ConverterStage<
 > {
   override _step(): void {
     const schContent = this.ctx.schematicContent
+    const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
 
     if (!schContent) {
       throw new Error(
@@ -49,6 +50,10 @@ export class ExtractSymbolsStage extends ConverterStage<
         if (!uniqueSymbols.has(symbolName)) {
           // Update libraryId for standalone library use
           symbol.libraryId = symbolName
+
+          // Update Footprint property to use the correct library name
+          this.updateFootprintProperty(symbol, fpLibraryName)
+
           uniqueSymbols.set(symbolName, {
             symbolName,
             content: symbol.getString(),
@@ -61,6 +66,29 @@ export class ExtractSymbolsStage extends ConverterStage<
 
     this.ctx.symbolEntries = Array.from(uniqueSymbols.values())
     this.finished = true
+  }
+
+  /**
+   * Updates the Footprint property in a symbol to use the correct library name.
+   * Changes "tscircuit:footprint_name" to "fpLibraryName:footprint_name"
+   */
+  private updateFootprintProperty(
+    symbol: SchematicSymbol,
+    fpLibraryName: string,
+  ): void {
+    const properties = symbol.properties ?? []
+    for (const prop of properties) {
+      if (prop.key === "Footprint" && prop.value) {
+        // Replace any library prefix with the correct footprint library name
+        const parts = prop.value.split(":")
+        if (parts.length > 1) {
+          prop.value = `${fpLibraryName}:${parts[1]}`
+        } else if (prop.value.trim()) {
+          // No prefix, add the library name
+          prop.value = `${fpLibraryName}:${prop.value}`
+        }
+      }
+    }
   }
 
   private sanitizeSymbolName(libraryId?: string): string {
