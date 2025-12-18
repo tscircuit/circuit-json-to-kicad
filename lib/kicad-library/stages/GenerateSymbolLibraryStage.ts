@@ -1,4 +1,5 @@
 import type { CircuitJson } from "circuit-json"
+import { KicadSchVersion, KicadSchGenerator } from "kicadts"
 import {
   ConverterStage,
   type ConverterContext,
@@ -36,11 +37,14 @@ export class GenerateSymbolLibraryStage extends ConverterStage<
   }
 
   private generateSymbolLibrary(symbols: SymbolEntry[]): string {
+    const version = new KicadSchVersion(KICAD_SYM_LIB_VERSION)
+    const generator = new KicadSchGenerator(GENERATOR)
+
     const lines: string[] = []
 
     lines.push("(kicad_symbol_lib")
-    lines.push(`\t(version ${KICAD_SYM_LIB_VERSION})`)
-    lines.push(`\t(generator "${GENERATOR}")`)
+    lines.push(`\t${version.getString()}`)
+    lines.push(`\t${generator.getString()}`)
 
     for (const symbol of symbols) {
       const symbolLines = symbol.content.split("\n")
