@@ -22,16 +22,16 @@ export interface SymbolEntry {
 
 export interface FootprintEntry {
   footprintName: string
-  content: string
-  modelFiles: string[]
+  kicadModString: string
+  model3dSourcePaths: string[]
 }
 
 export interface KicadLibraryOutput {
-  symbolLibrary: string
+  kicadSymString: string
   footprints: FootprintEntry[]
-  fpLibTable: string
-  symLibTable: string
-  modelFiles: string[]
+  fpLibTableString: string
+  symLibTableString: string
+  model3dSourcePaths: string[]
 }
 
 export interface ConverterContext {

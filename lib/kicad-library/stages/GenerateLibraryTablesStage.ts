@@ -18,34 +18,36 @@ export class GenerateLibraryTablesStage extends ConverterStage<
     const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
     const footprintEntries = this.ctx.footprintEntries ?? []
 
-    // Collect all model files from footprints
-    const modelFilesSet = new Set<string>()
+    // Collect all 3D model source paths from footprints
+    const model3dSourcePathsSet = new Set<string>()
     for (const fp of footprintEntries) {
-      for (const modelFile of fp.modelFiles) {
-        modelFilesSet.add(modelFile)
+      for (const modelPath of fp.model3dSourcePaths) {
+        model3dSourcePathsSet.add(modelPath)
       }
     }
 
     // Generate library tables
-    const fpLibTable = this.generateFpLibTable(fpLibraryName)
-    const symLibTable = this.generateSymLibTable(libraryName)
+    const fpLibTableString = this.generateFpLibTable(fpLibraryName)
+    const symLibTableString = this.generateSymLibTable(libraryName)
 
     // Ensure library output is initialized
     if (!this.ctx.libraryOutput) {
       this.ctx.libraryOutput = {
-        symbolLibrary: "",
+        kicadSymString: "",
         footprints: [],
-        fpLibTable: "",
-        symLibTable: "",
-        modelFiles: [],
+        fpLibTableString: "",
+        symLibTableString: "",
+        model3dSourcePaths: [],
       }
     }
 
     // Finalize the library output
     this.ctx.libraryOutput.footprints = footprintEntries
-    this.ctx.libraryOutput.fpLibTable = fpLibTable
-    this.ctx.libraryOutput.symLibTable = symLibTable
-    this.ctx.libraryOutput.modelFiles = Array.from(modelFilesSet)
+    this.ctx.libraryOutput.fpLibTableString = fpLibTableString
+    this.ctx.libraryOutput.symLibTableString = symLibTableString
+    this.ctx.libraryOutput.model3dSourcePaths = Array.from(
+      model3dSourcePathsSet,
+    )
 
     this.finished = true
   }

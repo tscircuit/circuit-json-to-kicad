@@ -132,8 +132,8 @@ export class ExtractFootprintsStage extends ConverterStage<
 
     return {
       footprintName,
-      content: footprint.getString(),
-      modelFiles,
+      kicadModString: footprint.getString(),
+      model3dSourcePaths: modelFiles,
     }
   }
 

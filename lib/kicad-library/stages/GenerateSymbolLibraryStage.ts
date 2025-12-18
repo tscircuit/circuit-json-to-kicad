@@ -24,15 +24,15 @@ export class GenerateSymbolLibraryStage extends ConverterStage<
     // Initialize the library output if not present
     if (!this.ctx.libraryOutput) {
       this.ctx.libraryOutput = {
-        symbolLibrary: "",
+        kicadSymString: "",
         footprints: [],
-        fpLibTable: "",
-        symLibTable: "",
-        modelFiles: [],
+        fpLibTableString: "",
+        symLibTableString: "",
+        model3dSourcePaths: [],
       }
     }
 
-    this.ctx.libraryOutput.symbolLibrary = symbolLibrary
+    this.ctx.libraryOutput.kicadSymString = symbolLibrary
     this.finished = true
   }
 

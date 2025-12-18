@@ -128,8 +128,8 @@ test("generates kicad library with symbols, footprints, and 3D model references"
   const output = converter.getOutput()
 
   // Verify symbol library
-  expect(output.symbolLibrary).toContain("kicad_symbol_lib")
-  expect(output.symbolLibrary).toContain("version")
+  expect(output.kicadSymString).toContain("kicad_symbol_lib")
+  expect(output.kicadSymString).toContain("version")
 
   // Verify footprints
   expect(output.footprints.length).toBeGreaterThanOrEqual(2)
@@ -137,21 +137,23 @@ test("generates kicad library with symbols, footprints, and 3D model references"
     fp.footprintName.includes("chip"),
   )
   expect(chipFootprint).toBeDefined()
-  expect(chipFootprint!.content).toContain("footprint")
-  expect(chipFootprint!.content).toContain("pad")
+  expect(chipFootprint!.kicadModString).toContain("footprint")
+  expect(chipFootprint!.kicadModString).toContain("pad")
 
   // Verify 3D model reference in footprint
-  expect(chipFootprint!.content).toContain("(model")
-  expect(chipFootprint!.content).toContain("my_library.3dshapes")
-  expect(chipFootprint!.content).toContain("SW_Push_1P1T_NO_CK_KMR2.step")
+  expect(chipFootprint!.kicadModString).toContain("(model")
+  expect(chipFootprint!.kicadModString).toContain("my_library.3dshapes")
+  expect(chipFootprint!.kicadModString).toContain(
+    "SW_Push_1P1T_NO_CK_KMR2.step",
+  )
 
-  // Verify model files list
-  expect(output.modelFiles.length).toBeGreaterThan(0)
-  expect(output.modelFiles[0]).toContain("SW_Push_1P1T_NO_CK_KMR2.step")
+  // Verify model 3D source paths list
+  expect(output.model3dSourcePaths.length).toBeGreaterThan(0)
+  expect(output.model3dSourcePaths[0]).toContain("SW_Push_1P1T_NO_CK_KMR2.step")
 
   // Verify library tables
-  expect(output.fpLibTable).toContain("fp_lib_table")
-  expect(output.fpLibTable).toContain("my_library")
-  expect(output.symLibTable).toContain("sym_lib_table")
-  expect(output.symLibTable).toContain("my_library")
+  expect(output.fpLibTableString).toContain("fp_lib_table")
+  expect(output.fpLibTableString).toContain("my_library")
+  expect(output.symLibTableString).toContain("sym_lib_table")
+  expect(output.symLibTableString).toContain("my_library")
 })

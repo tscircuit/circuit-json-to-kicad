@@ -78,7 +78,7 @@ export class CircuitJsonToKicadLibraryConverter {
   }
 
   getSymbolLibraryString(): string {
-    return this.getOutput().symbolLibrary
+    return this.getOutput().kicadSymString
   }
 
   getFootprints(): FootprintEntry[] {
@@ -86,14 +86,14 @@ export class CircuitJsonToKicadLibraryConverter {
   }
 
   getFpLibTableString(): string {
-    return this.getOutput().fpLibTable
+    return this.getOutput().fpLibTableString
   }
 
   getSymLibTableString(): string {
-    return this.getOutput().symLibTable
+    return this.getOutput().symLibTableString
   }
 
-  getModelFiles(): string[] {
-    return this.getOutput().modelFiles
+  getModel3dSourcePaths(): string[] {
+    return this.getOutput().model3dSourcePaths
   }
 }
