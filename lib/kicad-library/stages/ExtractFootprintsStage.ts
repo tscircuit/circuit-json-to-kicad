@@ -6,13 +6,20 @@ import {
   FootprintModel,
   At,
 } from "kicadts"
-import path from "node:path"
 import {
   ConverterStage,
   type ConverterContext,
   type KicadLibraryOutput,
   type FootprintEntry,
 } from "../../types"
+
+/**
+ * Browser-compatible basename extraction (handles both / and \ separators)
+ */
+function getBasename(filePath: string): string {
+  const parts = filePath.split(/[/\\]/)
+  return parts[parts.length - 1] || filePath
+}
 
 /**
  * Extracts footprints from the generated PCB content.
@@ -109,7 +116,7 @@ export class ExtractFootprintsStage extends ConverterStage<
 
     for (const model of models) {
       if (model.path) {
-        const modelFilename = path.basename(model.path)
+        const modelFilename = getBasename(model.path)
         const newPath = `\${KIPRJMOD}/${fpLibraryName}.3dshapes/${modelFilename}`
 
         const newModel = new FootprintModel(newPath)
