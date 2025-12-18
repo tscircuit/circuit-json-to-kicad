@@ -1,5 +1,5 @@
 import type { CircuitJson } from "circuit-json"
-import { KicadSchVersion, KicadSchGenerator } from "kicadts"
+import { KicadSymbolLib } from "kicadts"
 import {
   ConverterStage,
   type ConverterContext,
@@ -18,8 +18,8 @@ export class GenerateSymbolLibraryStage extends ConverterStage<
   KicadLibraryOutput
 > {
   override _step(): void {
-    const symbols = this.ctx.symbolEntries ?? []
-    const symbolLibrary = this.generateSymbolLibrary(symbols)
+    const symbolEntries = this.ctx.symbolEntries ?? []
+    const symbolLibrary = this.generateSymbolLibrary(symbolEntries)
 
     // Initialize the library output if not present
     if (!this.ctx.libraryOutput) {
@@ -36,26 +36,14 @@ export class GenerateSymbolLibraryStage extends ConverterStage<
     this.finished = true
   }
 
-  private generateSymbolLibrary(symbols: SymbolEntry[]): string {
-    const version = new KicadSchVersion(KICAD_SYM_LIB_VERSION)
-    const generator = new KicadSchGenerator(GENERATOR)
+  private generateSymbolLibrary(symbolEntries: SymbolEntry[]): string {
+    const symbolLib = new KicadSymbolLib({
+      version: KICAD_SYM_LIB_VERSION,
+      generator: GENERATOR,
+      symbols: symbolEntries.map((entry) => entry.symbol),
+    })
 
-    const lines: string[] = []
-
-    lines.push("(kicad_symbol_lib")
-    lines.push(`\t${version.getString()}`)
-    lines.push(`\t${generator.getString()}`)
-
-    for (const symbol of symbols) {
-      const symbolLines = symbol.content.split("\n")
-      for (const line of symbolLines) {
-        lines.push(`\t${line}`)
-      }
-    }
-
-    lines.push(")")
-
-    return lines.join("\n")
+    return symbolLib.getString()
   }
 
   override getOutput(): KicadLibraryOutput {

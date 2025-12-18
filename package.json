@@ -21,7 +21,7 @@
     "@types/bun": "latest",
     "circuit-json": "^0.0.302",
     "circuit-to-svg": "^0.0.208",
-    "kicadts": "^0.0.22",
+    "kicadts": "^0.0.23",
     "schematic-symbols": "^0.0.202",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",

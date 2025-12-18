@@ -56,7 +56,7 @@ export class ExtractSymbolsStage extends ConverterStage<
 
           uniqueSymbols.set(symbolName, {
             symbolName,
-            content: symbol.getString(),
+            symbol,
           })
         }
       }

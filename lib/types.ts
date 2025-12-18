@@ -1,6 +1,6 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
-import type { KicadSch, KicadPcb } from "kicadts"
+import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
 
@@ -17,7 +17,7 @@ export interface PcbNetInfo {
 
 export interface SymbolEntry {
   symbolName: string
-  content: string
+  symbol: SchematicSymbol
 }
 
 export interface FootprintEntry {
