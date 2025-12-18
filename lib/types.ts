@@ -15,6 +15,25 @@ export interface PcbNetInfo {
   name: string
 }
 
+export interface SymbolEntry {
+  symbolName: string
+  content: string
+}
+
+export interface FootprintEntry {
+  footprintName: string
+  content: string
+  modelFiles: string[]
+}
+
+export interface KicadLibraryOutput {
+  symbolLibrary: string
+  footprints: FootprintEntry[]
+  fpLibTable: string
+  symLibTable: string
+  modelFiles: string[]
+}
+
 export interface ConverterContext {
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
@@ -37,6 +56,15 @@ export interface ConverterContext {
   // PCB-specific data
   pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
   pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key to KiCad net metadata
+
+  // Library-specific data
+  libraryName?: string
+  fpLibraryName?: string
+  schematicContent?: string
+  pcbContent?: string
+  symbolEntries?: SymbolEntry[]
+  footprintEntries?: FootprintEntry[]
+  libraryOutput?: KicadLibraryOutput
 }
 
 export abstract class ConverterStage<Input, Output> {
