@@ -11,7 +11,7 @@ import { CircuitJsonToKicadPcbConverter } from "../../pcb/CircuitJsonToKicadPcbC
  * Initializes the library conversion by running the schematic and PCB converters
  * to extract the base content needed for symbol and footprint extraction.
  */
-export class InitializeLibraryStage extends ConverterStage<
+export class GenerateKicadSchAndPcbStage extends ConverterStage<
   CircuitJson,
   KicadLibraryOutput
 > {
