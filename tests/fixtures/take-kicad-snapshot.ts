@@ -21,7 +21,7 @@ export interface KicadOutput {
 export const takeKicadSnapshot = async (params: {
   kicadFilePath?: string
   kicadFileContent?: string
-  kicadFileType: "sch" | "pcb"
+  kicadFileType: "sch" | "pcb" | "3d"
 }): Promise<KicadOutput> => {
   const { kicadFilePath, kicadFileContent, kicadFileType } = params
 
@@ -42,10 +42,8 @@ export const takeKicadSnapshot = async (params: {
     if (kicadFilePath) {
       inputFilePath = kicadFilePath
     } else if (kicadFileContent) {
-      inputFilePath = join(
-        tempDir,
-        `temp_file.kicad_${kicadFileType === "sch" ? "sch" : "pcb"}`,
-      )
+      const ext = kicadFileType === "sch" ? "sch" : "pcb"
+      inputFilePath = join(tempDir, `temp_file.kicad_${ext}`)
       await writeFile(inputFilePath, kicadFileContent)
     } else {
       throw new Error(
@@ -56,7 +54,31 @@ export const takeKicadSnapshot = async (params: {
     // Create output directory
     const outputDir = join(tempDir, "output")
 
-    // Export to SVG
+    const generatedFileContent: Record<FilePath, FileContent> = {}
+
+    // Handle 3D rendering separately (outputs PNG directly)
+    if (kicadFileType === "3d") {
+      const outputPng = join(outputDir, "temp_file.png")
+      await $`mkdir -p ${outputDir}`
+      const exportResult =
+        await $`kicad-cli pcb render ${inputFilePath} -o ${outputPng} --width 800 --height 600 --rotate 45,0,45 --perspective --quality basic`
+
+      if (exportResult.exitCode !== 0) {
+        throw new Error(
+          `kicad-cli 3D render failed with exit code ${exportResult.exitCode}\nStderr: ${exportResult.stderr}`,
+        )
+      }
+
+      const pngBuffer = await readFile(outputPng)
+      generatedFileContent["temp_file.png"] = pngBuffer
+
+      return {
+        exitCode: 0,
+        generatedFileContent,
+      }
+    }
+
+    // Export to SVG for sch/pcb
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
@@ -80,8 +102,6 @@ export const takeKicadSnapshot = async (params: {
     if (svgFilePaths.length === 0) {
       throw new Error("No SVG files were generated")
     }
-
-    const generatedFileContent: Record<FilePath, FileContent> = {}
 
     // Convert each SVG to PNG using sharp
     for (const svgFilePath of svgFilePaths) {
