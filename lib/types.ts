@@ -1,6 +1,6 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
-import type { KicadSch, KicadPcb } from "kicadts"
+import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
 
@@ -13,6 +13,25 @@ export type PcbTraceId = string
 export interface PcbNetInfo {
   id: number
   name: string
+}
+
+export interface SymbolEntry {
+  symbolName: string
+  symbol: SchematicSymbol
+}
+
+export interface FootprintEntry {
+  footprintName: string
+  kicadModString: string
+  model3dSourcePaths: string[]
+}
+
+export interface KicadLibraryOutput {
+  kicadSymString: string
+  footprints: FootprintEntry[]
+  fpLibTableString: string
+  symLibTableString: string
+  model3dSourcePaths: string[]
 }
 
 export interface ConverterContext {
@@ -37,6 +56,15 @@ export interface ConverterContext {
   // PCB-specific data
   pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
   pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key to KiCad net metadata
+
+  // Library-specific data
+  libraryName?: string
+  fpLibraryName?: string
+  kicadSchString?: string
+  kicadPcbString?: string
+  symbolEntries?: SymbolEntry[]
+  footprintEntries?: FootprintEntry[]
+  libraryOutput?: KicadLibraryOutput
 }
 
 export abstract class ConverterStage<Input, Output> {
