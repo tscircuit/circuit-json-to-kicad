@@ -3,7 +3,7 @@ import type {
   CadComponent,
   SourceComponentBase,
 } from "circuit-json"
-import { getErgonomicComponentName } from "../../utils/getErgonomicComponentName"
+import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FpText, FootprintModel } from "kicadts"
 import {
@@ -137,7 +137,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Generate ergonomic footprint name
     const footprintName = sourceComponent
-      ? getErgonomicComponentName(
+      ? getKicadCompatibleComponentName(
           sourceComponent as SourceComponentBase,
           cadComponent,
         )

@@ -26,7 +26,7 @@ import {
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
-import { getErgonomicComponentName } from "../../utils/getErgonomicComponentName"
+import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import { applyToPoint, scale as createScaleMatrix } from "transformation-matrix"
 
 /**
@@ -123,7 +123,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const isChip = sourceComp.ftype === "simple_chip"
 
     // Get footprint name for symbol-footprint linkage using ergonomic naming
-    const footprintName = getErgonomicComponentName(sourceComp, cadComponent)
+    const footprintName = getKicadCompatibleComponentName(sourceComp, cadComponent)
 
     return this.createLibrarySymbol({
       libId,

@@ -13,7 +13,7 @@ import type { SourceComponentBase, CadComponent } from "circuit-json"
  * - "simple_" prefix
  * - source_component_id
  */
-export function getErgonomicComponentName(
+export function getKicadCompatibleComponentName(
   sourceComponent: SourceComponentBase,
   cadComponent?: CadComponent | null,
 ): string {
