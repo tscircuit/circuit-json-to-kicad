@@ -26,6 +26,7 @@ import {
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
+import { getErgonomicComponentName } from "../../utils/getErgonomicComponentName"
 import { applyToPoint, scale as createScaleMatrix } from "transformation-matrix"
 
 /**
@@ -99,6 +100,14 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     if (!sourceComp) return null
 
+    // Get the cad_component for footprinter_string (if available)
+    const cadComponent = db.cad_component
+      ?.list()
+      ?.find(
+        (cad: any) =>
+          cad.source_component_id === sourceComp.source_component_id,
+      )
+
     const symbolName =
       schematicComponent.symbol_name ||
       (sourceComp.ftype === "simple_chip"
@@ -110,11 +119,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolData = this.getSymbolData(symbolName, schematicComponent)
     if (!symbolData) return null
 
-    const libId = getLibraryId(sourceComp, schematicComponent)
+    const libId = getLibraryId(sourceComp, schematicComponent, cadComponent)
     const isChip = sourceComp.ftype === "simple_chip"
 
-    // Get footprint name for symbol-footprint linkage
-    const footprintName = sourceComp.ftype || ""
+    // Get footprint name for symbol-footprint linkage using ergonomic naming
+    const footprintName = getErgonomicComponentName(sourceComp, cadComponent)
 
     return this.createLibrarySymbol({
       libId,

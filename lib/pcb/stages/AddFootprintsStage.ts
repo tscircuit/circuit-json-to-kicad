@@ -1,4 +1,5 @@
-import type { CircuitJson, CadComponent } from "circuit-json"
+import type { CircuitJson, CadComponent, SourceComponentBase } from "circuit-json"
+import { getErgonomicComponentName } from "../../utils/getErgonomicComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FpText, FootprintModel } from "kicadts"
 import {
@@ -125,7 +126,18 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       ? this.ctx.db.source_component.get(component.source_component_id)
       : null
 
-    const footprintName = sourceComponent?.ftype || "Unknown"
+    // Get the cad_component for footprinter_string
+    const cadComponent = this.getCadComponentForPcbComponent(
+      component.pcb_component_id,
+    )
+
+    // Generate ergonomic footprint name
+    const footprintName = sourceComponent
+      ? getErgonomicComponentName(
+          sourceComponent as SourceComponentBase,
+          cadComponent,
+        )
+      : "Unknown"
     // Transform the component position to KiCad coordinates
     const transformedPos = applyToPoint(c2kMatPcb, {
       x: component.center.x,
@@ -239,9 +251,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     footprint.fpPads = fpPads
 
     // Add 3D models from cad_component if available
-    const cadComponent = this.getCadComponentForPcbComponent(
-      component.pcb_component_id,
-    )
+    // (cadComponent was already fetched earlier for footprint naming)
     if (cadComponent) {
       const models = this.create3DModelsFromCadComponent(
         cadComponent,
