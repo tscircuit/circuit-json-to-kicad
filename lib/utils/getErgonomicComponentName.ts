@@ -56,11 +56,13 @@ function getCleanTypeName(ftype?: string): string {
  * - Trim whitespace
  */
 function sanitizeName(name: string): string {
-  return name
-    .replace(/[\\\/:\s]+/g, "_") // Replace invalid chars with underscore
-    .replace(/_+/g, "_") // Collapse multiple underscores
-    .replace(/^_|_$/g, "") // Trim leading/trailing underscores
-    .trim() || "component"
+  return (
+    name
+      .replace(/[\\\/:\s]+/g, "_") // Replace invalid chars with underscore
+      .replace(/_+/g, "_") // Collapse multiple underscores
+      .replace(/^_|_$/g, "") // Trim leading/trailing underscores
+      .trim() || "component"
+  )
 }
 
 /**

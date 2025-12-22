@@ -1,4 +1,8 @@
-import type { CircuitJson, CadComponent, SourceComponentBase } from "circuit-json"
+import type {
+  CircuitJson,
+  CadComponent,
+  SourceComponentBase,
+} from "circuit-json"
 import { getErgonomicComponentName } from "../../utils/getErgonomicComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FpText, FootprintModel } from "kicadts"

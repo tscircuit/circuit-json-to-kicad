@@ -76,7 +76,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         )
 
       // Get the appropriate library ID based on component type
-      const libId = getLibraryId(sourceComponent, schematicComponent, cadComponent)
+      const libId = getLibraryId(
+        sourceComponent,
+        schematicComponent,
+        cadComponent,
+      )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
 
