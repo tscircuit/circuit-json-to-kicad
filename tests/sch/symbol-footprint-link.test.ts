@@ -40,5 +40,6 @@ test("schematic symbols have footprint property linking to footprints", () => {
 
   // Verify lib_symbols have Footprint property linking to footprints
   // Custom symbols (like chips) get footprint references in lib_symbols
-  expect(output).toContain('(property "Footprint" "tscircuit:simple_chip"')
+  // Note: "simple_chip" is cleaned to "chip" by getKicadCompatibleComponentName
+  expect(output).toContain('(property "Footprint" "tscircuit:chip"')
 })

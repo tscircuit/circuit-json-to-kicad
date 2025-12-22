@@ -67,8 +67,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         fieldsAutoplaced: true,
       })
 
+      // Get the cad_component for footprinter_string (if available)
+      const cadComponent = db.cad_component
+        ?.list()
+        ?.find(
+          (cad: any) =>
+            cad.source_component_id === sourceComponent.source_component_id,
+        )
+
       // Get the appropriate library ID based on component type
-      const libId = getLibraryId(sourceComponent, schematicComponent)
+      const libId = getLibraryId(
+        sourceComponent,
+        schematicComponent,
+        cadComponent,
+      )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
 

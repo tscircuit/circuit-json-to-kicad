@@ -1,8 +1,17 @@
-import type { SourceComponentBase, SchematicComponent } from "circuit-json"
+import type {
+  SourceComponentBase,
+  SchematicComponent,
+  CadComponent,
+} from "circuit-json"
+import {
+  getKicadCompatibleComponentName,
+  extractReferencePrefix,
+} from "../utils/getKicadCompatibleComponentName"
 
 export function getLibraryId(
   sourceComp: SourceComponentBase,
   schematicComp: SchematicComponent,
+  cadComponent?: CadComponent | null,
 ): string {
   if (sourceComp.type !== "source_component") {
     if (schematicComp.symbol_name) {
@@ -11,25 +20,20 @@ export function getLibraryId(
     return "Device:Component"
   }
 
-  if (sourceComp.ftype === "simple_resistor") {
-    return `Device:R_${sourceComp.source_component_id}`
-  }
-  if (sourceComp.ftype === "simple_capacitor") {
-    return `Device:C_${sourceComp.source_component_id}`
-  }
-  if (sourceComp.ftype === "simple_inductor") {
-    return `Device:L_${sourceComp.source_component_id}`
-  }
-  if (sourceComp.ftype === "simple_diode") {
-    return `Device:D_${sourceComp.source_component_id}`
-  }
-  if (sourceComp.ftype === "simple_chip") {
-    return `Device:U_${sourceComp.source_component_id}`
-  }
-
+  // Use custom symbol name if provided
   if (schematicComp.symbol_name) {
     return `Custom:${schematicComp.symbol_name}`
   }
 
-  return `Device:Component_${sourceComp.source_component_id}`
+  // Generate ergonomic name using manufacturer part number or footprint string
+  const ergonomicName = getKicadCompatibleComponentName(
+    sourceComp,
+    cadComponent,
+  )
+
+  // Extract reference prefix from component name (e.g., "R1" -> "R")
+  const refPrefix = extractReferencePrefix(sourceComp.name)
+
+  // Combine prefix with ergonomic name for the library ID
+  return `Device:${refPrefix}_${ergonomicName}`
 }
