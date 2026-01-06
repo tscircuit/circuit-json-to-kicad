@@ -5,8 +5,9 @@ import type { SourceComponentBase, CadComponent } from "circuit-json"
  *
  * Priority:
  * 1. manufacturer_part_number (BEST) - e.g., "NA555", "ATmega328P"
- * 2. {clean_type}_{footprinter_string} (OK) - e.g., "resistor_0402", "chip_soic8"
- * 3. {clean_type} (LAST RESORT) - e.g., "resistor", "capacitor", "chip"
+ * 2. component name if not a reference designator
+ * 3. {clean_type}_{footprinter_string} (OK) - e.g., "resistor_0402", "chip_soic8"
+ * 4. {clean_type} (LAST RESORT) - e.g., "resistor", "capacitor", "chip"
  *
  * Never uses:
  * - Reference designators (R1, U1, C1)
@@ -22,17 +23,31 @@ export function getKicadCompatibleComponentName(
     return sanitizeName(sourceComponent.manufacturer_part_number)
   }
 
+  // Priority 2: Use component name if it's not a reference designator
+  // Reference designators match pattern like R1, U23, C5, etc.
+  const name = sourceComponent.name
+  if (name && !isReferenceDesignator(name)) {
+    return sanitizeName(name)
+  }
+
   // Get clean type name (strip "simple_" prefix)
   const cleanType = getCleanTypeName(sourceComponent.ftype)
 
-  // Priority 2: Use type + footprinter string if available
+  // Priority 3: Use type + footprinter string if available
   const footprinterString = cadComponent?.footprinter_string
   if (footprinterString) {
     return sanitizeName(`${cleanType}_${footprinterString}`)
   }
 
-  // Priority 3: Use clean type name only
+  // Priority 4: Use clean type name only
   return sanitizeName(cleanType)
+}
+
+/**
+ * Check if a name is a reference designator (e.g., R1, U23, C5)
+ */
+function isReferenceDesignator(name: string): boolean {
+  return /^[A-Z]+\d+$/i.test(name)
 }
 
 /**
