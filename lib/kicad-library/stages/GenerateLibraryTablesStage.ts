@@ -34,6 +34,7 @@ export class GenerateLibraryTablesStage extends ConverterStage<
     if (!this.ctx.libraryOutput) {
       this.ctx.libraryOutput = {
         kicadSymString: "",
+        symbols: [],
         footprints: [],
         fpLibTableString: "",
         symLibTableString: "",

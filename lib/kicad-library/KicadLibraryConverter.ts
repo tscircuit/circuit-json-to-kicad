@@ -1,5 +1,10 @@
 import type { CircuitJson } from "circuit-json"
+import { KicadSymbolLib } from "kicadts"
 import { CircuitJsonToKicadLibraryConverter } from "./CircuitJsonToKicadLibraryConverter"
+import type { SymbolEntry } from "../types"
+
+const KICAD_SYM_LIB_VERSION = 20211014
+const GENERATOR = "circuit-json-to-kicad"
 
 export interface KicadLibraryConverterOptions {
   /**
@@ -33,6 +38,13 @@ export interface KicadLibraryConverterOptions {
     entrypoint: string,
     exportName: string,
   ) => Promise<string | null>
+
+  /**
+   * Whether to include builtin footprints (like 0402, soic8) in the output.
+   * If false, only user-defined footprints (matching export names) are included.
+   * Default: true
+   */
+  includeBuiltins?: boolean
 }
 
 export interface KicadLibraryConverterOutput {
@@ -48,28 +60,6 @@ export interface KicadLibraryConverterOutput {
  *
  * This converter takes file paths and callbacks to build circuit JSON,
  * then generates a complete KiCad library structure.
- *
- * @example
- * ```tsx
- * const converter = new KicadLibraryConverter({
- *   libraryName: "my-library",
- *   filePaths: ["lib/my-footprint-library.ts"],
- *   buildFileToCircuitJson: async (filePath) => {
- *     return await generateCircuitJson(filePath)
- *   },
- *   getExportsFromTsxFile: async (filePath) => {
- *     return Object.keys(await import(filePath))
- *   },
- *   resolveExportPath: async (entrypoint, exportName) => {
- *     // Return the file path for the export, or null if not a component
- *     return `lib/components/${exportName}.tsx`
- *   }
- * })
- *
- * await converter.run()
- * const output = converter.getOutput()
- * // output.kicadProjectFsMap contains all generated files
- * ```
  */
 export class KicadLibraryConverter {
   private options: KicadLibraryConverterOptions
@@ -85,21 +75,48 @@ export class KicadLibraryConverter {
   async run(): Promise<void> {
     const kicadProjectFsMap: Record<string, string | Buffer> = {}
 
-    const allFootprints: Array<{
+    // Track all export names to distinguish user vs builtin footprints/symbols
+    const allExportNames: Set<string> = new Set()
+
+    // User footprints (named after exports)
+    const userFootprints: Array<{
       footprintName: string
       kicadModString: string
     }> = []
+
+    // Builtin footprints (standard footprints like 0402, soic8)
+    const builtinFootprints: Array<{
+      footprintName: string
+      kicadModString: string
+    }> = []
+
+    // User symbols (named after exports)
+    const userSymbols: SymbolEntry[] = []
+
+    // Builtin symbols (standard parts like resistors, capacitors)
+    const builtinSymbols: SymbolEntry[] = []
+
     const allModel3dPaths: string[] = []
-    let kicadSymString = ""
     let fpLibTableString = ""
     let symLibTableString = ""
 
-    // Process each entrypoint file
+    // First pass: collect all export names
     for (const entrypoint of this.options.filePaths) {
       // Get all exports from the entrypoint by evaluating it
       const exports = await this.options.getExportsFromTsxFile(entrypoint)
 
       // Filter to only uppercase exports (likely components)
+      const componentExports = exports.filter(
+        (name) => name.length > 0 && /^[A-Z]/.test(name),
+      )
+      for (const exportName of componentExports) {
+        allExportNames.add(exportName)
+      }
+    }
+
+    // Second pass: process each entrypoint file
+    for (const entrypoint of this.options.filePaths) {
+      const exports = await this.options.getExportsFromTsxFile(entrypoint)
       const componentExports = exports.filter(
         (name) => name.length > 0 && /^[A-Z]/.test(name),
       )
@@ -122,7 +139,10 @@ export class KicadLibraryConverter {
           const circuitJson =
             await this.options.buildFileToCircuitJson(componentPath)
 
-          if (!circuitJson || (Array.isArray(circuitJson) && circuitJson.length === 0)) {
+          if (
+            !circuitJson ||
+            (Array.isArray(circuitJson) && circuitJson.length === 0)
+          ) {
             continue
           }
 
@@ -137,10 +157,43 @@ export class KicadLibraryConverter {
           libConverter.runUntilFinished()
           const libOutput = libConverter.getOutput()
 
-          // Collect footprints (avoid duplicates by name)
+          // Separate footprints into user vs builtin
           for (const fp of libOutput.footprints) {
-            if (!allFootprints.some((f) => f.footprintName === fp.footprintName)) {
-              allFootprints.push(fp)
+            // If footprint name matches an export name, it's a user footprint
+            if (allExportNames.has(fp.footprintName)) {
+              if (
+                !userFootprints.some(
+                  (f) => f.footprintName === fp.footprintName,
+                )
+              ) {
+                userFootprints.push(fp)
+              }
+            } else {
+              // Otherwise it's a builtin footprint (standard parts like 0402, soic8)
+              if (
+                !builtinFootprints.some(
+                  (f) => f.footprintName === fp.footprintName,
+                )
+              ) {
+                builtinFootprints.push(fp)
+              }
+            }
+          }
+
+          // Separate symbols into user vs builtin
+          for (const sym of libOutput.symbols) {
+            // If symbol name matches an export name, it's a user symbol
+            if (allExportNames.has(sym.symbolName)) {
+              if (!userSymbols.some((s) => s.symbolName === sym.symbolName)) {
+                userSymbols.push(sym)
+              }
+            } else {
+              // Otherwise it's a builtin symbol (standard parts like resistors)
+              if (
+                !builtinSymbols.some((s) => s.symbolName === sym.symbolName)
+              ) {
+                builtinSymbols.push(sym)
+              }
             }
           }
 
@@ -151,8 +204,7 @@ export class KicadLibraryConverter {
             }
           }
 
-          // Keep track of symbol and table strings
-          kicadSymString = libOutput.kicadSymString
+          // Keep track of table strings
           fpLibTableString = libOutput.fpLibTableString
           symLibTableString = libOutput.symLibTableString
         } catch (error) {
@@ -164,16 +216,44 @@ export class KicadLibraryConverter {
 
     // Build the output file map
     const libraryName = this.options.libraryName
+    const includeBuiltins = this.options.includeBuiltins ?? true
 
-    // Symbol library (in symbols/ directory)
-    if (kicadSymString) {
-      kicadProjectFsMap[`symbols/${libraryName}.kicad_sym`] = kicadSymString
+    // User symbol library (in symbols/ directory)
+    if (userSymbols.length > 0) {
+      const userSymbolLib = new KicadSymbolLib({
+        version: KICAD_SYM_LIB_VERSION,
+        generator: GENERATOR,
+        symbols: userSymbols.map((s) => s.symbol),
+      })
+      kicadProjectFsMap[`symbols/${libraryName}.kicad_sym`] =
+        userSymbolLib.getString()
     }
 
-    // Footprint files (in footprints/<lib>.pretty/ directory)
-    for (const fp of allFootprints) {
-      kicadProjectFsMap[`footprints/${libraryName}.pretty/${fp.footprintName}.kicad_mod`] =
-        fp.kicadModString
+    // Builtin symbol library - only generate if enabled and there are builtins
+    if (includeBuiltins && builtinSymbols.length > 0) {
+      const builtinSymbolLib = new KicadSymbolLib({
+        version: KICAD_SYM_LIB_VERSION,
+        generator: GENERATOR,
+        symbols: builtinSymbols.map((s) => s.symbol),
+      })
+      kicadProjectFsMap["symbols/tscircuit_builtin.kicad_sym"] =
+        builtinSymbolLib.getString()
+    }
+
+    // User footprint files (in footprints/<lib>.pretty/ directory)
+    for (const fp of userFootprints) {
+      kicadProjectFsMap[
+        `footprints/${libraryName}.pretty/${fp.footprintName}.kicad_mod`
+      ] = fp.kicadModString
+    }
+
+    // Builtin footprint files - only generate if enabled and there are builtins
+    if (includeBuiltins && builtinFootprints.length > 0) {
+      for (const fp of builtinFootprints) {
+        kicadProjectFsMap[
+          `footprints/tscircuit_builtin.pretty/${fp.footprintName}.kicad_mod`
+        ] = fp.kicadModString
+      }
     }
 
     // Library tables

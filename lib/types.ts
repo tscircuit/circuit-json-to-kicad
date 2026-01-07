@@ -28,6 +28,7 @@ export interface FootprintEntry {
 
 export interface KicadLibraryOutput {
   kicadSymString: string
+  symbols: SymbolEntry[]
   footprints: FootprintEntry[]
   fpLibTableString: string
   symLibTableString: string

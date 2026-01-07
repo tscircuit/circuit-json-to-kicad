@@ -6,6 +6,7 @@ import type {
 import {
   getKicadCompatibleComponentName,
   extractReferencePrefix,
+  isReferenceDesignator,
 } from "../utils/getKicadCompatibleComponentName"
 
 export function getLibraryId(
@@ -31,9 +32,16 @@ export function getLibraryId(
     cadComponent,
   )
 
-  // Extract reference prefix from component name (e.g., "R1" -> "R")
-  const refPrefix = extractReferencePrefix(sourceComp.name)
+  const name = sourceComp.name
 
-  // Combine prefix with ergonomic name for the library ID
+  // If the component has a user-defined name (not a reference designator),
+  // use just the ergonomic name for the library ID to make it easier to identify
+  if (name && !isReferenceDesignator(name)) {
+    return `Device:${ergonomicName}`
+  }
+
+  // For standard components (R1, C1, etc.), use prefix + ergonomic name
+  const refPrefix = extractReferencePrefix(name)
+
   return `Device:${refPrefix}_${ergonomicName}`
 }

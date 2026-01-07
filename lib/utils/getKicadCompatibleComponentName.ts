@@ -47,7 +47,7 @@ export function getKicadCompatibleComponentName(
  * Reference designators typically have a 1-4 letter prefix followed by a number,
  * with optional suffixes like _1, A, B, etc.
  */
-function isReferenceDesignator(name: string): boolean {
+export function isReferenceDesignator(name: string): boolean {
   // Pattern: 1-4 letters, followed by digit(s), optionally followed by more chars
   // Examples: R1, C12, U1, SW1, R1_1, U1A, I2C1
   return /^[A-Z]{1,4}\d+/i.test(name)
