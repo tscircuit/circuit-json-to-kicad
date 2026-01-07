@@ -5,6 +5,7 @@ import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 test("KicadLibraryConverter outputs correct directory structure", async () => {
   const mockCircuitJsons: Record<string, any> = {}
 
+  // Create a component that uses a builtin footprint (resistor with 0402)
   const component = new Circuit()
   component.add(
     <board width="10mm" height="10mm">
@@ -16,6 +17,7 @@ test("KicadLibraryConverter outputs correct directory structure", async () => {
           </footprint>
         }
       />
+      <resistor name="R1" resistance="10k" footprint="0402" />
     </board>,
   )
   await component.renderUntilSettled()
@@ -40,16 +42,24 @@ test("KicadLibraryConverter outputs correct directory structure", async () => {
 
   const files = Object.keys(output.kicadProjectFsMap)
 
-  // Symbols should be in symbols/ directory
-  expect(files.some((f) => f.startsWith("symbols/"))).toBe(true)
+  // User symbols should be in symbols/<lib>.kicad_sym
   expect(files.some((f) => f === "symbols/custom-lib.kicad_sym")).toBe(true)
 
-  // Footprints should be in footprints/<lib>.pretty/ directory
-  expect(files.some((f) => f.startsWith("footprints/"))).toBe(true)
+  // Builtin symbols should be in symbols/tscircuit_builtin.kicad_sym
+  expect(files.some((f) => f === "symbols/tscircuit_builtin.kicad_sym")).toBe(
+    true,
+  )
+
+  // User footprints should be in footprints/<lib>.pretty/
   expect(
     files.some(
       (f) => f === "footprints/custom-lib.pretty/MyComponent.kicad_mod",
     ),
+  ).toBe(true)
+
+  // Builtin footprints should be in footprints/tscircuit_builtin.pretty/
+  expect(
+    files.some((f) => f.startsWith("footprints/tscircuit_builtin.pretty/")),
   ).toBe(true)
 
   // Library tables should be at root
