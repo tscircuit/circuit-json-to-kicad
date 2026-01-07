@@ -40,29 +40,16 @@ test("KicadLibraryConverter outputs correct directory structure", async () => {
   await converter.run()
   const output = converter.getOutput()
 
-  const files = Object.keys(output.kicadProjectFsMap)
+  const files = Object.keys(output.kicadProjectFsMap).sort()
 
-  // User symbols should be in symbols/<lib>.kicad_sym
-  expect(files.some((f) => f === "symbols/custom-lib.kicad_sym")).toBe(true)
-
-  // Builtin symbols should be in symbols/tscircuit_builtin.kicad_sym
-  expect(files.some((f) => f === "symbols/tscircuit_builtin.kicad_sym")).toBe(
-    true,
-  )
-
-  // User footprints should be in footprints/<lib>.pretty/
-  expect(
-    files.some(
-      (f) => f === "footprints/custom-lib.pretty/MyComponent.kicad_mod",
-    ),
-  ).toBe(true)
-
-  // Builtin footprints should be in footprints/tscircuit_builtin.pretty/
-  expect(
-    files.some((f) => f.startsWith("footprints/tscircuit_builtin.pretty/")),
-  ).toBe(true)
-
-  // Library tables should be at root
-  expect(files).toContain("fp-lib-table")
-  expect(files).toContain("sym-lib-table")
+  expect(files).toMatchInlineSnapshot(`
+    [
+      "footprints/custom-lib.pretty/MyComponent.kicad_mod",
+      "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+      "fp-lib-table",
+      "sym-lib-table",
+      "symbols/custom-lib.kicad_sym",
+      "symbols/tscircuit_builtin.kicad_sym",
+    ]
+  `)
 })
