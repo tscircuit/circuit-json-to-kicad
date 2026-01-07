@@ -165,14 +165,14 @@ export class KicadLibraryConverter {
     // Build the output file map
     const libraryName = this.options.libraryName
 
-    // Symbol library
+    // Symbol library (in symbols/ directory)
     if (kicadSymString) {
-      kicadProjectFsMap[`${libraryName}.kicad_sym`] = kicadSymString
+      kicadProjectFsMap[`symbols/${libraryName}.kicad_sym`] = kicadSymString
     }
 
-    // Footprint files
+    // Footprint files (in footprints/<lib>.pretty/ directory)
     for (const fp of allFootprints) {
-      kicadProjectFsMap[`${libraryName}.pretty/${fp.footprintName}.kicad_mod`] =
+      kicadProjectFsMap[`footprints/${libraryName}.pretty/${fp.footprintName}.kicad_mod`] =
         fp.kicadModString
     }
 
@@ -184,7 +184,7 @@ export class KicadLibraryConverter {
       kicadProjectFsMap["sym-lib-table"] = symLibTableString
     }
 
-    // Note: 3D model files would need to be copied from source paths
+    // Note: 3D model files would be in 3dmodels/<lib>.3dshapes/
     // This is handled by the CLI since it has access to the filesystem
 
     this.output = { kicadProjectFsMap }
