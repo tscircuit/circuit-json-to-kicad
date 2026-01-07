@@ -48,15 +48,16 @@ test("KicadLibraryConverter separates user footprints from builtin footprints", 
   await converter.run()
   const output = converter.getOutput()
 
-  const allFiles = Object.keys(output.kicadProjectFsMap)
+  const files = Object.keys(output.kicadProjectFsMap).sort()
 
-  // User footprint should be in my-library.pretty
-  const userFootprints = allFiles.filter((p) => p.includes("my-library.pretty"))
-  expect(userFootprints.some((p) => p.includes("KeyWithLED"))).toBe(true)
-
-  // Builtin footprint (resistor_0402) should be in tscircuit_builtin.pretty
-  const builtinFootprints = allFiles.filter((p) =>
-    p.includes("tscircuit_builtin.pretty"),
-  )
-  expect(builtinFootprints.length).toBe(1)
+  expect(files).toMatchInlineSnapshot(`
+    [
+      "footprints/my-library.pretty/KeyWithLED.kicad_mod",
+      "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+      "fp-lib-table",
+      "sym-lib-table",
+      "symbols/my-library.kicad_sym",
+      "symbols/tscircuit_builtin.kicad_sym",
+    ]
+  `)
 })

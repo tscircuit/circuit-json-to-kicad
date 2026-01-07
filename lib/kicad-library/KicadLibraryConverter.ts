@@ -130,87 +130,83 @@ export class KicadLibraryConverter {
         )
 
         if (!componentPath) {
-          // Not a component, skip
           continue
         }
 
+        // Build circuit JSON for this component
+        let circuitJson: CircuitJson
         try {
-          // Build circuit JSON for this component
-          const circuitJson =
-            await this.options.buildFileToCircuitJson(componentPath)
-
-          if (
-            !circuitJson ||
-            (Array.isArray(circuitJson) && circuitJson.length === 0)
-          ) {
-            continue
-          }
-
-          // Convert circuit JSON to KiCad library format
-          const libConverter = new CircuitJsonToKicadLibraryConverter(
-            circuitJson,
-            {
-              libraryName: this.options.libraryName,
-              footprintLibraryName: this.options.libraryName,
-            },
-          )
-          libConverter.runUntilFinished()
-          const libOutput = libConverter.getOutput()
-
-          // Separate footprints into user vs builtin
-          for (const fp of libOutput.footprints) {
-            // If footprint name matches an export name, it's a user footprint
-            if (allExportNames.has(fp.footprintName)) {
-              if (
-                !userFootprints.some(
-                  (f) => f.footprintName === fp.footprintName,
-                )
-              ) {
-                userFootprints.push(fp)
-              }
-            } else {
-              // Otherwise it's a builtin footprint (standard parts like 0402, soic8)
-              if (
-                !builtinFootprints.some(
-                  (f) => f.footprintName === fp.footprintName,
-                )
-              ) {
-                builtinFootprints.push(fp)
-              }
-            }
-          }
-
-          // Separate symbols into user vs builtin
-          for (const sym of libOutput.symbols) {
-            // If symbol name matches an export name, it's a user symbol
-            if (allExportNames.has(sym.symbolName)) {
-              if (!userSymbols.some((s) => s.symbolName === sym.symbolName)) {
-                userSymbols.push(sym)
-              }
-            } else {
-              // Otherwise it's a builtin symbol (standard parts like resistors)
-              if (
-                !builtinSymbols.some((s) => s.symbolName === sym.symbolName)
-              ) {
-                builtinSymbols.push(sym)
-              }
-            }
-          }
-
-          // Collect 3D model paths
-          for (const modelPath of libOutput.model3dSourcePaths) {
-            if (!allModel3dPaths.includes(modelPath)) {
-              allModel3dPaths.push(modelPath)
-            }
-          }
-
-          // Keep track of table strings
-          fpLibTableString = libOutput.fpLibTableString
-          symLibTableString = libOutput.symLibTableString
+          circuitJson = await this.options.buildFileToCircuitJson(componentPath)
         } catch (error) {
-          // Skip components that fail to build
-          console.warn(`Failed to build component ${exportName}:`, error)
+          throw new Error(
+            `Failed to build component ${exportName}: ${error instanceof Error ? error.message : error}`,
+          )
         }
+
+        if (
+          !circuitJson ||
+          (Array.isArray(circuitJson) && circuitJson.length === 0)
+        ) {
+          continue
+        }
+
+        // Convert circuit JSON to KiCad library format
+        const libConverter = new CircuitJsonToKicadLibraryConverter(
+          circuitJson,
+          {
+            libraryName: this.options.libraryName,
+            footprintLibraryName: this.options.libraryName,
+          },
+        )
+        libConverter.runUntilFinished()
+        const libOutput = libConverter.getOutput()
+
+        // Separate footprints into user vs builtin
+        for (const fp of libOutput.footprints) {
+          // If footprint name matches an export name, it's a user footprint
+          if (allExportNames.has(fp.footprintName)) {
+            if (
+              !userFootprints.some((f) => f.footprintName === fp.footprintName)
+            ) {
+              userFootprints.push(fp)
+            }
+          } else {
+            // Otherwise it's a builtin footprint (standard parts like 0402, soic8)
+            if (
+              !builtinFootprints.some(
+                (f) => f.footprintName === fp.footprintName,
+              )
+            ) {
+              builtinFootprints.push(fp)
+            }
+          }
+        }
+
+        // Separate symbols into user vs builtin
+        for (const sym of libOutput.symbols) {
+          // If symbol name matches an export name, it's a user symbol
+          if (allExportNames.has(sym.symbolName)) {
+            if (!userSymbols.some((s) => s.symbolName === sym.symbolName)) {
+              userSymbols.push(sym)
+            }
+          } else {
+            // Otherwise it's a builtin symbol (standard parts like resistors)
+            if (!builtinSymbols.some((s) => s.symbolName === sym.symbolName)) {
+              builtinSymbols.push(sym)
+            }
+          }
+        }
+
+        // Collect 3D model paths
+        for (const modelPath of libOutput.model3dSourcePaths) {
+          if (!allModel3dPaths.includes(modelPath)) {
+            allModel3dPaths.push(modelPath)
+          }
+        }
+
+        // Keep track of table strings
+        fpLibTableString = libOutput.fpLibTableString
+        symLibTableString = libOutput.symLibTableString
       }
     }
 

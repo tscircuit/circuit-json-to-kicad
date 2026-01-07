@@ -74,12 +74,15 @@ test("KicadLibraryConverter generates library from multiple component exports", 
   await converter.run()
   const output = converter.getOutput()
 
-  expect(output.kicadProjectFsMap).toBeDefined()
+  const files = Object.keys(output.kicadProjectFsMap).sort()
 
-  const footprintFiles = Object.keys(output.kicadProjectFsMap).filter((p) =>
-    p.endsWith(".kicad_mod"),
-  )
-  expect(footprintFiles.length).toBe(2)
-  expect(footprintFiles.some((p) => p.includes("SpacebarKey"))).toBe(true)
-  expect(footprintFiles.some((p) => p.includes("NormalKey"))).toBe(true)
+  expect(files).toMatchInlineSnapshot(`
+    [
+      "footprints/my-library.pretty/NormalKey.kicad_mod",
+      "footprints/my-library.pretty/SpacebarKey.kicad_mod",
+      "fp-lib-table",
+      "sym-lib-table",
+      "symbols/my-library.kicad_sym",
+    ]
+  `)
 })
