@@ -17,6 +17,7 @@ export class GenerateLibraryTablesStage extends ConverterStage<
     const libraryName = this.ctx.libraryName ?? "tscircuit"
     const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
     const footprintEntries = this.ctx.footprintEntries ?? []
+    const symbolEntries = this.ctx.symbolEntries ?? []
 
     // Collect all 3D model source paths from footprints
     const model3dSourcePathsSet = new Set<string>()
@@ -34,6 +35,7 @@ export class GenerateLibraryTablesStage extends ConverterStage<
     if (!this.ctx.libraryOutput) {
       this.ctx.libraryOutput = {
         kicadSymString: "",
+        symbols: [],
         footprints: [],
         fpLibTableString: "",
         symLibTableString: "",
@@ -42,6 +44,7 @@ export class GenerateLibraryTablesStage extends ConverterStage<
     }
 
     // Finalize the library output
+    this.ctx.libraryOutput.symbols = symbolEntries
     this.ctx.libraryOutput.footprints = footprintEntries
     this.ctx.libraryOutput.fpLibTableString = fpLibTableString
     this.ctx.libraryOutput.symLibTableString = symLibTableString

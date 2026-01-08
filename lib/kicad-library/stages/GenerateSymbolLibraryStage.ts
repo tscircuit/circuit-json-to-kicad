@@ -25,6 +25,7 @@ export class GenerateSymbolLibraryStage extends ConverterStage<
     if (!this.ctx.libraryOutput) {
       this.ctx.libraryOutput = {
         kicadSymString: "",
+        symbols: [],
         footprints: [],
         fpLibTableString: "",
         symLibTableString: "",
