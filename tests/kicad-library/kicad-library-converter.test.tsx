@@ -33,7 +33,7 @@ async function renderKeyHotSocket(): Promise<CircuitJson> {
           </footprint>
         }
         cadModel={{
-          objUrl: "/path/to/CherryMxSwitch.step",
+          stlUrl: "/path/to/CherryMxSwitch.step",
           rotationOffset: { x: 0, y: 0, z: 0 },
         }}
         pinLabels={{ pin1: "1", pin2: "2" }}
