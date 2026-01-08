@@ -1,10 +1,11 @@
 /**
  * Generate fp-lib-table content.
  */
-export function generateFpLibTable(
-  libraryName: string,
-  includeBuiltin: boolean,
-): string {
+export function generateFpLibTable(params: {
+  libraryName: string
+  includeBuiltin: boolean
+}): string {
+  const { libraryName, includeBuiltin } = params
   let content = "(fp_lib_table\n"
   content += `  (lib (name "${libraryName}")(type "KiCad")(uri "\${KIPRJMOD}/footprints/${libraryName}.pretty")(options "")(descr ""))\n`
   if (includeBuiltin) {

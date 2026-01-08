@@ -4,12 +4,13 @@ import type { SymbolEntry } from "./../../types"
  * Rename a symbol entry to use a new name.
  * Also updates the footprint reference if a footprint name is provided.
  */
-export function renameSymbol(
-  sym: SymbolEntry,
-  newName: string,
-  libraryName: string,
-  footprintName?: string,
-): SymbolEntry {
+export function renameSymbol(params: {
+  sym: SymbolEntry
+  newName: string
+  libraryName: string
+  footprintName?: string
+}): SymbolEntry {
+  const { sym, newName, libraryName, footprintName } = params
   const symbol = sym.symbol
   symbol.libraryId = newName
 
