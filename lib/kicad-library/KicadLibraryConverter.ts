@@ -16,7 +16,14 @@ export type { KicadLibraryConverterOptions, KicadLibraryConverterOutput }
 const KICAD_SYM_LIB_VERSION = 20211014
 const GENERATOR = "circuit-json-to-kicad"
 
-interface ProcessedComponents {
+interface BuiltTscircuitComponent {
+  componentName: string
+  circuitJson: any
+}
+
+interface KicadLibraryConverterContext {
+  libraryName: string
+  includeBuiltins: boolean
   userFootprints: FootprintEntry[]
   userSymbols: SymbolEntry[]
   builtinFootprints: FootprintEntry[]
@@ -30,34 +37,36 @@ interface ProcessedComponents {
 export class KicadLibraryConverter {
   private options: KicadLibraryConverterOptions
   private output: KicadLibraryConverterOutput | null = null
+  private ctx: KicadLibraryConverterContext
 
   constructor(options: KicadLibraryConverterOptions) {
     this.options = options
-  }
-
-  async run(): Promise<void> {
-    const libraryName = this.options.libraryName ?? "tscircuit_library"
-    const includeBuiltins = this.options.includeBuiltins ?? true
-
-    const componentCircuitJsons = await this.collectComponentCircuitJsons()
-    const processed = this.processComponents({
-      componentCircuitJsons,
-      libraryName,
-    })
-
-    this.output = {
-      kicadProjectFsMap: this.buildOutputFileMap({
-        libraryName,
-        includeBuiltins,
-        ...processed,
-      }),
-      model3dSourcePaths: processed.model3dPaths,
-      libraryName,
+    this.ctx = {
+      libraryName: options.libraryName ?? "tscircuit_library",
+      includeBuiltins: options.includeBuiltins ?? true,
+      userFootprints: [],
+      userSymbols: [],
+      builtinFootprints: [],
+      builtinSymbols: [],
+      model3dPaths: [],
     }
   }
 
-  private async collectComponentCircuitJsons() {
-    const results: Array<{ componentName: string; circuitJson: any }> = []
+  async run(): Promise<void> {
+    const builtComponents = await this.collectComponentCircuitJsons()
+    this.processComponents(builtComponents)
+
+    this.output = {
+      kicadProjectFsMap: this.buildOutputFileMap(),
+      model3dSourcePaths: this.ctx.model3dPaths,
+      libraryName: this.ctx.libraryName,
+    }
+  }
+
+  private async collectComponentCircuitJsons(): Promise<
+    BuiltTscircuitComponent[]
+  > {
+    const results: BuiltTscircuitComponent[] = []
 
     for (const filePath of this.options.filePaths) {
       const exports = await this.options.getExportsFromTsxFile(filePath)
@@ -88,115 +97,75 @@ export class KicadLibraryConverter {
     return results
   }
 
-  private processComponents(params: {
-    componentCircuitJsons: Array<{ componentName: string; circuitJson: any }>
-    libraryName: string
-  }): ProcessedComponents {
-    const { componentCircuitJsons, libraryName } = params
-    const userFootprints: FootprintEntry[] = []
-    const userSymbols: SymbolEntry[] = []
-    const builtinFootprints: FootprintEntry[] = []
-    const builtinSymbols: SymbolEntry[] = []
-    const model3dPaths: string[] = []
-
-    for (const { componentName, circuitJson } of componentCircuitJsons) {
+  private processComponents(builtComponents: BuiltTscircuitComponent[]): void {
+    for (const { componentName, circuitJson } of builtComponents) {
       const libConverter = new CircuitJsonToKicadLibraryConverter(circuitJson, {
-        libraryName,
-        footprintLibraryName: libraryName,
+        libraryName: this.ctx.libraryName,
+        footprintLibraryName: this.ctx.libraryName,
       })
       libConverter.runUntilFinished()
       const libOutput = libConverter.getOutput()
 
-      const foundPrimaryCustom = this.processFootprints({
-        footprints: libOutput.footprints,
+      const foundPrimaryCustom = this.processFootprints(
+        libOutput.footprints,
         componentName,
-        libraryName,
-        userFootprints,
-        builtinFootprints,
-      })
-
-      this.processSymbols({
-        symbols: libOutput.symbols,
-        componentName,
-        libraryName,
-        foundPrimaryCustom,
-        userSymbols,
-        builtinSymbols,
-      })
+      )
+      this.processSymbols(libOutput.symbols, componentName, foundPrimaryCustom)
 
       for (const path of libOutput.model3dSourcePaths) {
-        if (!model3dPaths.includes(path)) model3dPaths.push(path)
+        if (!this.ctx.model3dPaths.includes(path)) {
+          this.ctx.model3dPaths.push(path)
+        }
       }
-    }
-
-    return {
-      userFootprints,
-      userSymbols,
-      builtinFootprints,
-      builtinSymbols,
-      model3dPaths,
     }
   }
 
-  private processFootprints(params: {
-    footprints: FootprintEntry[]
-    componentName: string
-    libraryName: string
-    userFootprints: FootprintEntry[]
-    builtinFootprints: FootprintEntry[]
-  }): boolean {
-    const {
-      footprints,
-      componentName,
-      libraryName,
-      userFootprints,
-      builtinFootprints,
-    } = params
+  private processFootprints(
+    footprints: FootprintEntry[],
+    componentName: string,
+  ): boolean {
     let foundPrimaryCustom = false
 
     for (const fp of footprints) {
       if (fp.isBuiltin) {
         if (
-          !builtinFootprints.some((f) => f.footprintName === fp.footprintName)
+          !this.ctx.builtinFootprints.some(
+            (f) => f.footprintName === fp.footprintName,
+          )
         ) {
-          builtinFootprints.push(fp)
+          this.ctx.builtinFootprints.push(fp)
         }
       } else if (!foundPrimaryCustom) {
         foundPrimaryCustom = true
         const renamedFp = renameFootprint({
           fp,
           newName: componentName,
-          libraryName,
+          libraryName: this.ctx.libraryName,
         })
-        if (!userFootprints.some((f) => f.footprintName === componentName)) {
-          userFootprints.push(renamedFp)
+        if (
+          !this.ctx.userFootprints.some(
+            (f) => f.footprintName === componentName,
+          )
+        ) {
+          this.ctx.userFootprints.push(renamedFp)
         }
       } else if (
-        !userFootprints.some((f) => f.footprintName === fp.footprintName)
+        !this.ctx.userFootprints.some(
+          (f) => f.footprintName === fp.footprintName,
+        )
       ) {
-        userFootprints.push(fp)
+        this.ctx.userFootprints.push(fp)
       }
     }
 
     return foundPrimaryCustom
   }
 
-  private processSymbols(params: {
-    symbols: SymbolEntry[]
-    componentName: string
-    libraryName: string
-    foundPrimaryCustom: boolean
-    userSymbols: SymbolEntry[]
-    builtinSymbols: SymbolEntry[]
-  }): void {
-    const {
-      symbols,
-      componentName,
-      libraryName,
-      foundPrimaryCustom,
-      userSymbols,
-      builtinSymbols,
-    } = params
+  private processSymbols(
+    symbols: SymbolEntry[],
+    componentName: string,
+    foundPrimaryCustom: boolean,
+  ): void {
     const footprintNameForSymbol = foundPrimaryCustom
       ? componentName
       : undefined
@@ -209,11 +178,11 @@ export class KicadLibraryConverter {
         const renamedSym = renameSymbol({
           sym,
           newName: componentName,
-          libraryName,
+          libraryName: this.ctx.libraryName,
           footprintName: footprintNameForSymbol,
         })
-        if (!userSymbols.some((s) => s.symbolName === componentName)) {
-          userSymbols.push(renamedSym)
+        if (!this.ctx.userSymbols.some((s) => s.symbolName === componentName)) {
+          this.ctx.userSymbols.push(renamedSym)
         }
         break
       }
@@ -225,72 +194,60 @@ export class KicadLibraryConverter {
       const renamedSym = renameSymbol({
         sym: symbols[0]!,
         newName: componentName,
-        libraryName,
+        libraryName: this.ctx.libraryName,
         footprintName: footprintNameForSymbol,
       })
-      if (!userSymbols.some((s) => s.symbolName === componentName)) {
-        userSymbols.push(renamedSym)
+      if (!this.ctx.userSymbols.some((s) => s.symbolName === componentName)) {
+        this.ctx.userSymbols.push(renamedSym)
       }
     }
 
     // Remaining symbols are builtins
     for (const sym of symbols) {
       if (sym.symbolName !== userSymbolName) {
-        if (!builtinSymbols.some((s) => s.symbolName === sym.symbolName)) {
-          builtinSymbols.push(updateBuiltinSymbolFootprint(sym))
+        if (
+          !this.ctx.builtinSymbols.some((s) => s.symbolName === sym.symbolName)
+        ) {
+          this.ctx.builtinSymbols.push(updateBuiltinSymbolFootprint(sym))
         }
       }
     }
   }
 
-  private buildOutputFileMap(params: {
-    libraryName: string
-    includeBuiltins: boolean
-    userFootprints: FootprintEntry[]
-    userSymbols: SymbolEntry[]
-    builtinFootprints: FootprintEntry[]
-    builtinSymbols: SymbolEntry[]
-  }): Record<string, string | Buffer> {
-    const {
-      libraryName,
-      includeBuiltins,
-      userFootprints,
-      userSymbols,
-      builtinFootprints,
-      builtinSymbols,
-    } = params
+  private buildOutputFileMap(): Record<string, string | Buffer> {
     const fsMap: Record<string, string | Buffer> = {}
 
     // User symbols
-    if (userSymbols.length > 0) {
+    if (this.ctx.userSymbols.length > 0) {
       const symbolLib = new KicadSymbolLib({
         version: KICAD_SYM_LIB_VERSION,
         generator: GENERATOR,
-        symbols: userSymbols.map((s) => s.symbol),
+        symbols: this.ctx.userSymbols.map((s) => s.symbol),
       })
-      fsMap[`symbols/${libraryName}.kicad_sym`] = symbolLib.getString()
+      fsMap[`symbols/${this.ctx.libraryName}.kicad_sym`] = symbolLib.getString()
     }
 
     // Builtin symbols
-    if (includeBuiltins && builtinSymbols.length > 0) {
+    if (this.ctx.includeBuiltins && this.ctx.builtinSymbols.length > 0) {
       const builtinSymbolLib = new KicadSymbolLib({
         version: KICAD_SYM_LIB_VERSION,
         generator: GENERATOR,
-        symbols: builtinSymbols.map((s) => s.symbol),
+        symbols: this.ctx.builtinSymbols.map((s) => s.symbol),
       })
       fsMap["symbols/tscircuit_builtin.kicad_sym"] =
         builtinSymbolLib.getString()
     }
 
     // User footprints
-    for (const fp of userFootprints) {
-      fsMap[`footprints/${libraryName}.pretty/${fp.footprintName}.kicad_mod`] =
-        fp.kicadModString
+    for (const fp of this.ctx.userFootprints) {
+      fsMap[
+        `footprints/${this.ctx.libraryName}.pretty/${fp.footprintName}.kicad_mod`
+      ] = fp.kicadModString
     }
 
     // Builtin footprints
-    if (includeBuiltins && builtinFootprints.length > 0) {
-      for (const fp of builtinFootprints) {
+    if (this.ctx.includeBuiltins && this.ctx.builtinFootprints.length > 0) {
+      for (const fp of this.ctx.builtinFootprints) {
         fsMap[
           `footprints/tscircuit_builtin.pretty/${fp.footprintName}.kicad_mod`
         ] = fp.kicadModString
@@ -299,12 +256,14 @@ export class KicadLibraryConverter {
 
     // Library tables
     fsMap["fp-lib-table"] = generateFpLibTable({
-      libraryName,
-      includeBuiltin: includeBuiltins && builtinFootprints.length > 0,
+      libraryName: this.ctx.libraryName,
+      includeBuiltin:
+        this.ctx.includeBuiltins && this.ctx.builtinFootprints.length > 0,
     })
     fsMap["sym-lib-table"] = generateSymLibTable({
-      libraryName,
-      includeBuiltin: includeBuiltins && builtinSymbols.length > 0,
+      libraryName: this.ctx.libraryName,
+      includeBuiltin:
+        this.ctx.includeBuiltins && this.ctx.builtinSymbols.length > 0,
     })
 
     return fsMap
