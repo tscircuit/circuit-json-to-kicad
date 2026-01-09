@@ -3,10 +3,10 @@ import type { SymbolEntry, FootprintEntry } from "../types"
 
 export interface KicadLibraryConverterOptions {
   /**
-   * Name for the generated library (e.g., "my-library").
+   * Name for the generated KiCad library (e.g., "my-library").
    * This will be used for the user library files.
    */
-  libraryName?: string
+  kicadLibraryName?: string
 
   /**
    * The main entry point file for the library (e.g., "lib/my-library.ts").
@@ -53,26 +53,13 @@ export interface KicadLibraryConverterOptions {
 export interface KicadLibraryConverterOutput {
   /**
    * Map of file paths to file contents for the generated KiCad library.
-   * Structure:
-   * - fp-lib-table
-   * - sym-lib-table
-   * - symbols/<libraryName>.kicad_sym
-   * - symbols/tscircuit_builtin.kicad_sym
-   * - footprints/<libraryName>.pretty/<ComponentName>.kicad_mod
-   * - footprints/tscircuit_builtin.pretty/<footprint>.kicad_mod
    */
   kicadProjectFsMap: Record<string, string | Buffer>
 
   /**
    * Source paths to 3D model files that need to be copied.
-   * The CLI should copy these files to 3dmodels/<libraryName>.3dshapes/
    */
   model3dSourcePaths: string[]
-
-  /**
-   * Library name used for the output.
-   */
-  libraryName: string
 }
 
 /**

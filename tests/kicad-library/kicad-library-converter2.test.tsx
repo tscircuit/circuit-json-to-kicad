@@ -106,7 +106,7 @@ test("KicadLibraryConverter full output with custom USB connector", async () => 
   }
 
   const converter = new KicadLibraryConverter({
-    libraryName: "usb-library",
+    kicadLibraryName: "usb-library",
     entrypoint: "lib/usb-library.ts",
     getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
     buildFileToCircuitJson: async (_filePath, componentName) =>

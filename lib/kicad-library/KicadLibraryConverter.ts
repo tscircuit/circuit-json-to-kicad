@@ -23,7 +23,7 @@ export class KicadLibraryConverter {
   constructor(options: KicadLibraryConverterOptions) {
     this.options = options
     this.ctx = createKicadLibraryConverterContext({
-      kicadLibraryName: options.libraryName ?? "tscircuit_library",
+      kicadLibraryName: options.kicadLibraryName ?? "tscircuit_library",
       includeBuiltins: options.includeBuiltins ?? true,
     })
   }
@@ -47,7 +47,6 @@ export class KicadLibraryConverter {
     this.output = {
       kicadProjectFsMap: this.ctx.kicadProjectFsMap,
       model3dSourcePaths: this.ctx.model3dSourcePaths,
-      libraryName: this.ctx.kicadLibraryName,
     }
   }
 

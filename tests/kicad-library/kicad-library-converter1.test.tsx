@@ -73,7 +73,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
   }
 
   const converter = new KicadLibraryConverter({
-    libraryName: "my-keyboard-library",
+    kicadLibraryName: "my-keyboard-library",
     entrypoint: "lib/my-keyboard-library.ts",
     getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
     buildFileToCircuitJson: async (_filePath, componentName) =>
