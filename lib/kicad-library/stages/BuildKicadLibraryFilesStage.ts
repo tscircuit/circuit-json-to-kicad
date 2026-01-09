@@ -69,12 +69,12 @@ function buildLibraryTables(ctx: KicadLibraryConverterContext): void {
     ctx.includeBuiltins && ctx.builtinKicadSymbols.length > 0
 
   ctx.kicadProjectFsMap["fp-lib-table"] = generateFpLibTable({
-    libraryName: ctx.kicadLibraryName,
+    kicadLibraryName: ctx.kicadLibraryName,
     includeBuiltin: hasBuiltinFootprints,
   })
 
   ctx.kicadProjectFsMap["sym-lib-table"] = generateSymLibTable({
-    libraryName: ctx.kicadLibraryName,
+    kicadLibraryName: ctx.kicadLibraryName,
     includeBuiltin: hasBuiltinSymbols,
   })
 }
