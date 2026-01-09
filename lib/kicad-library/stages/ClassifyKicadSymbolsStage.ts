@@ -9,29 +9,31 @@ import { updateBuiltinKicadSymbolFootprint } from "../kicad-library-converter-ut
 import { componentHasCustomFootprint } from "./ClassifyKicadFootprintsStage"
 
 /**
- * Classifies symbols from extracted components into user and builtin libraries.
- * - Custom symbol (symbol={<symbol>...}) → user library
- * - Builtin symbol + custom footprint → rename to component name, user library
- * - Builtin symbol + builtin footprint → builtin library
+ * Classifies symbols from extracted KiCad components into user and builtin libraries.
+ * - Custom symbol (symbol={<symbol>...}) → user library, renamed to component name
+ * - Builtin symbol + custom footprint → first symbol renamed to component name, user library
+ * - Builtin symbol + builtin footprint (or subsequent symbols) → builtin library
  */
 export function classifyKicadSymbols(ctx: KicadLibraryConverterContext): void {
-  for (const extractedComponent of ctx.extractedComponents) {
+  for (const extractedKicadComponent of ctx.extractedKicadComponents) {
     classifySymbolsForComponent({
       ctx,
-      extractedComponent,
+      extractedKicadComponent,
     })
   }
 }
 
 function classifySymbolsForComponent({
   ctx,
-  extractedComponent,
+  extractedKicadComponent,
 }: {
   ctx: KicadLibraryConverterContext
-  extractedComponent: ExtractedKicadComponent
+  extractedKicadComponent: ExtractedKicadComponent
 }): void {
-  const { tscircuitComponentName, kicadSymbols } = extractedComponent
-  const hasCustomFootprint = componentHasCustomFootprint(extractedComponent)
+  const { tscircuitComponentName, kicadSymbols } = extractedKicadComponent
+  const hasCustomFootprint = componentHasCustomFootprint(
+    extractedKicadComponent,
+  )
   let hasAddedUserSymbol = false
 
   for (const kicadSymbol of kicadSymbols) {
@@ -68,7 +70,7 @@ function classifySymbolsForComponent({
       })
       addUserSymbol({ ctx, kicadSymbol: renamedSymbol })
     } else {
-      // Builtin symbol, no custom footprint → builtin library
+      // Builtin symbol → builtin library (no custom footprint, or already added user symbol)
       const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol)
       addBuiltinSymbol({ ctx, kicadSymbol: updatedSymbol })
     }

@@ -13,22 +13,22 @@ import { renameKicadFootprint } from "../kicad-library-converter-utils/renameKic
 export function classifyKicadFootprints(
   ctx: KicadLibraryConverterContext,
 ): void {
-  for (const extractedComponent of ctx.extractedComponents) {
+  for (const extractedKicadComponent of ctx.extractedKicadComponents) {
     classifyFootprintsForComponent({
       ctx,
-      extractedComponent,
+      extractedKicadComponent,
     })
   }
 }
 
 function classifyFootprintsForComponent({
   ctx,
-  extractedComponent,
+  extractedKicadComponent,
 }: {
   ctx: KicadLibraryConverterContext
-  extractedComponent: ExtractedKicadComponent
+  extractedKicadComponent: ExtractedKicadComponent
 }): void {
-  const { tscircuitComponentName, kicadFootprints } = extractedComponent
+  const { tscircuitComponentName, kicadFootprints } = extractedKicadComponent
   let hasAddedUserFootprint = false
 
   for (const kicadFootprint of kicadFootprints) {

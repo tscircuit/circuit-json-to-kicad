@@ -87,11 +87,11 @@ export interface KicadLibraryConverterContext {
   kicadLibraryName: string
   includeBuiltins: boolean
 
-  /** Components built from tscircuit source files */
-  builtComponents: BuiltTscircuitComponent[]
+  /** Tscircuit components built to circuit-json */
+  builtTscircuitComponents: BuiltTscircuitComponent[]
 
-  /** Components with extracted KiCad data */
-  extractedComponents: ExtractedKicadComponent[]
+  /** KiCad footprints and symbols extracted from circuit-json */
+  extractedKicadComponents: ExtractedKicadComponent[]
 
   /** User-defined footprints (custom footprint={<footprint>...}) */
   userKicadFootprints: FootprintEntry[]

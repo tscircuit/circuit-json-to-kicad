@@ -29,11 +29,11 @@ export class KicadLibraryConverter {
   }
 
   async run(): Promise<void> {
-    // Stage 1: Collect circuit JSON from component files
-    this.ctx.builtComponents = await this.collectTscircuitComponents()
+    // Stage 1: Build tscircuit components to circuit-json
+    this.ctx.builtTscircuitComponents = await this.buildTscircuitComponents()
 
-    // Stage 2: Extract KiCad footprints and symbols from each component
-    this.ctx.extractedComponents = this.extractKicadComponents()
+    // Stage 2: Extract KiCad footprints and symbols from circuit-json
+    this.ctx.extractedKicadComponents = this.extractKicadComponents()
 
     // Stage 3: Classify footprints into user/builtin
     classifyKicadFootprints(this.ctx)
@@ -51,12 +51,10 @@ export class KicadLibraryConverter {
   }
 
   /**
-   * Collects circuit JSON from tscircuit component source files.
+   * Builds tscircuit components to circuit-json.
    */
-  private async collectTscircuitComponents(): Promise<
-    BuiltTscircuitComponent[]
-  > {
-    const builtComponents: BuiltTscircuitComponent[] = []
+  private async buildTscircuitComponents(): Promise<BuiltTscircuitComponent[]> {
+    const builtTscircuitComponents: BuiltTscircuitComponent[] = []
     const { entrypoint } = this.options
 
     const exports = await this.options.getExportsFromTsxFile(entrypoint)
@@ -80,24 +78,24 @@ export class KicadLibraryConverter {
         circuitJson &&
         (!Array.isArray(circuitJson) || circuitJson.length > 0)
       ) {
-        builtComponents.push({
+        builtTscircuitComponents.push({
           tscircuitComponentName: exportName,
           circuitJson,
         })
       }
     }
 
-    return builtComponents
+    return builtTscircuitComponents
   }
 
   /**
-   * Extracts KiCad footprints and symbols from built components.
+   * Extracts KiCad footprints and symbols from built tscircuit components.
    */
   private extractKicadComponents(): ExtractedKicadComponent[] {
-    const extractedComponents: ExtractedKicadComponent[] = []
+    const extractedKicadComponents: ExtractedKicadComponent[] = []
 
-    for (const builtComponent of this.ctx.builtComponents) {
-      const { tscircuitComponentName, circuitJson } = builtComponent
+    for (const builtTscircuitComponent of this.ctx.builtTscircuitComponents) {
+      const { tscircuitComponentName, circuitJson } = builtTscircuitComponent
 
       const libConverter = new CircuitJsonToKicadLibraryConverter(circuitJson, {
         libraryName: this.ctx.kicadLibraryName,
@@ -113,7 +111,7 @@ export class KicadLibraryConverter {
         }
       }
 
-      extractedComponents.push({
+      extractedKicadComponents.push({
         tscircuitComponentName,
         kicadFootprints: libOutput.footprints,
         kicadSymbols: libOutput.symbols,
@@ -121,7 +119,7 @@ export class KicadLibraryConverter {
       })
     }
 
-    return extractedComponents
+    return extractedKicadComponents
   }
 
   getOutput(): KicadLibraryConverterOutput {
@@ -144,8 +142,8 @@ function createKicadLibraryConverterContext(params: {
   return {
     kicadLibraryName: params.kicadLibraryName,
     includeBuiltins: params.includeBuiltins,
-    builtComponents: [],
-    extractedComponents: [],
+    builtTscircuitComponents: [],
+    extractedKicadComponents: [],
     userKicadFootprints: [],
     builtinKicadFootprints: [],
     userKicadSymbols: [],
