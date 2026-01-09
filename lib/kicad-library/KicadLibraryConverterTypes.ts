@@ -8,11 +8,10 @@ export interface KicadLibraryConverterOptions {
   libraryName?: string
 
   /**
-   * File paths to process. Can include:
-   * - Entry point files (e.g., "lib/my-footprint-library.ts") that export components
-   * - Component files directly (e.g., "lib/components/SpacebarKey.tsx")
+   * The main entry point file for the library (e.g., "lib/my-library.ts").
+   * This file's exports define the public API of the library.
    */
-  filePaths: string[]
+  entrypoint: string
 
   /**
    * Callback to build circuit JSON from a file path and export name.

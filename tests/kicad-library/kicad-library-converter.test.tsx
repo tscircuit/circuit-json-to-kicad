@@ -60,8 +60,11 @@ async function renderSimpleLedCircuit(): Promise<CircuitJson> {
 
 test("KicadLibraryConverter with mock keyboard library", async () => {
   // Mock file structure similar to example project
+  // The entrypoint re-exports components from internal files
   const mockExports: Record<string, string[]> = {
     "lib/my-keyboard-library.ts": ["KeyHotSocket", "SimpleLedCircuit"],
+    // Internal component file - exports should be ignored since they're not from entrypoint
+    "lib/components/KeySocket.ts": ["KeyHotSocket", "InternalHelper"],
   }
 
   const mockCircuitJson: Record<string, CircuitJson> = {
@@ -71,7 +74,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
 
   const converter = new KicadLibraryConverter({
     libraryName: "my-keyboard-library",
-    filePaths: ["lib/my-keyboard-library.ts"],
+    entrypoint: "lib/my-keyboard-library.ts",
     getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
     buildFileToCircuitJson: async (_filePath, componentName) =>
       mockCircuitJson[componentName] ?? null,

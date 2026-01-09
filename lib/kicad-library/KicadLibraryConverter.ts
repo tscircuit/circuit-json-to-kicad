@@ -67,31 +67,31 @@ export class KicadLibraryConverter {
     BuiltTscircuitComponent[]
   > {
     const results: BuiltTscircuitComponent[] = []
+    const { entrypoint } = this.options
 
-    for (const filePath of this.options.filePaths) {
-      const exports = await this.options.getExportsFromTsxFile(filePath)
-      const componentExports = exports.filter((name) => /^[A-Z]/.test(name))
+    // Only process exports from the entrypoint - this defines the library's public API
+    const exports = await this.options.getExportsFromTsxFile(entrypoint)
+    const componentExports = exports.filter((name) => /^[A-Z]/.test(name))
 
-      for (const exportName of componentExports) {
-        let componentPath = filePath
-        if (this.options.resolveExportPath) {
-          const resolved = await this.options.resolveExportPath(
-            filePath,
-            exportName,
-          )
-          if (resolved) componentPath = resolved
-        }
-
-        const circuitJson = await this.options.buildFileToCircuitJson(
-          componentPath,
+    for (const exportName of componentExports) {
+      let componentPath = entrypoint
+      if (this.options.resolveExportPath) {
+        const resolved = await this.options.resolveExportPath(
+          entrypoint,
           exportName,
         )
-        if (
-          circuitJson &&
-          (!Array.isArray(circuitJson) || circuitJson.length > 0)
-        ) {
-          results.push({ componentName: exportName, circuitJson })
-        }
+        if (resolved) componentPath = resolved
+      }
+
+      const circuitJson = await this.options.buildFileToCircuitJson(
+        componentPath,
+        exportName,
+      )
+      if (
+        circuitJson &&
+        (!Array.isArray(circuitJson) || circuitJson.length > 0)
+      ) {
+        results.push({ componentName: exportName, circuitJson })
       }
     }
     return results
@@ -106,11 +106,11 @@ export class KicadLibraryConverter {
       libConverter.runUntilFinished()
       const libOutput = libConverter.getOutput()
 
-      const foundPrimaryCustom = this.processFootprints(
+      const hasCustomFootprint = this.processFootprints(
         libOutput.footprints,
         componentName,
       )
-      this.processSymbols(libOutput.symbols, componentName, foundPrimaryCustom)
+      this.processSymbols(libOutput.symbols, componentName, hasCustomFootprint)
 
       for (const path of libOutput.model3dSourcePaths) {
         if (!this.ctx.model3dPaths.includes(path)) {
@@ -120,14 +120,20 @@ export class KicadLibraryConverter {
     }
   }
 
+  /**
+   * Process footprints: custom → user library, builtin → builtin library.
+   * Custom = user specified footprint={<footprint>...</footprint>}
+   * Returns true if component has custom footprint.
+   */
   private processFootprints(
     footprints: FootprintEntry[],
     componentName: string,
   ): boolean {
-    let foundPrimaryCustom = false
+    let hasCustomFootprint = false
 
     for (const fp of footprints) {
       if (fp.isBuiltin) {
+        // Builtin footprint → builtin library
         if (
           !this.ctx.builtinFootprints.some(
             (f) => f.footprintName === fp.footprintName,
@@ -135,76 +141,84 @@ export class KicadLibraryConverter {
         ) {
           this.ctx.builtinFootprints.push(fp)
         }
-      } else if (!foundPrimaryCustom) {
-        foundPrimaryCustom = true
-        const renamedFp = renameFootprint({
-          fp,
-          newName: componentName,
-          libraryName: this.ctx.libraryName,
-        })
-        if (
+      } else {
+        // Custom footprint → user library, rename first one to component name
+        if (!hasCustomFootprint) {
+          hasCustomFootprint = true
+          const renamedFp = renameFootprint({
+            fp,
+            newName: componentName,
+            libraryName: this.ctx.libraryName,
+          })
+          if (
+            !this.ctx.userFootprints.some(
+              (f) => f.footprintName === componentName,
+            )
+          ) {
+            this.ctx.userFootprints.push(renamedFp)
+          }
+        } else if (
           !this.ctx.userFootprints.some(
-            (f) => f.footprintName === componentName,
+            (f) => f.footprintName === fp.footprintName,
           )
         ) {
-          this.ctx.userFootprints.push(renamedFp)
+          this.ctx.userFootprints.push(fp)
         }
-      } else if (
-        !this.ctx.userFootprints.some(
-          (f) => f.footprintName === fp.footprintName,
-        )
-      ) {
-        this.ctx.userFootprints.push(fp)
       }
     }
 
-    return foundPrimaryCustom
+    return hasCustomFootprint
   }
 
+  /**
+   * Process symbols based on custom footprint/symbol status.
+   * - Custom symbol (symbol={<symbol>...}) → user library
+   * - Custom footprint + builtin symbol → rename symbol to component name, user library
+   * - No custom footprint → builtin library
+   */
   private processSymbols(
     symbols: SymbolEntry[],
     componentName: string,
-    foundPrimaryCustom: boolean,
+    hasCustomFootprint: boolean,
   ): void {
-    const footprintNameForSymbol = foundPrimaryCustom
-      ? componentName
-      : undefined
-    let userSymbolName: string | null = null
+    let addedUserSymbol = false
 
-    // Find user symbol by exact name match
     for (const sym of symbols) {
-      if (sym.symbolName.toLowerCase() === componentName.toLowerCase()) {
-        userSymbolName = sym.symbolName
+      if (!sym.isBuiltin) {
+        // Custom symbol → user library
+        if (!addedUserSymbol) {
+          addedUserSymbol = true
+          const renamedSym = renameSymbol({
+            sym,
+            newName: componentName,
+            libraryName: this.ctx.libraryName,
+            footprintName: hasCustomFootprint ? componentName : undefined,
+          })
+          if (
+            !this.ctx.userSymbols.some((s) => s.symbolName === componentName)
+          ) {
+            this.ctx.userSymbols.push(renamedSym)
+          }
+        } else if (
+          !this.ctx.userSymbols.some((s) => s.symbolName === sym.symbolName)
+        ) {
+          this.ctx.userSymbols.push(sym)
+        }
+      } else if (hasCustomFootprint && !addedUserSymbol) {
+        // Builtin symbol but has custom footprint → rename and add to user library
+        // This allows user to place the component by name in KiCad
+        addedUserSymbol = true
         const renamedSym = renameSymbol({
           sym,
           newName: componentName,
           libraryName: this.ctx.libraryName,
-          footprintName: footprintNameForSymbol,
+          footprintName: componentName,
         })
         if (!this.ctx.userSymbols.some((s) => s.symbolName === componentName)) {
           this.ctx.userSymbols.push(renamedSym)
         }
-        break
-      }
-    }
-
-    // Single symbol with custom footprint becomes user symbol
-    if (!userSymbolName && symbols.length === 1 && foundPrimaryCustom) {
-      userSymbolName = symbols[0]!.symbolName
-      const renamedSym = renameSymbol({
-        sym: symbols[0]!,
-        newName: componentName,
-        libraryName: this.ctx.libraryName,
-        footprintName: footprintNameForSymbol,
-      })
-      if (!this.ctx.userSymbols.some((s) => s.symbolName === componentName)) {
-        this.ctx.userSymbols.push(renamedSym)
-      }
-    }
-
-    // Remaining symbols are builtins
-    for (const sym of symbols) {
-      if (sym.symbolName !== userSymbolName) {
+      } else {
+        // Builtin symbol, no custom footprint → builtin library
         if (
           !this.ctx.builtinSymbols.some((s) => s.symbolName === sym.symbolName)
         ) {

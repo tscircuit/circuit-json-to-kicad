@@ -1,4 +1,4 @@
-import type { CircuitJson, CadComponent } from "circuit-json"
+import type { CircuitJson } from "circuit-json"
 import { parseKicadSexpr, KicadSch, SchematicSymbol } from "kicadts"
 import {
   ConverterStage,
@@ -15,38 +15,11 @@ export class ExtractSymbolsStage extends ConverterStage<
   KicadLibraryOutput
 > {
   /**
-   * Build a set of footprinter_strings from cad_components.
-   * Symbols with matching footprinter_strings are builtin/standard symbols.
+   * Checks if a symbol is custom (user-specified symbol={<symbol>...</symbol>}).
+   * Custom symbols have libraryId starting with "Custom:".
    */
-  private buildBuiltinFootprinterStrings(): Set<string> {
-    const builtinStrings = new Set<string>()
-
-    // Get all cad_components from circuit JSON
-    const cadComponents = this.ctx.db.cad_component?.list() ?? []
-
-    for (const cadComponent of cadComponents as CadComponent[]) {
-      if (cadComponent.footprinter_string) {
-        builtinStrings.add(cadComponent.footprinter_string)
-      }
-    }
-
-    return builtinStrings
-  }
-
-  /**
-   * Checks if a symbol name indicates it's a builtin symbol.
-   * A symbol is builtin if its name contains a footprinter_string.
-   */
-  private isBuiltinSymbol(
-    symbolName: string,
-    builtinFootprinterStrings: Set<string>,
-  ): boolean {
-    for (const fps of builtinFootprinterStrings) {
-      if (symbolName.includes(fps)) {
-        return true
-      }
-    }
-    return false
+  private isCustomSymbol(libraryId?: string): boolean {
+    return libraryId?.startsWith("Custom:") ?? false
   }
 
   override _step(): void {
@@ -58,9 +31,6 @@ export class ExtractSymbolsStage extends ConverterStage<
         "Schematic content not available. Run GenerateKicadSchAndPcbStage first.",
       )
     }
-
-    // Build set of builtin footprinter_strings from circuit JSON
-    const builtinFootprinterStrings = this.buildBuiltinFootprinterStrings()
 
     const uniqueSymbols = new Map<string, SymbolEntry>()
 
@@ -84,6 +54,9 @@ export class ExtractSymbolsStage extends ConverterStage<
 
       const symbols = libSymbols.symbols ?? []
       for (const symbol of symbols) {
+        // Check if custom BEFORE sanitizing (Custom: prefix is removed by sanitize)
+        const isCustom = this.isCustomSymbol(symbol.libraryId)
+
         const symbolName = this.sanitizeSymbolName(symbol.libraryId)
         if (!uniqueSymbols.has(symbolName)) {
           // Update libraryId for standalone library use
@@ -92,16 +65,10 @@ export class ExtractSymbolsStage extends ConverterStage<
           // Update Footprint property to use the correct library name
           this.updateFootprintProperty(symbol, fpLibraryName)
 
-          // Determine if this is a builtin symbol
-          const isBuiltin = this.isBuiltinSymbol(
-            symbolName,
-            builtinFootprinterStrings,
-          )
-
           uniqueSymbols.set(symbolName, {
             symbolName,
             symbol,
-            isBuiltin,
+            isBuiltin: !isCustom,
           })
         }
       }
