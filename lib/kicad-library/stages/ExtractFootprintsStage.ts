@@ -92,13 +92,13 @@ export class ExtractFootprintsStage extends ConverterStage<
 
       const footprints = pcb.footprints ?? []
       for (const footprint of footprints) {
-        const sanitized = this.sanitizeFootprint(
+        const footprintEntry = this.sanitizeFootprint({
           footprint,
           fpLibraryName,
           customFootprintNames,
-        )
-        if (!uniqueFootprints.has(sanitized.footprintName)) {
-          uniqueFootprints.set(sanitized.footprintName, sanitized)
+        })
+        if (!uniqueFootprints.has(footprintEntry.footprintName)) {
+          uniqueFootprints.set(footprintEntry.footprintName, footprintEntry)
         }
       }
     } catch (error) {
@@ -109,11 +109,15 @@ export class ExtractFootprintsStage extends ConverterStage<
     this.finished = true
   }
 
-  private sanitizeFootprint(
-    footprint: Footprint,
-    fpLibraryName: string,
-    customFootprintNames: Set<string>,
-  ): FootprintEntry {
+  private sanitizeFootprint({
+    footprint,
+    fpLibraryName,
+    customFootprintNames,
+  }: {
+    footprint: Footprint
+    fpLibraryName: string
+    customFootprintNames: Set<string>
+  }): FootprintEntry {
     // Extract footprint name from libraryLink (e.g., "tscircuit:simple_resistor" -> "simple_resistor")
     const libraryLink = footprint.libraryLink ?? "footprint"
     const parts = libraryLink.split(":")
