@@ -1,4 +1,5 @@
 import type { CircuitJson } from "circuit-json"
+import type { SymbolEntry, FootprintEntry } from "../types"
 
 export interface KicadLibraryConverterOptions {
   /**
@@ -72,4 +73,54 @@ export interface KicadLibraryConverterOutput {
    * Library name used for the output.
    */
   libraryName: string
+}
+
+/**
+ * A component that has been built to circuit JSON.
+ */
+export interface BuiltTscircuitComponent {
+  tscircuitComponentName: string
+  circuitJson: CircuitJson
+}
+
+/**
+ * A component with its extracted KiCad footprints and symbols.
+ */
+export interface ExtractedKicadComponent {
+  tscircuitComponentName: string
+  kicadFootprints: FootprintEntry[]
+  kicadSymbols: SymbolEntry[]
+  model3dSourcePaths: string[]
+}
+
+/**
+ * Context for the KiCad library converter stages.
+ */
+export interface KicadLibraryConverterContext {
+  kicadLibraryName: string
+  includeBuiltins: boolean
+
+  /** Components built from tscircuit source files */
+  builtComponents: BuiltTscircuitComponent[]
+
+  /** Components with extracted KiCad data */
+  extractedComponents: ExtractedKicadComponent[]
+
+  /** User-defined footprints (custom footprint={<footprint>...}) */
+  userKicadFootprints: FootprintEntry[]
+
+  /** Builtin footprints (from footprinter like 0402, soic8) */
+  builtinKicadFootprints: FootprintEntry[]
+
+  /** User-defined symbols (custom symbol={<symbol>...} or renamed for custom footprint) */
+  userKicadSymbols: SymbolEntry[]
+
+  /** Builtin symbols (from schematic-symbols package) */
+  builtinKicadSymbols: SymbolEntry[]
+
+  /** 3D model source paths to copy */
+  model3dSourcePaths: string[]
+
+  /** Final output file map */
+  kicadProjectFsMap: Record<string, string | Buffer>
 }
