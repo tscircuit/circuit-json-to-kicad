@@ -35,7 +35,6 @@ export class ExtractFootprintsStage extends ConverterStage<
 > {
   /**
    * Builds a set of custom footprint names.
-   * Custom footprints = user specified footprint={<footprint>...</footprint>}
    * These are components WITHOUT footprinter_string.
    */
   private findCustomFootprintNames(): Set<string> {

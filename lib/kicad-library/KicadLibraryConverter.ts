@@ -9,7 +9,8 @@ import { renameFootprint } from "./kicad-library-converter-utils/renameFootprint
 import { generateSymLibTable } from "./kicad-library-converter-utils/generateSymLibTable"
 import { generateFpLibTable } from "./kicad-library-converter-utils/generateFpLibTable"
 import { updateBuiltinSymbolFootprint } from "./kicad-library-converter-utils/updateBuiltinSymbolFootprint"
-import { renameSymbol } from "./kicad-library-converter-utils/renameSymbol"
+import { renameKicadSymbol } from "./kicad-library-converter-utils/renameKicadSymbol"
+import { updateKicadSymbolFootprint } from "./kicad-library-converter-utils/updateKicadSymbolFootprint"
 
 export type { KicadLibraryConverterOptions, KicadLibraryConverterOutput }
 
@@ -188,12 +189,17 @@ export class KicadLibraryConverter {
         // Custom symbol → user library
         if (!addedUserSymbol) {
           addedUserSymbol = true
-          const renamedSym = renameSymbol({
-            sym,
-            newName: componentName,
-            libraryName: this.ctx.libraryName,
-            footprintName: hasCustomFootprint ? componentName : undefined,
+          const renamedSym = renameKicadSymbol({
+            kicadSymbol: sym,
+            newKicadSymbolName: componentName,
           })
+          if (hasCustomFootprint) {
+            updateKicadSymbolFootprint({
+              kicadSymbol: renamedSym,
+              kicadLibraryName: this.ctx.libraryName,
+              kicadFootprintName: componentName,
+            })
+          }
           if (
             !this.ctx.userSymbols.some((s) => s.symbolName === componentName)
           ) {
@@ -208,11 +214,14 @@ export class KicadLibraryConverter {
         // Builtin symbol but has custom footprint → rename and add to user library
         // This allows user to place the component by name in KiCad
         addedUserSymbol = true
-        const renamedSym = renameSymbol({
-          sym,
-          newName: componentName,
-          libraryName: this.ctx.libraryName,
-          footprintName: componentName,
+        const renamedSym = renameKicadSymbol({
+          kicadSymbol: sym,
+          newKicadSymbolName: componentName,
+        })
+        updateKicadSymbolFootprint({
+          kicadSymbol: renamedSym,
+          kicadLibraryName: this.ctx.libraryName,
+          kicadFootprintName: componentName,
         })
         if (!this.ctx.userSymbols.some((s) => s.symbolName === componentName)) {
           this.ctx.userSymbols.push(renamedSym)
