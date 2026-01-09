@@ -6,9 +6,9 @@ import type {
 import { renameKicadFootprint } from "../kicad-library-converter-utils/renameKicadFootprint"
 
 /**
- * Classifies footprints from extracted components into user and builtin libraries.
- * - Custom footprints (no footprinter_string) → user library, renamed to component name
- * - Builtin footprints (has footprinter_string) → builtin library
+ * Classifies footprints from extracted KiCad components into user and builtin libraries.
+ * - Custom footprints (isBuiltin=false) → user library, renamed to component name
+ * - Builtin footprints (isBuiltin=true) → builtin library
  */
 export function classifyKicadFootprints(
   ctx: KicadLibraryConverterContext,
@@ -82,10 +82,10 @@ function addBuiltinFootprint({
 }
 
 /**
- * Checks if a component has a custom footprint.
+ * Checks if an extracted KiCad component has a custom footprint.
  */
 export function componentHasCustomFootprint(
-  extractedComponent: ExtractedKicadComponent,
+  extractedKicadComponent: ExtractedKicadComponent,
 ): boolean {
-  return extractedComponent.kicadFootprints.some((fp) => !fp.isBuiltin)
+  return extractedKicadComponent.kicadFootprints.some((fp) => !fp.isBuiltin)
 }
