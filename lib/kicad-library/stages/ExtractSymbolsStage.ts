@@ -14,6 +14,14 @@ export class ExtractSymbolsStage extends ConverterStage<
   CircuitJson,
   KicadLibraryOutput
 > {
+  /**
+   * Checks if a symbol is custom (user-specified symbol={<symbol>...</symbol>}).
+   * Custom symbols have libraryId starting with "Custom:".
+   */
+  private isCustomSymbol(libraryId?: string): boolean {
+    return libraryId?.startsWith("Custom:") ?? false
+  }
+
   override _step(): void {
     const schContent = this.ctx.kicadSchString
     const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
@@ -46,6 +54,9 @@ export class ExtractSymbolsStage extends ConverterStage<
 
       const symbols = libSymbols.symbols ?? []
       for (const symbol of symbols) {
+        // Check if custom BEFORE sanitizing (Custom: prefix is removed by sanitize)
+        const isCustom = this.isCustomSymbol(symbol.libraryId)
+
         const symbolName = this.sanitizeSymbolName(symbol.libraryId)
         if (!uniqueSymbols.has(symbolName)) {
           // Update libraryId for standalone library use
@@ -57,6 +68,7 @@ export class ExtractSymbolsStage extends ConverterStage<
           uniqueSymbols.set(symbolName, {
             symbolName,
             symbol,
+            isBuiltin: !isCustom,
           })
         }
       }

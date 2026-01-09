@@ -18,16 +18,27 @@ export interface PcbNetInfo {
 export interface SymbolEntry {
   symbolName: string
   symbol: SchematicSymbol
+  /**
+   * Whether this symbol is from a standard library footprint (has footprinter_string).
+   * If true, this is a builtin/standard symbol. If false, it's a custom/inline symbol.
+   */
+  isBuiltin?: boolean
 }
 
 export interface FootprintEntry {
   footprintName: string
   kicadModString: string
   model3dSourcePaths: string[]
+  /**
+   * Whether this footprint is from a standard library footprint (has footprinter_string).
+   * If true, this is a builtin/standard footprint. If false, it's a custom/inline footprint.
+   */
+  isBuiltin?: boolean
 }
 
 export interface KicadLibraryOutput {
   kicadSymString: string
+  symbols: SymbolEntry[]
   footprints: FootprintEntry[]
   fpLibTableString: string
   symLibTableString: string

@@ -1,4 +1,8 @@
-import type { CircuitJson } from "circuit-json"
+import type {
+  CircuitJson,
+  CadComponent,
+  SourceComponentBase,
+} from "circuit-json"
 import {
   parseKicadSexpr,
   KicadPcb,
@@ -12,6 +16,7 @@ import {
   type KicadLibraryOutput,
   type FootprintEntry,
 } from "../../types"
+import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 
 /**
  * Browser-compatible basename extraction (handles both / and \ separators)
@@ -28,6 +33,36 @@ export class ExtractFootprintsStage extends ConverterStage<
   CircuitJson,
   KicadLibraryOutput
 > {
+  /**
+   * Builds a set of custom footprint names.
+   * These are components WITHOUT footprinter_string.
+   */
+  private findCustomFootprintNames(): Set<string> {
+    const customNames = new Set<string>()
+
+    const cadComponents = this.ctx.db.cad_component?.list() ?? []
+    const sourceComponents = this.ctx.db.source_component
+
+    for (const cadComponent of cadComponents as CadComponent[]) {
+      // No footprinter_string = custom inline footprint
+      if (!cadComponent.footprinter_string) {
+        const sourceComp = cadComponent.source_component_id
+          ? sourceComponents?.get(cadComponent.source_component_id)
+          : null
+
+        if (sourceComp) {
+          const footprintName = getKicadCompatibleComponentName(
+            sourceComp as SourceComponentBase,
+            cadComponent,
+          )
+          customNames.add(footprintName)
+        }
+      }
+    }
+
+    return customNames
+  }
+
   override _step(): void {
     const kicadPcbString = this.ctx.kicadPcbString
     const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
@@ -37,6 +72,9 @@ export class ExtractFootprintsStage extends ConverterStage<
         "PCB content not available. Run GenerateKicadSchAndPcbStage first.",
       )
     }
+
+    // Find custom footprint names (components without footprinter_string)
+    const customFootprintNames = this.findCustomFootprintNames()
 
     const uniqueFootprints = new Map<string, FootprintEntry>()
 
@@ -53,9 +91,13 @@ export class ExtractFootprintsStage extends ConverterStage<
 
       const footprints = pcb.footprints ?? []
       for (const footprint of footprints) {
-        const sanitized = this.sanitizeFootprint(footprint, fpLibraryName)
-        if (!uniqueFootprints.has(sanitized.footprintName)) {
-          uniqueFootprints.set(sanitized.footprintName, sanitized)
+        const footprintEntry = this.sanitizeFootprint({
+          footprint,
+          fpLibraryName,
+          customFootprintNames,
+        })
+        if (!uniqueFootprints.has(footprintEntry.footprintName)) {
+          uniqueFootprints.set(footprintEntry.footprintName, footprintEntry)
         }
       }
     } catch (error) {
@@ -66,10 +108,15 @@ export class ExtractFootprintsStage extends ConverterStage<
     this.finished = true
   }
 
-  private sanitizeFootprint(
-    footprint: Footprint,
-    fpLibraryName: string,
-  ): FootprintEntry {
+  private sanitizeFootprint({
+    footprint,
+    fpLibraryName,
+    customFootprintNames,
+  }: {
+    footprint: Footprint
+    fpLibraryName: string
+    customFootprintNames: Set<string>
+  }): FootprintEntry {
     // Extract footprint name from libraryLink (e.g., "tscircuit:simple_resistor" -> "simple_resistor")
     const libraryLink = footprint.libraryLink ?? "footprint"
     const parts = libraryLink.split(":")
@@ -77,6 +124,9 @@ export class ExtractFootprintsStage extends ConverterStage<
       (parts.length > 1 ? parts[1] : parts[0])
         ?.replace(/[\\\/]/g, "-")
         .trim() || "footprint"
+
+    // Custom footprints are in customFootprintNames set, everything else is builtin
+    const isBuiltin = !customFootprintNames.has(footprintName)
 
     // Reset footprint for library use
     footprint.libraryLink = footprintName
@@ -134,6 +184,7 @@ export class ExtractFootprintsStage extends ConverterStage<
       footprintName,
       kicadModString: footprint.getString(),
       model3dSourcePaths: modelFiles,
+      isBuiltin,
     }
   }
 

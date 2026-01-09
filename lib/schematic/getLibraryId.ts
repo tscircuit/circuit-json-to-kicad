@@ -7,6 +7,14 @@ import {
   getKicadCompatibleComponentName,
   extractReferencePrefix,
 } from "../utils/getKicadCompatibleComponentName"
+import { symbols } from "schematic-symbols"
+
+/**
+ * Checks if a symbol name is a known builtin symbol from schematic-symbols package.
+ */
+function isBuiltinSymbol(symbolName: string): boolean {
+  return symbolName in symbols
+}
 
 export function getLibraryId(
   sourceComp: SourceComponentBase,
@@ -15,13 +23,22 @@ export function getLibraryId(
 ): string {
   if (sourceComp.type !== "source_component") {
     if (schematicComp.symbol_name) {
+      // Check if it's a builtin symbol from schematic-symbols
+      if (isBuiltinSymbol(schematicComp.symbol_name)) {
+        return `Device:${schematicComp.symbol_name}`
+      }
       return `Custom:${schematicComp.symbol_name}`
     }
     return "Device:Component"
   }
 
-  // Use custom symbol name if provided
+  // Check if there's a symbol_name
   if (schematicComp.symbol_name) {
+    // If it's a known builtin symbol, use Device: prefix
+    if (isBuiltinSymbol(schematicComp.symbol_name)) {
+      return `Device:${schematicComp.symbol_name}`
+    }
+    // Otherwise it's a custom symbol
     return `Custom:${schematicComp.symbol_name}`
   }
 

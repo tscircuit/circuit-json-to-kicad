@@ -1,0 +1,34 @@
+import type { FootprintEntry } from "../../types"
+import { parseKicadMod } from "kicadts"
+
+/**
+ * Rename a KiCad footprint entry to use a new name.
+ */
+export function renameKicadFootprint(params: {
+  kicadFootprint: FootprintEntry
+  newKicadFootprintName: string
+  kicadLibraryName: string
+}): FootprintEntry {
+  const { kicadFootprint, newKicadFootprintName, kicadLibraryName } = params
+
+  const footprint = parseKicadMod(kicadFootprint.kicadModString)
+
+  // Update the footprint name (libraryLink)
+  footprint.libraryLink = newKicadFootprintName
+
+  // Update 3D model paths to use the correct library name
+  for (const model of footprint.models) {
+    const currentPath = model.path
+    if (currentPath.includes("${KIPRJMOD}/")) {
+      // Extract the filename from the path
+      const filename = currentPath.split("/").pop() ?? ""
+      model.path = `\${KIPRJMOD}/3dmodels/${kicadLibraryName}.3dshapes/${filename}`
+    }
+  }
+
+  return {
+    footprintName: newKicadFootprintName,
+    kicadModString: footprint.getString(),
+    model3dSourcePaths: kicadFootprint.model3dSourcePaths,
+  }
+}
