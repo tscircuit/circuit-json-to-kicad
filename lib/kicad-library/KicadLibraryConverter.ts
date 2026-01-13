@@ -58,9 +58,14 @@ export class KicadLibraryConverter {
     const { entrypoint } = this.options
 
     const exports = await this.options.getExportsFromTsxFile(entrypoint)
-    const componentExports = exports.filter((name) => /^[A-Z]/.test(name))
 
-    for (const exportName of componentExports) {
+    // Named exports starting with uppercase
+    const namedExports = exports.filter(
+      (name) => name !== "default" && /^[A-Z]/.test(name),
+    )
+
+    // Process named exports
+    for (const exportName of namedExports) {
       let componentPath = entrypoint
       if (this.options.resolveExportPath) {
         const resolved = await this.options.resolveExportPath(
@@ -80,6 +85,33 @@ export class KicadLibraryConverter {
       ) {
         builtTscircuitComponents.push({
           tscircuitComponentName: exportName,
+          circuitJson,
+        })
+      }
+    }
+
+    // Handle default export - resolve path and derive name from resolved file
+    if (exports.includes("default")) {
+      let componentPath = entrypoint
+      if (this.options.resolveExportPath) {
+        const resolved = await this.options.resolveExportPath(
+          entrypoint,
+          "default",
+        )
+        if (resolved) componentPath = resolved
+      }
+
+      const componentName = deriveComponentNameFromPath(componentPath)
+      const circuitJson = await this.options.buildFileToCircuitJson(
+        componentPath,
+        "default",
+      )
+      if (
+        circuitJson &&
+        (!Array.isArray(circuitJson) || circuitJson.length > 0)
+      ) {
+        builtTscircuitComponents.push({
+          tscircuitComponentName: componentName,
           circuitJson,
         })
       }
@@ -151,4 +183,13 @@ function createKicadLibraryConverterContext(params: {
     model3dSourcePaths: [],
     kicadProjectFsMap: {},
   }
+}
+
+/**
+ * Derives a component name from a file path.
+ * e.g., "lib/my-circuit.tsx" -> "my-circuit"
+ */
+function deriveComponentNameFromPath(filePath: string): string {
+  const filename = filePath.split(/[/\\]/).pop() || filePath
+  return filename.replace(/\.(tsx?|jsx?)$/, "")
 }
