@@ -90,11 +90,20 @@ export class KicadLibraryConverter {
       }
     }
 
-    // Handle default export - derive name from filename
+    // Handle default export - resolve path and derive name from resolved file
     if (exports.includes("default")) {
-      const componentName = deriveComponentNameFromPath(entrypoint)
+      let componentPath = entrypoint
+      if (this.options.resolveExportPath) {
+        const resolved = await this.options.resolveExportPath(
+          entrypoint,
+          "default",
+        )
+        if (resolved) componentPath = resolved
+      }
+
+      const componentName = deriveComponentNameFromPath(componentPath)
       const circuitJson = await this.options.buildFileToCircuitJson(
-        entrypoint,
+        componentPath,
         "default",
       )
       if (

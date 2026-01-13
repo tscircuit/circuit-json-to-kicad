@@ -92,3 +92,65 @@ test("KicadLibraryConverter handles default export from entrypoint", async () =>
   // Verify 3D model paths are collected
   expect(output.model3dSourcePaths.length).toBe(1)
 })
+
+test("KicadLibraryConverter resolves path for re-exported default exports", async () => {
+  // Entrypoint re-exports default from another file:
+  // export { default } from "./components/MainBoard"
+  const mockExports: Record<string, string[]> = {
+    "lib/my-library.ts": ["default"],
+  }
+
+  const resolvedPaths: Array<{ entrypoint: string; exportName: string }> = []
+  const buildCalls: Array<{ filePath: string; componentName: string }> = []
+
+  const converter = new KicadLibraryConverter({
+    kicadLibraryName: "my-library",
+    entrypoint: "lib/my-library.ts",
+    getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
+    resolveExportPath: async (entrypoint, exportName) => {
+      resolvedPaths.push({ entrypoint, exportName })
+      if (exportName === "default") {
+        return "lib/components/MainBoard.tsx"
+      }
+      return null
+    },
+    buildFileToCircuitJson: async (filePath, componentName) => {
+      buildCalls.push({ filePath, componentName })
+      if (componentName === "default") {
+        return await renderDefaultExportBoard()
+      }
+      return null
+    },
+    includeBuiltins: false,
+  })
+
+  await converter.run()
+  const output = converter.getOutput()
+
+  // Verify resolveExportPath was called with "default"
+  expect(resolvedPaths).toContainEqual({
+    entrypoint: "lib/my-library.ts",
+    exportName: "default",
+  })
+
+  // Verify buildFileToCircuitJson was called with the resolved path
+  expect(buildCalls).toContainEqual({
+    filePath: "lib/components/MainBoard.tsx",
+    componentName: "default",
+  })
+
+  // Verify component name is derived from resolved path (MainBoard.tsx -> MainBoard)
+  const outputKeys = Object.keys(output.kicadProjectFsMap).sort()
+  expect(outputKeys).toMatchInlineSnapshot(`
+    [
+      "footprints/my-library.pretty/MainBoard.kicad_mod",
+      "fp-lib-table",
+      "sym-lib-table",
+      "symbols/my-library.kicad_sym",
+    ]
+  `)
+  expect(outputKeys).toContain(
+    "footprints/my-library.pretty/MainBoard.kicad_mod",
+  )
+  expect(outputKeys).toContain("symbols/my-library.kicad_sym")
+})
