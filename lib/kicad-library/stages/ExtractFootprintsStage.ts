@@ -22,6 +22,7 @@ import {
   type FootprintEntry,
 } from "../../types"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
 
 /**
  * Browser-compatible basename extraction (handles both / and \ separators)
@@ -171,6 +172,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         value: "Ref**",
         position: [0, 0, 0],
         layer: "F.SilkS",
+        uuid: generateDeterministicUuid(`${footprintName}-property-Reference`),
         effects: defaultEffects,
       }),
       new Property({
@@ -178,6 +180,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         value: "Val**",
         position: [0, 0, 0],
         layer: "F.Fab",
+        uuid: generateDeterministicUuid(`${footprintName}-property-Value`),
         effects: defaultEffects,
       }),
       new Property({
@@ -186,6 +189,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         position: [0, 0, 0],
         layer: "F.Fab",
         hidden: true,
+        uuid: generateDeterministicUuid(`${footprintName}-property-Datasheet`),
         effects: defaultEffects,
       }),
       new Property({
@@ -194,6 +198,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         position: [0, 0, 0],
         layer: "F.Fab",
         hidden: true,
+        uuid: generateDeterministicUuid(`${footprintName}-property-Description`),
         effects: defaultEffects,
       }),
     ]
@@ -210,11 +215,16 @@ export class ExtractFootprintsStage extends ConverterStage<
     }
     footprint.fpTexts = texts
 
-    // Clean up pads
+    // Clean up pads - generate UUIDs and clear net info
     const pads = footprint.fpPads ?? []
-    for (const pad of pads) {
-      pad.uuid = undefined
-      pad.net = undefined
+    for (let i = 0; i < pads.length; i++) {
+      const pad = pads[i]
+      if (pad) {
+        pad.uuid = generateDeterministicUuid(
+          `${footprintName}-pad-${pad.number ?? i}`,
+        )
+        pad.net = undefined
+      }
     }
     footprint.fpPads = pads
 

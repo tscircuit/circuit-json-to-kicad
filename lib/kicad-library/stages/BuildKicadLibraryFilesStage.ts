@@ -2,6 +2,7 @@ import { KicadSymbolLib } from "kicadts"
 import type { KicadLibraryConverterContext } from "../KicadLibraryConverterTypes"
 import { generateSymLibTable } from "../kicad-library-converter-utils/generateSymLibTable"
 import { generateFpLibTable } from "../kicad-library-converter-utils/generateFpLibTable"
+import { addFootprintMetadata } from "./addFootprintMetadata"
 
 const KICAD_SYM_LIB_VERSION = 20211014
 const KICAD_GENERATOR = "circuit-json-to-kicad"
@@ -49,7 +50,9 @@ function buildBuiltinSymbolLibrary(ctx: KicadLibraryConverterContext): void {
 function buildUserFootprintLibrary(ctx: KicadLibraryConverterContext): void {
   for (const kicadFootprint of ctx.userKicadFootprints) {
     const filePath = `footprints/${ctx.kicadLibraryName}.pretty/${kicadFootprint.footprintName}.kicad_mod`
-    ctx.kicadProjectFsMap[filePath] = kicadFootprint.kicadModString
+    ctx.kicadProjectFsMap[filePath] = addFootprintMetadata(
+      kicadFootprint.kicadModString,
+    )
   }
 }
 
@@ -58,7 +61,9 @@ function buildBuiltinFootprintLibrary(ctx: KicadLibraryConverterContext): void {
 
   for (const kicadFootprint of ctx.builtinKicadFootprints) {
     const filePath = `footprints/tscircuit_builtin.pretty/${kicadFootprint.footprintName}.kicad_mod`
-    ctx.kicadProjectFsMap[filePath] = kicadFootprint.kicadModString
+    ctx.kicadProjectFsMap[filePath] = addFootprintMetadata(
+      kicadFootprint.kicadModString,
+    )
   }
 }
 
