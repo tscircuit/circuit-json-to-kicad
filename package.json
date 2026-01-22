@@ -21,11 +21,11 @@
     "@types/bun": "latest",
     "circuit-json": "^0.0.302",
     "circuit-to-svg": "^0.0.208",
-    "kicadts": "^0.0.23",
+    "kicadts": "^0.0.24",
     "schematic-symbols": "^0.0.202",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.866",
+    "tscircuit": "^0.0.1186",
     "tsup": "^8.5.0"
   },
   "peerDependencies": {

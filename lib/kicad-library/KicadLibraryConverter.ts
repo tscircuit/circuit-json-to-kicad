@@ -11,6 +11,8 @@ import { classifyKicadSymbols } from "./stages/ClassifyKicadSymbolsStage"
 import { buildKicadLibraryFiles } from "./stages/BuildKicadLibraryFilesStage"
 
 export type { KicadLibraryConverterOptions, KicadLibraryConverterOutput }
+import type {KicadFootprintMetadata} from "@tscircuit/props"
+
 
 /**
  * Converts tscircuit component files to a KiCad library.
@@ -197,8 +199,7 @@ function createKicadLibraryConverterContext(params: {
   getComponentKicadMetadata?: (
     filePath: string,
     componentName: string,
-  ) => Promise<
-    import("./KicadLibraryConverterTypes").KicadFootprintMetadata | null
+  ) => Promise<KicadFootprintMetadata | null
   >
 }): KicadLibraryConverterContext {
   return {

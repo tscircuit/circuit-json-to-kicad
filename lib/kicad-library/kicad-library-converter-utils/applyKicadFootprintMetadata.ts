@@ -5,7 +5,7 @@ import {
   TextEffects,
   TextEffectsFont,
 } from "kicadts"
-import type { KicadFootprintMetadata } from "../KicadLibraryConverterTypes"
+import type { KicadFootprintMetadata } from "@tscircuit/props"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
 
 /**
@@ -25,6 +25,17 @@ export function applyKicadFootprintMetadata(
 
     if (!footprint) {
       return kicadModString
+    }
+
+    // Apply version/generator metadata if provided
+    if (metadata.version !== undefined) {
+      footprint.version = Number(metadata.version)
+    }
+    if (metadata.generator !== undefined) {
+      footprint.generator = metadata.generator
+    }
+    if (metadata.generatorVersion !== undefined) {
+      footprint.generatorVersion = String(metadata.generatorVersion)
     }
 
     // Apply embedded fonts setting

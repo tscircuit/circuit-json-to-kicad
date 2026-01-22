@@ -1,35 +1,7 @@
 import type { CircuitJson } from "circuit-json"
 import type { SymbolEntry, FootprintEntry } from "../types"
+import type {KicadFootprintMetadata} from "@tscircuit/props"
 
-/**
- * KiCad footprint metadata that can be extracted from component props.
- * This mirrors the KicadFootprintMetadata type from @tscircuit/props.
- */
-export interface KicadFootprintMetadata {
-  footprintName?: string
-  layer?: string
-  properties?: {
-    Reference?: KicadPropertyMetadata
-    Value?: KicadPropertyMetadata
-    Datasheet?: KicadPropertyMetadata
-    Description?: KicadPropertyMetadata
-  }
-  attributes?: {
-    through_hole?: boolean
-    smd?: boolean
-    exclude_from_pos_files?: boolean
-    exclude_from_bom?: boolean
-  }
-  embeddedFonts?: boolean
-}
-
-export interface KicadPropertyMetadata {
-  value: string
-  at?: { x: number | string; y: number | string; rotation?: number | string }
-  layer?: string
-  uuid?: string
-  hide?: boolean
-}
 
 export interface KicadLibraryConverterOptions {
   /**
