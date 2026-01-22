@@ -1,7 +1,6 @@
 import type { CircuitJson } from "circuit-json"
 import type { SymbolEntry, FootprintEntry } from "../types"
-import type {KicadFootprintMetadata} from "@tscircuit/props"
-
+import type { KicadFootprintMetadata } from "@tscircuit/props"
 
 export interface KicadLibraryConverterOptions {
   /**
