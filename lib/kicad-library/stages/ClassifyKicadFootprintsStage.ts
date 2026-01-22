@@ -4,6 +4,7 @@ import type {
   ExtractedKicadComponent,
 } from "../KicadLibraryConverterTypes"
 import { renameKicadFootprint } from "../kicad-library-converter-utils/renameKicadFootprint"
+import { applyKicadFootprintMetadata } from "../kicad-library-converter-utils/applyKicadFootprintMetadata"
 
 /**
  * Classifies footprints from extracted KiCad components into user and builtin libraries.
@@ -31,6 +32,9 @@ function classifyFootprintsForComponent({
   const { tscircuitComponentName, kicadFootprints } = extractedKicadComponent
   let hasAddedUserFootprint = false
 
+  // Get metadata for this component if available
+  const metadata = ctx.footprintMetadataMap.get(tscircuitComponentName)
+
   for (const kicadFootprint of kicadFootprints) {
     if (kicadFootprint.isBuiltin) {
       addBuiltinFootprint({ ctx, kicadFootprint })
@@ -38,11 +42,24 @@ function classifyFootprintsForComponent({
       // First custom footprint gets renamed to component name
       if (!hasAddedUserFootprint) {
         hasAddedUserFootprint = true
-        const renamedFootprint = renameKicadFootprint({
+        let renamedFootprint = renameKicadFootprint({
           kicadFootprint,
           newKicadFootprintName: tscircuitComponentName,
           kicadLibraryName: ctx.kicadLibraryName,
         })
+
+        // Apply kicadFootprintMetadata if available
+        if (metadata) {
+          renamedFootprint = {
+            ...renamedFootprint,
+            kicadModString: applyKicadFootprintMetadata(
+              renamedFootprint.kicadModString,
+              metadata,
+              tscircuitComponentName,
+            ),
+          }
+        }
+
         addUserFootprint({ ctx, kicadFootprint: renamedFootprint })
       } else {
         addUserFootprint({ ctx, kicadFootprint })
