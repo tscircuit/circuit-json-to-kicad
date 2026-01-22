@@ -9,7 +9,7 @@ async function renderKeyHotSocket(): Promise<CircuitJson> {
   circuit.add(
     <board width="20mm" height="20mm">
       <chip
-        name="SW1"
+        name="REF**"
         footprint={
           <footprint>
             <smtpad
@@ -49,9 +49,9 @@ async function renderSimpleLedCircuit(): Promise<CircuitJson> {
   const circuit = new Circuit()
   circuit.add(
     <board width="30mm" height="20mm">
-      <resistor name="R1" resistance="220" footprint="0402" pcbX={-5} />
-      <capacitor name="C1" capacitance="100nF" footprint="0805" pcbX={0} />
-      <diode name="D1" footprint="0603" pcbX={5} />
+      <resistor name="REF**" resistance="220" footprint="0402" pcbX={-5} />
+      <capacitor name="REF**" capacitance="100nF" footprint="0805" pcbX={0} />
+      <diode name="REF**" footprint="0603" pcbX={5} />
     </board>,
   )
   await circuit.renderUntilSettled()
@@ -115,4 +115,89 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
 )
 "
 `)
+
+  expect(
+    output.kicadProjectFsMap[
+      "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod"
+    ],
+  ).toMatchInlineSnapshot(`
+    "(footprint
+      "KeyHotSocket"
+      (layer F.Cu)
+      (at 0 0 0)
+      (descr "")
+      (tags "")
+      (attr through_hole)
+      (embedded_fonts no)
+      (property "Reference" "Ref**"
+        (at 0 0 0)
+        (layer F.SilkS)
+        (effects
+          (font
+            (size 1.27 1.27)
+            (thickness 0.15)
+          )
+        )
+      )
+      (property "Value" "Val**"
+        (at 0 0 0)
+        (layer F.Fab)
+        (effects
+          (font
+            (size 1.27 1.27)
+            (thickness 0.15)
+          )
+        )
+      )
+      (property "Datasheet" ""
+        (at 0 0 0)
+        (layer F.Fab)
+        (hide yes)
+        (effects
+          (font
+            (size 1.27 1.27)
+            (thickness 0.15)
+          )
+        )
+      )
+      (property "Description" ""
+        (at 0 0 0)
+        (layer F.Fab)
+        (hide yes)
+        (effects
+          (font
+            (size 1.27 1.27)
+            (thickness 0.15)
+          )
+        )
+      )
+      (fp_text
+        user
+        "SW"
+        (at 0.6350000000000002 -6.16 0)
+        (layer F.SilkS)
+        (effects
+          (font
+            (size 0.6666666666666666 0.6666666666666666)
+          )
+        )
+      )
+      (pad "1" smd rect
+        (at -3.175 -0.7000000000000002 0)
+        (size 2.5 1.2)
+        (layers F.Cu F.Paste F.Mask)
+      )
+      (pad "2" smd rect
+        (at 3.1750000000000003 -3.24 0)
+        (size 2.5 1.2)
+        (layers F.Cu F.Paste F.Mask)
+      )
+      (pad "" np_thru_hole circle
+        (at 0.6350000000000002 1.8399999999999999 0)
+        (size 4 4)
+        (drill 4)
+        (layers *.Cu *.Mask)
+      )
+    )"
+  `)
 })
