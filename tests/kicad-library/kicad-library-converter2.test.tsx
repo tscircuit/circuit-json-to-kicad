@@ -15,7 +15,7 @@ async function renderUsbConnector(): Promise<CircuitJson> {
   circuit.add(
     <board width="15mm" height="10mm">
       <chip
-        name="J1"
+        name="REF**"
         footprint={
           <footprint>
             <smtpad
@@ -85,7 +85,7 @@ async function renderPowerRegulator(): Promise<CircuitJson> {
   circuit.add(
     <board width="20mm" height="15mm">
       <chip
-        name="U1"
+        name="REF**"
         footprint="soic8"
         pinLabels={{ pin1: "IN", pin4: "GND", pin8: "OUT" }}
       />

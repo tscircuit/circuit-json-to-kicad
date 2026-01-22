@@ -175,6 +175,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentRotation: component.rotation || 0,
       })
       if (fpText) {
+        if (
+          sourceComponent?.name &&
+          textElement.text === sourceComponent.name
+        ) {
+          fpText.type = "reference"
+        }
         fpTexts.push(fpText)
       }
     }

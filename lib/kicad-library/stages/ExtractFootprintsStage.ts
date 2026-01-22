@@ -9,6 +9,11 @@ import {
   Footprint,
   FootprintModel,
   At,
+  EmbeddedFonts,
+  FootprintAttr,
+  Property,
+  TextEffects,
+  TextEffectsFont,
 } from "kicadts"
 import {
   ConverterStage,
@@ -133,11 +138,65 @@ export class ExtractFootprintsStage extends ConverterStage<
     footprint.position = At.from([0, 0, 0])
     footprint.locked = false
     footprint.placed = false
+    if (!footprint.descr) {
+      footprint.descr = ""
+    }
+    if (!footprint.tags) {
+      footprint.tags = ""
+    }
+    if (!footprint.embeddedFonts) {
+      footprint.embeddedFonts = new EmbeddedFonts(false)
+    }
+    if (!footprint.attr) {
+      const attr = new FootprintAttr()
+      const padTypes = (footprint.fpPads ?? []).map((pad) => pad.padType)
+      if (padTypes.some((padType) => padType.includes("thru_hole"))) {
+        attr.type = "through_hole"
+      } else if (padTypes.some((padType) => padType.includes("smd"))) {
+        attr.type = "smd"
+      }
+      footprint.attr = attr
+    }
     footprint.uuid = undefined
     footprint.path = undefined
     footprint.sheetfile = undefined
     footprint.sheetname = undefined
-    footprint.properties = []
+    const defaultFont = new TextEffectsFont()
+    defaultFont.size = { width: 1.27, height: 1.27 }
+    defaultFont.thickness = 0.15
+    const defaultEffects = new TextEffects({ font: defaultFont })
+    footprint.properties = [
+      new Property({
+        key: "Reference",
+        value: "Ref**",
+        position: [0, 0, 0],
+        layer: "F.SilkS",
+        effects: defaultEffects,
+      }),
+      new Property({
+        key: "Value",
+        value: "Val**",
+        position: [0, 0, 0],
+        layer: "F.Fab",
+        effects: defaultEffects,
+      }),
+      new Property({
+        key: "Datasheet",
+        value: "",
+        position: [0, 0, 0],
+        layer: "F.Fab",
+        hidden: true,
+        effects: defaultEffects,
+      }),
+      new Property({
+        key: "Description",
+        value: "",
+        position: [0, 0, 0],
+        layer: "F.Fab",
+        hidden: true,
+        effects: defaultEffects,
+      }),
+    ]
 
     // Clean up texts
     const texts = footprint.fpTexts ?? []
