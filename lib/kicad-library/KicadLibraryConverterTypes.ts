@@ -1,6 +1,36 @@
 import type { CircuitJson } from "circuit-json"
 import type { SymbolEntry, FootprintEntry } from "../types"
 
+/**
+ * KiCad footprint metadata that can be extracted from component props.
+ * This mirrors the KicadFootprintMetadata type from @tscircuit/props.
+ */
+export interface KicadFootprintMetadata {
+  footprintName?: string
+  layer?: string
+  properties?: {
+    Reference?: KicadPropertyMetadata
+    Value?: KicadPropertyMetadata
+    Datasheet?: KicadPropertyMetadata
+    Description?: KicadPropertyMetadata
+  }
+  attributes?: {
+    through_hole?: boolean
+    smd?: boolean
+    exclude_from_pos_files?: boolean
+    exclude_from_bom?: boolean
+  }
+  embeddedFonts?: boolean
+}
+
+export interface KicadPropertyMetadata {
+  value: string
+  at?: { x: number | string; y: number | string; rotation?: number | string }
+  layer?: string
+  uuid?: string
+  hide?: boolean
+}
+
 export interface KicadLibraryConverterOptions {
   /**
    * Name for the generated KiCad library (e.g., "my-library").
@@ -48,6 +78,16 @@ export interface KicadLibraryConverterOptions {
    * Default: true
    */
   includeBuiltins?: boolean
+
+  /**
+   * Callback to get KiCad footprint metadata from a component via prop introspection.
+   * This allows extracting kicadFootprintMetadata props without rendering the component.
+   * Return null if no metadata is available.
+   */
+  getComponentKicadMetadata?: (
+    filePath: string,
+    componentName: string,
+  ) => Promise<KicadFootprintMetadata | null>
 }
 
 export interface KicadLibraryConverterOutput {
@@ -86,6 +126,15 @@ export interface ExtractedKicadComponent {
 export interface KicadLibraryConverterContext {
   kicadLibraryName: string
   includeBuiltins: boolean
+
+  /** Callback to get KiCad footprint metadata from component props */
+  getComponentKicadMetadata?: (
+    filePath: string,
+    componentName: string,
+  ) => Promise<KicadFootprintMetadata | null>
+
+  /** Map of footprint name to its KiCad metadata from component props */
+  footprintMetadataMap: Map<string, KicadFootprintMetadata>
 
   /** Tscircuit components built to circuit-json */
   builtTscircuitComponents: BuiltTscircuitComponent[]
