@@ -19,10 +19,12 @@ export function renameKicadFootprint(params: {
   // Update 3D model paths to use the correct library name
   for (const model of footprint.models) {
     const currentPath = model.path
-    if (currentPath.includes("${KIPRJMOD}/")) {
+    const usesProjectPath =
+      currentPath.includes("${KIPRJMOD}/") || /3dmodels[\\/]/.test(currentPath)
+    if (usesProjectPath) {
       // Extract the filename from the path
-      const filename = currentPath.split("/").pop() ?? ""
-      model.path = `\${KIPRJMOD}/3dmodels/${kicadLibraryName}.3dshapes/${filename}`
+      const filename = currentPath.split(/[\\/]/).pop() ?? ""
+      model.path = `../../3dmodels/${kicadLibraryName}.3dshapes/${filename}`
     }
   }
 

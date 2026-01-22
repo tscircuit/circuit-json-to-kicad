@@ -167,7 +167,7 @@ export class ExtractFootprintsStage extends ConverterStage<
     for (const model of models) {
       if (model.path) {
         const modelFilename = getBasename(model.path)
-        const newPath = `\${KIPRJMOD}/${fpLibraryName}.3dshapes/${modelFilename}`
+        const newPath = `../../3dmodels/${fpLibraryName}.3dshapes/${modelFilename}`
 
         const newModel = new FootprintModel(newPath)
         if (model.offset) newModel.offset = model.offset
