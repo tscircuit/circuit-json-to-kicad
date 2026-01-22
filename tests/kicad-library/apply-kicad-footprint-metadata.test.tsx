@@ -5,45 +5,49 @@ import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import type { KicadFootprintMetadata } from "lib/kicad-library/KicadLibraryConverterTypes"
 
+const KeySocket = () => (
+  <chip
+    name="REF**"
+    kicadFootprintMetadata={{
+      properties: {
+        Description: {
+          value: "Cherry MX mechanical key switch",
+        },
+      },
+    }}
+    footprint={
+      <footprint>
+        <smtpad
+          shape="rect"
+          width="2.5mm"
+          height="1.2mm"
+          portHints={["pin1"]}
+          pcbX={-3.81}
+          pcbY={2.54}
+        />
+        <smtpad
+          shape="rect"
+          width="2.5mm"
+          height="1.2mm"
+          portHints={["pin2"]}
+          pcbX={2.54}
+          pcbY={5.08}
+        />
+        <hole pcbX={0} pcbY={0} diameter="4mm" />
+        <silkscreentext text="SW" pcbY={8} fontSize="1mm" />
+      </footprint>
+    }
+    cadModel={{
+      stlUrl: "/path/to/CherryMxSwitch.step",
+      rotationOffset: { x: 0, y: 0, z: 0 },
+    }}
+    pinLabels={{ pin1: "1", pin2: "2" }}
+  />
+)
+
 const KeyHotSocket = () => (
   <board width="20mm" height="20mm">
-    <chip
-      name="REF**"
-      kicadFootprintMetadata={{
-        properties: {
-          Description: {
-            value: "Cherry MX mechanical key switch",
-          },
-        },
-      }}
-      footprint={
-        <footprint>
-          <smtpad
-            shape="rect"
-            width="2.5mm"
-            height="1.2mm"
-            portHints={["pin1"]}
-            pcbX={-3.81}
-            pcbY={2.54}
-          />
-          <smtpad
-            shape="rect"
-            width="2.5mm"
-            height="1.2mm"
-            portHints={["pin2"]}
-            pcbX={2.54}
-            pcbY={5.08}
-          />
-          <hole pcbX={0} pcbY={0} diameter="4mm" />
-          <silkscreentext text="SW" pcbY={8} fontSize="1mm" />
-        </footprint>
-      }
-      cadModel={{
-        stlUrl: "/path/to/CherryMxSwitch.step",
-        rotationOffset: { x: 0, y: 0, z: 0 },
-      }}
-      pinLabels={{ pin1: "1", pin2: "2" }}
-    />
+    <KeySocket />
   </board>
 )
 
@@ -98,7 +102,7 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
 
       let queue = [reactElm]
 
-      let kicadFootprintMetadata: KicadFootprintMetadata
+      let kicadFootprintMetadata: KicadFootprintMetadata = {}
 
       let maxIters = 100
       let iters = 0
@@ -108,6 +112,16 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           break
         }
         const elm = queue.shift()
+
+        if (typeof elm.type === "function") {
+          try {
+            const reactElm = elm.type()
+            queue.push(reactElm)
+          } catch (e) {
+            console.log(e)
+          }
+        }
+
         if (elm?.props?.kicadFootprintMetadata) {
           kicadFootprintMetadata = elm.props.kicadFootprintMetadata
           break
@@ -130,15 +144,11 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   await converter.run()
   const output = converter.getOutput()
 
-  return
-
   // Verify file structure includes the custom footprint
   const outputKeys = Object.keys(output.kicadProjectFsMap).sort()
   expect(outputKeys).toMatchInlineSnapshot(`
     [
       "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod",
-      "footprints/tscircuit_builtin.pretty/capacitor_0805.kicad_mod",
-      "footprints/tscircuit_builtin.pretty/diode_0603.kicad_mod",
       "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
       "fp-lib-table",
       "sym-lib-table",
