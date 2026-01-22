@@ -73,6 +73,9 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   // Define metadata to be applied via callback
   const componentMetadata: Record<string, KicadFootprintMetadata> = {
     KeyHotSocket: {
+      version: 20250122,
+      generator: "tscircuit",
+      generatorVersion: "1.0.0",
       properties: {
         Reference: { value: "SW**" },
         Value: { value: "MX_SWITCH" },
@@ -156,6 +159,9 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     expect(footprintStr).toMatchInlineSnapshot(`
       "(footprint
         "KeyHotSocket"
+        (version 20250122)
+        (generator tscircuit)
+        (generator_version 1.0.0)
         (layer F.Cu)
         (at 0 0 0)
         (descr "")
