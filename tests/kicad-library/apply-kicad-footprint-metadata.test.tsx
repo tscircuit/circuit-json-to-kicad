@@ -76,7 +76,10 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
       properties: {
         Reference: { value: "SW**" },
         Value: { value: "MX_SWITCH" },
-        Datasheet: { value: "https://example.com/switch-datasheet.pdf", hide: true },
+        Datasheet: {
+          value: "https://example.com/switch-datasheet.pdf",
+          hide: true,
+        },
         Description: { value: "Cherry MX mechanical key switch", hide: true },
       },
     },
@@ -130,9 +133,10 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   `)
 
   // Verify the KeyHotSocket custom footprint is generated with metadata applied
-  const keyHotSocketFootprint = output.kicadProjectFsMap[
-    "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod"
-  ]
+  const keyHotSocketFootprint =
+    output.kicadProjectFsMap[
+      "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod"
+    ]
   expect(keyHotSocketFootprint).toBeDefined()
 
   if (keyHotSocketFootprint) {
@@ -141,8 +145,12 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     // The footprint should have the metadata properties applied
     expect(footprintStr).toContain('(property "Reference" "SW**"')
     expect(footprintStr).toContain('(property "Value" "MX_SWITCH"')
-    expect(footprintStr).toContain('(property "Datasheet" "https://example.com/switch-datasheet.pdf"')
-    expect(footprintStr).toContain('(property "Description" "Cherry MX mechanical key switch"')
+    expect(footprintStr).toContain(
+      '(property "Datasheet" "https://example.com/switch-datasheet.pdf"',
+    )
+    expect(footprintStr).toContain(
+      '(property "Description" "Cherry MX mechanical key switch"',
+    )
 
     // Snapshot the KeyHotSocket footprint with metadata
     expect(footprintStr).toMatchInlineSnapshot(`
@@ -235,9 +243,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   }
 
   // Verify symbols file contains the KeyHotSocket component
-  const symbolsFile = output.kicadProjectFsMap[
-    "symbols/my-keyboard-library.kicad_sym"
-  ]
+  const symbolsFile =
+    output.kicadProjectFsMap["symbols/my-keyboard-library.kicad_sym"]
   expect(symbolsFile).toBeDefined()
   if (symbolsFile) {
     expect(String(symbolsFile)).toContain("KeyHotSocket")

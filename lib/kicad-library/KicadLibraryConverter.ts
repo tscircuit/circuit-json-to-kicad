@@ -197,7 +197,9 @@ function createKicadLibraryConverterContext(params: {
   getComponentKicadMetadata?: (
     filePath: string,
     componentName: string,
-  ) => Promise<import("./KicadLibraryConverterTypes").KicadFootprintMetadata | null>
+  ) => Promise<
+    import("./KicadLibraryConverterTypes").KicadFootprintMetadata | null
+  >
 }): KicadLibraryConverterContext {
   return {
     kicadLibraryName: params.kicadLibraryName,

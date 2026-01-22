@@ -198,7 +198,9 @@ export class ExtractFootprintsStage extends ConverterStage<
         position: [0, 0, 0],
         layer: "F.Fab",
         hidden: true,
-        uuid: generateDeterministicUuid(`${footprintName}-property-Description`),
+        uuid: generateDeterministicUuid(
+          `${footprintName}-property-Description`,
+        ),
         effects: defaultEffects,
       }),
     ]

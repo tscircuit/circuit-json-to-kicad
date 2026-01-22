@@ -48,10 +48,16 @@ export function applyKicadFootprintMetadata(
           key: "Reference",
           value: refMeta?.value ?? "REF**",
           position: refMeta?.at
-            ? [Number(refMeta.at.x), Number(refMeta.at.y), Number(refMeta.at.rotation ?? 0)]
+            ? [
+                Number(refMeta.at.x),
+                Number(refMeta.at.y),
+                Number(refMeta.at.rotation ?? 0),
+              ]
             : [0, 0, 0],
           layer: refMeta?.layer ?? "F.SilkS",
-          uuid: refMeta?.uuid ?? generateDeterministicUuid(`${footprintName}-property-Reference`),
+          uuid:
+            refMeta?.uuid ??
+            generateDeterministicUuid(`${footprintName}-property-Reference`),
           effects: defaultEffects,
           hidden: refMeta?.hide,
         }),
@@ -64,10 +70,16 @@ export function applyKicadFootprintMetadata(
           key: "Value",
           value: valMeta?.value ?? footprintName,
           position: valMeta?.at
-            ? [Number(valMeta.at.x), Number(valMeta.at.y), Number(valMeta.at.rotation ?? 0)]
+            ? [
+                Number(valMeta.at.x),
+                Number(valMeta.at.y),
+                Number(valMeta.at.rotation ?? 0),
+              ]
             : [0, 0, 0],
           layer: valMeta?.layer ?? "F.Fab",
-          uuid: valMeta?.uuid ?? generateDeterministicUuid(`${footprintName}-property-Value`),
+          uuid:
+            valMeta?.uuid ??
+            generateDeterministicUuid(`${footprintName}-property-Value`),
           effects: defaultEffects,
           hidden: valMeta?.hide,
         }),
@@ -80,10 +92,16 @@ export function applyKicadFootprintMetadata(
           key: "Datasheet",
           value: dsMeta?.value ?? "",
           position: dsMeta?.at
-            ? [Number(dsMeta.at.x), Number(dsMeta.at.y), Number(dsMeta.at.rotation ?? 0)]
+            ? [
+                Number(dsMeta.at.x),
+                Number(dsMeta.at.y),
+                Number(dsMeta.at.rotation ?? 0),
+              ]
             : [0, 0, 0],
           layer: dsMeta?.layer ?? "F.Fab",
-          uuid: dsMeta?.uuid ?? generateDeterministicUuid(`${footprintName}-property-Datasheet`),
+          uuid:
+            dsMeta?.uuid ??
+            generateDeterministicUuid(`${footprintName}-property-Datasheet`),
           effects: defaultEffects,
           hidden: dsMeta?.hide ?? true,
         }),
@@ -96,10 +114,16 @@ export function applyKicadFootprintMetadata(
           key: "Description",
           value: descMeta?.value ?? "",
           position: descMeta?.at
-            ? [Number(descMeta.at.x), Number(descMeta.at.y), Number(descMeta.at.rotation ?? 0)]
+            ? [
+                Number(descMeta.at.x),
+                Number(descMeta.at.y),
+                Number(descMeta.at.rotation ?? 0),
+              ]
             : [0, 0, 0],
           layer: descMeta?.layer ?? "F.Fab",
-          uuid: descMeta?.uuid ?? generateDeterministicUuid(`${footprintName}-property-Description`),
+          uuid:
+            descMeta?.uuid ??
+            generateDeterministicUuid(`${footprintName}-property-Description`),
           effects: defaultEffects,
           hidden: descMeta?.hide ?? true,
         }),
@@ -116,7 +140,8 @@ export function applyKicadFootprintMetadata(
         footprint.attr.type = "smd"
       }
       if (metadata.attributes.exclude_from_pos_files !== undefined) {
-        footprint.attr.excludeFromPosFiles = metadata.attributes.exclude_from_pos_files
+        footprint.attr.excludeFromPosFiles =
+          metadata.attributes.exclude_from_pos_files
       }
       if (metadata.attributes.exclude_from_bom !== undefined) {
         footprint.attr.excludeFromBom = metadata.attributes.exclude_from_bom
