@@ -1,5 +1,6 @@
 import type { CircuitJson } from "circuit-json"
 import type { SymbolEntry, FootprintEntry } from "../types"
+// import type { KicadAt, KicadFootprintAttributes } from "@tscircuit/props"
 
 /**
  * KiCad footprint metadata that can be extracted from component props.

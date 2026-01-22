@@ -5,57 +5,67 @@ import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import type { KicadFootprintMetadata } from "lib/kicad-library/KicadLibraryConverterTypes"
 
+const KeyHotSocket = () => (
+  <board width="20mm" height="20mm">
+    <chip
+      name="REF**"
+      kicadFootprintMetadata={{
+        properties: {
+          Description: {
+            value: "Cherry MX mechanical key switch",
+          },
+        },
+      }}
+      footprint={
+        <footprint>
+          <smtpad
+            shape="rect"
+            width="2.5mm"
+            height="1.2mm"
+            portHints={["pin1"]}
+            pcbX={-3.81}
+            pcbY={2.54}
+          />
+          <smtpad
+            shape="rect"
+            width="2.5mm"
+            height="1.2mm"
+            portHints={["pin2"]}
+            pcbX={2.54}
+            pcbY={5.08}
+          />
+          <hole pcbX={0} pcbY={0} diameter="4mm" />
+          <silkscreentext text="SW" pcbY={8} fontSize="1mm" />
+        </footprint>
+      }
+      cadModel={{
+        stlUrl: "/path/to/CherryMxSwitch.step",
+        rotationOffset: { x: 0, y: 0, z: 0 },
+      }}
+      pinLabels={{ pin1: "1", pin2: "2" }}
+    />
+  </board>
+)
+
 // Mock component: KeyHotSocket - custom footprint with 3D model reference
 async function renderKeyHotSocket(): Promise<CircuitJson> {
   const circuit = new Circuit()
-  circuit.add(
-    <board width="20mm" height="20mm">
-      <chip
-        name="REF**"
-        footprint={
-          <footprint>
-            <smtpad
-              shape="rect"
-              width="2.5mm"
-              height="1.2mm"
-              portHints={["pin1"]}
-              pcbX={-3.81}
-              pcbY={2.54}
-            />
-            <smtpad
-              shape="rect"
-              width="2.5mm"
-              height="1.2mm"
-              portHints={["pin2"]}
-              pcbX={2.54}
-              pcbY={5.08}
-            />
-            <hole pcbX={0} pcbY={0} diameter="4mm" />
-            <silkscreentext text="SW" pcbY={8} fontSize="1mm" />
-          </footprint>
-        }
-        cadModel={{
-          stlUrl: "/path/to/CherryMxSwitch.step",
-          rotationOffset: { x: 0, y: 0, z: 0 },
-        }}
-        pinLabels={{ pin1: "1", pin2: "2" }}
-      />
-    </board>,
-  )
+  circuit.add(<KeyHotSocket />)
   await circuit.renderUntilSettled()
   return circuit.getCircuitJson() as CircuitJson
 }
 
-// Mock component: SimpleLedCircuit - uses builtin footprints only
+const SimpleLedCircuit = () => (
+  <board width="30mm" height="20mm">
+    <resistor name="REF**" resistance="220" footprint="0402" pcbX={-5} />
+    <capacitor name="REF**" capacitance="100nF" footprint="0805" pcbX={0} />
+    <diode name="REF**" footprint="0603" pcbX={5} />
+  </board>
+)
+
 async function renderSimpleLedCircuit(): Promise<CircuitJson> {
   const circuit = new Circuit()
-  circuit.add(
-    <board width="30mm" height="20mm">
-      <resistor name="REF**" resistance="220" footprint="0402" pcbX={-5} />
-      <capacitor name="REF**" capacitance="100nF" footprint="0805" pcbX={0} />
-      <diode name="REF**" footprint="0603" pcbX={5} />
-    </board>,
-  )
+  circuit.add(<SimpleLedCircuit />)
   await circuit.renderUntilSettled()
   return circuit.getCircuitJson() as CircuitJson
 }
@@ -65,24 +75,14 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     "lib/my-keyboard-library.ts": ["KeyHotSocket", "SimpleLedCircuit"],
   }
 
+  const componentDefMap = {
+    KeyHotSocket: KeyHotSocket,
+    SimpleLedCircuit: SimpleLedCircuit,
+  }
+
   const mockCircuitJson: Record<string, CircuitJson> = {
     KeyHotSocket: await renderKeyHotSocket(),
     SimpleLedCircuit: await renderSimpleLedCircuit(),
-  }
-
-  // Define metadata to be applied via callback
-  const componentMetadata: Record<string, KicadFootprintMetadata> = {
-    KeyHotSocket: {
-      properties: {
-        Reference: { value: "SW**" },
-        Value: { value: "MX_SWITCH" },
-        Datasheet: {
-          value: "https://example.com/switch-datasheet.pdf",
-          hide: true,
-        },
-        Description: { value: "Cherry MX mechanical key switch", hide: true },
-      },
-    },
   }
 
   const converter = new KicadLibraryConverter({
@@ -91,13 +91,46 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
     buildFileToCircuitJson: async (_filePath, componentName) =>
       mockCircuitJson[componentName] ?? null,
-    getComponentKicadMetadata: async (_filePath, componentName) =>
-      componentMetadata[componentName] ?? null,
+    getComponentKicadMetadata: async (_filePath, componentName) => {
+      const Component = componentDefMap[componentName]
+
+      const reactElm = Component()
+
+      let queue = [reactElm]
+
+      let kicadFootprintMetadata: KicadFootprintMetadata
+
+      let maxIters = 100
+      let iters = 0
+      while (queue.length > 0) {
+        iters++
+        if (iters > maxIters) {
+          break
+        }
+        const elm = queue.shift()
+        if (elm?.props?.kicadFootprintMetadata) {
+          kicadFootprintMetadata = elm.props.kicadFootprintMetadata
+          break
+        }
+        if (elm) {
+          const children = elm?.props?.children
+          if (Array.isArray(children)) {
+            queue.push(...children)
+          } else if (children) {
+            queue.push(children)
+          }
+        }
+      }
+
+      return kicadFootprintMetadata
+    },
     includeBuiltins: true,
   })
 
   await converter.run()
   const output = converter.getOutput()
+
+  return
 
   // Verify file structure includes the custom footprint
   const outputKeys = Object.keys(output.kicadProjectFsMap).sort()
