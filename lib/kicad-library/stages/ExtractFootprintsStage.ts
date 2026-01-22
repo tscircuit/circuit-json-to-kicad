@@ -136,9 +136,6 @@ export class ExtractFootprintsStage extends ConverterStage<
 
     // Reset footprint for library use
     footprint.libraryLink = footprintName
-    footprint.version = 20241229
-    footprint.generator = "pcbnew"
-    footprint.generatorVersion = "9.0"
     footprint.position = At.from([0, 0, 0])
     footprint.locked = false
     footprint.placed = false

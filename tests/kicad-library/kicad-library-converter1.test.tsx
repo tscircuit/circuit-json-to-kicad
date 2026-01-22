@@ -123,9 +123,6 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
   ).toMatchInlineSnapshot(`
     "(footprint
       "KeyHotSocket"
-      (version 20241229)
-      (generator pcbnew)
-      (generator_version 9)
       (layer F.Cu)
       (at 0 0 0)
       (descr "")

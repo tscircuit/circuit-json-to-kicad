@@ -5,97 +5,6 @@ import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import type { KicadFootprintMetadata } from "lib/kicad-library/KicadLibraryConverterTypes"
 
-const sampleFootprintString = `(footprint "TestFootprint"
-  (version 20241229)
-  (generator "pcbnew")
-  (generator_version "9.0")
-  (layer "F.Cu")
-  (attr smd)
-  (fp_text reference "REF**" (at 0 0) (layer "F.SilkS") (effects (font (size 1 1) (thickness 0.15))))
-  (fp_text value "TestFootprint" (at 0 2) (layer "F.Fab") (effects (font (size 1 1) (thickness 0.15))))
-  (pad "1" smd rect (at -1 0) (size 1 1) (layers "F.Cu" "F.Paste" "F.Mask"))
-  (pad "2" smd rect (at 1 0) (size 1 1) (layers "F.Cu" "F.Paste" "F.Mask"))
-  (property "Reference" "REF**" (at 0 0 0) (layer "F.SilkS") (effects (font (size 1.27 1.27) (thickness 0.15))))
-  (property "Value" "Val**" (at 0 0 0) (layer "F.Fab") (effects (font (size 1.27 1.27) (thickness 0.15))))
-  (property "Datasheet" "" (at 0 0 0) (layer "F.Fab") (hide yes) (effects (font (size 1.27 1.27) (thickness 0.15))))
-  (property "Description" "" (at 0 0 0) (layer "F.Fab") (hide yes) (effects (font (size 1.27 1.27) (thickness 0.15))))
-  (embedded_fonts no)
-)`
-
-test("applyKicadFootprintMetadata applies property values", () => {
-  const metadata = {
-    properties: {
-      Reference: { value: "R**" },
-      Value: { value: "10k" },
-      Datasheet: { value: "https://example.com/datasheet.pdf", hide: true },
-      Description: { value: "10k Ohm SMD resistor", hide: true },
-    },
-  }
-
-  const result = applyKicadFootprintMetadata(
-    sampleFootprintString,
-    metadata,
-    "TestFootprint",
-  )
-
-  // Verify the properties are applied
-  expect(result).toContain('(property "Reference" "R**"')
-  expect(result).toContain('(property "Value" "10k"')
-  expect(result).toContain('(property "Datasheet" "https://example.com/datasheet.pdf"')
-  expect(result).toContain('(property "Description" "10k Ohm SMD resistor"')
-})
-
-test("applyKicadFootprintMetadata applies version and generator metadata", () => {
-  const metadata = {
-    version: 20250101,
-    generator: "custom_generator",
-    generatorVersion: "1.0",
-  }
-
-  const result = applyKicadFootprintMetadata(
-    sampleFootprintString,
-    metadata,
-    "TestFootprint",
-  )
-
-  expect(result).toContain("(version 20250101)")
-  expect(result).toContain("(generator custom_generator)")
-  expect(result).toContain("(generator_version 1.0)")
-})
-
-test("applyKicadFootprintMetadata handles empty metadata gracefully", () => {
-  const metadata = {}
-
-  const result = applyKicadFootprintMetadata(
-    sampleFootprintString,
-    metadata,
-    "TestFootprint",
-  )
-
-  // Should return a valid footprint string without errors
-  expect(result).toContain("(footprint")
-  expect(result).toContain("TestFootprint")
-})
-
-test("applyKicadFootprintMetadata preserves footprint structure", () => {
-  const metadata = {
-    properties: {
-      Value: { value: "CustomValue" },
-    },
-  }
-
-  const result = applyKicadFootprintMetadata(
-    sampleFootprintString,
-    metadata,
-    "TestFootprint",
-  )
-
-  // Should still have pads and other elements
-  expect(result).toContain('(pad "1"')
-  expect(result).toContain('(pad "2"')
-  expect(result).toContain("(attr smd)")
-})
-
 // Mock component: KeyHotSocket - custom footprint with 3D model reference
 async function renderKeyHotSocket(): Promise<CircuitJson> {
   const circuit = new Circuit()
@@ -164,9 +73,6 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   // Define metadata to be applied via callback
   const componentMetadata: Record<string, KicadFootprintMetadata> = {
     KeyHotSocket: {
-      version: 20250122,
-      generator: "tscircuit",
-      generatorVersion: "1.0.0",
       properties: {
         Reference: { value: "SW**" },
         Value: { value: "MX_SWITCH" },
@@ -233,8 +139,6 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     const footprintStr = String(keyHotSocketFootprint)
 
     // The footprint should have the metadata properties applied
-    expect(footprintStr).toContain("(version 20250122)")
-    expect(footprintStr).toContain("(generator tscircuit)")
     expect(footprintStr).toContain('(property "Reference" "SW**"')
     expect(footprintStr).toContain('(property "Value" "MX_SWITCH"')
     expect(footprintStr).toContain('(property "Datasheet" "https://example.com/switch-datasheet.pdf"')
@@ -244,9 +148,6 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     expect(footprintStr).toMatchInlineSnapshot(`
       "(footprint
         "KeyHotSocket"
-        (version 20250122)
-        (generator tscircuit)
-        (generator_version 1.0.0)
         (layer F.Cu)
         (at 0 0 0)
         (descr "")

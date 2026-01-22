@@ -27,17 +27,6 @@ export function applyKicadFootprintMetadata(
       return kicadModString
     }
 
-    // Apply version/generator metadata
-    if (metadata.version !== undefined) {
-      footprint.version = Number(metadata.version)
-    }
-    if (metadata.generator !== undefined) {
-      footprint.generator = metadata.generator
-    }
-    if (metadata.generatorVersion !== undefined) {
-      footprint.generatorVersion = String(metadata.generatorVersion)
-    }
-
     // Apply embedded fonts setting
     if (metadata.embeddedFonts !== undefined) {
       // The footprint already has embeddedFonts set, we just update the value

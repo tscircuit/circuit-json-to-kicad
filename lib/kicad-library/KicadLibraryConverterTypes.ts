@@ -7,9 +7,6 @@ import type { SymbolEntry, FootprintEntry } from "../types"
  */
 export interface KicadFootprintMetadata {
   footprintName?: string
-  version?: number | string
-  generator?: string
-  generatorVersion?: number | string
   layer?: string
   properties?: {
     Reference?: KicadPropertyMetadata
