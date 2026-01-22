@@ -51,9 +51,9 @@ async function renderSimpleLedCircuit(): Promise<CircuitJson> {
   const circuit = new Circuit()
   circuit.add(
     <board width="30mm" height="20mm">
-      <resistor name="REF**" resistance="220" footprint="0402" pcbX={-5} />
-      <capacitor name="REF**" capacitance="100nF" footprint="0805" pcbX={0} />
-      <diode name="REF**" footprint="0603" pcbX={5} />
+      <resistor name="R1" resistance="220" footprint="0402" pcbX={-5} />
+      <capacitor name="C1" capacitance="100nF" footprint="0805" pcbX={0} />
+      <diode name="D1" footprint="0603" pcbX={5} />
     </board>,
   )
   await circuit.renderUntilSettled()
