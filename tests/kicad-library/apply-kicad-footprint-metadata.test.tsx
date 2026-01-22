@@ -3,7 +3,7 @@ import { applyKicadFootprintMetadata } from "lib/kicad-library/kicad-library-con
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
-import type { KicadFootprintMetadata } from "lib/kicad-library/KicadLibraryConverterTypes"
+import type { KicadFootprintMetadata } from "@tscircuit/props"
 
 // Mock component: KeyHotSocket - custom footprint with 3D model reference
 async function renderKeyHotSocket(): Promise<CircuitJson> {
@@ -51,9 +51,9 @@ async function renderSimpleLedCircuit(): Promise<CircuitJson> {
   const circuit = new Circuit()
   circuit.add(
     <board width="30mm" height="20mm">
-      <resistor name="REF**" resistance="220" footprint="0402" pcbX={-5} />
-      <capacitor name="REF**" capacitance="100nF" footprint="0805" pcbX={0} />
-      <diode name="REF**" footprint="0603" pcbX={5} />
+      <resistor name="R1" resistance="220" footprint="0402" pcbX={-5} />
+      <capacitor name="C1" capacitance="100nF" footprint="0805" pcbX={0} />
+      <diode name="D1" footprint="0603" pcbX={5} />
     </board>,
   )
   await circuit.renderUntilSettled()
@@ -73,6 +73,9 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   // Define metadata to be applied via callback
   const componentMetadata: Record<string, KicadFootprintMetadata> = {
     KeyHotSocket: {
+      version: 20250122,
+      generator: "tscircuit",
+      generatorVersion: "1.0.0",
       properties: {
         Reference: { value: "SW**" },
         Value: { value: "MX_SWITCH" },
@@ -156,6 +159,9 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     expect(footprintStr).toMatchInlineSnapshot(`
       "(footprint
         "KeyHotSocket"
+        (version 20250122)
+        (generator tscircuit)
+        (generator_version 1.0.0)
         (layer F.Cu)
         (at 0 0 0)
         (descr "")
