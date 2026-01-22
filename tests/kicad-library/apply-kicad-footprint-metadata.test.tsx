@@ -10,6 +10,15 @@ const KeySocket = () => (
     name="REF**"
     kicadFootprintMetadata={{
       properties: {
+        Reference: {
+          value: "SW**",
+        },
+        Value: {
+          value: "MX_SWITCH",
+        },
+        Datasheet: {
+          value: "https://example.com/switch-datasheet.pdf",
+        },
         Description: {
           value: "Cherry MX mechanical key switch",
         },
@@ -79,7 +88,7 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     "lib/my-keyboard-library.ts": ["KeyHotSocket", "SimpleLedCircuit"],
   }
 
-  const componentDefMap = {
+  const componentDefMap: Record<string, (() => React.JSX.Element) | undefined> = {
     KeyHotSocket: KeyHotSocket,
     SimpleLedCircuit: SimpleLedCircuit,
   }
@@ -98,6 +107,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     getComponentKicadMetadata: async (_filePath, componentName) => {
       const Component = componentDefMap[componentName]
 
+      if (!Component) return {}
+
       const reactElm = Component()
 
       let queue = [reactElm]
@@ -112,6 +123,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           break
         }
         const elm = queue.shift()
+
+        if (!elm) continue
 
         if (typeof elm.type === "function") {
           try {
