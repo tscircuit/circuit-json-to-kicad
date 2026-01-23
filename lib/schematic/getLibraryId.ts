@@ -5,7 +5,7 @@ import type {
 } from "circuit-json"
 import {
   getKicadCompatibleComponentName,
-  extractReferencePrefix,
+  getReferencePrefixForComponent,
 } from "../utils/getKicadCompatibleComponentName"
 import { symbols } from "schematic-symbols"
 
@@ -49,7 +49,7 @@ export function getLibraryId(
   )
 
   // Extract reference prefix from component name (e.g., "R1" -> "R")
-  const refPrefix = extractReferencePrefix(sourceComp.name)
+  const refPrefix = getReferencePrefixForComponent(sourceComp)
 
   // Combine prefix with ergonomic name for the library ID
   return `Device:${refPrefix}_${ergonomicName}`

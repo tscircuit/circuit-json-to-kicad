@@ -18,6 +18,7 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
+import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -289,10 +290,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     description: string
   } {
     const name = sourceComp.name || "?"
+    const reference = getReferenceDesignator(sourceComp)
 
     if (sourceComp.ftype === "simple_resistor") {
       return {
-        reference: name,
+        reference,
         value: sourceComp.display_resistance || "R",
         description: "Resistor",
       }
@@ -300,7 +302,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     if (sourceComp.ftype === "simple_capacitor") {
       return {
-        reference: name,
+        reference,
         value: sourceComp.display_capacitance || "C",
         description: "Capacitor",
       }
@@ -308,7 +310,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     if (sourceComp.ftype === "simple_inductor") {
       return {
-        reference: name,
+        reference,
         value: sourceComp.display_inductance || "L",
         description: "Inductor",
       }
@@ -316,7 +318,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     if (sourceComp.ftype === "simple_diode") {
       return {
-        reference: name,
+        reference,
         value: "D",
         description: "Diode",
       }
@@ -324,7 +326,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     if (sourceComp.ftype === "simple_chip") {
       return {
-        reference: name,
+        reference,
         value: name,
         description: "Integrated Circuit",
       }
@@ -332,7 +334,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     // Default
     return {
-      reference: name,
+      reference,
       value: name,
       description: "Component",
     }

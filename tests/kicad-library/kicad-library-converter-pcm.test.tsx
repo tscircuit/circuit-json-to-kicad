@@ -124,7 +124,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (exclude_from_sim no)
         (in_bom yes)
         (on_board yes)
-        (property "Reference" "R"
+        (property "Reference" "U"
           (id 0)
           (at 2.032 0 90)
           (effects
@@ -133,7 +133,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
             )
           )
         )
-        (property "Value" "R"
+        (property "Value" "U"
           (id 1)
           (at 0 0 90)
           (effects
