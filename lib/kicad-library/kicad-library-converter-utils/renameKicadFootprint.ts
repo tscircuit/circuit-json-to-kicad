@@ -1,7 +1,7 @@
 import type { FootprintEntry } from "../../types"
 import { parseKicadMod } from "kicadts"
 
-const KICAD_3RD_PARTY_PLACEHOLDER  = "${KICAD_3RD_PARTY}"
+const KICAD_3RD_PARTY_PLACEHOLDER = "${KICAD_3RD_PARTY}"
 
 /**
  * Rename a KiCad footprint entry to use a new name.
@@ -39,7 +39,7 @@ export function renameKicadFootprint(params: {
 
       if (isPcm && kicadPcmPackageId) {
         // PCM format: ${KICAD_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/<library>.3dshapes/<model>.step
-        model.path = `${KICAD_3RD_PARTY_PLACEHOLDER }/3dmodels/${kicadPcmPackageId}/${kicadLibraryName}.3dshapes/${filename}`
+        model.path = `${KICAD_3RD_PARTY_PLACEHOLDER}/3dmodels/${kicadPcmPackageId}/${kicadLibraryName}.3dshapes/${filename}`
       } else {
         // Standard format: relative path
         model.path = `../../3dmodels/${kicadLibraryName}.3dshapes/${filename}`
