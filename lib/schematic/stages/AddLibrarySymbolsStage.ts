@@ -26,7 +26,10 @@ import {
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
-import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getKicadCompatibleComponentName,
+  getReferencePrefixForComponent,
+} from "../../utils/getKicadCompatibleComponentName"
 import { applyToPoint, scale as createScaleMatrix } from "transformation-matrix"
 
 /**
@@ -137,6 +140,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       keywords: this.getKeywords(sourceComp),
       fpFilters: this.getFpFilters(sourceComp),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
+      referencePrefix: getReferencePrefixForComponent(sourceComp),
     })
   }
 
@@ -172,6 +176,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
           : "Net symbol",
       keywords: isPower ? "power net" : isGround ? "ground net" : "net",
       fpFilters: "",
+      referencePrefix: libId.split(":")[1]?.[0] || "U",
     })
   }
 
@@ -252,6 +257,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     keywords,
     fpFilters,
     footprintRef = "",
+    referencePrefix,
   }: {
     libId: string
     symbolData: any
@@ -261,6 +267,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     keywords: string
     fpFilters: string
     footprintRef?: string
+    referencePrefix?: string
   }): SchematicSymbol {
     const symbol = new SchematicSymbol({
       libraryId: libId,
@@ -289,6 +296,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       keywords,
       fpFilters,
       footprintRef,
+      referencePrefix,
     })
 
     // Create drawing subsymbol (unit 0, 1)
@@ -324,6 +332,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     keywords,
     fpFilters,
     footprintRef = "",
+    referencePrefix,
   }: {
     symbol: SchematicSymbol
     libId: string
@@ -331,8 +340,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     keywords: string
     fpFilters: string
     footprintRef?: string
+    referencePrefix?: string
   }): void {
-    const refPrefix = libId.split(":")[1]?.[0] || "U"
+    const refPrefix = referencePrefix || libId.split(":")[1]?.[0] || "U"
 
     const properties = [
       {

@@ -75,3 +75,59 @@ export function extractReferencePrefix(name?: string): string {
   const match = name.match(/^([A-Za-z]+)/)
   return match?.[1]?.toUpperCase() ?? "U"
 }
+
+const referencePrefixByFtype: Record<string, string> = {
+  simple_resistor: "R",
+  simple_capacitor: "C",
+  simple_inductor: "L",
+  simple_diode: "D",
+  simple_led: "D",
+  simple_chip: "U",
+  simple_transistor: "Q",
+  simple_mosfet: "Q",
+  simple_fuse: "F",
+  simple_switch: "SW",
+  simple_push_button: "SW",
+  simple_potentiometer: "RV",
+  simple_crystal: "Y",
+  simple_resonator: "Y",
+  simple_pin_header: "J",
+  simple_pinout: "J",
+  simple_test_point: "TP",
+  simple_battery: "BT",
+}
+
+const referenceDesignatorPattern = /^[A-Za-z]+\\d+$/
+
+export function isReferenceDesignator(value?: string | null): boolean {
+  if (!value) return false
+  return referenceDesignatorPattern.test(value.trim())
+}
+
+export function getReferencePrefixForComponent(
+  sourceComponent?: SourceComponentBase | null,
+): string {
+  const name = sourceComponent?.name
+  if (isReferenceDesignator(name)) {
+    return extractReferencePrefix(name)
+  }
+
+  const ftype = sourceComponent?.ftype
+  if (ftype && referencePrefixByFtype[ftype]) {
+    return referencePrefixByFtype[ftype]
+  }
+
+  return extractReferencePrefix(name)
+}
+
+export function getReferenceDesignator(
+  sourceComponent?: SourceComponentBase | null,
+): string {
+  const name = sourceComponent?.name
+  if (isReferenceDesignator(name)) {
+    return name!.trim()
+  }
+
+  const prefix = getReferencePrefixForComponent(sourceComponent)
+  return `${prefix}?`
+}
