@@ -3,7 +3,3 @@ export * from "./pcb/CircuitJsonToKicadPcbConverter"
 export * from "./project/CircuitJsonToKicadProConverter"
 export * from "./kicad-library/CircuitJsonToKicadLibraryConverter"
 export * from "./kicad-library/KicadLibraryConverter"
-export type {
-  KicadFootprintMetadata,
-  KicadPropertyMetadata,
-} from "./kicad-library/KicadLibraryConverterTypes"

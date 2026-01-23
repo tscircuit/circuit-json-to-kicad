@@ -3,7 +3,7 @@ import { applyKicadFootprintMetadata } from "lib/kicad-library/kicad-library-con
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
-import type { KicadFootprintMetadata } from "lib/kicad-library/KicadLibraryConverterTypes"
+import type { KicadFootprintMetadata } from "@tscircuit/props"
 
 const KeySocket = () => (
   <chip

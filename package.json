@@ -1,7 +1,7 @@
 {
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
-  "version": "0.0.37",
+  "version": "0.0.38",
   "type": "module",
   "files": [
     "dist"
@@ -21,7 +21,7 @@
     "@types/bun": "latest",
     "circuit-json": "^0.0.302",
     "circuit-to-svg": "^0.0.208",
-    "kicadts": "^0.0.23",
+    "kicadts": "^0.0.24",
     "schematic-symbols": "^0.0.202",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
