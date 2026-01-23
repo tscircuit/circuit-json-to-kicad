@@ -7,7 +7,7 @@ import { renameKicadFootprint } from "../kicad-library-converter-utils/renameKic
 import { applyKicadFootprintMetadata } from "../kicad-library-converter-utils/applyKicadFootprintMetadata"
 import { parseKicadMod } from "kicadts"
 
-const KICAD_3RD_PARTY_VAR = "${KICAD_3RD_PARTY}"
+const KICAD_3RD_PARTY_PLACEHOLDER  = "${KICAD_3RD_PARTY}"
 
 /**
  * Classifies footprints from extracted KiCad components into user and builtin libraries.
@@ -49,7 +49,7 @@ function classifyFootprintsForComponent({
           kicadFootprint,
           newKicadFootprintName: tscircuitComponentName,
           kicadLibraryName: ctx.kicadLibraryName,
-          useKicadPcmPaths: ctx.useKicadPcmPaths,
+          isPcm: ctx.isPcm,
           kicadPcmPackageId: ctx.kicadPcmPackageId,
         })
 
@@ -100,7 +100,7 @@ function addBuiltinFootprint({
   )
   if (!alreadyExists) {
     // Update 3D model paths for PCM if needed
-    if (ctx.useKicadPcmPaths && ctx.kicadPcmPackageId) {
+    if (ctx.isPcm && ctx.kicadPcmPackageId) {
       const updatedFootprint = updateBuiltinFootprintModelPaths({
         kicadFootprint,
         kicadPcmPackageId: ctx.kicadPcmPackageId,
@@ -132,7 +132,7 @@ function updateBuiltinFootprintModelPaths({
       // Extract the filename from the path
       const filename = currentPath.split(/[\\/]/).pop() ?? ""
       // PCM format: ${KICAD_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/tscircuit_builtin.3dshapes/<model>.step
-      model.path = `${KICAD_3RD_PARTY_VAR}/3dmodels/${kicadPcmPackageId}/tscircuit_builtin.3dshapes/${filename}`
+      model.path = `${KICAD_3RD_PARTY_PLACEHOLDER }/3dmodels/${kicadPcmPackageId}/tscircuit_builtin.3dshapes/${filename}`
     }
   }
 

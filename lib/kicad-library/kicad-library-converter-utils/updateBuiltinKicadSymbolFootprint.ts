@@ -7,13 +7,13 @@ export function updateBuiltinKicadSymbolFootprint(
   kicadSymbol: SymbolEntry,
   options?: {
     /** When true, prepend PCM_ to the library name for KiCad PCM compatibility */
-    useKicadPcmPaths?: boolean
+    isPcm?: boolean
   },
 ): SymbolEntry {
   const symbol = kicadSymbol.symbol
   const properties = symbol.properties ?? []
 
-  const libraryName = options?.useKicadPcmPaths
+  const libraryName = options?.isPcm
     ? "PCM_tscircuit_builtin"
     : "tscircuit_builtin"
 

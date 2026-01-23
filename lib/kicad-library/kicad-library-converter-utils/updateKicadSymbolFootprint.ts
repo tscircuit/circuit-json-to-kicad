@@ -8,13 +8,12 @@ export function updateKicadSymbolFootprint(params: {
   kicadLibraryName: string
   kicadFootprintName: string
   /** When true, prepend PCM_ to the library name for KiCad PCM compatibility */
-  useKicadPcmPaths?: boolean
+  isPcm?: boolean
 }): void {
-  const { kicadSymbol, kicadLibraryName, kicadFootprintName, useKicadPcmPaths } =
-    params
+  const { kicadSymbol, kicadLibraryName, kicadFootprintName, isPcm } = params
   const properties = kicadSymbol.symbol.properties ?? []
 
-  const effectiveKicadLibraryName = useKicadPcmPaths
+  const effectiveKicadLibraryName = isPcm
     ? `PCM_${kicadLibraryName}`
     : kicadLibraryName
 

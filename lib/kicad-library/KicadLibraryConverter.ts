@@ -27,7 +27,7 @@ export class KicadLibraryConverter {
       kicadLibraryName: options.kicadLibraryName ?? "tscircuit_library",
       includeBuiltins: options.includeBuiltins ?? true,
       getComponentKicadMetadata: options.getComponentKicadMetadata,
-      useKicadPcmPaths: options.useKicadPcmPaths ?? false,
+      isPcm: options.isPcm ?? false,
       kicadPcmPackageId: options.kicadPcmPackageId,
     })
   }
@@ -201,14 +201,14 @@ function createKicadLibraryConverterContext(params: {
     filePath: string,
     componentName: string,
   ) => Promise<KicadFootprintMetadata | null>
-  useKicadPcmPaths: boolean
+  isPcm: boolean
   kicadPcmPackageId?: string
 }): KicadLibraryConverterContext {
   return {
     kicadLibraryName: params.kicadLibraryName,
     includeBuiltins: params.includeBuiltins,
     getComponentKicadMetadata: params.getComponentKicadMetadata,
-    useKicadPcmPaths: params.useKicadPcmPaths,
+    isPcm: params.isPcm,
     kicadPcmPackageId: params.kicadPcmPackageId,
     footprintMetadataMap: new Map(),
     builtTscircuitComponents: [],

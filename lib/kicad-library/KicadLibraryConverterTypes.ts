@@ -67,7 +67,7 @@ export interface KicadLibraryConverterOptions {
    * - 3D model paths will use ${KICAD_3RD_PARTY} variable instead of relative paths
    * Default: false
    */
-  useKicadPcmPaths?: boolean
+  isPcm?: boolean
 
   /**
    * The KiCad PCM package identifier (e.g., "com_tscircuit_author_package-name").
@@ -115,8 +115,8 @@ export interface KicadLibraryConverterContext {
   kicadLibraryName: string
   includeBuiltins: boolean
 
-  /** Whether to use KiCad PCM-compatible paths (prefixes footprint refs with PCM_, uses absolute 3D model paths) */
-  useKicadPcmPaths: boolean
+  /** Whether generating for KiCad PCM (prefixes footprint refs with PCM_, uses absolute 3D model paths) */
+  isPcm: boolean
 
   /** The KiCad PCM package identifier for constructing 3D model paths */
   kicadPcmPackageId?: string
