@@ -50,6 +50,7 @@ function classifySymbolsForComponent({
             kicadSymbol: renamedSymbol,
             kicadLibraryName: ctx.kicadLibraryName,
             kicadFootprintName: tscircuitComponentName,
+            isPcm: ctx.isPcm,
           })
         }
         addUserSymbol({ ctx, kicadSymbol: renamedSymbol })
@@ -67,11 +68,14 @@ function classifySymbolsForComponent({
         kicadSymbol: renamedSymbol,
         kicadLibraryName: ctx.kicadLibraryName,
         kicadFootprintName: tscircuitComponentName,
+        isPcm: ctx.isPcm,
       })
       addUserSymbol({ ctx, kicadSymbol: renamedSymbol })
     } else {
       // Builtin symbol → builtin library (no custom footprint, or already added user symbol)
-      const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol)
+      const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol, {
+        isPcm: ctx.isPcm,
+      })
       addBuiltinSymbol({ ctx, kicadSymbol: updatedSymbol })
     }
   }
