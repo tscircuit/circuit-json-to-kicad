@@ -88,10 +88,11 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     "lib/my-keyboard-library.ts": ["KeyHotSocket", "SimpleLedCircuit"],
   }
 
-  const componentDefMap: Record<string, (() => React.JSX.Element) | undefined> = {
-    KeyHotSocket: KeyHotSocket,
-    SimpleLedCircuit: SimpleLedCircuit,
-  }
+  const componentDefMap: Record<string, (() => React.JSX.Element) | undefined> =
+    {
+      KeyHotSocket: KeyHotSocket,
+      SimpleLedCircuit: SimpleLedCircuit,
+    }
 
   const mockCircuitJson: Record<string, CircuitJson> = {
     KeyHotSocket: await renderKeyHotSocket(),
