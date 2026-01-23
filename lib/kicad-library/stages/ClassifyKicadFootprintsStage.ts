@@ -5,6 +5,9 @@ import type {
 } from "../KicadLibraryConverterTypes"
 import { renameKicadFootprint } from "../kicad-library-converter-utils/renameKicadFootprint"
 import { applyKicadFootprintMetadata } from "../kicad-library-converter-utils/applyKicadFootprintMetadata"
+import { parseKicadMod } from "kicadts"
+
+const KICAD_3RD_PARTY_VAR = "${KICAD_3RD_PARTY}"
 
 /**
  * Classifies footprints from extracted KiCad components into user and builtin libraries.
@@ -46,6 +49,8 @@ function classifyFootprintsForComponent({
           kicadFootprint,
           newKicadFootprintName: tscircuitComponentName,
           kicadLibraryName: ctx.kicadLibraryName,
+          forPcm: ctx.forPcm,
+          pcmIdentifier: ctx.pcmIdentifier,
         })
 
         // Apply kicadFootprintMetadata if available
@@ -94,7 +99,48 @@ function addBuiltinFootprint({
     (fp) => fp.footprintName === kicadFootprint.footprintName,
   )
   if (!alreadyExists) {
-    ctx.builtinKicadFootprints.push(kicadFootprint)
+    // Update 3D model paths for PCM if needed
+    if (ctx.forPcm && ctx.pcmIdentifier) {
+      const updatedFootprint = updateBuiltinFootprintModelPaths({
+        kicadFootprint,
+        pcmIdentifier: ctx.pcmIdentifier,
+      })
+      ctx.builtinKicadFootprints.push(updatedFootprint)
+    } else {
+      ctx.builtinKicadFootprints.push(kicadFootprint)
+    }
+  }
+}
+
+/**
+ * Updates 3D model paths in a builtin footprint for PCM compatibility.
+ */
+function updateBuiltinFootprintModelPaths({
+  kicadFootprint,
+  pcmIdentifier,
+}: {
+  kicadFootprint: FootprintEntry
+  pcmIdentifier: string
+}): FootprintEntry {
+  const footprint = parseKicadMod(kicadFootprint.kicadModString)
+
+  for (const model of footprint.models) {
+    const currentPath = model.path
+    const usesProjectPath =
+      currentPath.includes("${KIPRJMOD}/") || /3dmodels[\\/]/.test(currentPath)
+    if (usesProjectPath) {
+      // Extract the filename from the path
+      const filename = currentPath.split(/[\\/]/).pop() ?? ""
+      // PCM format: ${KICAD9_3RD_PARTY}/3dmodels/<identifier>/tscircuit_builtin.3dshapes/<model>.step
+      model.path = `${KICAD_3RD_PARTY_VAR}/3dmodels/${pcmIdentifier}/tscircuit_builtin.3dshapes/${filename}`
+    }
+  }
+
+  return {
+    footprintName: kicadFootprint.footprintName,
+    kicadModString: footprint.getString(),
+    model3dSourcePaths: kicadFootprint.model3dSourcePaths,
+    isBuiltin: kicadFootprint.isBuiltin,
   }
 }
 
