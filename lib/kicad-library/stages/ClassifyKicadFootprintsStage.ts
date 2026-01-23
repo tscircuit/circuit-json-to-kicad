@@ -49,8 +49,8 @@ function classifyFootprintsForComponent({
           kicadFootprint,
           newKicadFootprintName: tscircuitComponentName,
           kicadLibraryName: ctx.kicadLibraryName,
-          forPcm: ctx.forPcm,
-          pcmIdentifier: ctx.pcmIdentifier,
+          useKicadPcmPaths: ctx.useKicadPcmPaths,
+          kicadPcmPackageId: ctx.kicadPcmPackageId,
         })
 
         // Apply kicadFootprintMetadata if available
@@ -100,10 +100,10 @@ function addBuiltinFootprint({
   )
   if (!alreadyExists) {
     // Update 3D model paths for PCM if needed
-    if (ctx.forPcm && ctx.pcmIdentifier) {
+    if (ctx.useKicadPcmPaths && ctx.kicadPcmPackageId) {
       const updatedFootprint = updateBuiltinFootprintModelPaths({
         kicadFootprint,
-        pcmIdentifier: ctx.pcmIdentifier,
+        kicadPcmPackageId: ctx.kicadPcmPackageId,
       })
       ctx.builtinKicadFootprints.push(updatedFootprint)
     } else {
@@ -117,10 +117,10 @@ function addBuiltinFootprint({
  */
 function updateBuiltinFootprintModelPaths({
   kicadFootprint,
-  pcmIdentifier,
+  kicadPcmPackageId,
 }: {
   kicadFootprint: FootprintEntry
-  pcmIdentifier: string
+  kicadPcmPackageId: string
 }): FootprintEntry {
   const footprint = parseKicadMod(kicadFootprint.kicadModString)
 
@@ -131,8 +131,8 @@ function updateBuiltinFootprintModelPaths({
     if (usesProjectPath) {
       // Extract the filename from the path
       const filename = currentPath.split(/[\\/]/).pop() ?? ""
-      // PCM format: ${KICAD9_3RD_PARTY}/3dmodels/<identifier>/tscircuit_builtin.3dshapes/<model>.step
-      model.path = `${KICAD_3RD_PARTY_VAR}/3dmodels/${pcmIdentifier}/tscircuit_builtin.3dshapes/${filename}`
+      // PCM format: ${KICAD_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/tscircuit_builtin.3dshapes/<model>.step
+      model.path = `${KICAD_3RD_PARTY_VAR}/3dmodels/${kicadPcmPackageId}/tscircuit_builtin.3dshapes/${filename}`
     }
   }
 

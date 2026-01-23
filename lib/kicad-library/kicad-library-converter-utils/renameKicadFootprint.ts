@@ -11,16 +11,16 @@ export function renameKicadFootprint(params: {
   newKicadFootprintName: string
   kicadLibraryName: string
   /** When true, use PCM-compatible 3D model paths */
-  forPcm?: boolean
-  /** The PCM package identifier (e.g., "com_tscircuit_author_package") */
-  pcmIdentifier?: string
+  useKicadPcmPaths?: boolean
+  /** The KiCad PCM package identifier (e.g., "com_tscircuit_author_package") */
+  kicadPcmPackageId?: string
 }): FootprintEntry {
   const {
     kicadFootprint,
     newKicadFootprintName,
     kicadLibraryName,
-    forPcm,
-    pcmIdentifier,
+    useKicadPcmPaths,
+    kicadPcmPackageId,
   } = params
 
   const footprint = parseKicadMod(kicadFootprint.kicadModString)
@@ -37,9 +37,9 @@ export function renameKicadFootprint(params: {
       // Extract the filename from the path
       const filename = currentPath.split(/[\\/]/).pop() ?? ""
 
-      if (forPcm && pcmIdentifier) {
-        // PCM format: ${KICAD9_3RD_PARTY}/3dmodels/<identifier>/<library>.3dshapes/<model>.step
-        model.path = `${KICAD_3RD_PARTY_VAR}/3dmodels/${pcmIdentifier}/${kicadLibraryName}.3dshapes/${filename}`
+      if (useKicadPcmPaths && kicadPcmPackageId) {
+        // PCM format: ${KICAD_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/<library>.3dshapes/<model>.step
+        model.path = `${KICAD_3RD_PARTY_VAR}/3dmodels/${kicadPcmPackageId}/${kicadLibraryName}.3dshapes/${filename}`
       } else {
         // Standard format: relative path
         model.path = `../../3dmodels/${kicadLibraryName}.3dshapes/${filename}`

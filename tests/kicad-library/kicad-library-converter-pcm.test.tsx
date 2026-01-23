@@ -84,8 +84,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
     buildFileToCircuitJson: async (_filePath, componentName) =>
       mockCircuitJson[componentName] ?? null,
     includeBuiltins: true,
-    forPcm: true,
-    pcmIdentifier: "com_tscircuit_author_my-keyboard-library",
+    useKicadPcmPaths: true,
+    kicadPcmPackageId: "com_tscircuit_author_my-keyboard-library",
   })
 
   await converter.run()
