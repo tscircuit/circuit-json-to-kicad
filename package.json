@@ -7,8 +7,8 @@
     "dist"
   ],
   "scripts": {
-    "build": "tsup-node lib/index.ts --format esm --dts",
-    "build:site": "bun build ./site/index.html --outdir site-build",
+    "build": "node init && tsup-node lib/index.ts --format esm --dts",
+    "build:site": "node init && bun build ./site/index.html --outdir site-build",
     "download-demos": "git clone --depth 1 --filter=blob:none --sparse https://gitlab.com/kicad/code/kicad.git kicad-demos && cd kicad-demos && git sparse-checkout set demos",
     "typecheck": "bunx tsc --noEmit",
     "format": "biome format --write .",
@@ -22,7 +22,9 @@
     "@types/bun": "latest",
     "circuit-json": "^0.0.302",
     "circuit-to-svg": "^0.0.208",
+    "dotenv": "^8.2.0",
     "kicadts": "^0.0.24",
+    "node-fetch": "^3.3.2",
     "schematic-symbols": "^0.0.202",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
