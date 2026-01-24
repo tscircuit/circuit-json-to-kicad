@@ -1,5 +1,8 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test("rats nest should be preserved from source traces even without connectivity map keys", async () => {
   const circuitJson: any = [
@@ -89,6 +92,16 @@ test("rats nest should be preserved from source traces even without connectivity
       height: 0.5,
       layer: "top",
     },
+    {
+      type: "pcb_trace",
+      pcb_trace_id: "pcb_t1",
+      source_trace_id: "t1",
+      width: 1,
+      route: [
+        { x: -1, y: 0, layer: "top" },
+        { x: 9, y: 0, layer: "top" },
+      ],
+    },
   ]
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
@@ -108,4 +121,19 @@ test("rats nest should be preserved from source traces even without connectivity
   expect(pad3!.net).toBeDefined()
   expect(pad1!.net!.id).toBeGreaterThan(0)
   expect(pad1!.net!.id).toBe(pad3!.net!.id)
-})
+
+  // Snapshot like basics01test
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "pcb",
+  })
+
+  expect(kicadSnapshot.exitCode).toBe(0)
+
+  expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
+}, 60_000)
