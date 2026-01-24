@@ -7,6 +7,7 @@ import { renameKicadSymbol } from "../kicad-library-converter-utils/renameKicadS
 import { updateKicadSymbolFootprint } from "../kicad-library-converter-utils/updateKicadSymbolFootprint"
 import { updateBuiltinKicadSymbolFootprint } from "../kicad-library-converter-utils/updateBuiltinKicadSymbolFootprint"
 import { componentHasCustomFootprint } from "./ClassifyKicadFootprintsStage"
+import { applyKicadSymbolMetadata } from "../kicad-library-converter-utils/applyKicadSymbolMetadata"
 
 /**
  * Classifies symbols from extracted KiCad components into user and builtin libraries.
@@ -35,6 +36,7 @@ function classifySymbolsForComponent({
     extractedKicadComponent,
   )
   let hasAddedUserSymbol = false
+  const metadata = ctx.symbolMetadataMap.get(tscircuitComponentName)
 
   for (const kicadSymbol of kicadSymbols) {
     if (!kicadSymbol.isBuiltin) {
@@ -53,7 +55,10 @@ function classifySymbolsForComponent({
             isPcm: ctx.isPcm,
           })
         }
-        addUserSymbol({ ctx, kicadSymbol: renamedSymbol })
+        const updatedSymbol = metadata
+          ? applyKicadSymbolMetadata(renamedSymbol, metadata)
+          : renamedSymbol
+        addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
       } else {
         addUserSymbol({ ctx, kicadSymbol })
       }
@@ -70,7 +75,10 @@ function classifySymbolsForComponent({
         kicadFootprintName: tscircuitComponentName,
         isPcm: ctx.isPcm,
       })
-      addUserSymbol({ ctx, kicadSymbol: renamedSymbol })
+      const updatedSymbol = metadata
+        ? applyKicadSymbolMetadata(renamedSymbol, metadata)
+        : renamedSymbol
+      addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
     } else {
       // Builtin symbol → builtin library (no custom footprint, or already added user symbol)
       const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol, {

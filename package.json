@@ -18,6 +18,7 @@
     "@biomejs/biome": "^2.2.4",
     "@tscircuit/circuit-json-util": "^0.0.72",
     "@tscircuit/common": "^0.0.5",
+    "@tscircuit/props": "^0.0.449",
     "@types/bun": "latest",
     "circuit-json": "^0.0.302",
     "circuit-to-svg": "^0.0.208",
