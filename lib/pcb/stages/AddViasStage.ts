@@ -78,6 +78,11 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
                   }
                 }
               }
+
+              // Fallback for missing subcircuit_connectivity_map_key
+              if (!connectivityKey) {
+                connectivityKey = sourceTrace.source_trace_id
+              }
             }
           }
         }
