@@ -11,7 +11,10 @@ import { classifyKicadSymbols } from "./stages/ClassifyKicadSymbolsStage"
 import { buildKicadLibraryFiles } from "./stages/BuildKicadLibraryFilesStage"
 
 export type { KicadLibraryConverterOptions, KicadLibraryConverterOutput }
-import type { KicadFootprintMetadata } from "@tscircuit/props"
+import type {
+  KicadFootprintMetadata,
+  KicadSymbolMetadata,
+} from "@tscircuit/props"
 
 /**
  * Converts tscircuit component files to a KiCad library.
@@ -27,6 +30,7 @@ export class KicadLibraryConverter {
       kicadLibraryName: options.kicadLibraryName ?? "tscircuit_library",
       includeBuiltins: options.includeBuiltins ?? true,
       getComponentKicadMetadata: options.getComponentKicadMetadata,
+      getComponentKicadSymbolMetadata: options.getComponentKicadSymbolMetadata,
       isPcm: options.isPcm ?? false,
       kicadPcmPackageId: options.kicadPcmPackageId,
     })
@@ -90,6 +94,16 @@ export class KicadLibraryConverter {
         }
       }
 
+      if (this.ctx.getComponentKicadSymbolMetadata) {
+        const symbolMetadata = await this.ctx.getComponentKicadSymbolMetadata(
+          componentPath,
+          exportName,
+        )
+        if (symbolMetadata) {
+          this.ctx.symbolMetadataMap.set(exportName, symbolMetadata)
+        }
+      }
+
       const circuitJson = await this.options.buildFileToCircuitJson(
         componentPath,
         exportName,
@@ -126,6 +140,16 @@ export class KicadLibraryConverter {
         )
         if (metadata) {
           this.ctx.footprintMetadataMap.set(componentName, metadata)
+        }
+      }
+
+      if (this.ctx.getComponentKicadSymbolMetadata) {
+        const symbolMetadata = await this.ctx.getComponentKicadSymbolMetadata(
+          componentPath,
+          "default",
+        )
+        if (symbolMetadata) {
+          this.ctx.symbolMetadataMap.set(componentName, symbolMetadata)
         }
       }
 
@@ -201,6 +225,10 @@ function createKicadLibraryConverterContext(params: {
     filePath: string,
     componentName: string,
   ) => Promise<KicadFootprintMetadata | null>
+  getComponentKicadSymbolMetadata?: (
+    filePath: string,
+    componentName: string,
+  ) => Promise<KicadSymbolMetadata | null>
   isPcm: boolean
   kicadPcmPackageId?: string
 }): KicadLibraryConverterContext {
@@ -208,9 +236,11 @@ function createKicadLibraryConverterContext(params: {
     kicadLibraryName: params.kicadLibraryName,
     includeBuiltins: params.includeBuiltins,
     getComponentKicadMetadata: params.getComponentKicadMetadata,
+    getComponentKicadSymbolMetadata: params.getComponentKicadSymbolMetadata,
     isPcm: params.isPcm,
     kicadPcmPackageId: params.kicadPcmPackageId,
     footprintMetadataMap: new Map(),
+    symbolMetadataMap: new Map(),
     builtTscircuitComponents: [],
     extractedKicadComponents: [],
     userKicadFootprints: [],
