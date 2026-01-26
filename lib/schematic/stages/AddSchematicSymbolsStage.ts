@@ -338,6 +338,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         description: "LED",
       }
     }
+    if (sourceComp.ftype === "simple_switch") {
+      return {
+        reference,
+        value: sourceComp.manufacturer_part_number || "",
+        description: "Switch",
+      }
+    }
 
     // Default
     return {
