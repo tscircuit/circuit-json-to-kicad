@@ -20,8 +20,10 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Initialize the net map in context if it doesn't exist
     this.ctx.pcbNetMap = new Map()
+    this.ctx.pcbSourcePortNetMap = new Map()
 
     const netNameByKey = new Map<string, string>()
+    const portsByConnectivityKey = new Map<string, Set<string>>()
 
     const sourceNets = this.ctx.db.source_net?.list() ?? []
     for (const sourceNet of sourceNets) {
@@ -55,6 +57,11 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
+      // If still no connectivity key, use the source_trace_id as a fallback
+      if (!connectivityKey && sourceTrace.source_trace_id) {
+        connectivityKey = sourceTrace.source_trace_id
+      }
+
       if (!connectivityKey) continue
 
       if (!netNameByKey.has(connectivityKey)) {
@@ -66,6 +73,16 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
             : connectivityKey
 
         netNameByKey.set(connectivityKey, netName)
+      }
+
+      // Track which ports are connected to this connectivity key
+      if (sourceTrace.connected_source_port_ids) {
+        if (!portsByConnectivityKey.has(connectivityKey)) {
+          portsByConnectivityKey.set(connectivityKey, new Set())
+        }
+        for (const portId of sourceTrace.connected_source_port_ids) {
+          portsByConnectivityKey.get(connectivityKey)!.add(portId)
+        }
       }
     }
 
@@ -83,6 +100,14 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       const netInfo: PcbNetInfo = { id: netNumber, name: netName }
       this.ctx.pcbNetMap.set(connectivityKey, netInfo)
+
+      // Map all ports associated with this net
+      const portIds = portsByConnectivityKey.get(connectivityKey)
+      if (portIds) {
+        for (const portId of portIds) {
+          this.ctx.pcbSourcePortNetMap.set(portId, netInfo)
+        }
+      }
 
       netNumber++
     }
