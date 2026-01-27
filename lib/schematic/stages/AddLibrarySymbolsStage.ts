@@ -11,6 +11,10 @@ import {
   Pts,
   SchematicSymbol,
   Stroke,
+  SymbolCircle,
+  SymbolCircleCenter,
+  SymbolCircleFill,
+  SymbolCircleRadius,
   SymbolPin,
   SymbolPinName,
   SymbolPinNames,
@@ -456,6 +460,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
           fillType: fillType,
         })
         drawingSymbol.polylines.push(polyline)
+      } else if (primitive.type === "circle") {
+        const circle = this.createCircleFromPrimitive({
+          primitive,
+          scale: symbolScale,
+          center: symbolData.center,
+        })
+        drawingSymbol.circles.push(circle)
       }
       // Note: schematic-symbols typically uses paths, not box primitives
     }
@@ -504,6 +515,48 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     polyline.fill = fill
 
     return polyline
+  }
+
+  /**
+   * Create a KiCad circle from a schematic-symbols circle primitive
+   */
+  private createCircleFromPrimitive({
+    primitive,
+    scale,
+    center,
+  }: {
+    primitive: any
+    scale: number
+    center: { x: number; y: number } | undefined
+  }): SymbolCircle {
+    const circle = new SymbolCircle()
+
+    // Scale the circle position
+    const cx = center?.x ?? 0
+    const cy = center?.y ?? 0
+    const scaleMatrix = createScaleMatrix(scale, scale)
+    const scaledPos = applyToPoint(scaleMatrix, {
+      x: primitive.x - cx,
+      y: primitive.y - cy,
+    })
+
+    // Use internal property setters (as used elsewhere in this codebase for _sx prefixed props)
+    // Unfortunately SymbolCircle has these as private in kicadts .d.ts, so we cast to any
+    // to access the intended internal properties.
+    const c = circle as any
+    c._sxCenter = new SymbolCircleCenter(scaledPos.x, scaledPos.y)
+    c._sxRadius = new SymbolCircleRadius(primitive.radius * scale)
+
+    const stroke = new Stroke()
+    stroke.width = 0.254
+    stroke.type = "default"
+    c._sxStroke = stroke
+
+    const fill = new SymbolCircleFill()
+    fill.type = primitive.fill ? "outline" : "none"
+    c._sxFill = fill
+
+    return circle
   }
 
   /**
