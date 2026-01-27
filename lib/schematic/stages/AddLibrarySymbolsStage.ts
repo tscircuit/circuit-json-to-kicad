@@ -540,9 +540,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       y: primitive.y - cy,
     })
 
-    // Use internal property setters (as used elsewhere in this codebase for _sx prefixed props)
-    // Unfortunately SymbolCircle has these as private in kicadts .d.ts, so we cast to any
-    // to access the intended internal properties.
     const c = circle as any
     c._sxCenter = new SymbolCircleCenter(scaledPos.x, scaledPos.y)
     c._sxRadius = new SymbolCircleRadius(primitive.radius * scale)
