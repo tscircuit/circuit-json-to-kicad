@@ -5,23 +5,15 @@ import type { SymbolEntry } from "../../types"
  */
 export function updateBuiltinKicadSymbolFootprint(
   kicadSymbol: SymbolEntry,
-  options?: {
-    /** When true, prepend PCM_ to the library name for KiCad PCM compatibility */
-    isPcm?: boolean
-  },
 ): SymbolEntry {
   const symbol = kicadSymbol.symbol
   const properties = symbol.properties ?? []
-
-  const libraryName = options?.isPcm
-    ? "PCM_tscircuit_builtin"
-    : "tscircuit_builtin"
 
   for (const prop of properties) {
     if (prop.key === "Footprint" && prop.value) {
       const parts = prop.value.split(":")
       const footprintName = parts.length > 1 ? parts[1] : parts[0]
-      prop.value = `${libraryName}:${footprintName}`
+      prop.value = `tscircuit_builtin:${footprintName}`
     }
   }
 
