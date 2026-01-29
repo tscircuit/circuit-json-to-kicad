@@ -75,20 +75,12 @@ export interface KicadLibraryConverterOptions {
 
   /**
    * Whether to generate files for KiCad PCM (Plugin and Content Manager).
-   * When true:
-   * - Footprint references in symbols will be prefixed with "PCM_"
-   * - 3D model paths will use ${KICAD_3RD_PARTY} variable instead of relative paths
+   * When true, footprint references in symbols will be prefixed with "PCM_".
+   * 3D model paths always use relative format (../../3dmodels/...) which works
+   * for both standalone and PCM installations.
    * Default: false
    */
   isPcm?: boolean
-
-  /**
-   * The KiCad PCM package identifier (e.g., "com_tscircuit_author_package-name").
-   * Required when useKicadPcmPaths is true.
-   * Used to construct 3D model paths like:
-   * ${KICAD9_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/<library>.3dshapes/<model>.step
-   */
-  kicadPcmPackageId?: string
 }
 
 export interface KicadLibraryConverterOutput {
@@ -128,11 +120,8 @@ export interface KicadLibraryConverterContext {
   kicadLibraryName: string
   includeBuiltins: boolean
 
-  /** Whether generating for KiCad PCM (prefixes footprint refs with PCM_, uses absolute 3D model paths) */
+  /** Whether generating for KiCad PCM (prefixes footprint refs with PCM_) */
   isPcm: boolean
-
-  /** The KiCad PCM package identifier for constructing 3D model paths */
-  kicadPcmPackageId?: string
 
   /** Callback to get KiCad footprint metadata from component props */
   getComponentKicadMetadata?: (

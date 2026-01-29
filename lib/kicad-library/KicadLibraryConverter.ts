@@ -32,7 +32,6 @@ export class KicadLibraryConverter {
       getComponentKicadMetadata: options.getComponentKicadMetadata,
       getComponentKicadSymbolMetadata: options.getComponentKicadSymbolMetadata,
       isPcm: options.isPcm ?? false,
-      kicadPcmPackageId: options.kicadPcmPackageId,
     })
   }
 
@@ -230,7 +229,6 @@ function createKicadLibraryConverterContext(params: {
     componentName: string,
   ) => Promise<KicadSymbolMetadata | null>
   isPcm: boolean
-  kicadPcmPackageId?: string
 }): KicadLibraryConverterContext {
   return {
     kicadLibraryName: params.kicadLibraryName,
@@ -238,7 +236,6 @@ function createKicadLibraryConverterContext(params: {
     getComponentKicadMetadata: params.getComponentKicadMetadata,
     getComponentKicadSymbolMetadata: params.getComponentKicadSymbolMetadata,
     isPcm: params.isPcm,
-    kicadPcmPackageId: params.kicadPcmPackageId,
     footprintMetadataMap: new Map(),
     symbolMetadataMap: new Map(),
     builtTscircuitComponents: [],
