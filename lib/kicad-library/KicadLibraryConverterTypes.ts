@@ -54,6 +54,13 @@ export interface KicadLibraryConverterOptions {
   includeBuiltins?: boolean
 
   /**
+   * Whether this library will be distributed via KiCad's Plugin and Content Manager (PCM).
+   * When true, symbol footprint references will use the PCM_ prefix (e.g., PCM_my-library:footprint).
+   * Default: false
+   */
+  isPcm?: boolean
+
+  /**
    * Callback to get KiCad footprint metadata from a component via prop introspection.
    * This allows extracting kicadFootprintMetadata props without rendering the component.
    * Return null if no metadata is available.
@@ -110,6 +117,7 @@ export interface ExtractedKicadComponent {
 export interface KicadLibraryConverterContext {
   kicadLibraryName: string
   includeBuiltins: boolean
+  isPcm: boolean
 
   /** Callback to get KiCad footprint metadata from component props */
   getComponentKicadMetadata?: (

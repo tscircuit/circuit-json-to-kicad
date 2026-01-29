@@ -52,6 +52,7 @@ function classifySymbolsForComponent({
             kicadSymbol: renamedSymbol,
             kicadLibraryName: ctx.kicadLibraryName,
             kicadFootprintName: tscircuitComponentName,
+            isPcm: ctx.isPcm,
           })
         }
         const updatedSymbol = metadata
@@ -72,6 +73,7 @@ function classifySymbolsForComponent({
         kicadSymbol: renamedSymbol,
         kicadLibraryName: ctx.kicadLibraryName,
         kicadFootprintName: tscircuitComponentName,
+        isPcm: ctx.isPcm,
       })
       const updatedSymbol = metadata
         ? applyKicadSymbolMetadata(renamedSymbol, metadata)
@@ -79,7 +81,9 @@ function classifySymbolsForComponent({
       addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
     } else {
       // Builtin symbol → builtin library (no custom footprint, or already added user symbol)
-      const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol)
+      const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol, {
+        isPcm: ctx.isPcm,
+      })
       addBuiltinSymbol({ ctx, kicadSymbol: updatedSymbol })
     }
   }

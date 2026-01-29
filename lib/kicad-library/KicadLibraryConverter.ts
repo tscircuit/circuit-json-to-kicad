@@ -29,6 +29,7 @@ export class KicadLibraryConverter {
     this.ctx = createKicadLibraryConverterContext({
       kicadLibraryName: options.kicadLibraryName ?? "tscircuit_library",
       includeBuiltins: options.includeBuiltins ?? true,
+      isPcm: options.isPcm ?? false,
       getComponentKicadMetadata: options.getComponentKicadMetadata,
       getComponentKicadSymbolMetadata: options.getComponentKicadSymbolMetadata,
     })
@@ -219,6 +220,7 @@ export class KicadLibraryConverter {
 function createKicadLibraryConverterContext(params: {
   kicadLibraryName: string
   includeBuiltins: boolean
+  isPcm: boolean
   getComponentKicadMetadata?: (
     filePath: string,
     componentName: string,
@@ -231,6 +233,7 @@ function createKicadLibraryConverterContext(params: {
   return {
     kicadLibraryName: params.kicadLibraryName,
     includeBuiltins: params.includeBuiltins,
+    isPcm: params.isPcm,
     getComponentKicadMetadata: params.getComponentKicadMetadata,
     getComponentKicadSymbolMetadata: params.getComponentKicadSymbolMetadata,
     footprintMetadataMap: new Map(),

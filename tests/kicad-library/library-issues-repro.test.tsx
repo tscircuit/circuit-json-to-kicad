@@ -92,9 +92,12 @@ async function renderMachinePin(): Promise<CircuitJson> {
   return circuit.getCircuitJson() as CircuitJson
 }
 
-test("Issue reproduction: 3D model paths should use relative paths when isPcm=false", async () => {
+test("Issue reproduction: 3D model paths should use relative paths", async () => {
   const mockExports: Record<string, string[]> = {
-    "lib/adom-kicad-footprint-library.ts": ["MachineContactLarge", "MachinePin"],
+    "lib/adom-kicad-footprint-library.ts": [
+      "MachineContactLarge",
+      "MachinePin",
+    ],
   }
 
   const mockCircuitJson: Record<string, CircuitJson> = {
@@ -102,7 +105,6 @@ test("Issue reproduction: 3D model paths should use relative paths when isPcm=fa
     MachinePin: await renderMachinePin(),
   }
 
-  // Test with isPcm=false (default) - should use relative paths
   const converter = new KicadLibraryConverter({
     kicadLibraryName: "adom-kicad-footprint-library",
     entrypoint: "lib/adom-kicad-footprint-library.ts",
@@ -110,17 +112,15 @@ test("Issue reproduction: 3D model paths should use relative paths when isPcm=fa
     buildFileToCircuitJson: async (_filePath, componentName) =>
       mockCircuitJson[componentName] ?? null,
     includeBuiltins: true,
-    isPcm: false, // Should use relative paths
   })
 
   await converter.run()
   const output = converter.getOutput()
 
   // Check that the 3D model path uses relative format, NOT ${KICAD_3RD_PARTY}
-  const machineContactFootprint =
-    output.kicadProjectFsMap[
-      "footprints/adom-kicad-footprint-library.pretty/MachineContactLarge.kicad_mod"
-    ]
+  const machineContactFootprint = output.kicadProjectFsMap[
+    "footprints/adom-kicad-footprint-library.pretty/MachineContactLarge.kicad_mod"
+  ] as string
 
   expect(machineContactFootprint).toBeDefined()
 
@@ -142,7 +142,10 @@ test("Symbol library: one symbol per component export (not subsymbols)", async (
   // Expected: 2 top-level symbols (MachineContactLarge, MachinePin), each with 2 subsymbols = 6 total
   // But in KiCad's symbol browser, only 2 are selectable - subsymbols are internal structure
   const mockExports: Record<string, string[]> = {
-    "lib/adom-kicad-footprint-library.ts": ["MachineContactLarge", "MachinePin"],
+    "lib/adom-kicad-footprint-library.ts": [
+      "MachineContactLarge",
+      "MachinePin",
+    ],
   }
 
   const mockCircuitJson: Record<string, CircuitJson> = {
@@ -162,15 +165,16 @@ test("Symbol library: one symbol per component export (not subsymbols)", async (
   await converter.run()
   const output = converter.getOutput()
 
-  const symbolLib =
-    output.kicadProjectFsMap["symbols/adom-kicad-footprint-library.kicad_sym"]
+  const symbolLib = output.kicadProjectFsMap[
+    "symbols/adom-kicad-footprint-library.kicad_sym"
+  ] as string
   expect(symbolLib).toBeDefined()
 
   // Count how many TOP-LEVEL symbols are in the library (not subsymbols like _0_1 and _1_1)
   // KiCad symbols have structure: (symbol "Name" ... (symbol "Name_0_1" ...) (symbol "Name_1_1" ...))
   // We only count top-level symbols (those that don't have _\d+_\d+ suffix)
   const allSymbolMatches = symbolLib.match(/\(symbol "([^"]+)"\s*\n/g) || []
-  const topLevelSymbols = allSymbolMatches.filter((match) => {
+  const topLevelSymbols = allSymbolMatches.filter((match: string) => {
     const name = match.match(/"([^"]+)"/)?.[1]
     return name && !/_\d+_\d+$/.test(name)
   })
@@ -185,7 +189,7 @@ test("Symbol library: one symbol per component export (not subsymbols)", async (
   expect(symbolLib).toContain('(symbol "MachinePin"')
 })
 
-test("Issue: when isPcm=false, 3D model path should be relative ../../ format", async () => {
+test("3D model path should be relative ../../ format", async () => {
   // This test specifically checks the 3D model path issue
   const mockExports: Record<string, string[]> = {
     "lib/test.ts": ["TestComponent"],
@@ -231,14 +235,14 @@ test("Issue: when isPcm=false, 3D model path should be relative ../../ format", 
     buildFileToCircuitJson: async (_filePath, componentName) =>
       mockCircuitJson[componentName] ?? null,
     includeBuiltins: false,
-    isPcm: false,
   })
 
   await converter.run()
   const output = converter.getOutput()
 
-  const footprint =
-    output.kicadProjectFsMap["footprints/test-library.pretty/TestComponent.kicad_mod"]
+  const footprint = output.kicadProjectFsMap[
+    "footprints/test-library.pretty/TestComponent.kicad_mod"
+  ] as string
   expect(footprint).toBeDefined()
 
   // Extract the model path
@@ -246,7 +250,7 @@ test("Issue: when isPcm=false, 3D model path should be relative ../../ format", 
   if (modelPathMatch) {
     console.log("3D Model path:", modelPathMatch[1])
 
-    // When isPcm=false, path should be relative
+    // Path should be relative
     expect(modelPathMatch[1]).toMatch(/^\.\.\/\.\.\/3dmodels\//)
     expect(modelPathMatch[1]).not.toContain("${KICAD_3RD_PARTY}")
   } else {
