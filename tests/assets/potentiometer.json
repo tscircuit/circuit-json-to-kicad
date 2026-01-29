@@ -1,0 +1,540 @@
+[
+  {
+    "type": "source_project_metadata",
+    "source_project_metadata_id": "source_project_metadata_0",
+    "software_used_string": "@tscircuit/core@0.0.998"
+  },
+  {
+    "type": "source_group",
+    "source_group_id": "source_group_0",
+    "is_subcircuit": true,
+    "was_automatically_named": true,
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_0",
+    "name": "pin1",
+    "pin_number": 1,
+    "port_hints": [
+      "pin1",
+      "1"
+    ],
+    "source_component_id": "source_component_0",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_1",
+    "name": "pin2",
+    "pin_number": 2,
+    "port_hints": [
+      "pin2",
+      "2"
+    ],
+    "source_component_id": "source_component_0",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_component",
+    "source_component_id": "source_component_0",
+    "ftype": "simple_potentiometer",
+    "name": "P1",
+    "max_resistance": 10000,
+    "pin_variant": "two_pin",
+    "are_pins_interchangeable": true,
+    "source_group_id": "source_group_0",
+    "supplier_part_numbers": {
+      "jlcpcb": []
+    }
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_2",
+    "name": "pin1",
+    "pin_number": 1,
+    "port_hints": [
+      "pin1",
+      "1"
+    ],
+    "source_component_id": "source_component_1",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_3",
+    "name": "pin2",
+    "pin_number": 2,
+    "port_hints": [
+      "pin2",
+      "2"
+    ],
+    "source_component_id": "source_component_1",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_component",
+    "source_component_id": "source_component_1",
+    "ftype": "simple_potentiometer",
+    "name": "P2",
+    "max_resistance": 10000,
+    "pin_variant": "two_pin",
+    "are_pins_interchangeable": true,
+    "source_group_id": "source_group_0",
+    "supplier_part_numbers": {
+      "jlcpcb": []
+    }
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_4",
+    "name": "pin1",
+    "pin_number": 1,
+    "port_hints": [
+      "pin1",
+      "1"
+    ],
+    "source_component_id": "source_component_2",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_5",
+    "name": "pin2",
+    "pin_number": 2,
+    "port_hints": [
+      "pin2",
+      "2"
+    ],
+    "source_component_id": "source_component_2",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_component",
+    "source_component_id": "source_component_2",
+    "ftype": "simple_potentiometer",
+    "name": "P3",
+    "max_resistance": 10000,
+    "pin_variant": "two_pin",
+    "are_pins_interchangeable": true,
+    "source_group_id": "source_group_0",
+    "supplier_part_numbers": {
+      "jlcpcb": []
+    }
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_6",
+    "name": "pin1",
+    "pin_number": 1,
+    "port_hints": [
+      "pin1",
+      "1"
+    ],
+    "source_component_id": "source_component_3",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_port",
+    "source_port_id": "source_port_7",
+    "name": "pin2",
+    "pin_number": 2,
+    "port_hints": [
+      "pin2",
+      "2"
+    ],
+    "source_component_id": "source_component_3",
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_component",
+    "source_component_id": "source_component_3",
+    "ftype": "simple_potentiometer",
+    "name": "P4",
+    "max_resistance": 10000,
+    "pin_variant": "two_pin",
+    "are_pins_interchangeable": true,
+    "source_group_id": "source_group_0",
+    "supplier_part_numbers": {
+      "jlcpcb": []
+    }
+  },
+  {
+    "type": "source_board",
+    "source_board_id": "source_board_0",
+    "source_group_id": "source_group_0"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_0",
+    "message": "Port pin1 on P1 is missing a trace",
+    "source_component_id": "source_component_0",
+    "source_port_id": "source_port_0",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_1",
+    "message": "Port pin2 on P1 is missing a trace",
+    "source_component_id": "source_component_0",
+    "source_port_id": "source_port_1",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_2",
+    "message": "Port pin1 on P2 is missing a trace",
+    "source_component_id": "source_component_1",
+    "source_port_id": "source_port_2",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_3",
+    "message": "Port pin2 on P2 is missing a trace",
+    "source_component_id": "source_component_1",
+    "source_port_id": "source_port_3",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_4",
+    "message": "Port pin1 on P3 is missing a trace",
+    "source_component_id": "source_component_2",
+    "source_port_id": "source_port_4",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_5",
+    "message": "Port pin2 on P3 is missing a trace",
+    "source_component_id": "source_component_2",
+    "source_port_id": "source_port_5",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_6",
+    "message": "Port pin1 on P4 is missing a trace",
+    "source_component_id": "source_component_3",
+    "source_port_id": "source_port_6",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "source_pin_missing_trace_warning",
+    "source_pin_missing_trace_warning_id": "source_pin_missing_trace_warning_7",
+    "message": "Port pin2 on P4 is missing a trace",
+    "source_component_id": "source_component_3",
+    "source_port_id": "source_port_7",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "warning_type": "source_pin_missing_trace_warning"
+  },
+  {
+    "type": "schematic_component",
+    "schematic_component_id": "schematic_component_0",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "size": {
+      "width": 1.18,
+      "height": 0.58
+    },
+    "source_component_id": "source_component_0",
+    "is_box_with_pins": true,
+    "symbol_name": "potentiometer2_right",
+    "symbol_display_value": "10kΩ",
+    "schematic_group_id": "schematic_group_0"
+  },
+  {
+    "type": "schematic_component",
+    "schematic_component_id": "schematic_component_1",
+    "center": {
+      "x": 2,
+      "y": 0
+    },
+    "size": {
+      "width": 0.7,
+      "height": 1.06
+    },
+    "source_component_id": "source_component_1",
+    "is_box_with_pins": true,
+    "symbol_name": "potentiometer2_up",
+    "symbol_display_value": "10kΩ",
+    "schematic_group_id": "schematic_group_0"
+  },
+  {
+    "type": "schematic_component",
+    "schematic_component_id": "schematic_component_2",
+    "center": {
+      "x": 4,
+      "y": 0
+    },
+    "size": {
+      "width": 1.06,
+      "height": 0.7
+    },
+    "source_component_id": "source_component_2",
+    "is_box_with_pins": true,
+    "symbol_name": "potentiometer2_left",
+    "symbol_display_value": "10kΩ",
+    "schematic_group_id": "schematic_group_0"
+  },
+  {
+    "type": "schematic_component",
+    "schematic_component_id": "schematic_component_3",
+    "center": {
+      "x": 6,
+      "y": 0
+    },
+    "size": {
+      "width": 0.7,
+      "height": 1.06
+    },
+    "source_component_id": "source_component_3",
+    "is_box_with_pins": true,
+    "symbol_name": "potentiometer2_down",
+    "symbol_display_value": "10kΩ",
+    "schematic_group_id": "schematic_group_0"
+  },
+  {
+    "type": "schematic_group",
+    "schematic_group_id": "schematic_group_0",
+    "is_subcircuit": true,
+    "subcircuit_id": "subcircuit_source_group_0",
+    "name": "unnamed_board1",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "width": 0,
+    "height": 0,
+    "schematic_component_ids": [],
+    "source_group_id": "source_group_0"
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_0",
+    "schematic_component_id": "schematic_component_0",
+    "center": {
+      "x": -0.53,
+      "y": 0
+    },
+    "source_port_id": "source_port_0",
+    "facing_direction": "left",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 1,
+    "is_connected": false
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_1",
+    "schematic_component_id": "schematic_component_0",
+    "center": {
+      "x": 0.53,
+      "y": 0
+    },
+    "source_port_id": "source_port_1",
+    "facing_direction": "right",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 2,
+    "is_connected": false
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_2",
+    "schematic_component_id": "schematic_component_1",
+    "center": {
+      "x": 2,
+      "y": -0.53
+    },
+    "source_port_id": "source_port_2",
+    "facing_direction": "down",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 1,
+    "is_connected": false
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_3",
+    "schematic_component_id": "schematic_component_1",
+    "center": {
+      "x": 2,
+      "y": 0.53
+    },
+    "source_port_id": "source_port_3",
+    "facing_direction": "up",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 2,
+    "is_connected": false
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_4",
+    "schematic_component_id": "schematic_component_2",
+    "center": {
+      "x": 4.53,
+      "y": 6.490628035480972e-17
+    },
+    "source_port_id": "source_port_4",
+    "facing_direction": "right",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 1,
+    "is_connected": false
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_5",
+    "schematic_component_id": "schematic_component_2",
+    "center": {
+      "x": 3.4699999999999998,
+      "y": -6.490628035480972e-17
+    },
+    "source_port_id": "source_port_5",
+    "facing_direction": "left",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 2,
+    "is_connected": false
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_6",
+    "schematic_component_id": "schematic_component_3",
+    "center": {
+      "x": 6,
+      "y": 0.53
+    },
+    "source_port_id": "source_port_6",
+    "facing_direction": "up",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 1,
+    "is_connected": false
+  },
+  {
+    "type": "schematic_port",
+    "schematic_port_id": "schematic_port_7",
+    "schematic_component_id": "schematic_component_3",
+    "center": {
+      "x": 6,
+      "y": -0.53
+    },
+    "source_port_id": "source_port_7",
+    "facing_direction": "down",
+    "distance_from_component_edge": 0.4,
+    "pin_number": 2,
+    "is_connected": false
+  },
+  {
+    "type": "pcb_component",
+    "pcb_component_id": "pcb_component_0",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "width": 0,
+    "height": 0,
+    "layer": "top",
+    "rotation": 0,
+    "source_component_id": "source_component_0",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "do_not_place": false,
+    "obstructs_within_bounds": true
+  },
+  {
+    "type": "pcb_missing_footprint_error",
+    "pcb_missing_footprint_error_id": "pcb_missing_footprint_error_0",
+    "message": "No footprint found for component: <potentiometer#690 name=\".P1\" />",
+    "source_component_id": "source_component_0",
+    "error_type": "pcb_missing_footprint_error"
+  },
+  {
+    "type": "pcb_component",
+    "pcb_component_id": "pcb_component_1",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "width": 0,
+    "height": 0,
+    "layer": "top",
+    "rotation": 0,
+    "source_component_id": "source_component_1",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "do_not_place": false,
+    "obstructs_within_bounds": true
+  },
+  {
+    "type": "pcb_missing_footprint_error",
+    "pcb_missing_footprint_error_id": "pcb_missing_footprint_error_1",
+    "message": "No footprint found for component: <potentiometer#693 name=\".P2\" />",
+    "source_component_id": "source_component_1",
+    "error_type": "pcb_missing_footprint_error"
+  },
+  {
+    "type": "pcb_component",
+    "pcb_component_id": "pcb_component_2",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "width": 0,
+    "height": 0,
+    "layer": "top",
+    "rotation": 0,
+    "source_component_id": "source_component_2",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "do_not_place": false,
+    "obstructs_within_bounds": true
+  },
+  {
+    "type": "pcb_missing_footprint_error",
+    "pcb_missing_footprint_error_id": "pcb_missing_footprint_error_2",
+    "message": "No footprint found for component: <potentiometer#696 name=\".P3\" />",
+    "source_component_id": "source_component_2",
+    "error_type": "pcb_missing_footprint_error"
+  },
+  {
+    "type": "pcb_component",
+    "pcb_component_id": "pcb_component_3",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "width": 0,
+    "height": 0,
+    "layer": "top",
+    "rotation": 0,
+    "source_component_id": "source_component_3",
+    "subcircuit_id": "subcircuit_source_group_0",
+    "do_not_place": false,
+    "obstructs_within_bounds": true
+  },
+  {
+    "type": "pcb_missing_footprint_error",
+    "pcb_missing_footprint_error_id": "pcb_missing_footprint_error_3",
+    "message": "No footprint found for component: <potentiometer#699 name=\".P4\" />",
+    "source_component_id": "source_component_3",
+    "error_type": "pcb_missing_footprint_error"
+  },
+  {
+    "type": "pcb_board",
+    "pcb_board_id": "pcb_board_0",
+    "source_board_id": "source_board_0",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "thickness": 1.4,
+    "num_layers": 2,
+    "width": 10,
+    "height": 10,
+    "material": "fr4"
+  }
+]
