@@ -99,16 +99,8 @@ function addBuiltinFootprint({
     (fp) => fp.footprintName === kicadFootprint.footprintName,
   )
   if (!alreadyExists) {
-    // Update 3D model paths for PCM if needed
-    if (ctx.isPcm && ctx.kicadPcmPackageId) {
-      const updatedFootprint = updateBuiltinFootprintModelPaths({
-        kicadFootprint,
-        kicadPcmPackageId: ctx.kicadPcmPackageId,
-      })
-      ctx.builtinKicadFootprints.push(updatedFootprint)
-    } else {
-      ctx.builtinKicadFootprints.push(kicadFootprint)
-    }
+    // Builtin footprints use relative 3D model paths which work for both standalone and PCM
+    ctx.builtinKicadFootprints.push(kicadFootprint)
   }
 }
 

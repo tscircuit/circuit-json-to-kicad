@@ -355,7 +355,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (layers *.Cu *.Mask)
         (uuid 51b679a0-2a9d-c901-0385-18622393983d)
       )
-      (model "\${KICAD_3RD_PARTY}/3dmodels/com_tscircuit_author_my-keyboard-library/my-keyboard-library.3dshapes/SW_Push_1P1T_NO_CK_KMR2.step"
+      (model "../../3dmodels/my-keyboard-library.3dshapes/SW_Push_1P1T_NO_CK_KMR2.step"
         (offset
           (xyz 0 0 0.7)
         )

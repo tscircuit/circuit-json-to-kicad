@@ -36,14 +36,8 @@ export function renameKicadFootprint(params: {
     if (usesProjectPath) {
       // Extract the filename from the path
       const filename = currentPath.split(/[\\/]/).pop() ?? ""
-
-      if (isPcm && kicadPcmPackageId) {
-        // PCM format: ${KICAD_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/<library>.3dshapes/<model>.step
-        model.path = `${KICAD_3RD_PARTY_PLACEHOLDER}/3dmodels/${kicadPcmPackageId}/${kicadLibraryName}.3dshapes/${filename}`
-      } else {
-        // Standard format: relative path
-        model.path = `../../3dmodels/${kicadLibraryName}.3dshapes/${filename}`
-      }
+      // Always use relative paths - works for both standalone and PCM installations
+      model.path = `../../3dmodels/${kicadLibraryName}.3dshapes/${filename}`
     }
   }
 
