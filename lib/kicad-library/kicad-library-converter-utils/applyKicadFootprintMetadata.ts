@@ -66,7 +66,6 @@ export function applyKicadFootprintMetadata(
 
     // Apply properties if provided
     if (metadata.properties) {
-
       const newProperties: Property[] = []
 
       // Reference property
