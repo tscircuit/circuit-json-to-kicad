@@ -223,6 +223,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       for (let i = 0; i < schematicPorts.length; i++) {
         const port = schematicPorts[i]
+        if (!port) continue
         const pin = new SymbolPin()
         // Use pin_number if available, otherwise use 1-based index
         pin.numberString = `${port.pin_number || i + 1}`

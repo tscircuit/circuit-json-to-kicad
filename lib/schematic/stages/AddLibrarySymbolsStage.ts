@@ -282,17 +282,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const { circuitJson } = this.ctx
 
     // Collect all primitives linked to this schematic_symbol
-    const circles = circuitJson.filter(
+    const circles: any[] = circuitJson.filter(
       (el: any) =>
         el.type === "schematic_circle" &&
         el.schematic_symbol_id === schematicSymbolId,
     )
-    const lines = circuitJson.filter(
+    const lines: any[] = circuitJson.filter(
       (el: any) =>
         el.type === "schematic_line" &&
         el.schematic_symbol_id === schematicSymbolId,
     )
-    const paths = circuitJson.filter(
+    const paths: any[] = circuitJson.filter(
       (el: any) =>
         el.type === "schematic_path" &&
         el.schematic_symbol_id === schematicSymbolId,

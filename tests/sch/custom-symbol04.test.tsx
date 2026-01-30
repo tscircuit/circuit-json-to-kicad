@@ -73,7 +73,6 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
             />
             {/* Emitter arrow (V shape pointing outward along emitter line) */}
             <schematicpath
-              strokeWidth={0.05}
               points={[
                 { x: 0.16, y: -0.25 },
                 { x: 0.2, y: -0.4 },
