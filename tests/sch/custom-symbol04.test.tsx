@@ -26,15 +26,51 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
               strokeWidth={0.05}
             />
             {/* Base vertical bar */}
-            <schematicline x1={-0.1} y1={-0.5} x2={-0.1} y2={0.5} strokeWidth={0.05} />
+            <schematicline
+              x1={-0.1}
+              y1={-0.5}
+              x2={-0.1}
+              y2={0.5}
+              strokeWidth={0.05}
+            />
             {/* Base input line */}
-            <schematicline x1={-0.7} y1={0} x2={-0.1} y2={0} strokeWidth={0.05} />
+            <schematicline
+              x1={-0.7}
+              y1={0}
+              x2={-0.1}
+              y2={0}
+              strokeWidth={0.05}
+            />
             {/* Collector line (diagonal then vertical) */}
-            <schematicline x1={-0.1} y1={0.2} x2={0.35} y2={0.5} strokeWidth={0.05} />
-            <schematicline x1={0.35} y1={0.5} x2={0.35} y2={1} strokeWidth={0.05} />
+            <schematicline
+              x1={-0.1}
+              y1={0.2}
+              x2={0.35}
+              y2={0.5}
+              strokeWidth={0.05}
+            />
+            <schematicline
+              x1={0.35}
+              y1={0.5}
+              x2={0.35}
+              y2={1}
+              strokeWidth={0.05}
+            />
             {/* Emitter line (diagonal then vertical) */}
-            <schematicline x1={-0.1} y1={-0.2} x2={0.35} y2={-0.5} strokeWidth={0.05} />
-            <schematicline x1={0.35} y1={-0.5} x2={0.35} y2={-1} strokeWidth={0.05} />
+            <schematicline
+              x1={-0.1}
+              y1={-0.2}
+              x2={0.35}
+              y2={-0.5}
+              strokeWidth={0.05}
+            />
+            <schematicline
+              x1={0.35}
+              y1={-0.5}
+              x2={0.35}
+              y2={-1}
+              strokeWidth={0.05}
+            />
             {/* Emitter arrow (V shape pointing outward along emitter line) */}
             <schematicpath
               strokeWidth={0.05}
