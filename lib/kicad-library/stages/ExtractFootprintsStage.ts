@@ -24,6 +24,11 @@ import {
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
 
+// KiCad footprint version and generator info
+const KICAD_FP_VERSION = 20240108
+const KICAD_FP_GENERATOR = "pcbnew"
+const KICAD_FP_GENERATOR_VERSION = "8.0"
+
 /**
  * Browser-compatible basename extraction (handles both / and \ separators)
  */
@@ -139,6 +144,11 @@ export class ExtractFootprintsStage extends ConverterStage<
     footprint.position = At.from([0, 0, 0])
     footprint.locked = false
     footprint.placed = false
+
+    // Set version and generator info
+    footprint.version = KICAD_FP_VERSION
+    footprint.generator = KICAD_FP_GENERATOR
+    footprint.generatorVersion = KICAD_FP_GENERATOR_VERSION
     if (!footprint.descr) {
       footprint.descr = ""
     }
@@ -166,11 +176,33 @@ export class ExtractFootprintsStage extends ConverterStage<
     defaultFont.size = { width: 1.27, height: 1.27 }
     defaultFont.thickness = 0.15
     const defaultEffects = new TextEffects({ font: defaultFont })
+
+    // Calculate pad bounding box to position reference/value labels
+    const fpPads = footprint.fpPads ?? []
+    let minY = 0
+    let maxY = 0
+    for (const pad of fpPads) {
+      const at = pad.at
+      const size = pad.size
+      if (at && size) {
+        const padY = at.y ?? 0
+        const padHeight = size.height ?? 0
+        const padTop = padY - padHeight / 2
+        const padBottom = padY + padHeight / 2
+        minY = Math.min(minY, padTop)
+        maxY = Math.max(maxY, padBottom)
+      }
+    }
+    // Position reference above pads (negative Y is up in KiCad) with 0.5mm margin
+    const refY = minY - 0.5
+    // Position value below pads with 0.5mm margin
+    const valY = maxY + 0.5
+
     footprint.properties = [
       new Property({
         key: "Reference",
-        value: "Ref**",
-        position: [0, 0, 0],
+        value: "REF**",
+        position: [0, refY, 0],
         layer: "F.SilkS",
         uuid: generateDeterministicUuid(`${footprintName}-property-Reference`),
         effects: defaultEffects,
@@ -178,7 +210,7 @@ export class ExtractFootprintsStage extends ConverterStage<
       new Property({
         key: "Value",
         value: "Val**",
-        position: [0, 0, 0],
+        position: [0, valY, 0],
         layer: "F.Fab",
         uuid: generateDeterministicUuid(`${footprintName}-property-Value`),
         effects: defaultEffects,
