@@ -37,18 +37,25 @@ import {
 import { applyToPoint, scale as createScaleMatrix } from "transformation-matrix"
 
 /**
- * Adds library symbol definitions from schematic-symbols to the lib_symbols section
+ * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
+ * Also handles custom symbols defined via schematic_symbol elements.
  */
 export class AddLibrarySymbolsStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
+  // Track processed symbol names to avoid duplicates
+  private processedSymbolNames: Set<string> = new Set()
+
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
     // Create lib_symbols section
     const libSymbols = new LibSymbols()
     const librarySymbols: SchematicSymbol[] = []
+
+    // Reset processed symbol names for this run
+    this.processedSymbolNames = new Set()
 
     // Process schematic components
     const schematicComponents = db.schematic_component.list()
@@ -94,7 +101,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   }
 
   /**
-   * Create library symbol for a schematic component
+   * Create library symbol for a schematic component.
+   * Handles both builtin symbols and custom symbols defined via schematic_symbol elements.
    */
   private createLibrarySymbolForComponent(
     schematicComponent: SchematicComponent,
@@ -114,6 +122,36 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         (cad: any) =>
           cad.source_component_id === sourceComp.source_component_id,
       )
+
+    // Check if this component has a custom symbol via schematic_symbol_id
+    // First check if schematic_component has it directly
+    let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
+
+    // If not on the component, check if there are primitives linked to this component
+    // that have a schematic_symbol_id (tscircuit links primitives to components this way)
+    if (!schematicSymbolId) {
+      const linkedPrimitive = this.ctx.circuitJson.find(
+        (el: any) =>
+          (el.type === "schematic_line" ||
+            el.type === "schematic_circle" ||
+            el.type === "schematic_path") &&
+          el.schematic_component_id ===
+            schematicComponent.schematic_component_id &&
+          el.schematic_symbol_id,
+      ) as any
+      if (linkedPrimitive) {
+        schematicSymbolId = linkedPrimitive.schematic_symbol_id
+      }
+    }
+
+    if (schematicSymbolId) {
+      return this.createLibrarySymbolFromSchematicSymbol(
+        schematicComponent,
+        sourceComp,
+        cadComponent,
+        schematicSymbolId,
+      )
+    }
 
     const symbolName =
       schematicComponent.symbol_name ||
@@ -146,6 +184,191 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
     })
+  }
+
+  /**
+   * Create library symbol from a schematic_symbol element.
+   * This handles custom symbols defined via JSX like:
+   * <chip name="Q1" symbol={<symbol>...</symbol>} />
+   *
+   * Naming precedence:
+   * 1. schematic_symbol.name (highest priority)
+   * 2. manufacturer_part_number / footprinter_string
+   * 3. Generated name based on ftype
+   */
+  private createLibrarySymbolFromSchematicSymbol(
+    schematicComponent: SchematicComponent,
+    sourceComp: SourceComponentBase,
+    cadComponent: any,
+    schematicSymbolId: string,
+  ): SchematicSymbol | null {
+    const { db } = this.ctx
+
+    // Look up the schematic_symbol element
+    // Since this is a new type, access it via the raw circuitJson
+    const schematicSymbol = this.ctx.circuitJson.find(
+      (el: any) =>
+        el.type === "schematic_symbol" &&
+        el.schematic_symbol_id === schematicSymbolId,
+    ) as any
+
+    if (!schematicSymbol) {
+      // Fall back to standard symbol handling if schematic_symbol not found
+      return null
+    }
+
+    // Determine symbol name using precedence:
+    // 1. schematic_symbol.name
+    // 2. manufacturer_part_number / footprinter_string (via getKicadCompatibleComponentName)
+    // 3. Generated name based on ftype
+    let symbolName: string
+    if (schematicSymbol.name) {
+      symbolName = schematicSymbol.name
+    } else {
+      const ergonomicName = getKicadCompatibleComponentName(
+        sourceComp,
+        cadComponent,
+      )
+      if (ergonomicName) {
+        symbolName = ergonomicName
+      } else {
+        symbolName = `custom_${sourceComp.ftype || "component"}_${schematicSymbolId}`
+      }
+    }
+
+    // Check if we've already processed this symbol name
+    // If two symbols have the same name, we assume they're the same symbol
+    const libId = `Custom:${symbolName}`
+    if (this.processedSymbolNames.has(libId)) {
+      return null // Skip duplicate symbol definitions
+    }
+    this.processedSymbolNames.add(libId)
+
+    // Build symbol data from schematic primitives linked to this schematic_symbol
+    const symbolData = this.buildSymbolDataFromSchematicPrimitives(
+      schematicSymbolId,
+      schematicSymbol,
+      schematicComponent.schematic_component_id,
+    )
+
+    // Get footprint name for symbol-footprint linkage
+    const footprintName = getKicadCompatibleComponentName(
+      sourceComp,
+      cadComponent,
+    )
+
+    return this.createLibrarySymbol({
+      libId,
+      symbolData,
+      isChip: false, // Custom symbols are not treated as generic chips
+      schematicComponent,
+      description: this.getDescription(sourceComp),
+      keywords: this.getKeywords(sourceComp),
+      fpFilters: this.getFpFilters(sourceComp),
+      footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
+      referencePrefix: getReferencePrefixForComponent(sourceComp),
+    })
+  }
+
+  /**
+   * Build symbol data from schematic primitives (schematic_circle, schematic_line, schematic_path)
+   * that are linked to a schematic_symbol via schematic_symbol_id.
+   */
+  private buildSymbolDataFromSchematicPrimitives(
+    schematicSymbolId: string,
+    schematicSymbol: any,
+    schematicComponentId?: string,
+  ): any {
+    const { circuitJson } = this.ctx
+
+    // Collect all primitives linked to this schematic_symbol
+    const circles: any[] = circuitJson.filter(
+      (el: any) =>
+        el.type === "schematic_circle" &&
+        el.schematic_symbol_id === schematicSymbolId,
+    )
+    const lines: any[] = circuitJson.filter(
+      (el: any) =>
+        el.type === "schematic_line" &&
+        el.schematic_symbol_id === schematicSymbolId,
+    )
+    const paths: any[] = circuitJson.filter(
+      (el: any) =>
+        el.type === "schematic_path" &&
+        el.schematic_symbol_id === schematicSymbolId,
+    )
+
+    // Find ports - first try by schematic_symbol_id, then fall back to schematic_component_id
+    let ports = circuitJson.filter(
+      (el: any) =>
+        el.type === "schematic_port" &&
+        el.schematic_symbol_id === schematicSymbolId,
+    )
+
+    // If no ports found by symbol id, try to find by component id
+    // Also filter to only include ports with display_pin_label (custom symbol ports)
+    if (ports.length === 0 && schematicComponentId) {
+      ports = circuitJson.filter(
+        (el: any) =>
+          el.type === "schematic_port" &&
+          el.schematic_component_id === schematicComponentId &&
+          el.display_pin_label,
+      )
+    }
+
+    // Convert to internal primitive format
+    const primitives: any[] = []
+
+    // Convert schematic_circle to circle primitives
+    for (const circle of circles) {
+      primitives.push({
+        type: "circle",
+        x: circle.center?.x ?? 0,
+        y: circle.center?.y ?? 0,
+        radius: circle.radius ?? 0.5,
+        fill: circle.is_filled ?? false,
+      })
+    }
+
+    // Convert schematic_line to path primitives (2-point paths)
+    for (const line of lines) {
+      primitives.push({
+        type: "path",
+        points: [
+          { x: line.x1 ?? 0, y: line.y1 ?? 0 },
+          { x: line.x2 ?? 0, y: line.y2 ?? 0 },
+        ],
+      })
+    }
+
+    // Convert schematic_path to path primitives
+    for (const path of paths) {
+      if (path.points && path.points.length > 0) {
+        primitives.push({
+          type: "path",
+          points: path.points,
+        })
+      }
+    }
+
+    // Convert schematic_port to ports
+    const symbolPorts = ports.map((port: any, index: number) => ({
+      x: port.center?.x ?? 0,
+      y: port.center?.y ?? 0,
+      labels: [port.display_pin_label || `${port.pin_number || index + 1}`],
+      pinNumber: port.pin_number || index + 1,
+      facingDirection: port.facing_direction,
+    }))
+
+    // Sort ports by pin_number
+    symbolPorts.sort((a: any, b: any) => a.pinNumber - b.pinNumber)
+
+    return {
+      center: schematicSymbol.center || { x: 0, y: 0 },
+      size: schematicSymbol.size || { width: 1, height: 1 },
+      primitives,
+      ports: symbolPorts,
+    }
   }
 
   /**

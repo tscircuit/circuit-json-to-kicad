@@ -16,11 +16,26 @@ function isBuiltinSymbol(symbolName: string): boolean {
   return symbolName in symbols
 }
 
+/**
+ * Get the library ID for a component's symbol.
+ *
+ * @param sourceComp - The source component
+ * @param schematicComp - The schematic component
+ * @param cadComponent - Optional CAD component for footprinter_string
+ * @param schematicSymbolName - Optional name from schematic_symbol element (highest priority)
+ * @returns Library ID string like "Device:resistor" or "Custom:my_symbol"
+ */
 export function getLibraryId(
   sourceComp: SourceComponentBase,
   schematicComp: SchematicComponent,
   cadComponent?: CadComponent | null,
+  schematicSymbolName?: string,
 ): string {
+  // Highest priority: schematic_symbol.name (for custom symbols)
+  if (schematicSymbolName) {
+    return `Custom:${schematicSymbolName}`
+  }
+
   if (sourceComp.type !== "source_component") {
     if (schematicComp.symbol_name) {
       // Check if it's a builtin symbol from schematic-symbols

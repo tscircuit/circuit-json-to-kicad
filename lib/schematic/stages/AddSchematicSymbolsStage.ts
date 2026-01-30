@@ -18,7 +18,10 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
-import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getReferenceDesignator,
+  getKicadCompatibleComponentName,
+} from "../../utils/getKicadCompatibleComponentName"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -76,11 +79,56 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             cad.source_component_id === sourceComponent.source_component_id,
         )
 
+      // Check for custom symbol via schematic_symbol_id
+      let schematicSymbolName: string | undefined
+      let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
+
+      // If not on the component, check if there are primitives linked to this component
+      // that have a schematic_symbol_id (tscircuit links primitives to components this way)
+      if (!schematicSymbolId) {
+        const linkedPrimitive = this.ctx.circuitJson.find(
+          (el: any) =>
+            (el.type === "schematic_line" ||
+              el.type === "schematic_circle" ||
+              el.type === "schematic_path") &&
+            el.schematic_component_id ===
+              schematicComponent.schematic_component_id &&
+            el.schematic_symbol_id,
+        ) as any
+        if (linkedPrimitive) {
+          schematicSymbolId = linkedPrimitive.schematic_symbol_id
+        }
+      }
+
+      if (schematicSymbolId) {
+        const schematicSymbol = this.ctx.circuitJson.find(
+          (el: any) =>
+            el.type === "schematic_symbol" &&
+            el.schematic_symbol_id === schematicSymbolId,
+        ) as any
+        if (schematicSymbol?.name) {
+          schematicSymbolName = schematicSymbol.name
+        } else {
+          // Generate a name consistent with AddLibrarySymbolsStage
+          // Use getKicadCompatibleComponentName for consistent naming
+          const ergonomicName = getKicadCompatibleComponentName(
+            sourceComponent,
+            cadComponent,
+          )
+          if (ergonomicName) {
+            schematicSymbolName = ergonomicName
+          } else {
+            schematicSymbolName = `custom_${sourceComponent.ftype || "component"}_${schematicSymbolId}`
+          }
+        }
+      }
+
       // Get the appropriate library ID based on component type
       const libId = getLibraryId(
         sourceComponent,
         schematicComponent,
         cadComponent,
+        schematicSymbolName,
       )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
@@ -147,18 +195,38 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       )
 
       // Add pin instances with UUIDs based on schematic ports
-      const schematicPorts = db.schematic_port
+      // For custom symbols, use only ports with display_pin_label
+      // For regular components, use all ports
+      let schematicPorts = db.schematic_port
         .list()
         .filter(
           (p: any) =>
             p.schematic_component_id ===
             schematicComponent.schematic_component_id,
         )
-        .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
 
-      for (const port of schematicPorts) {
+      // If this is a custom symbol, filter to only ports with display_pin_label
+      if (schematicSymbolId) {
+        const customSymbolPorts = schematicPorts.filter(
+          (p: any) => p.display_pin_label,
+        )
+        // Only use filtered ports if we found some
+        if (customSymbolPorts.length > 0) {
+          schematicPorts = customSymbolPorts
+        }
+      }
+
+      // Sort by pin number or use index
+      schematicPorts.sort(
+        (a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0),
+      )
+
+      for (let i = 0; i < schematicPorts.length; i++) {
+        const port = schematicPorts[i]
+        if (!port) continue
         const pin = new SymbolPin()
-        pin.numberString = `${port.pin_number || 1}`
+        // Use pin_number if available, otherwise use 1-based index
+        pin.numberString = `${port.pin_number || i + 1}`
         pin.uuid = crypto.randomUUID()
         symbol.pins.push(pin)
       }
