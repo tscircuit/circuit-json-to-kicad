@@ -76,11 +76,26 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             cad.source_component_id === sourceComponent.source_component_id,
         )
 
+      // Check for custom symbol via schematic_symbol_id
+      let schematicSymbolName: string | undefined
+      const schematicSymbolId = (schematicComponent as any).schematic_symbol_id
+      if (schematicSymbolId) {
+        const schematicSymbol = this.ctx.circuitJson.find(
+          (el: any) =>
+            el.type === "schematic_symbol" &&
+            el.schematic_symbol_id === schematicSymbolId,
+        ) as any
+        if (schematicSymbol?.name) {
+          schematicSymbolName = schematicSymbol.name
+        }
+      }
+
       // Get the appropriate library ID based on component type
       const libId = getLibraryId(
         sourceComponent,
         schematicComponent,
         cadComponent,
+        schematicSymbolName,
       )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
