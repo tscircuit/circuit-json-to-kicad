@@ -107,16 +107,19 @@ export function isReferenceDesignator(value?: string | null): boolean {
 export function getReferencePrefixForComponent(
   sourceComponent?: SourceComponentBase | null,
 ): string {
-  const name = sourceComponent?.name
-  if (isReferenceDesignator(name)) {
-    return extractReferencePrefix(name)
-  }
-
+  // Priority 1: Use ftype mapping (most reliable indicator of component type)
   const ftype = sourceComponent?.ftype
   if (ftype && referencePrefixByFtype[ftype]) {
     return referencePrefixByFtype[ftype]
   }
 
+  // Priority 2: Extract from name if it looks like a reference designator
+  const name = sourceComponent?.name
+  if (isReferenceDesignator(name)) {
+    return extractReferencePrefix(name)
+  }
+
+  // Priority 3: Extract leading letters from name, or default to "U"
   return extractReferencePrefix(name)
 }
 
