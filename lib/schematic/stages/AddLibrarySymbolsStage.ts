@@ -124,7 +124,26 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       )
 
     // Check if this component has a custom symbol via schematic_symbol_id
-    const schematicSymbolId = (schematicComponent as any).schematic_symbol_id
+    // First check if schematic_component has it directly
+    let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
+
+    // If not on the component, check if there are primitives linked to this component
+    // that have a schematic_symbol_id (tscircuit links primitives to components this way)
+    if (!schematicSymbolId) {
+      const linkedPrimitive = this.ctx.circuitJson.find(
+        (el: any) =>
+          (el.type === "schematic_line" ||
+            el.type === "schematic_circle" ||
+            el.type === "schematic_path") &&
+          el.schematic_component_id ===
+            schematicComponent.schematic_component_id &&
+          el.schematic_symbol_id,
+      ) as any
+      if (linkedPrimitive) {
+        schematicSymbolId = linkedPrimitive.schematic_symbol_id
+      }
+    }
+
     if (schematicSymbolId) {
       return this.createLibrarySymbolFromSchematicSymbol(
         schematicComponent,
@@ -229,6 +248,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolData = this.buildSymbolDataFromSchematicPrimitives(
       schematicSymbolId,
       schematicSymbol,
+      schematicComponent.schematic_component_id,
     )
 
     // Get footprint name for symbol-footprint linkage
@@ -257,6 +277,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private buildSymbolDataFromSchematicPrimitives(
     schematicSymbolId: string,
     schematicSymbol: any,
+    schematicComponentId?: string,
   ): any {
     const { circuitJson } = this.ctx
 
@@ -276,11 +297,24 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         el.type === "schematic_path" &&
         el.schematic_symbol_id === schematicSymbolId,
     )
-    const ports = circuitJson.filter(
+
+    // Find ports - first try by schematic_symbol_id, then fall back to schematic_component_id
+    let ports = circuitJson.filter(
       (el: any) =>
         el.type === "schematic_port" &&
         el.schematic_symbol_id === schematicSymbolId,
     )
+
+    // If no ports found by symbol id, try to find by component id
+    // Also filter to only include ports with display_pin_label (custom symbol ports)
+    if (ports.length === 0 && schematicComponentId) {
+      ports = circuitJson.filter(
+        (el: any) =>
+          el.type === "schematic_port" &&
+          el.schematic_component_id === schematicComponentId &&
+          el.display_pin_label,
+      )
+    }
 
     // Convert to internal primitive format
     const primitives: any[] = []
