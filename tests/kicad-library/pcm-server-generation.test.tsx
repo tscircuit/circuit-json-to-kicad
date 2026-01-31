@@ -4,7 +4,7 @@ import * as os from "node:os"
 import * as path from "node:path"
 import type { CircuitJson } from "circuit-json"
 import JSZip from "jszip"
-import { generatePcmAssets } from "../../scripts/pcm/generatePcmAssets"
+import { generatePcmAssets } from "@tscircuit/cli/lib"
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
 
@@ -72,7 +72,8 @@ async function renderMyCapacitor(): Promise<CircuitJson> {
 test("generatePcmAssets generates correct PCM directory structure", async () => {
   // Create a temporary directory for the test
   const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "pcm-test-"))
-  const outputDir = path.join(tmpDir, "pcm-output")
+  const kicadLibOutputDir = path.join(tmpDir, "kicad-library")
+  const pcmOutputDir = path.join(tmpDir, "pcm-output")
 
   // Build mock circuit JSON
   const mockCircuitJson: Record<string, CircuitJson> = {
@@ -96,33 +97,44 @@ test("generatePcmAssets generates correct PCM directory structure", async () => 
   const kicadLibraryOutput = converter.getOutput()
 
   try {
-    // Generate PCM assets
+    // Write kicad library files to disk (CLI's generatePcmAssets expects a path)
+    fs.mkdirSync(kicadLibOutputDir, { recursive: true })
+    for (const [relativePath, content] of Object.entries(
+      kicadLibraryOutput.kicadProjectFsMap,
+    )) {
+      const fullPath = path.join(kicadLibOutputDir, relativePath)
+      fs.mkdirSync(path.dirname(fullPath), { recursive: true })
+      fs.writeFileSync(fullPath, content)
+    }
+
+    // Generate PCM assets using CLI's generatePcmAssets
     await generatePcmAssets({
-      libraryName: "test-library",
-      outputDir,
-      kicadLibraryOutput,
-      kicadPcmPackageId: "com_tscircuit_test_library",
+      packageName: "test-library",
+      version: "0.0.1",
+      author: "tscircuit",
+      description: "Test library",
+      kicadLibraryPath: kicadLibOutputDir,
+      outputDir: pcmOutputDir,
+      baseUrl: "http://localhost:3847",
     })
 
     // List all files in the output directory
-    const fileTree = listFilesRecursively(outputDir)
+    const fileTree = listFilesRecursively(pcmOutputDir)
 
-    // Snapshot the file tree structure
+    // Snapshot the file tree structure (CLI generates slightly different structure)
     expect(fileTree).toMatchInlineSnapshot(`
 [
+  "com.tscircuit.tscircuit.test-library-0.0.1.zip",
   "packages.json",
-  "packages/",
-  "packages/com_tscircuit_test_library_0.0.1.zip",
   "repository.json",
 ]
 `)
 
-    // List files inside the zip
-    const zipPath = path.join(
-      outputDir,
-      "packages",
-      "com_tscircuit_test_library_0.0.1.zip",
-    )
+    // Find the zip file
+    const zipFile = fileTree.find((f) => f.endsWith(".zip"))
+    expect(zipFile).toBeDefined()
+
+    const zipPath = path.join(pcmOutputDir, zipFile!)
     const zipContents = await listZipContents(zipPath)
 
     // Snapshot the zip contents
@@ -132,8 +144,7 @@ test("generatePcmAssets generates correct PCM directory structure", async () => 
   "footprints/tscircuit_builtin.pretty/",
   "footprints/tscircuit_builtin.pretty/capacitor_0805.kicad_mod",
   "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
-  "fp-lib-table",
-  "sym-lib-table",
+  "metadata.json",
   "symbols/",
   "symbols/tscircuit_builtin.kicad_sym",
 ]
