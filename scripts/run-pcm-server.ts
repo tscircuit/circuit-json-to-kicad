@@ -10,10 +10,7 @@
  * 3. Logs the URL to repository.json for pasting into KiCad
  */
 
-import {
-  convertToKicadLibrary,
-  generatePcmAssets,
-} from "@tscircuit/cli/lib"
+import { convertToKicadLibrary, generatePcmAssets } from "@tscircuit/cli/lib"
 import * as path from "node:path"
 import * as fs from "node:fs"
 import * as circuitJsonToKicadModule from "../lib/index"
