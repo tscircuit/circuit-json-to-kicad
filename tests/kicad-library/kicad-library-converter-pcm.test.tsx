@@ -273,14 +273,17 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
   expect(userFootprintContent).toMatchInlineSnapshot(`
     "(footprint
       "KeyHotSocket"
+      (version 20240108)
+      (generator pcbnew)
+      (generator_version 8)
       (layer F.Cu)
       (at 0 0 0)
       (descr "")
       (tags "")
       (attr through_hole)
       (embedded_fonts no)
-      (property "Reference" "Ref**"
-        (at 0 0 0)
+      (property "Reference" "REF**"
+        (at 0 -4.34 0)
         (layer F.SilkS)
         (uuid 521fe180-3a89-2d01-38cd-c47e53db4a03)
         (effects
@@ -291,7 +294,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         )
       )
       (property "Value" "Val**"
-        (at 0 0 0)
+        (at 0 4.34 0)
         (layer F.Fab)
         (uuid 59786640-408c-b2ff-256e-33c27496e57d)
         (effects

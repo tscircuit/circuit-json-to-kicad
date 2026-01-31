@@ -213,6 +213,9 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     expect(footprintStr).toMatchInlineSnapshot(`
       "(footprint
         "KeyHotSocket"
+        (version 20240108)
+        (generator pcbnew)
+        (generator_version 8)
         (layer F.Cu)
         (at 0 0 0)
         (descr "")
