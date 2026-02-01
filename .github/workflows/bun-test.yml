@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     container:
-      image: ghcr.io/kicad/kicad:9.0
+      image: ghcr.io/kicad/kicad:9.0.7
       options: --user root
 
 

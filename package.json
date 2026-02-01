@@ -12,20 +12,18 @@
     "download-demos": "git clone --depth 1 --filter=blob:none --sparse https://gitlab.com/kicad/code/kicad.git kicad-demos && cd kicad-demos && git sparse-checkout set demos",
     "typecheck": "bunx tsc --noEmit",
     "format": "biome format --write .",
-    "format:check": "biome format ."
+    "format:check": "biome format .",
+    "pcm-server": "bun run scripts/run-pcm-server.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
-    "@tscircuit/circuit-json-util": "^0.0.72",
     "@tscircuit/common": "^0.0.5",
-    "@tscircuit/props": "^0.0.449",
     "@types/bun": "latest",
-    "circuit-json": "^0.0.302",
+    "jszip": "^3.10.1",
     "kicadts": "^0.0.24",
-    "schematic-symbols": "^0.0.202",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.1237",
+    "tscircuit": "^0.0.1248",
     "tsup": "^8.5.0"
   },
   "peerDependencies": {
