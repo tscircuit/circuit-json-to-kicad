@@ -192,6 +192,34 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    // Add note text elements associated with this component (maps to F.Fab layer)
+    const pcbNoteTexts =
+      this.ctx.db.pcb_note_text
+        ?.list()
+        .filter(
+          (text: any) => text.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const textElement of pcbNoteTexts) {
+      // Create FpText for note text, placing on F.Fab layer
+      const relX = textElement.anchor_position.x - component.center.x
+      const relY = -(textElement.anchor_position.y - component.center.y) // Y is inverted in KiCad
+
+      const fpText = new FpText({
+        type: "user",
+        text: textElement.text,
+        position: { x: relX, y: relY, angle: 0 },
+        layer: "F.Fab",
+      })
+      if (fpText.effects?.font) {
+        fpText.effects.font.size = {
+          width: textElement.font_size || 1,
+          height: textElement.font_size || 1,
+        }
+      }
+      fpTexts.push(fpText)
+    }
+
     footprint.fpTexts = fpTexts
 
     // Add pads from pcb_smtpad elements
@@ -338,6 +366,38 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         fill: false,
       })
       // Set stroke width
+      if (fpRect.stroke) {
+        fpRect.stroke.width = rect.stroke_width || 0.1
+        fpRect.stroke.type = "default"
+      }
+      fpRects.push(fpRect)
+    }
+
+    // Add note rectangles from pcb_note_rect elements (maps to F.Fab layer)
+    const pcbNoteRects =
+      this.ctx.db.pcb_note_rect
+        ?.list()
+        .filter(
+          (rect: any) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const rect of pcbNoteRects) {
+      // Calculate position relative to component center
+      const relX = rect.center.x - component.center.x
+      const relY = -(rect.center.y - component.center.y) // Y is inverted in KiCad
+      const halfW = rect.width / 2
+      const halfH = rect.height / 2
+
+      // pcb_note_rect maps to F.Fab layer by default
+      const kicadLayer = "F.Fab"
+
+      const fpRect = new FpRect({
+        start: { x: relX - halfW, y: relY - halfH },
+        end: { x: relX + halfW, y: relY + halfH },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: false,
+      })
       if (fpRect.stroke) {
         fpRect.stroke.width = rect.stroke_width || 0.1
         fpRect.stroke.type = "default"
