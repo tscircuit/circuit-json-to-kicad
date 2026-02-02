@@ -5,7 +5,14 @@ import type {
 } from "circuit-json"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FpText, FootprintModel, FpCircle, FpRect, Stroke } from "kicadts"
+import {
+  Footprint,
+  FpText,
+  FootprintModel,
+  FpCircle,
+  FpRect,
+  Stroke,
+} from "kicadts"
 import {
   ConverterStage,
   type ConverterContext,
