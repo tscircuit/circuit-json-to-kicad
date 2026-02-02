@@ -13,7 +13,9 @@
     "typecheck": "bunx tsc --noEmit",
     "format": "biome format --write .",
     "format:check": "biome format .",
-    "pcm-server": "bun run scripts/run-pcm-server.ts"
+    "pcm-server": "bun run scripts/run-pcm-server.ts",
+    "kicad-library": "bun run scripts/build-kicad-library.ts",
+    "compare-kicad": "bun run scripts/compare-kicad-files.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
