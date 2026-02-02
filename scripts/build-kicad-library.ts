@@ -63,11 +63,16 @@ const libraryName = config.kicadLibraryName || path.basename(libraryDir)
 let entrypoint: string | null = null
 
 if (config.kicadLibraryEntrypointPath) {
-  const configuredPath = path.join(libraryDir, config.kicadLibraryEntrypointPath)
+  const configuredPath = path.join(
+    libraryDir,
+    config.kicadLibraryEntrypointPath,
+  )
   if (fs.existsSync(configuredPath)) {
     entrypoint = configuredPath
   } else {
-    console.error(`Error: Configured kicadLibraryEntrypointPath not found: ${config.kicadLibraryEntrypointPath}`)
+    console.error(
+      `Error: Configured kicadLibraryEntrypointPath not found: ${config.kicadLibraryEntrypointPath}`,
+    )
     process.exit(1)
   }
 } else {
@@ -90,7 +95,9 @@ if (config.kicadLibraryEntrypointPath) {
 
 if (!entrypoint) {
   console.error(`Error: Could not find entrypoint in ${libraryDir}`)
-  console.error("Set kicadLibraryEntrypointPath in tscircuit.config.json or create index.ts/index.tsx")
+  console.error(
+    "Set kicadLibraryEntrypointPath in tscircuit.config.json or create index.ts/index.tsx",
+  )
   process.exit(1)
 }
 
@@ -103,13 +110,19 @@ console.log(`Output directory: ${outputDir}`)
 
 // Read package.json for metadata if it exists
 const packageJsonPath = path.join(libraryDir, "package.json")
-let kicadPcmPackageId = `com_tscircuit_${libraryName}`.replace(/[^a-zA-Z0-9_]/g, "_")
+let kicadPcmPackageId = `com_tscircuit_${libraryName}`.replace(
+  /[^a-zA-Z0-9_]/g,
+  "_",
+)
 
 if (fs.existsSync(packageJsonPath)) {
   try {
     const pkg = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"))
     const author = pkg.author?.name || pkg.author || "tscircuit"
-    kicadPcmPackageId = `com_tscircuit_${author}_${libraryName}`.replace(/[^a-zA-Z0-9_]/g, "_")
+    kicadPcmPackageId = `com_tscircuit_${author}_${libraryName}`.replace(
+      /[^a-zA-Z0-9_]/g,
+      "_",
+    )
   } catch {
     // Ignore package.json parse errors
   }

@@ -28,7 +28,7 @@ if (args.length !== 2) {
   process.exit(1)
 }
 
-const [path1, path2] = args.map((p) => path.resolve(p))
+const [path1, path2] = args.map((p) => path.resolve(p)) as [string, string]
 
 /**
  * Normalize a KiCad S-expression string by removing volatile elements
@@ -39,18 +39,24 @@ function normalizeKicadContent(content: string): string {
   // Remove UUIDs (format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx)
   normalized = normalized.replace(
     /\(uuid "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}"\)/gi,
-    '(uuid "NORMALIZED_UUID")'
+    '(uuid "NORMALIZED_UUID")',
   )
 
   // Remove tstamp values
-  normalized = normalized.replace(/\(tstamp [^)]+\)/g, '(tstamp NORMALIZED)')
+  normalized = normalized.replace(/\(tstamp [^)]+\)/g, "(tstamp NORMALIZED)")
 
   // Normalize version numbers
-  normalized = normalized.replace(/\(version \d+\)/g, '(version NORMALIZED)')
+  normalized = normalized.replace(/\(version \d+\)/g, "(version NORMALIZED)")
 
   // Normalize generator info
-  normalized = normalized.replace(/\(generator "[^"]*"\)/g, '(generator "NORMALIZED")')
-  normalized = normalized.replace(/\(generator_version "[^"]*"\)/g, '(generator_version "NORMALIZED")')
+  normalized = normalized.replace(
+    /\(generator "[^"]*"\)/g,
+    '(generator "NORMALIZED")',
+  )
+  normalized = normalized.replace(
+    /\(generator_version "[^"]*"\)/g,
+    '(generator_version "NORMALIZED")',
+  )
 
   return normalized
 }
@@ -79,7 +85,9 @@ function parseAndNormalize(filePath: string): { parsed: string; raw: string } {
       }
     }
   } catch (e) {
-    console.warn(`Warning: Could not parse ${filePath}, using raw content: ${e}`)
+    console.warn(
+      `Warning: Could not parse ${filePath}, using raw content: ${e}`,
+    )
     return {
       parsed: normalizeKicadContent(content),
       raw: normalizeKicadContent(content),
@@ -102,7 +110,12 @@ function getKicadFiles(dirPath: string): string[] {
 
   const files = fs.readdirSync(dirPath)
   return files
-    .filter((f) => f.endsWith(".kicad_mod") || f.endsWith(".kicad_sym") || f.endsWith(".kicad_pcb"))
+    .filter(
+      (f) =>
+        f.endsWith(".kicad_mod") ||
+        f.endsWith(".kicad_sym") ||
+        f.endsWith(".kicad_pcb"),
+    )
     .map((f) => path.join(dirPath, f))
     .sort()
 }
@@ -110,7 +123,12 @@ function getKicadFiles(dirPath: string): string[] {
 /**
  * Compare two strings line by line and return differences
  */
-function diffStrings(str1: string, str2: string, label1: string, label2: string): string[] {
+function diffStrings(
+  str1: string,
+  str2: string,
+  label1: string,
+  label2: string,
+): string[] {
   const lines1 = str1.split("\n")
   const lines2 = str2.split("\n")
   const diffs: string[] = []
@@ -134,7 +152,10 @@ function diffStrings(str1: string, str2: string, label1: string, label2: string)
 /**
  * Compare two KiCad files
  */
-function compareFiles(file1: string, file2: string): {
+function compareFiles(
+  file1: string,
+  file2: string,
+): {
   identical: boolean
   differences: string[]
 } {
@@ -145,7 +166,12 @@ function compareFiles(file1: string, file2: string): {
     return { identical: true, differences: [] }
   }
 
-  const differences = diffStrings(content1.parsed, content2.parsed, "Generated", "User-modified")
+  const differences = diffStrings(
+    content1.parsed,
+    content2.parsed,
+    "Generated",
+    "User-modified",
+  )
 
   return { identical: false, differences }
 }
@@ -252,7 +278,9 @@ if (!isDir1) {
         console.log(`    ${diff}`)
       }
       if (result.differences.length > 20) {
-        console.log(`    ... and ${result.differences.length - 20} more differences`)
+        console.log(
+          `    ... and ${result.differences.length - 20} more differences`,
+        )
       }
       console.log("")
     }
