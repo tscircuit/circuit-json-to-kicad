@@ -5,7 +5,7 @@ import type {
 } from "circuit-json"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FpText, FootprintModel } from "kicadts"
+import { Footprint, FpText, FootprintModel, FpCircle, FpRect, Stroke } from "kicadts"
 import {
   ConverterStage,
   type ConverterContext,
@@ -259,6 +259,85 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     footprint.fpPads = fpPads
+
+    // Add silkscreen circles from pcb_silkscreen_circle elements
+    const pcbSilkscreenCircles =
+      this.ctx.db.pcb_silkscreen_circle
+        ?.list()
+        .filter(
+          (circle: any) =>
+            circle.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const fpCircles = footprint.fpCircles ?? []
+    for (const circle of pcbSilkscreenCircles) {
+      // Calculate position relative to component center
+      const relX = circle.center.x - component.center.x
+      const relY = -(circle.center.y - component.center.y) // Y is inverted in KiCad
+
+      // Map circuit-json layer to KiCad layer
+      const layerMap: Record<string, string> = {
+        top: "F.SilkS",
+        bottom: "B.SilkS",
+      }
+      const kicadLayer = layerMap[circle.layer] || circle.layer || "F.SilkS"
+
+      // FpCircle uses center and end point (end defines the radius)
+      const fpCircle = new FpCircle({
+        center: { x: relX, y: relY },
+        end: { x: relX + circle.radius, y: relY },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: false,
+      })
+      // Set stroke width
+      if (fpCircle.stroke) {
+        fpCircle.stroke.width = circle.stroke_width || 0.05
+        fpCircle.stroke.type = "default"
+      }
+      fpCircles.push(fpCircle)
+    }
+    footprint.fpCircles = fpCircles
+
+    // Add fabrication note rectangles from pcb_fabrication_note_rect elements
+    const pcbFabRects =
+      this.ctx.db.pcb_fabrication_note_rect
+        ?.list()
+        .filter(
+          (rect: any) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const fpRects = footprint.fpRects ?? []
+    for (const rect of pcbFabRects) {
+      // Calculate position relative to component center
+      const relX = rect.center.x - component.center.x
+      const relY = -(rect.center.y - component.center.y) // Y is inverted in KiCad
+      const halfW = rect.width / 2
+      const halfH = rect.height / 2
+
+      // Map circuit-json layer to KiCad layer
+      const layerMap: Record<string, string> = {
+        top: "F.Fab",
+        bottom: "B.Fab",
+      }
+      const kicadLayer = layerMap[rect.layer] || rect.layer || "F.Fab"
+
+      // FpRect uses start and end corners
+      const fpRect = new FpRect({
+        start: { x: relX - halfW, y: relY - halfH },
+        end: { x: relX + halfW, y: relY + halfH },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: false,
+      })
+      // Set stroke width
+      if (fpRect.stroke) {
+        fpRect.stroke.width = rect.stroke_width || 0.1
+        fpRect.stroke.type = "default"
+      }
+      fpRects.push(fpRect)
+    }
+    footprint.fpRects = fpRects
 
     // Add 3D models from cad_component if available
     // (cadComponent was already fetched earlier for footprint naming)
