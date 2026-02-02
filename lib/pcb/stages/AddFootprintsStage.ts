@@ -12,6 +12,8 @@ import {
   FpCircle,
   FpRect,
   Stroke,
+  TextEffects,
+  TextEffectsFont,
 } from "kicadts"
 import {
   ConverterStage,
@@ -205,18 +207,19 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       const relX = textElement.anchor_position.x - component.center.x
       const relY = -(textElement.anchor_position.y - component.center.y) // Y is inverted in KiCad
 
+      // Create text effects with font size
+      const fontSize = textElement.font_size || 1
+      const font = new TextEffectsFont()
+      font.size = { width: fontSize, height: fontSize }
+      const textEffects = new TextEffects({ font })
+
       const fpText = new FpText({
         type: "user",
         text: textElement.text,
         position: { x: relX, y: relY, angle: 0 },
         layer: "F.Fab",
+        effects: textEffects,
       })
-      if (fpText.effects?.font) {
-        fpText.effects.font.size = {
-          width: textElement.font_size || 1,
-          height: textElement.font_size || 1,
-        }
-      }
       fpTexts.push(fpText)
     }
 
