@@ -20,7 +20,7 @@ import {
   type ConverterContext,
   type PcbNetInfo,
 } from "../../types"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPoint, rotate, identity } from "transformation-matrix"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createNpthPadFromCircuitJson } from "./utils/CreateNpthPadFromCircuitJson"
@@ -199,13 +199,22 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       this.ctx.db.pcb_note_text
         ?.list()
         .filter(
-          (text: any) => text.pcb_component_id === component.pcb_component_id,
+          (text) => text.pcb_component_id === component.pcb_component_id,
         ) || []
 
     for (const textElement of pcbNoteTexts) {
-      // Create FpText for note text, placing on F.Fab layer
+      // Calculate position relative to component center
       const relX = textElement.anchor_position.x - component.center.x
       const relY = -(textElement.anchor_position.y - component.center.y) // Y is inverted in KiCad
+
+      // Apply component rotation to position using transformation matrix
+      const componentRotation = component.rotation || 0
+      const rotationMatrix =
+        componentRotation !== 0
+          ? rotate((componentRotation * Math.PI) / 180)
+          : identity()
+
+      const rotatedPos = applyToPoint(rotationMatrix, { x: relX, y: relY })
 
       // Create text effects with font size
       const fontSize = textElement.font_size || 1
@@ -216,7 +225,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       const fpText = new FpText({
         type: "user",
         text: textElement.text,
-        position: { x: relX, y: relY, angle: 0 },
+        position: { x: rotatedPos.x, y: rotatedPos.y, angle: 0 },
         layer: "F.Fab",
         effects: textEffects,
       })
