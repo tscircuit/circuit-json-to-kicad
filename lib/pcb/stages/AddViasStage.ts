@@ -101,7 +101,11 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const numLayers = this.ctx.numLayers ?? 2
     const viaLayers = via.layers
       ? via.layers.map((l: string) =>
-          l === "top" ? "F.Cu" : l === "bottom" ? "B.Cu" : `In${l.replace("inner", "")}.Cu`,
+          l === "top"
+            ? "F.Cu"
+            : l === "bottom"
+              ? "B.Cu"
+              : `In${l.replace("inner", "")}.Cu`,
         )
       : getViaLayers(numLayers)
 

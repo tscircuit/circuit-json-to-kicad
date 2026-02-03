@@ -17,7 +17,9 @@ export const circuitJsonLayerToKicadLayer: Record<string, string> = {
  */
 export function getKicadLayer(circuitJsonLayer: string | undefined): string {
   if (!circuitJsonLayer) return "F.Cu"
-  return circuitJsonLayerToKicadLayer[circuitJsonLayer] || circuitJsonLayer || "F.Cu"
+  return (
+    circuitJsonLayerToKicadLayer[circuitJsonLayer] || circuitJsonLayer || "F.Cu"
+  )
 }
 
 /**
@@ -41,7 +43,7 @@ export function getKicadCopperLayerIndex(
 
   // Inner layers use sequential indices starting from 1
   const match = layerName.match(/^In(\d+)\.Cu$/)
-  if (match) {
+  if (match?.[1]) {
     return parseInt(match[1], 10)
   }
 
