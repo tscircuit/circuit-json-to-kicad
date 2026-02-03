@@ -8,6 +8,7 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { getViaLayers } from "../utils/layerMapping"
 
 /**
  * Adds vias to the PCB from circuit JSON
@@ -95,13 +96,26 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    // Get via layers based on board layer count
+    // For through-hole vias, span all copper layers
+    const numLayers = this.ctx.numLayers ?? 2
+    const viaLayers = via.layers
+      ? via.layers.map((l: string) =>
+          l === "top"
+            ? "F.Cu"
+            : l === "bottom"
+              ? "B.Cu"
+              : `In${l.replace("inner", "")}.Cu`,
+        )
+      : getViaLayers(numLayers)
+
     // Create a via with deterministic UUID
     const viaData = `via:${transformedPos.x},${transformedPos.y}:${via.outer_diameter || 0.8}:${via.hole_diameter || 0.4}:${netInfo?.id ?? 0}`
     const kicadVia = new Via({
       at: [transformedPos.x, transformedPos.y],
       size: via.outer_diameter || 0.8,
       drill: via.hole_diameter || 0.4,
-      layers: ["F.Cu", "B.Cu"],
+      layers: viaLayers,
       net: new ViaNet(netInfo?.id ?? 0),
       uuid: generateDeterministicUuid(viaData),
     })
