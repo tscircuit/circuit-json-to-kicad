@@ -46,6 +46,8 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       return
     }
 
+    let lastKnownLayer: string | undefined = trace.route[0]?.layer
+
     // Create segments for each pair of points in the route
     for (let i = 0; i < trace.route.length - 1; i++) {
       const startPoint = trace.route[i]
@@ -99,8 +101,11 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
+      const segmentLayerSource =
+        startPoint.layer ?? endPoint.layer ?? lastKnownLayer
+
       // Map circuit JSON layer names to KiCad layer names
-      const kicadLayer = getKicadLayer(startPoint.layer)
+      const kicadLayer = getKicadLayer(segmentLayerSource)
 
       // Create a segment with deterministic UUID
       const segmentData = `segment:${transformedStart.x},${transformedStart.y}:${transformedEnd.x},${transformedEnd.y}:${kicadLayer}:${netInfo?.id ?? 0}`
@@ -117,6 +122,13 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       const segments = kicadPcb.segments
       segments.push(segment)
       kicadPcb.segments = segments
+
+      if (startPoint.layer) {
+        lastKnownLayer = startPoint.layer
+      }
+      if (endPoint.layer) {
+        lastKnownLayer = endPoint.layer
+      }
     }
 
     this.tracesProcessed++
