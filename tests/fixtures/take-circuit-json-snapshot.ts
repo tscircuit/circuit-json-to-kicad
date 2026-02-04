@@ -16,7 +16,9 @@ export const takeCircuitJsonSnapshot = async (params: {
     return png
   }
   if (outputType === "pcb") {
-    const svg = await convertCircuitJsonToPcbSvg(circuitJson)
+    const svg = await convertCircuitJsonToPcbSvg(circuitJson, {
+      showCourtyards: true,
+    })
     const png = await sharp(Buffer.from(svg)).png().toBuffer()
     return png
   }
