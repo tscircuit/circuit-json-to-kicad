@@ -12,13 +12,15 @@ import {
   FpCircle,
   FpRect,
   Stroke,
+  TextEffects,
+  TextEffectsFont,
 } from "kicadts"
 import {
   ConverterStage,
   type ConverterContext,
   type PcbNetInfo,
 } from "../../types"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPoint, rotate, identity } from "transformation-matrix"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createNpthPadFromCircuitJson } from "./utils/CreateNpthPadFromCircuitJson"
@@ -192,6 +194,44 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    // Add note text elements associated with this component (maps to F.Fab layer)
+    const pcbNoteTexts =
+      this.ctx.db.pcb_note_text
+        ?.list()
+        .filter(
+          (text) => text.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const textElement of pcbNoteTexts) {
+      // Calculate position relative to component center
+      const relX = textElement.anchor_position.x - component.center.x
+      const relY = -(textElement.anchor_position.y - component.center.y) // Y is inverted in KiCad
+
+      // Apply component rotation to position using transformation matrix
+      const componentRotation = component.rotation || 0
+      const rotationMatrix =
+        componentRotation !== 0
+          ? rotate((componentRotation * Math.PI) / 180)
+          : identity()
+
+      const rotatedPos = applyToPoint(rotationMatrix, { x: relX, y: relY })
+
+      // Create text effects with font size
+      const fontSize = textElement.font_size || 1
+      const font = new TextEffectsFont()
+      font.size = { width: fontSize, height: fontSize }
+      const textEffects = new TextEffects({ font })
+
+      const fpText = new FpText({
+        type: "user",
+        text: textElement.text,
+        position: { x: rotatedPos.x, y: rotatedPos.y, angle: 0 },
+        layer: "F.Fab",
+        effects: textEffects,
+      })
+      fpTexts.push(fpText)
+    }
+
     footprint.fpTexts = fpTexts
 
     // Add pads from pcb_smtpad elements
@@ -338,6 +378,38 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         fill: false,
       })
       // Set stroke width
+      if (fpRect.stroke) {
+        fpRect.stroke.width = rect.stroke_width || 0.1
+        fpRect.stroke.type = "default"
+      }
+      fpRects.push(fpRect)
+    }
+
+    // Add note rectangles from pcb_note_rect elements (maps to F.Fab layer)
+    const pcbNoteRects =
+      this.ctx.db.pcb_note_rect
+        ?.list()
+        .filter(
+          (rect: any) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const rect of pcbNoteRects) {
+      // Calculate position relative to component center
+      const relX = rect.center.x - component.center.x
+      const relY = -(rect.center.y - component.center.y) // Y is inverted in KiCad
+      const halfW = rect.width / 2
+      const halfH = rect.height / 2
+
+      // pcb_note_rect maps to F.Fab layer by default
+      const kicadLayer = "F.Fab"
+
+      const fpRect = new FpRect({
+        start: { x: relX - halfW, y: relY - halfH },
+        end: { x: relX + halfW, y: relY + halfH },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: false,
+      })
       if (fpRect.stroke) {
         fpRect.stroke.width = rect.stroke_width || 0.1
         fpRect.stroke.type = "default"
