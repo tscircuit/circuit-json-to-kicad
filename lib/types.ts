@@ -67,6 +67,7 @@ export interface ConverterContext {
   // PCB-specific data
   pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
   pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key to KiCad net metadata
+  numLayers?: number // Number of copper layers (2, 4, 6, 8)
 
   // Library-specific data
   libraryName?: string

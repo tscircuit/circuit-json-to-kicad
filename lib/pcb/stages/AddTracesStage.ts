@@ -8,6 +8,7 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { getKicadLayer } from "../utils/layerMapping"
 
 /**
  * Adds traces (segments/tracks) to the PCB from circuit JSON
@@ -44,6 +45,8 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       this.tracesProcessed++
       return
     }
+
+    let lastKnownLayer: string | undefined = trace.route[0]?.layer
 
     // Create segments for each pair of points in the route
     for (let i = 0; i < trace.route.length - 1; i++) {
@@ -98,13 +101,11 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
+      const segmentLayerSource =
+        startPoint.layer ?? endPoint.layer ?? lastKnownLayer
+
       // Map circuit JSON layer names to KiCad layer names
-      const layerMap: Record<string, string> = {
-        top: "F.Cu",
-        bottom: "B.Cu",
-      }
-      const kicadLayer =
-        layerMap[startPoint.layer] || startPoint.layer || "F.Cu"
+      const kicadLayer = getKicadLayer(segmentLayerSource)
 
       // Create a segment with deterministic UUID
       const segmentData = `segment:${transformedStart.x},${transformedStart.y}:${transformedEnd.x},${transformedEnd.y}:${kicadLayer}:${netInfo?.id ?? 0}`
@@ -121,6 +122,13 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       const segments = kicadPcb.segments
       segments.push(segment)
       kicadPcb.segments = segments
+
+      if (startPoint.layer) {
+        lastKnownLayer = startPoint.layer
+      }
+      if (endPoint.layer) {
+        lastKnownLayer = endPoint.layer
+      }
     }
 
     this.tracesProcessed++

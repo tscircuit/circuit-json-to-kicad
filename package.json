@@ -1,7 +1,7 @@
 {
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
-  "version": "0.0.59",
+  "version": "0.0.63",
   "type": "module",
   "files": [
     "dist"
@@ -25,7 +25,7 @@
     "kicadts": "^0.0.24",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.1252",
+    "tscircuit": "^0.0.1261",
     "tsup": "^8.5.0"
   },
   "peerDependencies": {
