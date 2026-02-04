@@ -2,6 +2,7 @@ import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { GrLine } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
+import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 
@@ -73,6 +74,22 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     for (const textElement of standaloneSilkscreenTexts) {
       const grText = createGrTextFromCircuitJson({
+        textElement,
+        c2kMatPcb,
+      })
+      if (grText) {
+        const graphicTexts = kicadPcb.graphicTexts
+        graphicTexts.push(grText)
+        kicadPcb.graphicTexts = graphicTexts
+      }
+    }
+
+    // Add fabrication note text elements
+    const fabricationNoteTexts =
+      this.ctx.db.pcb_fabrication_note_text?.list() || []
+
+    for (const textElement of fabricationNoteTexts) {
+      const grText = createFabricationNoteTextFromCircuitJson({
         textElement,
         c2kMatPcb,
       })
