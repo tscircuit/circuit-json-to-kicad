@@ -344,6 +344,42 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
       fpCircles.push(fpCircle)
     }
+
+    // Add courtyard circles from pcb_courtyard_circle elements
+    const pcbCourtyardCircles =
+      this.ctx.db.pcb_courtyard_circle
+        ?.list()
+        .filter(
+          (circle) => circle.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const circle of pcbCourtyardCircles) {
+      // Calculate position relative to component center
+      const relX = circle.center.x - component.center.x
+      const relY = -(circle.center.y - component.center.y) // Y is inverted in KiCad
+
+      // Map circuit-json layer to KiCad courtyard layer
+      const layerMap: Record<string, string> = {
+        top: "F.CrtYd",
+        bottom: "B.CrtYd",
+      }
+      const kicadLayer = layerMap[circle.layer] || circle.layer || "F.CrtYd"
+
+      // FpCircle uses center and end point (end defines the radius)
+      const fpCircle = new FpCircle({
+        center: { x: relX, y: relY },
+        end: { x: relX + circle.radius, y: relY },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: false,
+      })
+      // Set stroke width (courtyard lines are typically thin, default 0.05mm)
+      if (fpCircle.stroke) {
+        fpCircle.stroke.width = 0.05
+        fpCircle.stroke.type = "default"
+      }
+      fpCircles.push(fpCircle)
+    }
     footprint.fpCircles = fpCircles
 
     // Add fabrication note rectangles from pcb_fabrication_note_rect elements
