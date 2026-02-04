@@ -452,6 +452,43 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
       fpRects.push(fpRect)
     }
+
+    // Add courtyard rectangles from pcb_courtyard_rect elements
+    const pcbCourtyardRects =
+      this.ctx.db.pcb_courtyard_rect
+        ?.list()
+        .filter(
+          (rect: any) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const rect of pcbCourtyardRects) {
+      // Calculate position relative to component center
+      const relX = rect.center.x - component.center.x
+      const relY = -(rect.center.y - component.center.y) // Y is inverted in KiCad
+      const halfW = rect.width / 2
+      const halfH = rect.height / 2
+
+      // Map circuit-json layer to KiCad courtyard layer
+      const layerMap: Record<string, string> = {
+        top: "F.CrtYd",
+        bottom: "B.CrtYd",
+      }
+      const kicadLayer = layerMap[rect.layer] || rect.layer || "F.CrtYd"
+
+      const fpRect = new FpRect({
+        start: { x: relX - halfW, y: relY - halfH },
+        end: { x: relX + halfW, y: relY + halfH },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: false,
+      })
+      // Set stroke width (courtyard lines are typically thin, default 0.05mm)
+      if (fpRect.stroke) {
+        fpRect.stroke.width = 0.05
+        fpRect.stroke.type = "default"
+      }
+      fpRects.push(fpRect)
+    }
     footprint.fpRects = fpRects
 
     // Add 3D models from cad_component if available
