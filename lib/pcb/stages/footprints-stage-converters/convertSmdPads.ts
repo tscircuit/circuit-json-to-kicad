@@ -1,5 +1,5 @@
 import type { PcbSmtPad } from "circuit-json"
-import type { FpPad } from "kicadts"
+import type { FootprintPad } from "kicadts"
 import type { PcbNetInfo } from "../../../types"
 import { createSmdPadFromCircuitJson } from "../utils/CreateSmdPadFromCircuitJson"
 
@@ -10,8 +10,8 @@ export function convertSmdPads(
   componentId: string,
   startPadNumber: number,
   getNetInfo: (pcbPortId?: string) => PcbNetInfo | undefined,
-): { pads: FpPad[]; nextPadNumber: number } {
-  const pads: FpPad[] = []
+): { pads: FootprintPad[]; nextPadNumber: number } {
+  const pads: FootprintPad[] = []
   let padNumber = startPadNumber
 
   for (const pcbPad of pcbPads) {

@@ -1,13 +1,13 @@
 import type { PcbHole } from "circuit-json"
-import type { FpPad } from "kicadts"
+import type { FootprintPad } from "kicadts"
 import { createNpthPadFromCircuitJson } from "../utils/CreateNpthPadFromCircuitJson"
 
 export function convertNpthHoles(
   pcbHoles: PcbHole[],
   componentCenter: { x: number; y: number },
   componentRotation: number,
-): FpPad[] {
-  const pads: FpPad[] = []
+): FootprintPad[] {
+  const pads: FootprintPad[] = []
 
   for (const pcbHole of pcbHoles) {
     const pad = createNpthPadFromCircuitJson({
