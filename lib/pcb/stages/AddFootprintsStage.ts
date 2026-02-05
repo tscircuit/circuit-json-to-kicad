@@ -11,6 +11,10 @@ import {
   FootprintModel,
   FpCircle,
   FpRect,
+  FpPoly,
+  FpPolyFill,
+  Pts,
+  Xy,
   Stroke,
   TextEffects,
   TextEffectsFont,
@@ -490,6 +494,48 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       fpRects.push(fpRect)
     }
     footprint.fpRects = fpRects
+
+    // Add courtyard outlines from pcb_courtyard_outline elements
+    const fpPolys: FpPoly[] = []
+    const pcbCourtyardOutlines =
+      this.ctx.db.pcb_courtyard_outline
+        ?.list()
+        .filter(
+          (outline: any) =>
+            outline.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    for (const outline of pcbCourtyardOutlines) {
+      if (!outline.outline || outline.outline.length < 2) continue
+
+      const layerMap: Record<string, string> = {
+        top: "F.CrtYd",
+        bottom: "B.CrtYd",
+      }
+      const kicadLayer = layerMap[outline.layer] || "F.CrtYd"
+
+      const xyPoints = outline.outline.map((point) => {
+        const relX = point.x - component.center.x
+        const relY = -(point.y - component.center.y)
+        return new Xy(relX, relY)
+      })
+
+      const fpPoly = new FpPoly()
+      fpPoly.points = new Pts(xyPoints)
+      fpPoly.layer = kicadLayer
+      fpPoly.fill = false
+
+      const stroke = new Stroke()
+      stroke.width = 0.05
+      stroke.type = "default"
+      fpPoly.stroke = stroke
+
+      fpPolys.push(fpPoly)
+    }
+
+    if (fpPolys.length > 0) {
+      footprint.fpPolys = fpPolys
+    }
 
     // Add 3D models from cad_component if available
     // (cadComponent was already fetched earlier for footprint naming)
