@@ -846,9 +846,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         schematicComponent,
       )
       pin.at = [x, y, angle]
-      // For chips, use longer pins (2.54); for other components, use 1.27
-      // For chips, use longer pins (6.0); for custom symbols, use 2.54 (standard grid)
-      pin.length = isChip ? 6.0 : 2.54
+
+      // Pin lengths in mm - chips need longer pins to extend beyond the box,
+      // custom symbols use standard KiCad grid unit
+      const CHIP_PIN_LENGTH = 6.0 // Long pins for chip boxes
+      const CUSTOM_SYMBOL_PIN_LENGTH = 2.54 // Standard KiCad grid unit (0.1 inch)
+      pin.length = isChip ? CHIP_PIN_LENGTH : CUSTOM_SYMBOL_PIN_LENGTH
 
       // Pin name - use the label from the port
       const nameFont = new TextEffectsFont()
@@ -953,7 +956,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     let y = scaled.y
 
     // Pin length for chips
-    const chipPinLength = 6.0
+    // Pin length for chips - must match CHIP_PIN_LENGTH in createPinSubsymbol
+    const CHIP_PIN_LENGTH = 6.0
 
     // For chips, adjust pin position to be at the box edge
     if (isChip && size) {
@@ -985,7 +989,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (left)
           angle = 180
-          x = x + chipPinLength // Move pin start position outward
+          x = x + CHIP_PIN_LENGTH // Move pin start position outward
         } else {
           // For custom symbols: pin at right side should point left (angle 180)
           angle = 180
@@ -995,7 +999,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (right)
           angle = 0
-          x = x - chipPinLength // Move pin start position outward
+          x = x - CHIP_PIN_LENGTH // Move pin start position outward
         } else {
           // For custom symbols: pin at left side should point right (angle 0)
           angle = 0
@@ -1008,7 +1012,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (down)
           angle = 270
-          y = y + chipPinLength // Move pin start position outward
+          y = y + CHIP_PIN_LENGTH // Move pin start position outward
         } else {
           // For custom symbols: pin at top should point down (angle 270)
           angle = 270
@@ -1018,7 +1022,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         if (isChip) {
           // For chips: pin starts outside box, points inward (up)
           angle = 90
-          y = y - chipPinLength // Move pin start position outward
+          y = y - CHIP_PIN_LENGTH // Move pin start position outward
         } else {
           // For custom symbols: pin at bottom should point up (angle 90)
           angle = 90
