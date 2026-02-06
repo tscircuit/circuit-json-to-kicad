@@ -34,6 +34,11 @@ export interface FootprintEntry {
    * If true, this is a builtin/standard footprint. If false, it's a custom/inline footprint.
    */
   isBuiltin?: boolean
+  /**
+   * Component reference designator (e.g., "R1", "C1", "U1").
+   * Used to preserve the original component reference in footprint properties.
+   */
+  componentReference?: string
 }
 
 export interface KicadLibraryOutput {

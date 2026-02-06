@@ -45,6 +45,43 @@ export class ExtractFootprintsStage extends ConverterStage<
   KicadLibraryOutput
 > {
   /**
+   * Builds a map of component reference designators by footprint name.
+   * This preserves the original component names (R1, C1, etc.) from circuit JSON.
+   */
+  private buildComponentReferenceMap(): Map<
+    string,
+    { name: string; footprintName: string }
+  > {
+    const referenceMap = new Map<
+      string,
+      { name: string; footprintName: string }
+    >()
+
+    const cadComponents = this.ctx.db.cad_component?.list() ?? []
+    const sourceComponents = this.ctx.db.source_component
+
+    for (const cadComponent of cadComponents as CadComponent[]) {
+      const sourceComp = cadComponent.source_component_id
+        ? sourceComponents?.get(cadComponent.source_component_id)
+        : null
+
+      if (sourceComp && sourceComp.name) {
+        const footprintName = getKicadCompatibleComponentName(
+          sourceComp as SourceComponentBase,
+          cadComponent,
+        )
+        // Store both the component reference name and footprint name
+        referenceMap.set(footprintName, {
+          name: sourceComp.name,
+          footprintName,
+        })
+      }
+    }
+
+    return referenceMap
+  }
+
+  /**
    * Builds a set of custom footprint names.
    * These are components WITHOUT footprinter_string.
    */
@@ -86,6 +123,8 @@ export class ExtractFootprintsStage extends ConverterStage<
 
     // Find custom footprint names (components without footprinter_string)
     const customFootprintNames = this.findCustomFootprintNames()
+    // Build map of component references to preserve original names
+    const componentReferenceMap = this.buildComponentReferenceMap()
 
     const uniqueFootprints = new Map<string, FootprintEntry>()
 
@@ -106,6 +145,7 @@ export class ExtractFootprintsStage extends ConverterStage<
           footprint,
           fpLibraryName,
           customFootprintNames,
+          componentReferenceMap,
         })
         if (!uniqueFootprints.has(footprintEntry.footprintName)) {
           uniqueFootprints.set(footprintEntry.footprintName, footprintEntry)
@@ -123,10 +163,12 @@ export class ExtractFootprintsStage extends ConverterStage<
     footprint,
     fpLibraryName,
     customFootprintNames,
+    componentReferenceMap,
   }: {
     footprint: Footprint
     fpLibraryName: string
     customFootprintNames: Set<string>
+    componentReferenceMap: Map<string, { name: string; footprintName: string }>
   }): FootprintEntry {
     // Extract footprint name from libraryLink (e.g., "tscircuit:simple_resistor" -> "simple_resistor")
     const libraryLink = footprint.libraryLink ?? "footprint"
@@ -198,10 +240,14 @@ export class ExtractFootprintsStage extends ConverterStage<
     // Position value below pads with 0.5mm margin
     const valY = maxY + 0.5
 
+    // Get the component reference designator (e.g., "R1", "C1") if available
+    const componentRef = componentReferenceMap.get(footprintName)
+    const referenceValue = componentRef?.name ?? "REF**"
+
     footprint.properties = [
       new Property({
         key: "Reference",
-        value: "REF**",
+        value: referenceValue,
         position: [0, refY, 0],
         layer: "F.SilkS",
         uuid: generateDeterministicUuid(`${footprintName}-property-Reference`),
@@ -242,7 +288,7 @@ export class ExtractFootprintsStage extends ConverterStage<
     for (const text of texts) {
       text.uuid = undefined
       if (text.type === "reference") {
-        text.text = "REF**"
+        text.text = referenceValue
       } else if (text.type === "value" && text.text.trim().length === 0) {
         text.text = footprintName
       }
@@ -288,6 +334,7 @@ export class ExtractFootprintsStage extends ConverterStage<
       kicadModString: footprint.getString(),
       model3dSourcePaths: modelFiles,
       isBuiltin,
+      componentReference: referenceValue,
     }
   }
 
