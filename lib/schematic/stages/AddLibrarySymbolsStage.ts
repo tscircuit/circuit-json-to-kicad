@@ -976,56 +976,52 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       }
     }
 
-    // Determine pin angle based on orientation
-    // In KiCad, pin angle determines where the pin graphic extends FROM the connection point
-    // Angle 180 = pin graphic extends to the right (connection point on left side of pin)
-    // Angle 0 = pin graphic extends to the left (connection point on right side of pin)
-    // For symbols, the pin should point TOWARD the symbol body
+    // KiCad Pin Angle Reference:
+    // The angle determines where the pin LINE extends FROM the connection point (where wires attach).
+    // The pin line extends in the OPPOSITE direction of the angle.
+    //
+    // Angle 0°:   Pin line extends LEFT      ←──o  (wire connects at 'o')
+    // Angle 180°: Pin line extends RIGHT     o──→  (wire connects at 'o')
+    // Angle 90°:  Pin line extends DOWN      o     (wire connects at 'o')
+    //                                        ↓
+    // Angle 270°: Pin line extends UP        ↑     (wire connects at 'o')
+    //                                        o
+    //
+    // For symbols, pins should point TOWARD the symbol body so wires connect on the outside.
+    //
+    // Examples:
+    //   - Pin on RIGHT side of symbol: angle=180 (line extends right, away from symbol)
+    //   - Pin on LEFT side of symbol:  angle=0   (line extends left, away from symbol)
+    //   - Pin on TOP of symbol:        angle=270 (line extends up, away from symbol)
+    //   - Pin on BOTTOM of symbol:     angle=90  (line extends down, away from symbol)
+
     let angle = 0
     if (isHorizontalPin) {
-      // Horizontal pin
       if (dx > 0) {
-        // Right side - pin points left (toward symbol)
+        // Pin on RIGHT side of symbol
+        angle = 180 // Line extends right, wire connects on right edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (left)
-          angle = 180
-          x = x + CHIP_PIN_LENGTH // Move pin start position outward
-        } else {
-          // For custom symbols: pin at right side should point left (angle 180)
-          angle = 180
+          x = x + CHIP_PIN_LENGTH // Move connection point outward from box
         }
       } else {
-        // Left side - pin points right (toward symbol)
+        // Pin on LEFT side of symbol
+        angle = 0 // Line extends left, wire connects on left edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (right)
-          angle = 0
-          x = x - CHIP_PIN_LENGTH // Move pin start position outward
-        } else {
-          // For custom symbols: pin at left side should point right (angle 0)
-          angle = 0
+          x = x - CHIP_PIN_LENGTH // Move connection point outward from box
         }
       }
     } else {
-      // Vertical pin
       if (dy > 0) {
-        // Top side - pin points down (toward symbol)
+        // Pin on TOP of symbol
+        angle = 270 // Line extends up, wire connects on top edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (down)
-          angle = 270
-          y = y + CHIP_PIN_LENGTH // Move pin start position outward
-        } else {
-          // For custom symbols: pin at top should point down (angle 270)
-          angle = 270
+          y = y + CHIP_PIN_LENGTH // Move connection point outward from box
         }
       } else {
-        // Bottom side - pin points up (toward symbol)
+        // Pin on BOTTOM of symbol
+        angle = 90 // Line extends down, wire connects on bottom edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (up)
-          angle = 90
-          y = y - CHIP_PIN_LENGTH // Move pin start position outward
-        } else {
-          // For custom symbols: pin at bottom should point up (angle 90)
-          angle = 90
+          y = y - CHIP_PIN_LENGTH // Move connection point outward from box
         }
       }
     }
