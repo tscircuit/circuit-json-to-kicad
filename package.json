@@ -30,5 +30,9 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@tscircuit/props": "^0.0.470",
+    "circuit-json": "^0.0.378"
   }
 }
