@@ -327,6 +327,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         y: circle.center?.y ?? 0,
         radius: circle.radius ?? 0.5,
         fill: circle.is_filled ?? false,
+        fillColor: circle.fill_color,
       })
     }
 
@@ -347,6 +348,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         primitives.push({
           type: "path",
           points: path.points,
+          fill: path.is_filled ?? false,
+          fillColor: path.fill_color,
         })
       }
     }
@@ -674,8 +677,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     for (const primitive of symbolData.primitives || []) {
       if (primitive.type === "path" && primitive.points) {
-        // Use background fill for chip boxes to get yellow background
-        const fillType = isChip ? "background" : "none"
+        // Use background fill for chip boxes OR when primitive has fill=true
+        const fillType = isChip || primitive.fill ? "background" : "none"
         const polyline = this.createPolylineFromPoints({
           points: primitive.points,
           scale: symbolScale,
@@ -773,7 +776,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     c._sxStroke = stroke
 
     const fill = new SymbolCircleFill()
-    fill.type = primitive.fill ? "outline" : "none"
+    fill.type = primitive.fill ? "background" : "none"
     c._sxFill = fill
 
     return circle
