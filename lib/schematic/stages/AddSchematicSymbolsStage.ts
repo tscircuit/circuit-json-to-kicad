@@ -413,6 +413,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         description: "Switch",
       }
     }
+    if (sourceComp.ftype === "simple_potentiometer") {
+      return {
+        reference,
+        value: sourceComp.display_max_resistance || "",
+        description: "Potentiometer",
+      }
+    }
 
     // Default
     return {
