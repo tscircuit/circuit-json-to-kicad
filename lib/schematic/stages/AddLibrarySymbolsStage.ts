@@ -2,6 +2,7 @@ import type {
   CircuitJson,
   SchematicNetLabel,
   SchematicComponent,
+  SchematicPort,
   SourceComponentBase,
 } from "circuit-json"
 import type { KicadSch } from "kicadts"
@@ -299,21 +300,46 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     )
 
     // Find ports - first try by schematic_symbol_id, then fall back to schematic_component_id
+    // Note: schematic_symbol_id may not be in the SchematicPort type yet
     let ports = circuitJson.filter(
-      (el: any) =>
+      (el): el is SchematicPort =>
         el.type === "schematic_port" &&
+        "schematic_symbol_id" in el &&
         el.schematic_symbol_id === schematicSymbolId,
     )
 
     // If no ports found by symbol id, try to find by component id
-    // Also filter to only include ports with display_pin_label (custom symbol ports)
     if (ports.length === 0 && schematicComponentId) {
+      // First try: only include ports with display_pin_label (custom symbol ports like B, C, E)
       ports = circuitJson.filter(
-        (el: any) =>
+        (el): el is SchematicPort =>
           el.type === "schematic_port" &&
           el.schematic_component_id === schematicComponentId &&
-          el.display_pin_label,
+          el.display_pin_label !== undefined,
       )
+
+      // Second try: if no ports with display_pin_label, get all ports and deduplicate by pin_number
+      // This handles cases where custom symbol ports don't have display_pin_label (e.g., MachineContact)
+      // The first port with each pin_number is kept (custom symbol port comes first in tscircuit output)
+      if (ports.length === 0) {
+        const allPorts = circuitJson.filter(
+          (el): el is SchematicPort =>
+            el.type === "schematic_port" &&
+            el.schematic_component_id === schematicComponentId,
+        )
+
+        const seenPinNumbers = new Set<number>()
+        ports = allPorts.filter((port) => {
+          const pinNum = port.pin_number
+          if (pinNum !== undefined) {
+            if (seenPinNumbers.has(pinNum)) {
+              return false // Skip duplicate
+            }
+            seenPinNumbers.add(pinNum)
+          }
+          return true
+        })
+      }
     }
 
     // Convert to internal primitive format
@@ -355,7 +381,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
 
     // Convert schematic_port to ports
-    const symbolPorts = ports.map((port: any, index: number) => ({
+    const symbolPorts = ports.map((port, index) => ({
       x: port.center?.x ?? 0,
       y: port.center?.y ?? 0,
       labels: [port.display_pin_label || `${port.pin_number || index + 1}`],
@@ -364,7 +390,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }))
 
     // Sort ports by pin_number
-    symbolPorts.sort((a: any, b: any) => a.pinNumber - b.pinNumber)
+    symbolPorts.sort((a, b) => a.pinNumber - b.pinNumber)
 
     return {
       center: schematicSymbol.center || { x: 0, y: 0 },
@@ -672,8 +698,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     })
 
     // Convert schematic-symbols primitives to KiCad drawing elements
-    // Scale symbols by the same factor as positions (from c2kMatSch) so they match the layout
-    const symbolScale = this.ctx.c2kMatSch?.a || 15 // Extract scale from transformation matrix
+    // For custom symbols, use a grid-aligned scale (15.24 = 12 * 1.27) so coordinates
+    // naturally land on KiCad's 1.27mm grid. For chips, use the standard scale.
+    const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27 - produces grid-aligned values for 0.5 increments
+    const standardScale = this.ctx.c2kMatSch?.a || 15
+    const symbolScale = isChip ? standardScale : GRID_ALIGNED_SCALE
 
     for (const primitive of symbolData.primitives || []) {
       if (primitive.type === "path" && primitive.points) {
@@ -817,8 +846,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         schematicComponent,
       )
       pin.at = [x, y, angle]
-      // For chips, use longer pins (2.54); for other components, use 1.27
-      pin.length = isChip ? 6.0 : 1.27
+
+      // Pin lengths in mm - chips need longer pins to extend beyond the box,
+      // custom symbols use standard KiCad grid unit
+      const CHIP_PIN_LENGTH = 6.0 // Long pins for chip boxes
+      const CUSTOM_SYMBOL_PIN_LENGTH = 2.54 // Standard KiCad grid unit (0.1 inch)
+      pin.length = isChip ? CHIP_PIN_LENGTH : CUSTOM_SYMBOL_PIN_LENGTH
 
       // Pin name - use the label from the port
       const nameFont = new TextEffectsFont()
@@ -845,7 +878,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
   /**
    * Calculate KiCad pin position and rotation from schematic-symbols port
-   * Scale pins to match the c2kMatSch transformation scale
+   * Scale pins to match the symbol scale
    */
   private calculatePinPosition(
     port: any,
@@ -855,15 +888,19 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     portIndex?: number,
     schematicComponent?: SchematicComponent,
   ): { x: number; y: number; angle: number } {
-    // Extract scale from transformation matrix
-    const symbolScale = this.ctx.c2kMatSch?.a || 15
+    // For custom symbols, use grid-aligned scale so coordinates land on KiCad's 1.27mm grid
+    const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27
+    const standardScale = this.ctx.c2kMatSch?.a || 15
+    const symbolScale = isChip ? standardScale : GRID_ALIGNED_SCALE
 
     // Get the actual port position from circuit JSON if available
     let portX = port.x ?? 0
     let portY = port.y ?? 0
     let usingCircuitJsonPort = false
 
-    if (portIndex !== undefined && schematicComponent) {
+    // Only override port positions for chips - custom symbols already have correct positions
+    // from buildSymbolDataFromSchematicPrimitives
+    if (isChip && portIndex !== undefined && schematicComponent) {
       const schematicPorts = this.ctx.db.schematic_port
         .list()
         .filter(
@@ -919,7 +956,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     let y = scaled.y
 
     // Pin length for chips
-    const chipPinLength = 6.0
+    // Pin length for chips - must match CHIP_PIN_LENGTH in createPinSubsymbol
+    const CHIP_PIN_LENGTH = 6.0
 
     // For chips, adjust pin position to be at the box edge
     if (isChip && size) {
@@ -938,52 +976,52 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       }
     }
 
-    // Determine pin angle based on orientation
+    // KiCad Pin Angle Reference:
+    // The angle determines where the pin LINE extends FROM the connection point (where wires attach).
+    // The pin line extends in the OPPOSITE direction of the angle.
+    //
+    // Angle 0°:   Pin line extends LEFT      ←──o  (wire connects at 'o')
+    // Angle 180°: Pin line extends RIGHT     o──→  (wire connects at 'o')
+    // Angle 90°:  Pin line extends DOWN      o     (wire connects at 'o')
+    //                                        ↓
+    // Angle 270°: Pin line extends UP        ↑     (wire connects at 'o')
+    //                                        o
+    //
+    // For symbols, pins should point TOWARD the symbol body so wires connect on the outside.
+    //
+    // Examples:
+    //   - Pin on RIGHT side of symbol: angle=180 (line extends right, away from symbol)
+    //   - Pin on LEFT side of symbol:  angle=0   (line extends left, away from symbol)
+    //   - Pin on TOP of symbol:        angle=270 (line extends up, away from symbol)
+    //   - Pin on BOTTOM of symbol:     angle=90  (line extends down, away from symbol)
+
     let angle = 0
     if (isHorizontalPin) {
-      // Horizontal pin
       if (dx > 0) {
-        // Right side
+        // Pin on RIGHT side of symbol
+        angle = 180 // Line extends right, wire connects on right edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (left)
-          angle = 180
-          x = x + chipPinLength // Move pin start position outward
-        } else {
-          // For other components: pin points outward (right)
-          angle = 0
+          x = x + CHIP_PIN_LENGTH // Move connection point outward from box
         }
       } else {
-        // Left side
+        // Pin on LEFT side of symbol
+        angle = 0 // Line extends left, wire connects on left edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (right)
-          angle = 0
-          x = x - chipPinLength // Move pin start position outward
-        } else {
-          // For other components: pin points outward (left)
-          angle = 180
+          x = x - CHIP_PIN_LENGTH // Move connection point outward from box
         }
       }
     } else {
-      // Vertical pin
       if (dy > 0) {
-        // Top side
+        // Pin on TOP of symbol
+        angle = 270 // Line extends up, wire connects on top edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (down)
-          angle = 270
-          y = y + chipPinLength // Move pin start position outward
-        } else {
-          // For other components: pin points outward (up)
-          angle = 90
+          y = y + CHIP_PIN_LENGTH // Move connection point outward from box
         }
       } else {
-        // Bottom side
+        // Pin on BOTTOM of symbol
+        angle = 90 // Line extends down, wire connects on bottom edge
         if (isChip) {
-          // For chips: pin starts outside box, points inward (up)
-          angle = 90
-          y = y - chipPinLength // Move pin start position outward
-        } else {
-          // For other components: pin points outward (down)
-          angle = 270
+          y = y - CHIP_PIN_LENGTH // Move connection point outward from box
         }
       }
     }

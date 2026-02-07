@@ -65,6 +65,13 @@ export class ExtractSymbolsStage extends ConverterStage<
           // Update Footprint property to use the correct library name
           this.updateFootprintProperty(symbol, fpLibraryName)
 
+          // Snap pin positions to 1.27mm grid for proper KiCad wire connections
+          // Only for non-custom symbols (chips) - custom symbols have intentionally designed coordinates
+          // This is done post-extraction so schematic trace alignment isn't affected
+          if (!isCustom) {
+            this.snapPinPositionsToGrid(symbol)
+          }
+
           uniqueSymbols.set(symbolName, {
             symbolName,
             symbol,
@@ -109,6 +116,39 @@ export class ExtractSymbolsStage extends ConverterStage<
     const parts = libraryId.split(":")
     const name = parts.length > 1 ? parts[1] : parts[0]
     return name?.replace(/[\\\/]/g, "-").trim() || "symbol"
+  }
+
+  /**
+   * Snap pin positions to KiCad's 1.27mm grid.
+   * This is necessary for library symbols so users can connect wires in KiCad.
+   * Done post-extraction so schematic trace alignment in the snapshots isn't affected.
+   */
+  private snapPinPositionsToGrid(symbol: SchematicSymbol): void {
+    const KICAD_GRID = 1.27
+
+    // Process all subsymbols (pins are typically in _1_1 subsymbol)
+    for (const subSymbol of symbol.subSymbols ?? []) {
+      for (const pin of subSymbol.pins ?? []) {
+        // pin.at is an At object with x, y, angle properties
+        if (pin.at) {
+          pin.at.x = Math.round(pin.at.x / KICAD_GRID) * KICAD_GRID
+          pin.at.y = Math.round(pin.at.y / KICAD_GRID) * KICAD_GRID
+        }
+      }
+
+      // Also snap polyline points (box edges) so they align with snapped pins
+      for (const polyline of subSymbol.polylines ?? []) {
+        if (polyline.points?.points) {
+          for (const pt of polyline.points.points) {
+            // Only process Xy points (not PtsArc)
+            if ("x" in pt && "y" in pt) {
+              pt.x = Math.round(pt.x / KICAD_GRID) * KICAD_GRID
+              pt.y = Math.round(pt.y / KICAD_GRID) * KICAD_GRID
+            }
+          }
+        }
+      }
+    }
   }
 
   override getOutput(): KicadLibraryOutput {

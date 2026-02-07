@@ -195,11 +195,11 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (symbol "KeyHotSocket_0_1"
           (polyline
             (pts
-              (xy -9.000000000000002 -3)
-              (xy 9.000000000000002 -3)
-              (xy 9.000000000000002 3)
-              (xy -9.000000000000002 3)
-              (xy -9.000000000000002 -3)
+              (xy -8.89 -2.54)
+              (xy 8.89 -2.54)
+              (xy 8.89 2.54)
+              (xy -8.89 2.54)
+              (xy -8.89 -2.54)
             )
             (stroke
               (width 0.254)
@@ -212,7 +212,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         )
         (symbol "KeyHotSocket_1_1"
           (pin passive line
-            (at -15.000000000000002 0 0)
+            (at -15.24 0 0)
             (length 6)
             (name "1"
               (effects
@@ -230,7 +230,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
             )
           )
           (pin passive line
-            (at 15.000000000000002 0 180)
+            (at 15.24 0 180)
             (length 6)
             (name "2"
               (effects
