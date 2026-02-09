@@ -9,13 +9,21 @@ import { updateBuiltinKicadSymbolFootprint } from "../kicad-library-converter-ut
 import { componentHasCustomFootprint } from "./ClassifyKicadFootprintsStage"
 import { applyKicadSymbolMetadata } from "../kicad-library-converter-utils/applyKicadSymbolMetadata"
 
+// Track symbol names that have been added for deduplication
+const addedSymbolNames = new Set<string>()
+
 /**
  * Classifies symbols from extracted KiCad components into user and builtin libraries.
- * - Custom symbol (symbol={<symbol>...}) → user library, renamed to component name
+ * - Custom symbol (symbol={<symbol>...}) → user library, uses the symbol's actual name
  * - Builtin symbol + custom footprint → first symbol renamed to component name, user library
  * - Builtin symbol + builtin footprint (or subsequent symbols) → builtin library
+ *
+ * Custom symbols are deduplicated by their actual symbol name (from the JSX <symbol name="...">).
  */
 export function classifyKicadSymbols(ctx: KicadLibraryConverterContext): void {
+  // Clear the set for each conversion run
+  addedSymbolNames.clear()
+
   for (const extractedKicadComponent of ctx.extractedKicadComponents) {
     classifySymbolsForComponent({
       ctx,
@@ -41,27 +49,31 @@ function classifySymbolsForComponent({
   for (const kicadSymbol of kicadSymbols) {
     if (!kicadSymbol.isBuiltin) {
       // Custom symbol → user library
-      if (!hasAddedUserSymbol) {
-        hasAddedUserSymbol = true
-        const renamedSymbol = renameKicadSymbol({
-          kicadSymbol,
-          newKicadSymbolName: tscircuitComponentName,
-        })
-        if (hasCustomFootprint) {
-          updateKicadSymbolFootprint({
-            kicadSymbol: renamedSymbol,
-            kicadLibraryName: ctx.kicadLibraryName,
-            kicadFootprintName: tscircuitComponentName,
-            isPcm: ctx.isPcm,
-          })
-        }
-        const updatedSymbol = metadata
-          ? applyKicadSymbolMetadata(renamedSymbol, metadata)
-          : renamedSymbol
-        addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
-      } else {
-        addUserSymbol({ ctx, kicadSymbol })
+      // Use the symbol's actual name (from JSX <symbol name="...">) for deduplication
+      const symbolName = kicadSymbol.symbolName
+
+      // Check if a symbol with this name already exists
+      // If so, skip this symbol (reuse the existing one)
+      if (addedSymbolNames.has(symbolName)) {
+        continue
       }
+
+      // Track this symbol name as added
+      addedSymbolNames.add(symbolName)
+
+      // Update footprint reference if this component has a custom footprint
+      if (hasCustomFootprint) {
+        updateKicadSymbolFootprint({
+          kicadSymbol,
+          kicadLibraryName: ctx.kicadLibraryName,
+          kicadFootprintName: tscircuitComponentName,
+          isPcm: ctx.isPcm,
+        })
+      }
+      const updatedSymbol = metadata
+        ? applyKicadSymbolMetadata(kicadSymbol, metadata)
+        : kicadSymbol
+      addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
     } else if (hasCustomFootprint && !hasAddedUserSymbol) {
       // Builtin symbol but has custom footprint → rename and add to user library
       hasAddedUserSymbol = true
@@ -96,12 +108,15 @@ function addUserSymbol({
   ctx: KicadLibraryConverterContext
   kicadSymbol: SymbolEntry
 }): void {
-  const alreadyExists = ctx.userKicadSymbols.some(
+  // Check for duplicate by symbolName (secondary check, primary deduplication is in classifySymbolsForComponent)
+  const alreadyExistsByName = ctx.userKicadSymbols.some(
     (s) => s.symbolName === kicadSymbol.symbolName,
   )
-  if (!alreadyExists) {
-    ctx.userKicadSymbols.push(kicadSymbol)
+  if (alreadyExistsByName) {
+    return
   }
+
+  ctx.userKicadSymbols.push(kicadSymbol)
 }
 
 function addBuiltinSymbol({
