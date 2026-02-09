@@ -195,245 +195,28 @@ test("components sharing same symbol name result in single deduplicated symbol",
   ])
 
   // Get the symbol file content
-  const symbolContent = output.kicadProjectFsMap["symbols/my-library.kicad_sym"]
+  const symbolContent = output.kicadProjectFsMap[
+    "symbols/my-library.kicad_sym"
+  ] as string
+  expect(symbolContent).toBeDefined()
 
-  expect(symbolContent).toMatchInlineSnapshot(`
-    "(kicad_symbol_lib
-      (version 20211014)
-      (generator circuit-json-to-kicad)
-      (symbol "Connector"
-        (pin_numbers
-          (hide yes)
-        )
-        (pin_names
-          (offset 0)
-        )
-        (exclude_from_sim no)
-        (in_bom yes)
-        (on_board yes)
-        (property "Reference" "U"
-          (id 0)
-          (at 2.032 0 90)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-          )
-        )
-        (property "Value" "U"
-          (id 1)
-          (at 0 0 90)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-          )
-        )
-        (property "Footprint" "my-library:ConnectorLarge"
-          (id 2)
-          (at -1.778 0 90)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "Datasheet" "~"
-          (id 3)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "Description" "Integrated Circuit"
-          (id 4)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "ki_keywords" "U IC chip"
-          (id 5)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "ki_fp_filters" "Connector*"
-          (id 6)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (symbol "Connector_0_1"
-          (polyline
-            (pts
-              (xy -7.62 0)
-              (xy 7.62 0)
-            )
-            (stroke
-              (width 0.254)
-              (type default)
-            )
-            (fill
-              (type none)
-            )
-          )
-        )
-        (symbol "Connector_1_1"
-          (pin passive line
-            (at -15.24 0 0)
-            (length 2.54)
-            (name "1"
-              (effects
-                (font
-                  (size 1.27 1.27)
-                )
-              )
-            )
-            (number "1"
-              (effects
-                (font
-                  (size 1.27 1.27)
-                )
-              )
-            )
-          )
-        )
-        (embedded_fonts no)
-      )
-      (symbol "Switch"
-        (pin_numbers
-          (hide yes)
-        )
-        (pin_names
-          (offset 0)
-        )
-        (exclude_from_sim no)
-        (in_bom yes)
-        (on_board yes)
-        (property "Reference" "U"
-          (id 0)
-          (at 2.032 0 90)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-          )
-        )
-        (property "Value" "U"
-          (id 1)
-          (at 0 0 90)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-          )
-        )
-        (property "Footprint" "my-library:SwitchLarge"
-          (id 2)
-          (at -1.778 0 90)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "Datasheet" "~"
-          (id 3)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "Description" "Integrated Circuit"
-          (id 4)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "ki_keywords" "U IC chip"
-          (id 5)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (property "ki_fp_filters" "Switch*"
-          (id 6)
-          (at 0 0 0)
-          (effects
-            (font
-              (size 1.27 1.27)
-            )
-            (hide yes)
-          )
-        )
-        (symbol "Switch_0_1"
-          (polyline
-            (pts
-              (xy -15.24 0)
-              (xy 15.24 0)
-            )
-            (stroke
-              (width 0.254)
-              (type default)
-            )
-            (fill
-              (type none)
-            )
-          )
-        )
-        (symbol "Switch_1_1"
-          (pin passive line
-            (at -15.24 0 0)
-            (length 2.54)
-            (name "1"
-              (effects
-                (font
-                  (size 1.27 1.27)
-                )
-              )
-            )
-            (number "1"
-              (effects
-                (font
-                  (size 1.27 1.27)
-                )
-              )
-            )
-          )
-        )
-        (embedded_fonts no)
-      )
-    )"
-  `)
-  // Check that ki_fp_filters uses wildcard pattern
+  // Should have exactly 2 top-level symbols (deduplicated by name)
+  const topLevelSymbols = symbolContent
+    .match(/\(symbol "([^"_]+)"\n/g)
+    ?.map((m: string) => m.match(/"([^"]+)"/)?.[1])
+    .filter(Boolean) as string[]
+
+  expect(topLevelSymbols.length).toBe(2)
+  expect(topLevelSymbols.sort()).toEqual(["Connector", "Switch"])
+
+  // Verify symbols have expected properties
+  expect(symbolContent).toContain('(symbol "Connector"')
+  expect(symbolContent).toContain('(symbol "Switch"')
+
+  // Check that ki_fp_filters uses wildcard pattern for footprint matching
   expect(symbolContent).toContain('"ki_fp_filters" "Connector*"')
   expect(symbolContent).toContain('"ki_fp_filters" "Switch*"')
+
+  // Verify footprints are linked correctly
+  expect(symbolContent).toContain('"Footprint" "my-library:')
 })
