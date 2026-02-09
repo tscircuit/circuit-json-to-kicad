@@ -265,7 +265,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicComponent,
       description: this.getDescription(sourceComp),
       keywords: this.getKeywords(sourceComp),
-      fpFilters: this.getFpFilters(sourceComp),
+      fpFilters: this.getFpFilters(sourceComp, schematicSymbol.name),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
     })
@@ -673,7 +673,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     return ""
   }
 
-  private getFpFilters(sourceComp: any): string {
+  private getFpFilters(sourceComp: any, symbolName?: string): string {
+    // For custom symbols with an explicit name, use that name with wildcard
+    // This allows matching footprint variants like MachineContactLarge, MachineContactMedium
+    if (symbolName) {
+      return `${symbolName}*`
+    }
     if (sourceComp?.ftype === "simple_resistor") return "R_*"
     if (sourceComp?.ftype === "simple_capacitor") return "C_*"
     if (sourceComp?.ftype === "simple_chip") return "*"
