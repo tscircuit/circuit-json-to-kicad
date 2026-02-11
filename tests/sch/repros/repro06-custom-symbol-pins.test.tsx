@@ -6,26 +6,26 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import circuitJson from "tests/assets/custom-symbol-pins.json"
 
 test("repro06 custom symbol pins schematic", async () => {
-    const converter = new CircuitJsonToKicadSchConverter(circuitJson as any)
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any)
 
-    converter.runUntilFinished()
+  converter.runUntilFinished()
 
-    Bun.write("./debug-output/kicad.kicad_sch", converter.getOutputString())
+  Bun.write("./debug-output/kicad.kicad_sch", converter.getOutputString())
 
-    const kicadSnapshot = await takeKicadSnapshot({
-        kicadFileContent: converter.getOutputString(),
-        kicadFileType: "sch",
-    })
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
 
-    expect(kicadSnapshot.exitCode).toBe(0)
+  expect(kicadSnapshot.exitCode).toBe(0)
 
-    expect(
-        stackCircuitJsonKicadPngs(
-            await takeCircuitJsonSnapshot({
-                circuitJson: circuitJson as any,
-                outputType: "schematic",
-            }),
-            kicadSnapshot.generatedFileContent["temp_file.png"]!,
-        ),
-    ).toMatchPngSnapshot(import.meta.path)
+  expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson: circuitJson as any,
+        outputType: "schematic",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
 })
