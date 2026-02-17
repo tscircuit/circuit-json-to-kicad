@@ -11,6 +11,15 @@ import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
 import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
+import type { KicadSymbolMetadata } from "@tscircuit/props"
+
+export interface CircuitJsonToKicadSchConverterOptions {
+  /**
+   * Map of RefDes prefix (e.g., "MP", "R") to kicadSymbolMetadata.
+   * Used to apply component-specific metadata to schematic symbols.
+   */
+  symbolMetadataMap?: Map<string, KicadSymbolMetadata>
+}
 
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
@@ -24,7 +33,10 @@ export class CircuitJsonToKicadSchConverter {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(circuitJson: CircuitJson) {
+  constructor(
+    circuitJson: CircuitJson,
+    options?: CircuitJsonToKicadSchConverterOptions,
+  ) {
     const CIRCUIT_JSON_SCALE_FACTOR = 15
 
     const db = cju(circuitJson)
@@ -60,6 +72,7 @@ export class CircuitJsonToKicadSchConverter {
         scale(CIRCUIT_JSON_SCALE_FACTOR, -CIRCUIT_JSON_SCALE_FACTOR),
         translate(-center.x, -center.y),
       ),
+      symbolMetadataMap: options?.symbolMetadataMap,
     }
     this.pipeline = [
       new InitializeSchematicStage(circuitJson, this.ctx),

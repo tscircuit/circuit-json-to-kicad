@@ -13,6 +13,8 @@ import {
   TextEffectsFont,
   TextEffectsJustify,
   EmbeddedFonts,
+  SymbolPinNames,
+  SymbolPinNumbers,
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
@@ -21,7 +23,9 @@ import { getLibraryId } from "../getLibraryId"
 import {
   getReferenceDesignator,
   getKicadCompatibleComponentName,
+  extractReferencePrefix,
 } from "../../utils/getKicadCompatibleComponentName"
+import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -143,47 +147,65 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         { x, y },
       )
 
-      // Add properties for this instance
+      // Check for kicadSymbolMetadata
+      let symbolMetadata: KicadSymbolMetadata | undefined
+      if (this.ctx.symbolMetadataMap && sourceComponent.name) {
+        const refDesPrefix = extractReferencePrefix(sourceComponent.name)
+        symbolMetadata = this.ctx.symbolMetadataMap.get(refDesPrefix)
+      }
+
+      // Add properties for this instance, applying metadata if available
+      const refMeta = symbolMetadata?.properties?.Reference
       const referenceProperty = new SymbolProperty({
         key: "Reference",
-        value: reference,
+        value: refMeta?.value ?? reference,
         id: 0,
         at: [refTextPos.x, refTextPos.y, 0],
-        effects: this.createTextEffects(1.27, false),
+        effects: this.createTextEffects(
+          Number(refMeta?.effects?.font?.size?.x ?? 1.27),
+          refMeta?.effects?.hide ?? false,
+        ),
       })
 
       // Hide value for chips since reference is usually sufficient
       const hideValue = sourceComponent.ftype === "simple_chip"
+      const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
-        value: value,
+        value: valMeta?.value ?? value,
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
-        effects: this.createTextEffects(1.27, hideValue),
+        effects: this.createTextEffects(
+          Number(valMeta?.effects?.font?.size?.x ?? 1.27),
+          valMeta?.effects?.hide ?? hideValue,
+        ),
       })
 
+      const fpMeta = symbolMetadata?.properties?.Footprint
       const footprintProperty = new SymbolProperty({
         key: "Footprint",
-        value: "",
+        value: fpMeta?.value ?? "",
         id: 2,
         at: [x - 1.778, y, 90],
-        effects: this.createTextEffects(1.27, true),
+        effects: this.createTextEffects(1.27, fpMeta?.effects?.hide ?? true),
       })
 
+      const dsMeta = symbolMetadata?.properties?.Datasheet
       const datasheetProperty = new SymbolProperty({
         key: "Datasheet",
-        value: "~",
+        value: dsMeta?.value ?? "~",
         id: 3,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, true),
+        effects: this.createTextEffects(1.27, dsMeta?.effects?.hide ?? true),
       })
 
+      const descMeta = symbolMetadata?.properties?.Description
       const descriptionProperty = new SymbolProperty({
         key: "Description",
-        value: description,
+        value: descMeta?.value ?? description,
         id: 4,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, true),
+        effects: this.createTextEffects(1.27, descMeta?.effects?.hide ?? true),
       })
 
       symbol.properties.push(
@@ -193,6 +215,81 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         datasheetProperty,
         descriptionProperty,
       )
+
+      // Add ki_keywords property if provided in metadata
+      const kwMeta = symbolMetadata?.properties?.ki_keywords
+      if (kwMeta?.value) {
+        const keywordsProperty = new SymbolProperty({
+          key: "ki_keywords",
+          value: kwMeta.value,
+          id: 5,
+          at: [x, y, 0],
+          effects: this.createTextEffects(1.27, kwMeta.effects?.hide ?? true),
+        })
+        symbol.properties.push(keywordsProperty)
+      }
+
+      // Add ki_fp_filters property if provided in metadata
+      const fpFilterMeta = symbolMetadata?.properties?.ki_fp_filters
+      if (fpFilterMeta?.value) {
+        const fpFiltersProperty = new SymbolProperty({
+          key: "ki_fp_filters",
+          value: fpFilterMeta.value,
+          id: 6,
+          at: [x, y, 0],
+          effects: this.createTextEffects(
+            1.27,
+            fpFilterMeta.effects?.hide ?? true,
+          ),
+        })
+        symbol.properties.push(fpFiltersProperty)
+      }
+
+      // Apply additional symbol metadata fields
+      if (symbolMetadata) {
+        // Apply inBom if provided
+        if (symbolMetadata.inBom !== undefined) {
+          symbol.inBom = symbolMetadata.inBom
+        }
+
+        // Apply onBoard if provided
+        if (symbolMetadata.onBoard !== undefined) {
+          symbol.onBoard = symbolMetadata.onBoard
+        }
+
+        // Apply excludeFromSim if provided
+        if (symbolMetadata.excludeFromSim !== undefined) {
+          symbol.excludeFromSim = symbolMetadata.excludeFromSim
+        }
+
+        // Apply pinNames if provided
+        if (symbolMetadata.pinNames) {
+          const pinNames = new SymbolPinNames()
+          if (symbolMetadata.pinNames.offset !== undefined) {
+            pinNames.offset = Number(symbolMetadata.pinNames.offset)
+          }
+          if (symbolMetadata.pinNames.hide !== undefined) {
+            pinNames.hide = symbolMetadata.pinNames.hide
+          }
+          symbol.pinNames = pinNames
+        }
+
+        // Apply pinNumbers if provided
+        if (symbolMetadata.pinNumbers) {
+          const pinNumbers = new SymbolPinNumbers()
+          if (symbolMetadata.pinNumbers.hide !== undefined) {
+            pinNumbers.hide = symbolMetadata.pinNumbers.hide
+          }
+          symbol.pinNumbers = pinNumbers
+        }
+
+        // Apply embeddedFonts if provided
+        if (symbolMetadata.embeddedFonts !== undefined) {
+          symbol._sxEmbeddedFonts = new EmbeddedFonts(
+            symbolMetadata.embeddedFonts,
+          )
+        }
+      }
 
       // Add pin instances with UUIDs based on schematic ports
       // For custom symbols, use only ports with display_pin_label

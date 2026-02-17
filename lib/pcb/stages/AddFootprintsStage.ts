@@ -3,7 +3,10 @@ import type {
   CadComponent,
   SourceComponentBase,
 } from "circuit-json"
-import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getKicadCompatibleComponentName,
+  extractReferencePrefix,
+} from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
 import {
@@ -13,6 +16,7 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
 import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
 import { convertCourtyardCircles } from "./footprints-stage-converters/convertCourtyardCircles"
 import { convertFabricationNoteRects } from "./footprints-stage-converters/convertFabricationNoteRects"
@@ -283,6 +287,15 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       )
       if (models.length > 0) {
         footprint.models = models
+      }
+    }
+
+    // Apply kicadFootprintMetadata if available
+    if (this.ctx.footprintMetadataMap && sourceComponent?.name) {
+      const refDesPrefix = extractReferencePrefix(sourceComponent.name)
+      const metadata = this.ctx.footprintMetadataMap.get(refDesPrefix)
+      if (metadata) {
+        applyMetadataToFootprint(footprint, metadata, sourceComponent.name)
       }
     }
 
