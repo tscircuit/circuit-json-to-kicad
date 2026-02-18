@@ -397,6 +397,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       size: schematicSymbol.size || { width: 1, height: 1 },
       primitives,
       ports: symbolPorts,
+      coordinateScale: 1, // schematic primitives from circuit-json are already in mm
     }
   }
 
@@ -705,9 +706,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     // Convert schematic-symbols primitives to KiCad drawing elements
     // For custom symbols, use a grid-aligned scale (15.24 = 12 * 1.27) so coordinates
     // naturally land on KiCad's 1.27mm grid. For chips, use the standard scale.
-    const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27 - produces grid-aligned values for 0.5 increments
+    const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27 - used by schematic-symbol templates
     const standardScale = this.ctx.c2kMatSch?.a || 15
-    const symbolScale = isChip ? standardScale : GRID_ALIGNED_SCALE
+    const symbolScale =
+      symbolData.coordinateScale ??
+      (isChip ? standardScale : GRID_ALIGNED_SCALE)
 
     for (const primitive of symbolData.primitives || []) {
       if (primitive.type === "path" && primitive.points) {
@@ -849,6 +852,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         isChip,
         i,
         schematicComponent,
+        symbolData.coordinateScale,
       )
       pin.at = [x, y, angle]
 
@@ -892,11 +896,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     isChip?: boolean,
     portIndex?: number,
     schematicComponent?: SchematicComponent,
+    coordinateScale?: number,
   ): { x: number; y: number; angle: number } {
     // For custom symbols, use grid-aligned scale so coordinates land on KiCad's 1.27mm grid
     const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27
     const standardScale = this.ctx.c2kMatSch?.a || 15
-    const symbolScale = isChip ? standardScale : GRID_ALIGNED_SCALE
+    const symbolScale =
+      coordinateScale ?? (isChip ? standardScale : GRID_ALIGNED_SCALE)
 
     // Get the actual port position from circuit JSON if available
     let portX = port.x ?? 0
