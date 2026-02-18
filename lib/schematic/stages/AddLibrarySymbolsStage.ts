@@ -761,7 +761,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
 
     // Convert text primitives to KiCad SymbolText elements
-    for (const textData of symbolData.texts || []) {
+    // symbolData.texts may be an array (custom symbols) or undefined/object (schematic-symbols)
+    const textsArray = Array.isArray(symbolData.texts) ? symbolData.texts : []
+    for (const textData of textsArray) {
       const symbolText = this.createTextFromPrimitive({
         textData,
         scale: symbolScale,
