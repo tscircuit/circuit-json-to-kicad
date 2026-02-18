@@ -1,3 +1,5 @@
+import type { KicadSymbolMetadata } from "@tscircuit/props"
+import type { SchematicSymbol } from "circuit-json"
 import type { SymbolEntry } from "../../types"
 import type {
   KicadLibraryConverterContext,
@@ -44,7 +46,17 @@ function classifySymbolsForComponent({
     extractedKicadComponent,
   )
   let hasAddedUserSymbol = false
-  const metadata = ctx.symbolMetadataMap.get(tscircuitComponentName)
+
+  // Get metadata from circuit-json schematic_symbol element
+  const builtComponent = ctx.builtTscircuitComponents.find(
+    (c) => c.tscircuitComponentName === tscircuitComponentName,
+  )
+  const schematicSymbol = builtComponent?.circuitJson.find(
+    (el): el is SchematicSymbol => el.type === "schematic_symbol",
+  )
+  const metadata = schematicSymbol?.metadata?.kicad_symbol as
+    | KicadSymbolMetadata
+    | undefined
 
   for (const kicadSymbol of kicadSymbols) {
     if (!kicadSymbol.isBuiltin) {
