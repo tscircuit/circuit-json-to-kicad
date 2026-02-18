@@ -3,10 +3,7 @@ import type {
   CadComponent,
   SourceComponentBase,
 } from "circuit-json"
-import {
-  getKicadCompatibleComponentName,
-  extractReferencePrefix,
-} from "../../utils/getKicadCompatibleComponentName"
+import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
 import {
@@ -17,6 +14,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
+import type { KicadFootprintMetadata } from "@tscircuit/props"
 import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
 import { convertCourtyardCircles } from "./footprints-stage-converters/convertCourtyardCircles"
 import { convertFabricationNoteRects } from "./footprints-stage-converters/convertFabricationNoteRects"
@@ -290,13 +288,16 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Apply kicadFootprintMetadata if available
-    if (this.ctx.footprintMetadataMap && sourceComponent?.name) {
-      const refDesPrefix = extractReferencePrefix(sourceComponent.name)
-      const metadata = this.ctx.footprintMetadataMap.get(refDesPrefix)
-      if (metadata) {
-        applyMetadataToFootprint(footprint, metadata, sourceComponent.name)
-      }
+    // Apply kicadFootprintMetadata from circuit-json element
+    const footprintMetadata = component.metadata?.kicad_footprint as
+      | KicadFootprintMetadata
+      | undefined
+    if (footprintMetadata && sourceComponent?.name) {
+      applyMetadataToFootprint(
+        footprint,
+        footprintMetadata,
+        sourceComponent.name,
+      )
     }
 
     const footprints = kicadPcb.footprints

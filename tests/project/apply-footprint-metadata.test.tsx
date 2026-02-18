@@ -4,32 +4,7 @@ import { CircuitJsonToKicadPcbConverter } from "lib"
 import type { KicadFootprintMetadata } from "@tscircuit/props"
 
 test("applies all kicadFootprintMetadata fields to footprints", async () => {
-  const circuit = new Circuit()
-  circuit.add(
-    <board width="30mm" height="20mm">
-      <chip
-        name="MC1"
-        footprint="soic8"
-        pinLabels={{
-          pin1: "VCC",
-          pin2: "GND",
-          pin3: "IN1",
-          pin4: "IN2",
-          pin5: "OUT1",
-          pin6: "OUT2",
-          pin7: "NC1",
-          pin8: "NC2",
-        }}
-      />
-    </board>,
-  )
-
-  await circuit.renderUntilSettled()
-  const circuitJson = circuit.getCircuitJson()
-
-  // Create metadata map with all supported fields
-  const footprintMetadataMap = new Map<string, KicadFootprintMetadata>()
-  footprintMetadataMap.set("MC", {
+  const footprintMetadata: KicadFootprintMetadata = {
     // footprintName - modifies libraryLink
     footprintName: "Custom_SOIC8",
     // layer - modifies footprint layer
@@ -73,11 +48,33 @@ test("applies all kicadFootprintMetadata fields to footprints", async () => {
       scale: { x: 1, y: 1, z: 1 },
       rotate: { x: 0, y: 0, z: 90 },
     },
-  })
+  }
 
-  const converter = new CircuitJsonToKicadPcbConverter(circuitJson as any, {
-    footprintMetadataMap,
-  })
+  const circuit = new Circuit()
+  circuit.add(
+    <board width="30mm" height="20mm">
+      <chip
+        name="MC1"
+        footprint="soic8"
+        kicadFootprintMetadata={footprintMetadata}
+        pinLabels={{
+          pin1: "VCC",
+          pin2: "GND",
+          pin3: "IN1",
+          pin4: "IN2",
+          pin5: "OUT1",
+          pin6: "OUT2",
+          pin7: "NC1",
+          pin8: "NC2",
+        }}
+      />
+    </board>,
+  )
+
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson as any)
   converter.runUntilFinished()
 
   const output = converter.getOutputString()

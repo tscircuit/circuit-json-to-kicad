@@ -9,15 +9,6 @@ import { AddFootprintsStage } from "./stages/AddFootprintsStage"
 import { AddTracesStage } from "./stages/AddTracesStage"
 import { AddViasStage } from "./stages/AddViasStage"
 import { AddGraphicsStage } from "./stages/AddGraphicsStage"
-import type { KicadFootprintMetadata } from "@tscircuit/props"
-
-export interface CircuitJsonToKicadPcbConverterOptions {
-  /**
-   * Map of RefDes prefix (e.g., "MP", "R") to kicadFootprintMetadata.
-   * Used to apply component-specific metadata to footprints.
-   */
-  footprintMetadataMap?: Map<string, KicadFootprintMetadata>
-}
 
 export class CircuitJsonToKicadPcbConverter {
   ctx: ConverterContext
@@ -31,10 +22,7 @@ export class CircuitJsonToKicadPcbConverter {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(
-    circuitJson: CircuitJson,
-    options?: CircuitJsonToKicadPcbConverterOptions,
-  ) {
+  constructor(circuitJson: CircuitJson) {
     // PCB scale factor and center point
     // PCBs typically use mm units and different scaling than schematics
     const CIRCUIT_JSON_TO_MM_SCALE = 1 // Circuit JSON uses mm, KiCad PCB uses mm
@@ -52,7 +40,6 @@ export class CircuitJsonToKicadPcbConverter {
         translate(KICAD_PCB_CENTER_X, KICAD_PCB_CENTER_Y),
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
-      footprintMetadataMap: options?.footprintMetadataMap,
     }
 
     this.pipeline = [

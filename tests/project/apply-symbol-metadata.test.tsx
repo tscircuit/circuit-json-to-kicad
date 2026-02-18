@@ -4,34 +4,7 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 test("applies all kicadSymbolMetadata fields to schematic symbols", async () => {
-  const circuit = new Circuit()
-  circuit.add(
-    <board width="30mm" height="20mm">
-      <chip
-        name="IC1"
-        footprint="soic8"
-        schX={0}
-        schY={0}
-        pinLabels={{
-          pin1: "VCC",
-          pin2: "GND",
-          pin3: "IN1",
-          pin4: "IN2",
-          pin5: "OUT1",
-          pin6: "OUT2",
-          pin7: "NC1",
-          pin8: "NC2",
-        }}
-      />
-    </board>,
-  )
-
-  await circuit.renderUntilSettled()
-  const circuitJson = circuit.getCircuitJson()
-
-  // Create metadata map with all supported fields
-  const symbolMetadataMap = new Map<string, KicadSymbolMetadata>()
-  symbolMetadataMap.set("IC", {
+  const symbolMetadata: KicadSymbolMetadata = {
     // properties
     properties: {
       Reference: {
@@ -73,11 +46,68 @@ test("applies all kicadSymbolMetadata fields to schematic symbols", async () => 
     },
     // Embedded fonts
     embeddedFonts: true,
-  })
+  }
 
-  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any, {
-    symbolMetadataMap,
-  })
+  const circuit = new Circuit()
+  circuit.add(
+    <board width="30mm" height="20mm">
+      <chip
+        name="IC1"
+        footprint="soic8"
+        schX={0}
+        schY={0}
+        kicadSymbolMetadata={symbolMetadata}
+        pinLabels={{
+          pin1: "VCC",
+          pin2: "GND",
+          pin3: "IN1",
+          pin4: "IN2",
+          pin5: "OUT1",
+          pin6: "OUT2",
+          pin7: "NC1",
+          pin8: "NC2",
+        }}
+        symbol={
+          <symbol>
+            <schematicline
+              x1={-0.75}
+              y1={-0.5}
+              x2={0.75}
+              y2={-0.5}
+              strokeWidth={0.05}
+            />
+            <schematicline
+              x1={0.75}
+              y1={-0.5}
+              x2={0.75}
+              y2={0.5}
+              strokeWidth={0.05}
+            />
+            <schematicline
+              x1={0.75}
+              y1={0.5}
+              x2={-0.75}
+              y2={0.5}
+              strokeWidth={0.05}
+            />
+            <schematicline
+              x1={-0.75}
+              y1={0.5}
+              x2={-0.75}
+              y2={-0.5}
+              strokeWidth={0.05}
+            />
+            <port name="pin1" direction="right" schX={1} schY={0} />
+          </symbol>
+        }
+      />
+    </board>,
+  )
+
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any)
   converter.runUntilFinished()
 
   const output = converter.getOutputString()
