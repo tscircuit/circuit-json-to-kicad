@@ -23,7 +23,6 @@ import { getLibraryId } from "../getLibraryId"
 import {
   getReferenceDesignator,
   getKicadCompatibleComponentName,
-  extractReferencePrefix,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
@@ -147,11 +146,17 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         { x, y },
       )
 
-      // Check for kicadSymbolMetadata
+      // Check for kicadSymbolMetadata from circuit-json element
       let symbolMetadata: KicadSymbolMetadata | undefined
-      if (this.ctx.symbolMetadataMap && sourceComponent.name) {
-        const refDesPrefix = extractReferencePrefix(sourceComponent.name)
-        symbolMetadata = this.ctx.symbolMetadataMap.get(refDesPrefix)
+      if (schematicSymbolId) {
+        const schSymEl = this.ctx.circuitJson.find(
+          (el) =>
+            el.type === "schematic_symbol" &&
+            el.schematic_symbol_id === schematicSymbolId,
+        )
+        if (schSymEl && schSymEl.type === "schematic_symbol") {
+          symbolMetadata = schSymEl.metadata?.kicad_symbol
+        }
       }
 
       // Add properties for this instance, applying metadata if available

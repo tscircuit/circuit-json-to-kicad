@@ -25,14 +25,14 @@
     "kicadts": "^0.0.24",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.1267",
+    "tscircuit": "^0.0.1338",
     "tsup": "^8.5.0"
   },
   "peerDependencies": {
     "typescript": "^5"
   },
   "dependencies": {
-    "@tscircuit/props": "^0.0.470",
-    "circuit-json": "^0.0.378"
+    "@tscircuit/props": "^0.0.478",
+    "circuit-json": "^0.0.383"
   }
 }
