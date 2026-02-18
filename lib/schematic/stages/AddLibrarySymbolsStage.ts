@@ -36,7 +36,13 @@ import {
   getKicadCompatibleComponentName,
   getReferencePrefixForComponent,
 } from "../../utils/getKicadCompatibleComponentName"
-import { applyToPoint, scale as createScaleMatrix } from "transformation-matrix"
+import {
+  applyToPoint,
+  compose,
+  scale as createScaleMatrix,
+  translate,
+  type Matrix,
+} from "transformation-matrix"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
@@ -731,43 +737,44 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       libraryId: `${libId.split(":")[1]}_0_1`,
     })
 
-    // Convert schematic-symbols primitives to KiCad drawing elements
-    // For custom symbols, use a grid-aligned scale (15.24 = 12 * 1.27) so coordinates
-    // naturally land on KiCad's 1.27mm grid. For chips, use the standard scale.
-    const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27 - produces grid-aligned values for 0.5 increments
+    // Build transform: translate to center, then scale
+    // For custom symbols, use grid-aligned scale (15.24 = 12 * 1.27) for KiCad's 1.27mm grid
+    const GRID_ALIGNED_SCALE = 15.24
     const standardScale = this.ctx.c2kMatSch?.a || 15
     const symbolScale = isChip ? standardScale : GRID_ALIGNED_SCALE
+    const cx = symbolData.center?.x ?? 0
+    const cy = symbolData.center?.y ?? 0
+    const transform = compose(
+      createScaleMatrix(symbolScale, symbolScale),
+      translate(-cx, -cy),
+    )
 
     for (const primitive of symbolData.primitives || []) {
       if (primitive.type === "path" && primitive.points) {
-        // Use background fill for chip boxes OR when primitive has fill=true
         const fillType = isChip || primitive.fill ? "background" : "none"
         const polyline = this.createPolylineFromPoints({
           points: primitive.points,
-          scale: symbolScale,
-          center: symbolData.center,
-          fillType: fillType,
+          transform,
+          fillType,
         })
         drawingSymbol.polylines.push(polyline)
       } else if (primitive.type === "circle") {
         const circle = this.createCircleFromPrimitive({
           primitive,
+          transform,
           scale: symbolScale,
-          center: symbolData.center,
         })
         drawingSymbol.circles.push(circle)
       }
-      // Note: schematic-symbols typically uses paths, not box primitives
     }
 
     // Convert text primitives to KiCad SymbolText elements
-    // symbolData.texts may be an array (custom symbols) or undefined/object (schematic-symbols)
     const textsArray = Array.isArray(symbolData.texts) ? symbolData.texts : []
-    for (const textData of textsArray) {
+    for (const schText of textsArray) {
       const symbolText = this.createTextFromPrimitive({
-        textData,
+        schText,
+        transform,
         scale: symbolScale,
-        center: symbolData.center,
       })
       drawingSymbol.texts.push(symbolText)
     }
@@ -780,26 +787,18 @@ export class AddLibrarySymbolsStage extends ConverterStage<
    */
   private createPolylineFromPoints({
     points,
-    scale,
-    center,
+    transform,
     fillType,
   }: {
     points: Array<{ x: number; y: number }>
-    scale: number
-    center: { x: number; y: number } | undefined
+    transform: Matrix
     fillType: "none" | "background"
   }): SymbolPolyline {
     const polyline = new SymbolPolyline()
 
-    // Scale points to match the c2kMatSch transformation scale
-    const cx = center?.x ?? 0
-    const cy = center?.y ?? 0
-
-    // Use transformation matrix for scaling
-    const scaleMatrix = createScaleMatrix(scale, scale)
     const xyPoints = points.map((p) => {
-      const translated = applyToPoint(scaleMatrix, { x: p.x - cx, y: p.y - cy })
-      return new Xy(translated.x, translated.y)
+      const transformed = applyToPoint(transform, p)
+      return new Xy(transformed.x, transformed.y)
     })
     const pts = new Pts(xyPoints)
     polyline.points = pts
@@ -823,22 +822,18 @@ export class AddLibrarySymbolsStage extends ConverterStage<
    */
   private createCircleFromPrimitive({
     primitive,
+    transform,
     scale,
-    center,
   }: {
     primitive: any
+    transform: Matrix
     scale: number
-    center: { x: number; y: number } | undefined
   }): SymbolCircle {
     const circle = new SymbolCircle()
 
-    // Scale the circle position
-    const cx = center?.x ?? 0
-    const cy = center?.y ?? 0
-    const scaleMatrix = createScaleMatrix(scale, scale)
-    const scaledPos = applyToPoint(scaleMatrix, {
-      x: primitive.x - cx,
-      y: primitive.y - cy,
+    const scaledPos = applyToPoint(transform, {
+      x: primitive.x,
+      y: primitive.y,
     })
 
     const c = circle as any
@@ -861,40 +856,29 @@ export class AddLibrarySymbolsStage extends ConverterStage<
    * Create a KiCad SymbolText from a schematic_text primitive
    */
   private createTextFromPrimitive({
-    textData,
+    schText,
+    transform,
     scale,
-    center,
   }: {
-    textData: {
+    schText: {
       text: string
       x: number
       y: number
       fontSize: number
       anchor?: string
     }
+    transform: Matrix
     scale: number
-    center: { x: number; y: number } | undefined
   }): SymbolText {
     const symbolText = new SymbolText()
 
-    // Scale the text position
-    const cx = center?.x ?? 0
-    const cy = center?.y ?? 0
-    const scaleMatrix = createScaleMatrix(scale, scale)
-    const scaledPos = applyToPoint(scaleMatrix, {
-      x: textData.x - cx,
-      y: textData.y - cy,
-    })
+    const scaledPos = applyToPoint(transform, { x: schText.x, y: schText.y })
 
-    symbolText.value = textData.text
+    symbolText.value = schText.text
     symbolText.at = [scaledPos.x, scaledPos.y, 0]
 
-    // Scale font size with a reduced factor for better visual appearance
-    // Circuit-json font sizes are in schematic units (typically 0.1-0.5)
-    // KiCad expects mm, with typical symbol text around 1.0-1.5mm
-    // Use a scaling factor of ~5 instead of the full position scale
-    const TEXT_SCALE_FACTOR = 5
-    const scaledFontSize = textData.fontSize * TEXT_SCALE_FACTOR
+    // Scale font size to match symbol scaling
+    const scaledFontSize = schText.fontSize * scale
     const font = new TextEffectsFont()
     font.size = { height: scaledFontSize, width: scaledFontSize }
     symbolText.effects = new TextEffects({ font })
