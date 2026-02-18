@@ -88,12 +88,12 @@ test("applies all kicadFootprintMetadata fields to footprints", async () => {
   // Verify embeddedFonts is applied
   expect(output).toContain("(embedded_fonts yes)")
 
-  // Verify properties - Reference
-  expect(output).toContain('(property "Reference" "MC**"')
+  // Verify properties - Reference (uses actual component name, not metadata value)
+  expect(output).toContain('(property "Reference" "MC1"')
   expect(output).toContain("(size 0.8 0.8)")
   expect(output).toContain("(thickness 0.12)")
 
-  // Verify properties - Value
+  // Verify properties - Value (explicit Value.value takes precedence over footprintName)
   expect(output).toContain('(property "Value" "CustomChip"')
 
   // Verify properties - Datasheet
