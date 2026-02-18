@@ -1,12 +1,20 @@
-export function createGenericChipSymbolData(schematicComp: any, db: any): any {
+import type { SchematicComponent, SchematicPort } from "circuit-json"
+
+export function createGenericChipSymbolData(
+  schematicComp: SchematicComponent,
+  db: any,
+) {
   // Get all ports for this component
-  const schematicPorts = db.schematic_port
+  const schematicPorts: SchematicPort[] = db.schematic_port
     .list()
     .filter(
-      (p: any) =>
+      (p: SchematicPort) =>
         p.schematic_component_id === schematicComp.schematic_component_id,
     )
-    .sort((a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0))
+    .sort(
+      (a: SchematicPort, b: SchematicPort) =>
+        (a.pin_number || 0) - (b.pin_number || 0),
+    )
 
   // Create box primitives based on component size
   const width = schematicComp.size?.width || 1.5
@@ -24,7 +32,7 @@ export function createGenericChipSymbolData(schematicComp: any, db: any): any {
   }
 
   // Create ports from schematic ports
-  const ports = schematicPorts.map((port: any) => {
+  const ports = schematicPorts.map((port) => {
     // Get port position relative to component center
     const portX = port.center.x - schematicComp.center.x
     const portY = port.center.y - schematicComp.center.y

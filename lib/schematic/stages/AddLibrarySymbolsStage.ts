@@ -235,12 +235,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     this.processedSymbolNames.add(libId)
 
     // Build symbol data from schematic primitives linked to this schematic_symbol
-    const symbolData = buildSymbolDataFromSchematicPrimitives(
-      this.ctx.circuitJson,
+    const symbolData = buildSymbolDataFromSchematicPrimitives({
+      circuitJson: this.ctx.circuitJson,
       schematicSymbolId,
       schematicSymbol,
-      schematicComponent.schematic_component_id,
-    )
+      schematicComponentId: schematicComponent.schematic_component_id,
+    })
 
     // Get footprint name for symbol-footprint linkage
     const footprintName = getKicadCompatibleComponentName(
