@@ -1,3 +1,5 @@
+import type { KicadFootprintMetadata } from "@tscircuit/props"
+import type { PcbComponent } from "circuit-json"
 import type { FootprintEntry } from "../../types"
 import type {
   KicadLibraryConverterContext,
@@ -35,8 +37,16 @@ function classifyFootprintsForComponent({
   const { tscircuitComponentName, kicadFootprints } = extractedKicadComponent
   let hasAddedUserFootprint = false
 
-  // Get metadata for this component if available
-  const metadata = ctx.footprintMetadataMap.get(tscircuitComponentName)
+  // Get metadata from circuit-json pcb_component element
+  const builtComponent = ctx.builtTscircuitComponents.find(
+    (c) => c.tscircuitComponentName === tscircuitComponentName,
+  )
+  const pcbComponent = builtComponent?.circuitJson.find(
+    (el): el is PcbComponent => el.type === "pcb_component",
+  )
+  const metadata = pcbComponent?.metadata?.kicad_footprint as
+    | KicadFootprintMetadata
+    | undefined
 
   for (const kicadFootprint of kicadFootprints) {
     if (kicadFootprint.isBuiltin) {

@@ -1,6 +1,7 @@
 import type {
   CircuitJson,
   CadComponent,
+  PcbComponent,
   SourceComponentBase,
 } from "circuit-json"
 import {
@@ -47,6 +48,8 @@ export class ExtractFootprintsStage extends ConverterStage<
   /**
    * Builds a set of custom footprint names.
    * These are components WITHOUT footprinter_string.
+   * Includes both the generated name and any metadata-provided footprintName,
+   * since metadata may rename the libraryLink during PCB generation.
    */
   private findCustomFootprintNames(): Set<string> {
     const customNames = new Set<string>()
@@ -67,6 +70,21 @@ export class ExtractFootprintsStage extends ConverterStage<
             cadComponent,
           )
           customNames.add(footprintName)
+
+          // Also include metadata-provided footprintName (metadata may
+          // rename libraryLink during intermediate PCB generation)
+          const pcbComp = this.ctx.circuitJson.find(
+            (el) =>
+              el.type === "pcb_component" &&
+              el.source_component_id === cadComponent.source_component_id,
+          )
+          if (
+            pcbComp &&
+            pcbComp.type === "pcb_component" &&
+            pcbComp.metadata?.kicad_footprint?.footprintName
+          ) {
+            customNames.add(pcbComp.metadata.kicad_footprint.footprintName)
+          }
         }
       }
     }

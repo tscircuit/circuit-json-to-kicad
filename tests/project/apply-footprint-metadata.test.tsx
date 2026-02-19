@@ -14,7 +14,7 @@ test("applies all kicadFootprintMetadata fields to footprints", async () => {
     // properties
     properties: {
       Reference: {
-        value: "MC**",
+        value: "MC1",
         at: { x: 0, y: -4 },
         layer: "F.SilkS",
         effects: {

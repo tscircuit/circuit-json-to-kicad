@@ -1,9 +1,5 @@
 import type { CircuitJson } from "circuit-json"
 import type { SymbolEntry, FootprintEntry } from "../types"
-import type {
-  KicadFootprintMetadata,
-  KicadSymbolMetadata,
-} from "@tscircuit/props"
 
 export interface KicadLibraryConverterOptions {
   /**
@@ -52,26 +48,6 @@ export interface KicadLibraryConverterOptions {
    * Default: true
    */
   includeBuiltins?: boolean
-
-  /**
-   * Callback to get KiCad footprint metadata from a component via prop introspection.
-   * This allows extracting kicadFootprintMetadata props without rendering the component.
-   * Return null if no metadata is available.
-   */
-  getComponentKicadMetadata?: (
-    filePath: string,
-    componentName: string,
-  ) => Promise<KicadFootprintMetadata | null>
-
-  /**
-   * Callback to get KiCad symbol metadata from a component via prop introspection.
-   * This allows extracting kicadSymbolMetadata props without rendering the component.
-   * Return null if no metadata is available.
-   */
-  getComponentKicadSymbolMetadata?: (
-    filePath: string,
-    componentName: string,
-  ) => Promise<KicadSymbolMetadata | null>
 
   /**
    * Whether to generate files for KiCad PCM (Plugin and Content Manager).
@@ -133,24 +109,6 @@ export interface KicadLibraryConverterContext {
 
   /** The KiCad PCM package identifier for constructing 3D model paths */
   kicadPcmPackageId?: string
-
-  /** Callback to get KiCad footprint metadata from component props */
-  getComponentKicadMetadata?: (
-    filePath: string,
-    componentName: string,
-  ) => Promise<KicadFootprintMetadata | null>
-
-  /** Callback to get KiCad symbol metadata from component props */
-  getComponentKicadSymbolMetadata?: (
-    filePath: string,
-    componentName: string,
-  ) => Promise<KicadSymbolMetadata | null>
-
-  /** Map of footprint name to its KiCad metadata from component props */
-  footprintMetadataMap: Map<string, KicadFootprintMetadata>
-
-  /** Map of symbol name to its KiCad metadata from component props */
-  symbolMetadataMap: Map<string, KicadSymbolMetadata>
 
   /** Tscircuit components built to circuit-json */
   builtTscircuitComponents: BuiltTscircuitComponent[]

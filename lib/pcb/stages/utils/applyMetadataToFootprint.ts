@@ -43,13 +43,12 @@ export function applyMetadataToFootprint(
   if (metadata.properties) {
     const newProperties: Property[] = []
 
-    // Reference property - always use componentName (actual RefDes from circuit-json)
-    // We can't use refMeta?.value because metadata is keyed by prefix and shared across components
+    // Reference property - use explicit metadata value if provided, otherwise fall back to componentName
     const refMeta = metadata.properties.Reference
     newProperties.push(
       new Property({
         key: "Reference",
-        value: componentName,
+        value: refMeta?.value ?? componentName,
         position: refMeta?.at
           ? [
               Number(refMeta.at.x),

@@ -1,9 +1,7 @@
 import { test, expect } from "bun:test"
-import { applyKicadFootprintMetadata } from "lib/kicad-library/kicad-library-converter-utils/applyKicadFootprintMetadata"
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
-import type { KicadFootprintMetadata } from "@tscircuit/props"
 
 const KeySocket = () => (
   <chip
@@ -88,12 +86,6 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     "lib/my-keyboard-library.ts": ["KeyHotSocket", "SimpleLedCircuit"],
   }
 
-  const componentDefMap: Record<string, (() => React.JSX.Element) | undefined> =
-    {
-      KeyHotSocket: KeyHotSocket,
-      SimpleLedCircuit: SimpleLedCircuit,
-    }
-
   const mockCircuitJson: Record<string, CircuitJson> = {
     KeyHotSocket: await renderKeyHotSocket(),
     SimpleLedCircuit: await renderSimpleLedCircuit(),
@@ -105,53 +97,6 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
     buildFileToCircuitJson: async (_filePath, componentName) =>
       mockCircuitJson[componentName] ?? null,
-    getComponentKicadMetadata: async (_filePath, componentName) => {
-      const Component = componentDefMap[componentName]
-
-      if (!Component) return {}
-
-      const reactElm = Component()
-
-      let queue = [reactElm]
-
-      let kicadFootprintMetadata: KicadFootprintMetadata = {}
-
-      let maxIters = 100
-      let iters = 0
-      while (queue.length > 0) {
-        iters++
-        if (iters > maxIters) {
-          break
-        }
-        const elm = queue.shift()
-
-        if (!elm) continue
-
-        if (typeof elm.type === "function") {
-          try {
-            const reactElm = elm.type()
-            queue.push(reactElm)
-          } catch (e) {
-            console.log(e)
-          }
-        }
-
-        if (elm?.props?.kicadFootprintMetadata) {
-          kicadFootprintMetadata = elm.props.kicadFootprintMetadata
-          break
-        }
-        if (elm) {
-          const children = elm?.props?.children
-          if (Array.isArray(children)) {
-            queue.push(...children)
-          } else if (children) {
-            queue.push(children)
-          }
-        }
-      }
-
-      return kicadFootprintMetadata
-    },
     includeBuiltins: true,
   })
 

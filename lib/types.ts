@@ -3,10 +3,6 @@ import type { CircuitJson } from "circuit-json"
 import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
-import type {
-  KicadFootprintMetadata,
-  KicadSymbolMetadata,
-} from "@tscircuit/props"
 
 // Type aliases for IDs to make context clearer
 export type SchematicPortId = string
@@ -81,11 +77,6 @@ export interface ConverterContext {
   symbolEntries?: SymbolEntry[]
   footprintEntries?: FootprintEntry[]
   libraryOutput?: KicadLibraryOutput
-
-  // Metadata for applying kicadFootprintMetadata/kicadSymbolMetadata
-  // Maps RefDes prefix (e.g., "MP", "R") to metadata
-  footprintMetadataMap?: Map<string, KicadFootprintMetadata>
-  symbolMetadataMap?: Map<string, KicadSymbolMetadata>
 }
 
 export abstract class ConverterStage<Input, Output> {

@@ -2,7 +2,6 @@ import { test, expect } from "bun:test"
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
-import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 const KeySocket = () => (
   <chip
@@ -27,6 +26,22 @@ const KeySocket = () => (
         },
       },
     }}
+    symbol={
+      <symbol name="KeySocket">
+        <schematicpath
+          strokeWidth={0.05}
+          points={[
+            { x: -0.3, y: -0.2 },
+            { x: 0.3, y: -0.2 },
+            { x: 0.3, y: 0.2 },
+            { x: -0.3, y: 0.2 },
+            { x: -0.3, y: -0.2 },
+          ]}
+        />
+        <port name="pin1" direction="left" schX={-0.4} schY={0} />
+        <port name="pin2" direction="right" schX={0.4} schY={0} />
+      </symbol>
+    }
     footprint={
       <footprint>
         <smtpad
@@ -75,11 +90,6 @@ test("KicadLibraryConverter applies kicadSymbolMetadata", async () => {
     "lib/my-keyboard-library.ts": ["KeyHotSocket"],
   }
 
-  const componentDefMap: Record<string, (() => React.JSX.Element) | undefined> =
-    {
-      KeyHotSocket: KeyHotSocket,
-    }
-
   const mockCircuitJson: Record<string, CircuitJson> = {
     KeyHotSocket: await renderKeyHotSocket(),
   }
@@ -90,42 +100,6 @@ test("KicadLibraryConverter applies kicadSymbolMetadata", async () => {
     getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
     buildFileToCircuitJson: async (_filePath, componentName) =>
       mockCircuitJson[componentName] ?? null,
-    getComponentKicadSymbolMetadata: async (_filePath, componentName) => {
-      const Component = componentDefMap[componentName]
-      if (!Component) return {}
-      const reactElm = Component()
-      const queue = [reactElm]
-
-      let kicadSymbolMetadata: KicadSymbolMetadata = {}
-
-      while (queue.length > 0) {
-        const elm = queue.shift()
-        if (!elm) continue
-
-        if (typeof elm.type === "function") {
-          try {
-            const child = elm.type()
-            queue.push(child)
-          } catch (error) {
-            console.log(error)
-          }
-        }
-
-        if (elm?.props?.kicadSymbolMetadata) {
-          kicadSymbolMetadata = elm.props.kicadSymbolMetadata
-          break
-        }
-
-        const children = elm?.props?.children
-        if (Array.isArray(children)) {
-          queue.push(...children)
-        } else if (children) {
-          queue.push(children)
-        }
-      }
-
-      return kicadSymbolMetadata
-    },
     includeBuiltins: true,
   })
 
