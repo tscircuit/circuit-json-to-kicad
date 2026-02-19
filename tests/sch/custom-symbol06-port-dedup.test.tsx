@@ -98,10 +98,10 @@ test("custom-symbol06: deduplicates ports with same pin_number", () => {
   const pin1Matches = kicadOutput.match(/\(number "1"/g)
   expect(pin1Matches?.length).toBe(1)
 
-  // Verify the pin is at the FIRST port's position (x=1.5, scaled by 15.24 = 22.86)
-  // NOT at the second port's position (x=-0.6, scaled = -9.144)
-  expect(kicadOutput).toContain("22.86")
-  expect(kicadOutput).not.toContain("-9.144")
+  // Verify the pin is at the FIRST port's position (x=1.5)
+  // NOT at the second port's position (x=-0.6)
+  expect(kicadOutput).toContain("1.5 0 180")
+  expect(kicadOutput).not.toContain("-0.6 0 0")
 })
 
 /**

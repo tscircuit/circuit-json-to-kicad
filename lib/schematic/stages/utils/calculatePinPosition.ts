@@ -23,9 +23,9 @@ export function calculatePinPosition({
   schematicPorts: SchematicPort[]
   c2kMatSchScale: number
 }): { x: number; y: number; angle: number } {
-  // For custom symbols, use grid-aligned scale so pins land on KiCad's 1.27mm grid
-  const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27
-  const symbolScale = isChip ? c2kMatSchScale : GRID_ALIGNED_SCALE
+  // Chips use c2kMatSchScale to match page layout.
+  // Non-chip symbols stay in mm; pin endpoints are snapped to 1.27mm grid below.
+  const symbolScale = isChip ? c2kMatSchScale : 1
 
   let portX = port.x ?? 0
   let portY = port.y ?? 0
