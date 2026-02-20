@@ -339,7 +339,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     referencePrefix?: string
     symbolScale?: number
   }): SchematicSymbol {
-    const c2kMatSchScale = symbolScale ?? this.ctx.c2kMatSch?.a ?? 15
+    const CIRCUIT_JSON_SCALE_FACTOR = 15
+    const c2kMatSchScale =
+      symbolScale ?? this.ctx.c2kMatSch?.a ?? CIRCUIT_JSON_SCALE_FACTOR
     const symbol = new SchematicSymbol({
       libraryId: libId,
       excludeFromSim: false,
