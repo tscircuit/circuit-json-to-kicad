@@ -19,65 +19,65 @@ test("stem-length01: custom symbol with schStemLength (snapshot)", async () => {
         name="U1"
         footprint="soic8"
         symbol={
-          <symbol>
+          <symbol width={10} height={10}>
             {/* Op-amp triangle */}
             <schematicline
               x1={-0.5}
               y1={-0.7}
               x2={-0.5}
               y2={0.7}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             <schematicline
               x1={-0.5}
               y1={0.7}
               x2={0.7}
               y2={0}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             <schematicline
               x1={0.7}
               y1={0}
               x2={-0.5}
               y2={-0.7}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             {/* Plus/minus labels */}
             <schematictext
               schX={-0.35}
               schY={0.35}
               text="+"
-              fontSize={0.3}
+              fontSize={0.8}
               color="brown"
             />
             <schematictext
               schX={-0.35}
               schY={-0.35}
               text="-"
-              fontSize={0.3}
+              fontSize={0.8}
               color="brown"
             />
             {/* Ports with custom stem lengths */}
             <port
-              name="IN"
-              schX={-1}
-              schY={0.35}
+              name="IN1"
+              schX={-10}
+              schY={2.5}
               direction="left"
-              schStemLength={0.5}
+              schStemLength={5}
             />
             <port
-              name="IN"
-              schX={-1}
-              schY={-0.35}
+              name="IN2"
+              schX={-10}
+              schY={-2.5}
               direction="left"
-              schStemLength={0.5}
+              schStemLength={5}
             />
             <port
               name="OUT"
-              schX={1.1}
+              schX={10}
               schY={0}
               direction="right"
-              schStemLength={0.4}
+              schStemLength={5}
             />
           </symbol>
         }

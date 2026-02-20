@@ -26,26 +26,15 @@ test("custom-symbol10: pin on BOTTOM has angle 90", async () => {
           <symbol>
             <schematiccircle
               center={{ x: 0, y: 0 }}
-              radius={0.3}
+              radius={2}
               isFilled={true}
               fillColor="#ff44ff"
+              strokeWidth={0.2}
             />
             {/* Line extending DOWN to port */}
-            <schematicline
-              x1={0}
-              y1={-0.3}
-              x2={0}
-              y2={-0.8}
-              strokeWidth={0.05}
-            />
+            <schematicline x1={0} y1={-2} x2={0} y2={-5} strokeWidth={0.08} />
             {/* Port on BOTTOM - should have angle 90 */}
-            <port
-              name="B"
-              pinNumber={1}
-              direction="down"
-              schX={0}
-              schY={-0.8}
-            />
+            <port name="B" pinNumber={1} direction="down" schX={0} schY={-5} />
           </symbol>
         }
       />

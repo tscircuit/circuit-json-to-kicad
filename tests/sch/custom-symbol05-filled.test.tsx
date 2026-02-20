@@ -18,7 +18,7 @@ test("custom-symbol05: filled path with isFilled=true", async () => {
         capacitance="10uF"
         footprint="0402"
         symbol={
-          <symbol>
+          <symbol width={10} height={3}>
             {/* Filled rectangle */}
             <schematicpath
               points={[
@@ -35,8 +35,8 @@ test("custom-symbol05: filled path with isFilled=true", async () => {
             {/* Line extending to the ports */}
             <schematicline x1={-0.5} y1={0} x2={-1} y2={0} strokeWidth={0.05} />
             <schematicline x1={0.5} y1={0} x2={1} y2={0} strokeWidth={0.05} />
-            <port name="1" direction="left" schX={-1} schY={0} />
-            <port name="2" direction="right" schX={1} schY={0} />
+            <port name="pos" direction="left" schX={-7} schY={0} />
+            <port name="neg" direction="right" schX={7} schY={0} />
           </symbol>
         }
       />

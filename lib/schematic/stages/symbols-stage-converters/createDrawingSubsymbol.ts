@@ -23,9 +23,7 @@ export function createDrawingSubsymbol({
     libraryId: `${libId.split(":")[1]}_0_1`,
   })
 
-  // For custom symbols, use grid-aligned scale so pins land on KiCad's 1.27mm grid
-  const GRID_ALIGNED_SCALE = 15.24 // 12 * 1.27
-  const symbolScale = isChip ? c2kMatSchScale : GRID_ALIGNED_SCALE
+  const symbolScale = c2kMatSchScale
   const cx = symbolData.center?.x ?? 0
   const cy = symbolData.center?.y ?? 0
   const transform = compose(

@@ -8,10 +8,9 @@ export interface PaperDimensions {
 
 /**
  * Standard paper sizes in millimeters (landscape orientation)
- * Listed from smallest (A4) to largest (A0)
- * A4 is the minimum and default size
  */
 const PAPER_SIZES: PaperDimensions[] = [
+  { name: "A5", width: 210, height: 148 },
   { name: "A4", width: 297, height: 210 },
   { name: "A3", width: 420, height: 297 },
   { name: "A2", width: 594, height: 420 },
