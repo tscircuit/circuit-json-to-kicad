@@ -25,26 +25,15 @@ test("custom-symbol08: pin on LEFT side has angle 0", async () => {
           <symbol>
             <schematiccircle
               center={{ x: 0, y: 0 }}
-              radius={0.3}
+              radius={2}
               isFilled={true}
               fillColor="#ff8844"
+              strokeWidth={0.2}
             />
             {/* Line extending LEFT to port */}
-            <schematicline
-              x1={-0.3}
-              y1={0}
-              x2={-0.8}
-              y2={0}
-              strokeWidth={0.05}
-            />
+            <schematicline x1={-2} y1={0} x2={-5} y2={0} strokeWidth={0.08} />
             {/* Port on LEFT side - should have angle 0 */}
-            <port
-              name="L"
-              pinNumber={1}
-              direction="left"
-              schX={-0.8}
-              schY={0}
-            />
+            <port name="L" pinNumber={1} direction="left" schX={-5} schY={0} />
           </symbol>
         }
       />

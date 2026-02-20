@@ -65,12 +65,21 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   // If no ports found by symbol id, try to find by component id
   if (ports.length === 0 && schematicComponentId) {
     // First try: only include ports with display_pin_label (custom symbol ports)
-    ports = circuitJson.filter(
+    // Deduplicate by pin_number — last occurrence wins (custom symbol ports
+    // appear after native component ports in circuit-json)
+    const labeledPorts = circuitJson.filter(
       (el): el is SchematicPort =>
         el.type === "schematic_port" &&
         el.schematic_component_id === schematicComponentId &&
         el.display_pin_label !== undefined,
     )
+    const labelMap = new Map<string, SchematicPort>()
+    for (const port of labeledPorts) {
+      if (port.display_pin_label) {
+        labelMap.set(port.display_pin_label, port)
+      }
+    }
+    ports = labelMap.size > 0 ? Array.from(labelMap.values()) : labeledPorts
 
     // Second try: if no ports with display_pin_label, get all ports and deduplicate by pin_number
     if (ports.length === 0) {

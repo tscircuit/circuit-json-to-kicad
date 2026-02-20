@@ -17,13 +17,13 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
         name="Q1"
         footprint="sot23"
         symbol={
-          <symbol>
+          <symbol width={15} height={15}>
             {/* Outer circle */}
             <schematiccircle
               center={{ x: 0.1, y: 0 }}
               radius={0.55}
               isFilled={false}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             {/* Base vertical bar */}
             <schematicline
@@ -31,7 +31,7 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
               y1={-0.5}
               x2={-0.1}
               y2={0.5}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             {/* Base input line */}
             <schematicline
@@ -39,7 +39,7 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
               y1={0}
               x2={-0.1}
               y2={0}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             {/* Collector line (diagonal then vertical) */}
             <schematicline
@@ -47,14 +47,14 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
               y1={0.2}
               x2={0.35}
               y2={0.5}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             <schematicline
               x1={0.35}
               y1={0.5}
               x2={0.35}
               y2={1}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             {/* Emitter line (diagonal then vertical) */}
             <schematicline
@@ -62,14 +62,14 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
               y1={-0.2}
               x2={0.35}
               y2={-0.5}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             <schematicline
               x1={0.35}
               y1={-0.5}
               x2={0.35}
               y2={-1}
-              strokeWidth={0.05}
+              strokeWidth={0.08}
             />
             {/* Emitter arrow (V shape pointing outward along emitter line) */}
             <schematicpath
@@ -78,11 +78,12 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
                 { x: 0.2, y: -0.4 },
                 { x: 0.06, y: -0.44 },
               ]}
+              strokeWidth={0.08}
             />
             {/* Ports */}
-            <port name="B" direction="left" schX={-0.7} schY={0} />
-            <port name="C" direction="up" schX={0.35} schY={1} />
-            <port name="E" direction="down" schX={0.35} schY={-1} />
+            <port name="B" direction="left" schX={-8} schY={0} />
+            <port name="C" direction="up" schX={4.17} schY={8} />
+            <port name="E" direction="down" schX={4.17} schY={-8} />
           </symbol>
         }
       />
