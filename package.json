@@ -1,7 +1,7 @@
 {
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
-  "version": "0.0.75",
+  "version": "0.0.77",
   "type": "module",
   "files": [
     "dist"
