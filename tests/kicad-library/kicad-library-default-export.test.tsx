@@ -90,7 +90,7 @@ test("KicadLibraryConverter handles default export from entrypoint", async () =>
 `)
 
   // Verify 3D model paths are collected
-  expect(output.model3dSourcePaths.length).toBe(1)
+  expect(output.model3dSourcePaths.length).toBe(2)
 })
 
 test("KicadLibraryConverter resolves path for re-exported default exports", async () => {

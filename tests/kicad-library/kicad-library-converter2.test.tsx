@@ -131,5 +131,5 @@ test("KicadLibraryConverter full output with custom USB connector", async () => 
   `)
 
   // Verify 3D model paths are collected
-  expect(output.model3dSourcePaths.length).toBe(1)
+  expect(output.model3dSourcePaths.length).toBe(2)
 })

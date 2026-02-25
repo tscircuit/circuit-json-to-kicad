@@ -25,6 +25,8 @@ import {
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
 
+export const MODEL_CDN_BASE_URL = "https://modelcdn.tscircuit.com/jscad_models"
+
 // KiCad footprint version and generator info
 const KICAD_FP_VERSION = 20240108
 const KICAD_FP_GENERATOR = "pcbnew"
@@ -46,50 +48,57 @@ export class ExtractFootprintsStage extends ConverterStage<
   KicadLibraryOutput
 > {
   /**
-   * Builds a set of custom footprint names.
-   * These are components WITHOUT footprinter_string.
-   * Includes both the generated name and any metadata-provided footprintName,
-   * since metadata may rename the libraryLink during PCB generation.
+   * Iterates cad_components to build:
+   * - customFootprintNames: footprints WITHOUT footprinter_string (custom inline)
+   * - footprinterStrings: map of footprint name -> footprinter_string (for CDN model fallback)
    */
-  private findCustomFootprintNames(): Set<string> {
-    const customNames = new Set<string>()
+  private classifyFootprints(): {
+    customFootprintNames: Set<string>
+    footprinterStrings: Map<string, string>
+  } {
+    const customFootprintNames = new Set<string>()
+    const footprinterStrings = new Map<string, string>()
 
     const cadComponents = this.ctx.db.cad_component?.list() ?? []
     const sourceComponents = this.ctx.db.source_component
 
     for (const cadComponent of cadComponents as CadComponent[]) {
-      // No footprinter_string = custom inline footprint
-      if (!cadComponent.footprinter_string) {
-        const sourceComp = cadComponent.source_component_id
-          ? sourceComponents?.get(cadComponent.source_component_id)
-          : null
+      const sourceComp = cadComponent.source_component_id
+        ? sourceComponents?.get(cadComponent.source_component_id)
+        : null
 
-        if (sourceComp) {
-          const footprintName = getKicadCompatibleComponentName(
-            sourceComp as SourceComponentBase,
-            cadComponent,
-          )
-          customNames.add(footprintName)
+      if (!sourceComp) continue
 
-          // Also include metadata-provided footprintName (metadata may
-          // rename libraryLink during intermediate PCB generation)
-          const pcbComp = this.ctx.circuitJson.find(
-            (el) =>
-              el.type === "pcb_component" &&
-              el.source_component_id === cadComponent.source_component_id,
+      const footprintName = getKicadCompatibleComponentName(
+        sourceComp as SourceComponentBase,
+        cadComponent,
+      )
+
+      if (cadComponent.footprinter_string) {
+        footprinterStrings.set(footprintName, cadComponent.footprinter_string)
+      } else {
+        customFootprintNames.add(footprintName)
+
+        // Also include metadata-provided footprintName (metadata may
+        // rename libraryLink during intermediate PCB generation)
+        const pcbComp = this.ctx.circuitJson.find(
+          (el) =>
+            el.type === "pcb_component" &&
+            el.source_component_id === cadComponent.source_component_id,
+        )
+        if (
+          pcbComp &&
+          pcbComp.type === "pcb_component" &&
+          pcbComp.metadata?.kicad_footprint?.footprintName
+        ) {
+          customFootprintNames.add(
+            pcbComp.metadata.kicad_footprint.footprintName,
           )
-          if (
-            pcbComp &&
-            pcbComp.type === "pcb_component" &&
-            pcbComp.metadata?.kicad_footprint?.footprintName
-          ) {
-            customNames.add(pcbComp.metadata.kicad_footprint.footprintName)
-          }
         }
       }
     }
 
-    return customNames
+    return { customFootprintNames, footprinterStrings }
   }
 
   override _step(): void {
@@ -102,8 +111,8 @@ export class ExtractFootprintsStage extends ConverterStage<
       )
     }
 
-    // Find custom footprint names (components without footprinter_string)
-    const customFootprintNames = this.findCustomFootprintNames()
+    const { customFootprintNames, footprinterStrings } =
+      this.classifyFootprints()
 
     const uniqueFootprints = new Map<string, FootprintEntry>()
 
@@ -124,6 +133,7 @@ export class ExtractFootprintsStage extends ConverterStage<
           footprint,
           fpLibraryName,
           customFootprintNames,
+          footprinterStrings,
         })
         if (!uniqueFootprints.has(footprintEntry.footprintName)) {
           uniqueFootprints.set(footprintEntry.footprintName, footprintEntry)
@@ -141,10 +151,12 @@ export class ExtractFootprintsStage extends ConverterStage<
     footprint,
     fpLibraryName,
     customFootprintNames,
+    footprinterStrings,
   }: {
     footprint: Footprint
     fpLibraryName: string
     customFootprintNames: Set<string>
+    footprinterStrings: Map<string, string>
   }): FootprintEntry {
     // Extract footprint name from libraryLink (e.g., "tscircuit:simple_resistor" -> "simple_resistor")
     const libraryLink = footprint.libraryLink ?? "footprint"
@@ -299,6 +311,20 @@ export class ExtractFootprintsStage extends ConverterStage<
         modelFiles.push(model.path)
       }
     }
+    // CDN fallback: if no explicit 3D model and footprint has a footprinter_string,
+    // use CDN URL for the model
+    if (updatedModels.length === 0) {
+      const footprinterString = footprinterStrings.get(footprintName)
+      if (footprinterString) {
+        const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinterString}.step`
+        const cdnModelFilename = getBasename(cdnUrl)
+        const newPath = `../../3dmodels/tscircuit_builtin.3dshapes/${cdnModelFilename}`
+
+        updatedModels.push(new FootprintModel(newPath))
+        modelFiles.push(cdnUrl)
+      }
+    }
+
     footprint.models = updatedModels
 
     return {
