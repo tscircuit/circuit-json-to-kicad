@@ -318,7 +318,7 @@ export class ExtractFootprintsStage extends ConverterStage<
       if (footprinterString) {
         const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinterString}.step`
         const cdnModelFilename = getBasename(cdnUrl)
-        const newPath = `../../3dmodels/${fpLibraryName}.3dshapes/${cdnModelFilename}`
+        const newPath = `../../3dmodels/tscircuit_builtin.3dshapes/${cdnModelFilename}`
 
         updatedModels.push(new FootprintModel(newPath))
         modelFiles.push(cdnUrl)

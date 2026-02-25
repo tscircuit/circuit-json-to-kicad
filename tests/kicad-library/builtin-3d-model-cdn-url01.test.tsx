@@ -17,7 +17,7 @@ async function renderBuiltinComponents(): Promise<CircuitJson> {
   return circuit.getCircuitJson() as CircuitJson
 }
 
-test("builtin footprints get 3D model CDN URLs from modelcdn.tscircuit.com", async () => {
+test("builtin footprints get 3D model CDN URLs and use tscircuit_builtin.3dshapes", async () => {
   const mockCircuitJson = await renderBuiltinComponents()
 
   const converter = new KicadLibraryConverter({
@@ -31,36 +31,43 @@ test("builtin footprints get 3D model CDN URLs from modelcdn.tscircuit.com", asy
   await converter.run()
   const output = converter.getOutput()
 
-  // All builtin footprints should have CDN model source paths
-  const modelPaths = output.model3dSourcePaths
-  expect(modelPaths.length).toBe(3)
+  // CDN source paths for downloading
+  expect(output.model3dSourcePaths.sort()).toMatchInlineSnapshot(`
+[
+  "https://modelcdn.tscircuit.com/jscad_models/0402.step",
+  "https://modelcdn.tscircuit.com/jscad_models/0603.step",
+  "https://modelcdn.tscircuit.com/jscad_models/0805.step",
+]
+`)
 
-  // Every model path for builtin footprints should point to the CDN
-  for (const modelPath of modelPaths) {
-    expect(modelPath).toContain(MODEL_CDN_BASE_URL)
-    expect(modelPath).toEndWith(".step")
-  }
-
-  // Verify specific footprinter_string-based URLs exist
-  // e.g. https://modelcdn.tscircuit.com/jscad_models/0402.step
-  const has0402 = modelPaths.some((p) => p.includes("/0402.step"))
-  const has0603 = modelPaths.some((p) => p.includes("/0603.step"))
-  const has0805 = modelPaths.some((p) => p.includes("/0805.step"))
-  expect(has0402).toBe(true)
-  expect(has0603).toBe(true)
-  expect(has0805).toBe(true)
-
-  // Verify the builtin .kicad_mod files in the fs map reference 3D models
+  // Builtin .kicad_mod files should reference tscircuit_builtin.3dshapes (not test_lib.3dshapes)
   const fsMap = output.kicadProjectFsMap
-  const builtinFpKeys = Object.keys(fsMap).filter(
-    (k) => k.includes("tscircuit_builtin.pretty") && k.endsWith(".kicad_mod"),
-  )
-  expect(builtinFpKeys.length).toBe(3)
+  const builtinFpKeys = Object.keys(fsMap)
+    .filter(
+      (k) => k.includes("tscircuit_builtin.pretty") && k.endsWith(".kicad_mod"),
+    )
+    .sort()
 
-  for (const key of builtinFpKeys) {
+  expect(builtinFpKeys).toMatchInlineSnapshot(`
+[
+  "footprints/tscircuit_builtin.pretty/capacitor_0603.kicad_mod",
+  "footprints/tscircuit_builtin.pretty/diode_0805.kicad_mod",
+  "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+]
+`)
+
+  // Extract model lines from each builtin footprint
+  const modelLines = builtinFpKeys.map((key) => {
     const content = fsMap[key] as string
-    expect(content).toContain("(model")
-    expect(content).toContain(".3dshapes")
-    expect(content).toContain(".step")
-  }
+    const match = content.match(/\(model\s+"([^"]+)"/)
+    return `${key.split("/").pop()}: ${match?.[1]}`
+  })
+
+  expect(modelLines).toMatchInlineSnapshot(`
+[
+  "capacitor_0603.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/0603.step",
+  "diode_0805.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/0805.step",
+  "resistor_0402.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/0402.step",
+]
+`)
 })
