@@ -80,10 +80,28 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
               ]}
               strokeWidth={0.08}
             />
-            {/* Ports */}
-            <port name="B" direction="left" schX={-8} schY={0} />
-            <port name="C" direction="up" schX={4.17} schY={8} />
-            <port name="E" direction="down" schX={4.17} schY={-8} />
+            {/* Ports with stems replacing lead wire lines */}
+            <port
+              name="B"
+              direction="left"
+              schX={-0.7}
+              schY={0}
+              schStemLength={0.6}
+            />
+            <port
+              name="C"
+              direction="up"
+              schX={0.35}
+              schY={1.0}
+              schStemLength={0.5}
+            />
+            <port
+              name="E"
+              direction="down"
+              schX={0.35}
+              schY={-1.0}
+              schStemLength={0.5}
+            />
           </symbol>
         }
       />

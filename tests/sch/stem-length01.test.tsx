@@ -60,24 +60,24 @@ test("stem-length01: custom symbol with schStemLength (snapshot)", async () => {
             {/* Ports with custom stem lengths */}
             <port
               name="IN1"
-              schX={-10}
-              schY={2.5}
+              schX={-1.0}
+              schY={0.35}
               direction="left"
-              schStemLength={5}
+              schStemLength={0.5}
             />
             <port
               name="IN2"
-              schX={-10}
-              schY={-2.5}
+              schX={-1.0}
+              schY={-0.35}
               direction="left"
-              schStemLength={5}
+              schStemLength={0.5}
             />
             <port
               name="OUT"
-              schX={10}
+              schX={1.1}
               schY={0}
               direction="right"
-              schStemLength={5}
+              schStemLength={0.4}
             />
           </symbol>
         }
