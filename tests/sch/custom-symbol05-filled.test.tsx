@@ -36,16 +36,16 @@ test("custom-symbol05: filled path with isFilled=true", async () => {
             <port
               name="pos"
               direction="left"
-              schX={-1}
+              schX={-3.5}
               schY={0}
-              schStemLength={0.5}
+              schStemLength={3}
             />
             <port
               name="neg"
               direction="right"
-              schX={1}
+              schX={3.5}
               schY={0}
-              schStemLength={0.5}
+              schStemLength={3}
             />
           </symbol>
         }
