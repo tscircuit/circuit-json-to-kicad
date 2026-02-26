@@ -34,6 +34,21 @@ export function classifyKicadSymbols(ctx: KicadLibraryConverterContext): void {
   }
 }
 
+/**
+ * Get the footprint name referenced by a symbol's Footprint property.
+ * e.g., "tscircuit:resistor_0402" → "resistor_0402"
+ */
+function getSymbolFootprintRef(kicadSymbol: SymbolEntry): string | null {
+  const properties = kicadSymbol.symbol.properties ?? []
+  for (const prop of properties) {
+    if (prop.key === "Footprint" && prop.value) {
+      const parts = prop.value.split(":")
+      return (parts.length > 1 ? parts[1] : parts[0]) ?? null
+    }
+  }
+  return null
+}
+
 function classifySymbolsForComponent({
   ctx,
   extractedKicadComponent,
@@ -46,6 +61,13 @@ function classifySymbolsForComponent({
     extractedKicadComponent,
   )
   let hasAddedUserSymbol = false
+
+  // Build set of custom footprint names to match symbols to custom footprints
+  const customFootprintNames = new Set(
+    extractedKicadComponent.kicadFootprints
+      .filter((fp) => !fp.isBuiltin)
+      .map((fp) => fp.footprintName),
+  )
 
   // Get metadata from circuit-json schematic_symbol element
   const builtComponent = ctx.builtTscircuitComponents.find(
@@ -87,22 +109,36 @@ function classifySymbolsForComponent({
         : kicadSymbol
       addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
     } else if (hasCustomFootprint && !hasAddedUserSymbol) {
-      // Builtin symbol but has custom footprint → rename and add to user library
-      hasAddedUserSymbol = true
-      const renamedSymbol = renameKicadSymbol({
-        kicadSymbol,
-        newKicadSymbolName: tscircuitComponentName,
-      })
-      updateKicadSymbolFootprint({
-        kicadSymbol: renamedSymbol,
-        kicadLibraryName: ctx.kicadLibraryName,
-        kicadFootprintName: tscircuitComponentName,
-        isPcm: ctx.isPcm,
-      })
-      const updatedSymbol = metadata
-        ? applyKicadSymbolMetadata(renamedSymbol, metadata)
-        : renamedSymbol
-      addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
+      // Builtin symbol + custom footprint exists on this component.
+      // Only use this symbol for the user library if it actually references
+      // a custom footprint (not a builtin one like resistor_0402).
+      const footprintRef = getSymbolFootprintRef(kicadSymbol)
+      const symbolMatchesCustomFootprint =
+        footprintRef != null && customFootprintNames.has(footprintRef)
+
+      if (symbolMatchesCustomFootprint) {
+        hasAddedUserSymbol = true
+        const renamedSymbol = renameKicadSymbol({
+          kicadSymbol,
+          newKicadSymbolName: tscircuitComponentName,
+        })
+        updateKicadSymbolFootprint({
+          kicadSymbol: renamedSymbol,
+          kicadLibraryName: ctx.kicadLibraryName,
+          kicadFootprintName: tscircuitComponentName,
+          isPcm: ctx.isPcm,
+        })
+        const updatedSymbol = metadata
+          ? applyKicadSymbolMetadata(renamedSymbol, metadata)
+          : renamedSymbol
+        addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
+      } else {
+        // This builtin symbol references a builtin footprint → builtin library
+        const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol, {
+          isPcm: ctx.isPcm,
+        })
+        addBuiltinSymbol({ ctx, kicadSymbol: updatedSymbol })
+      }
     } else {
       // Builtin symbol → builtin library (no custom footprint, or already added user symbol)
       const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol, {

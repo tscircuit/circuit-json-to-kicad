@@ -84,7 +84,7 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
             <port
               name="B"
               direction="left"
-              schX={-0.7}
+              schX={-1.3}
               schY={0}
               schStemLength={0.6}
             />
@@ -92,14 +92,14 @@ test("custom-symbol04: NPN transistor with custom symbol (snapshot)", async () =
               name="C"
               direction="up"
               schX={0.35}
-              schY={1.0}
+              schY={1.5}
               schStemLength={0.5}
             />
             <port
               name="E"
               direction="down"
               schX={0.35}
-              schY={-1.0}
+              schY={-1.5}
               schStemLength={0.5}
             />
           </symbol>

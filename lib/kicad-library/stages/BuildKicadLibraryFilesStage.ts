@@ -63,6 +63,8 @@ function buildBuiltinFootprintLibrary(ctx: KicadLibraryConverterContext): void {
 }
 
 function buildLibraryTables(ctx: KicadLibraryConverterContext): void {
+  const hasUserFootprints = ctx.userKicadFootprints.length > 0
+  const hasUserSymbols = ctx.userKicadSymbols.length > 0
   const hasBuiltinFootprints =
     ctx.includeBuiltins && ctx.builtinKicadFootprints.length > 0
   const hasBuiltinSymbols =
@@ -70,11 +72,13 @@ function buildLibraryTables(ctx: KicadLibraryConverterContext): void {
 
   ctx.kicadProjectFsMap["fp-lib-table"] = generateFpLibTable({
     kicadLibraryName: ctx.kicadLibraryName,
+    includeUser: hasUserFootprints,
     includeBuiltin: hasBuiltinFootprints,
   })
 
   ctx.kicadProjectFsMap["sym-lib-table"] = generateSymLibTable({
     kicadLibraryName: ctx.kicadLibraryName,
+    includeUser: hasUserSymbols,
     includeBuiltin: hasBuiltinSymbols,
   })
 }
