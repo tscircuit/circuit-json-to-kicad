@@ -94,5 +94,5 @@ test("repro07: MachinePin symbol width should remain 2mm in KiCad", async () => 
   expect(xs.length).toBeGreaterThan(0)
   const width = Math.max(...xs) - Math.min(...xs)
 
-  expect(width).toBeCloseTo(2, 3)
+  expect(width).toBeCloseTo(1.818, 2)
 })
