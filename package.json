@@ -22,10 +22,10 @@
     "@tscircuit/common": "^0.0.5",
     "@types/bun": "latest",
     "jszip": "^3.10.1",
-    "kicadts": "^0.0.24",
+    "kicadts": "^0.0.25",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.1374",
+    "tscircuit": "^0.0.1396",
     "tsup": "^8.5.0"
   },
   "peerDependencies": {

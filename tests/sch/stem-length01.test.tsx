@@ -19,7 +19,7 @@ test("stem-length01: custom symbol with schStemLength (snapshot)", async () => {
         name="U1"
         footprint="soic8"
         symbol={
-          <symbol width={10} height={10}>
+          <symbol width={14} height={10}>
             {/* Op-amp triangle */}
             <schematicline
               x1={-0.5}
@@ -60,24 +60,24 @@ test("stem-length01: custom symbol with schStemLength (snapshot)", async () => {
             {/* Ports with custom stem lengths */}
             <port
               name="IN1"
-              schX={-3.5}
+              schX={-1}
               schY={0.35}
               direction="left"
-              schStemLength={3}
+              schStemLength={0.5}
             />
             <port
               name="IN2"
-              schX={-3.5}
+              schX={-1}
               schY={-0.35}
               direction="left"
-              schStemLength={3}
+              schStemLength={0.5}
             />
             <port
               name="OUT"
-              schX={3.5}
+              schX={1.1}
               schY={0}
               direction="right"
-              schStemLength={2.8}
+              schStemLength={0.4}
             />
           </symbol>
         }

@@ -22,6 +22,8 @@ export const MyCapacitor = () => (
 
   expect(Object.keys(zipFsMap).sort()).toMatchInlineSnapshot(`
 [
+  "3dmodels/tscircuit_builtin.3dshapes/0402.step",
+  "3dmodels/tscircuit_builtin.3dshapes/0805.step",
   "footprints/tscircuit_builtin.pretty/capacitor_0805.kicad_mod",
   "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
   "metadata.json",
