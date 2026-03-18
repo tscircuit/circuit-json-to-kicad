@@ -5,7 +5,11 @@ import type {
 } from "circuit-json"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint } from "kicadts"
+import { Footprint, FootprintModel } from "kicadts"
+import {
+  MODEL_CDN_BASE_URL,
+  getBasename,
+} from "../../kicad-library/stages/ExtractFootprintsStage"
 import {
   ConverterStage,
   type ConverterContext,
@@ -34,6 +38,7 @@ import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles
 export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
+  private includeBuiltin3dModels: boolean
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
     if (!pcbPortId) return undefined
@@ -61,9 +66,14 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     )
   }
 
-  constructor(input: CircuitJson, ctx: ConverterContext) {
+  constructor(
+    input: CircuitJson,
+    ctx: ConverterContext,
+    options?: { includeBuiltin3dModels?: boolean },
+  ) {
     super(input, ctx)
     this.pcbComponents = this.ctx.db.pcb_component.list()
+    this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
   }
 
   override _step(): void {
@@ -283,8 +293,44 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         cadComponent,
         component.center,
       )
+      const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
       if (models.length > 0) {
-        footprint.models = models
+        if (this.includeBuiltin3dModels) {
+          // Rewrite user model paths to ${KIPRJMOD}/... and track source URLs
+          footprint.models = models.map((model) => {
+            if (!model.path) return model
+            const filename = getBasename(model.path)
+            const folderName =
+              this.ctx.projectName ?? filename.replace(/\.[^.]+$/, "")
+            const newModel = new FootprintModel(
+              `${KICAD_3D_BASE}/${folderName}.3dshapes/${filename}`,
+            )
+            if (model.offset) newModel.offset = model.offset
+            if (model.scale) newModel.scale = model.scale
+            if (model.rotate) newModel.rotate = model.rotate
+            // Track original source URL for the CLI to download
+            if (!this.ctx.pcbModel3dSourcePaths?.includes(model.path)) {
+              this.ctx.pcbModel3dSourcePaths?.push(model.path)
+            }
+            return newModel
+          })
+        } else {
+          // Keep original paths (e.g. for kicad-library extraction flow)
+          footprint.models = models
+        }
+      } else if (
+        cadComponent.footprinter_string &&
+        this.includeBuiltin3dModels
+      ) {
+        // Builtin CDN fallback: only when includeBuiltin3dModels is enabled
+        const { footprinter_string } = cadComponent
+        const modelPath = `${KICAD_3D_BASE}/tscircuit_builtin.3dshapes/${footprinter_string}.step`
+        footprint.models = [new FootprintModel(modelPath)]
+        // Record CDN source URL so callers can download and include the model file
+        const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinter_string}.step`
+        if (!this.ctx.pcbModel3dSourcePaths?.includes(cdnUrl)) {
+          this.ctx.pcbModel3dSourcePaths?.push(cdnUrl)
+        }
       }
     }
 

@@ -10,6 +10,20 @@ import { AddTracesStage } from "./stages/AddTracesStage"
 import { AddViasStage } from "./stages/AddViasStage"
 import { AddGraphicsStage } from "./stages/AddGraphicsStage"
 
+interface CircuitJsonToKicadPcbOptions {
+  /**
+   * Set to true to embed "${KIPRJMOD}/3dmodels" 3D model references for
+   * builtin footprints. Enable this in the CLI zip export.
+   * Defaults to false.
+   */
+  includeBuiltin3dModels?: boolean
+  /**
+   * Project name used as the .3dshapes folder for user-provided models.
+   * e.g. "index" → "3dmodels/index.3dshapes/{filename}"
+   */
+  projectName?: string
+}
+
 export class CircuitJsonToKicadPcbConverter {
   ctx: ConverterContext
 
@@ -22,7 +36,10 @@ export class CircuitJsonToKicadPcbConverter {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(circuitJson: CircuitJson) {
+  constructor(
+    circuitJson: CircuitJson,
+    options?: CircuitJsonToKicadPcbOptions,
+  ) {
     // PCB scale factor and center point
     // PCBs typically use mm units and different scaling than schematics
     const CIRCUIT_JSON_TO_MM_SCALE = 1 // Circuit JSON uses mm, KiCad PCB uses mm
@@ -40,12 +57,16 @@ export class CircuitJsonToKicadPcbConverter {
         translate(KICAD_PCB_CENTER_X, KICAD_PCB_CENTER_Y),
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
+      projectName: options?.projectName,
+      pcbModel3dSourcePaths: [],
     }
 
     this.pipeline = [
       new InitializePcbStage(circuitJson, this.ctx),
       new AddNetsStage(circuitJson, this.ctx),
-      new AddFootprintsStage(circuitJson, this.ctx),
+      new AddFootprintsStage(circuitJson, this.ctx, {
+        includeBuiltin3dModels: options?.includeBuiltin3dModels,
+      }),
       new AddTracesStage(circuitJson, this.ctx),
       new AddViasStage(circuitJson, this.ctx),
       new AddGraphicsStage(circuitJson, this.ctx),
@@ -78,5 +99,13 @@ export class CircuitJsonToKicadPcbConverter {
    */
   getOutputString(): string {
     return this.ctx.kicadPcb!.getString()
+  }
+
+  /**
+   * Returns CDN URLs for 3D model files needed by builtin footprints in this PCB.
+   * The CLI can use these to download and include the models in the project zip.
+   */
+  getModel3dSourcePaths(): string[] {
+    return this.ctx.pcbModel3dSourcePaths ?? []
   }
 }
