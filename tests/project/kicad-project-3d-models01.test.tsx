@@ -34,8 +34,8 @@ test("pcb converter embeds KIPRJMOD 3D model paths for builtin footprints", asyn
     "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/0603.step",
   )
 
-  // getModel3dSourcePaths() returns the CDN URLs for the CLI to download
-  const sourcePaths = converter.getModel3dSourcePaths()
+  // get3dModelURL() returns the CDN URLs for the CLI to download
+  const sourcePaths = converter.get3dModelURL()
   expect(sourcePaths.sort()).toEqual([
     "https://modelcdn.tscircuit.com/jscad_models/0402.step",
     "https://modelcdn.tscircuit.com/jscad_models/0603.step",
