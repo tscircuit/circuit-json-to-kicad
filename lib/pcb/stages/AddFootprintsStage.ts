@@ -5,7 +5,7 @@ import type {
 } from "circuit-json"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FootprintModel } from "kicadts"
+import { Footprint, FootprintModel, FpText } from "kicadts"
 import {
   MODEL_CDN_BASE_URL,
   getBasename,
@@ -140,6 +140,19 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         sourceComponent?.name,
       ),
     )
+
+    // Ensure fp_text reference exists — inline <footprint> components may not
+    // have a silkscreen text matching the component name
+    if (sourceComponent?.name && !fpTexts.some((t) => t.type === "reference")) {
+      fpTexts.push(
+        new FpText({
+          type: "reference",
+          text: sourceComponent.name,
+          position: { x: 0, y: -1, angle: 0 },
+          layer: "F.SilkS",
+        }),
+      )
+    }
 
     const pcbNoteTexts =
       this.ctx.db.pcb_note_text
