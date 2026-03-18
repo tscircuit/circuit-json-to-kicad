@@ -17,6 +17,11 @@ interface CircuitJsonToKicadPcbOptions {
    * Defaults to false.
    */
   includeBuiltin3dModels?: boolean
+  /**
+   * Project name used as the .3dshapes folder for user-provided models.
+   * e.g. "index" → "3dmodels/index.3dshapes/{filename}"
+   */
+  projectName?: string
 }
 
 export class CircuitJsonToKicadPcbConverter {
@@ -55,6 +60,7 @@ export class CircuitJsonToKicadPcbConverter {
       builtinModel3dBasePath: options?.includeBuiltin3dModels
         ? "${KIPRJMOD}/3dmodels"
         : undefined,
+      projectName: options?.projectName,
       pcbModel3dSourcePaths: [],
     }
 

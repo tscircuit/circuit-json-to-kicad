@@ -6,7 +6,10 @@ import type {
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FootprintModel } from "kicadts"
-import { MODEL_CDN_BASE_URL } from "../../kicad-library/stages/ExtractFootprintsStage"
+import {
+  MODEL_CDN_BASE_URL,
+  getBasename,
+} from "../../kicad-library/stages/ExtractFootprintsStage"
 import {
   ConverterStage,
   type ConverterContext,
@@ -285,7 +288,28 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         component.center,
       )
       if (models.length > 0) {
-        footprint.models = models
+        if (this.ctx.builtinModel3dBasePath) {
+          // Rewrite URL/path to project-relative path (same pattern as ExtractFootprintsStage)
+          footprint.models = models.map((model) => {
+            if (!model.path) return model
+            const filename = getBasename(model.path)
+            const folderName =
+              this.ctx.projectName ?? filename.replace(/\.[^.]+$/, "")
+            const newModel = new FootprintModel(
+              `${this.ctx.builtinModel3dBasePath}/${folderName}.3dshapes/${filename}`,
+            )
+            if (model.offset) newModel.offset = model.offset
+            if (model.scale) newModel.scale = model.scale
+            if (model.rotate) newModel.rotate = model.rotate
+            // Track original source URL for the CLI to download
+            if (!this.ctx.pcbModel3dSourcePaths?.includes(model.path)) {
+              this.ctx.pcbModel3dSourcePaths?.push(model.path)
+            }
+            return newModel
+          })
+        } else {
+          footprint.models = models
+        }
       } else if (
         cadComponent.footprinter_string &&
         this.ctx.builtinModel3dBasePath

@@ -35,7 +35,7 @@ const KICAD_FP_GENERATOR_VERSION = "8.0"
 /**
  * Browser-compatible basename extraction (handles both / and \ separators)
  */
-function getBasename(filePath: string): string {
+export function getBasename(filePath: string): string {
   const parts = filePath.split(/[/\\]/)
   return parts[parts.length - 1] || filePath
 }
