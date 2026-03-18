@@ -10,6 +10,15 @@ import { AddTracesStage } from "./stages/AddTracesStage"
 import { AddViasStage } from "./stages/AddViasStage"
 import { AddGraphicsStage } from "./stages/AddGraphicsStage"
 
+interface CircuitJsonToKicadPcbOptions {
+  /**
+   * Base path for builtin 3D models in the generated .kicad_pcb.
+   * Defaults to "${KIPRJMOD}/3dmodels" so KiCad resolves models relative
+   * to the project directory. Set to undefined to omit 3D model references.
+   */
+  builtinModel3dBasePath?: string | null
+}
+
 export class CircuitJsonToKicadPcbConverter {
   ctx: ConverterContext
 
@@ -22,7 +31,10 @@ export class CircuitJsonToKicadPcbConverter {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(circuitJson: CircuitJson) {
+  constructor(
+    circuitJson: CircuitJson,
+    options?: CircuitJsonToKicadPcbOptions,
+  ) {
     // PCB scale factor and center point
     // PCBs typically use mm units and different scaling than schematics
     const CIRCUIT_JSON_TO_MM_SCALE = 1 // Circuit JSON uses mm, KiCad PCB uses mm
@@ -40,6 +52,11 @@ export class CircuitJsonToKicadPcbConverter {
         translate(KICAD_PCB_CENTER_X, KICAD_PCB_CENTER_Y),
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
+      builtinModel3dBasePath:
+        options?.builtinModel3dBasePath === null
+          ? undefined
+          : (options?.builtinModel3dBasePath ?? "${KIPRJMOD}/3dmodels"),
+      pcbModel3dSourcePaths: [],
     }
 
     this.pipeline = [
@@ -78,5 +95,13 @@ export class CircuitJsonToKicadPcbConverter {
    */
   getOutputString(): string {
     return this.ctx.kicadPcb!.getString()
+  }
+
+  /**
+   * Returns CDN URLs for 3D model files needed by builtin footprints in this PCB.
+   * The CLI can use these to download and include the models in the project zip.
+   */
+  getModel3dSourcePaths(): string[] {
+    return this.ctx.pcbModel3dSourcePaths ?? []
   }
 }

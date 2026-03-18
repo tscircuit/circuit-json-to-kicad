@@ -5,7 +5,8 @@ import type {
 } from "circuit-json"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint } from "kicadts"
+import { Footprint, FootprintModel } from "kicadts"
+import { MODEL_CDN_BASE_URL } from "../../kicad-library/stages/ExtractFootprintsStage"
 import {
   ConverterStage,
   type ConverterContext,
@@ -285,6 +286,18 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       )
       if (models.length > 0) {
         footprint.models = models
+      } else if (
+        cadComponent.footprinter_string &&
+        this.ctx.builtinModel3dBasePath
+      ) {
+        const { footprinter_string } = cadComponent
+        const modelPath = `${this.ctx.builtinModel3dBasePath}/tscircuit_builtin.3dshapes/${footprinter_string}.step`
+        footprint.models = [new FootprintModel(modelPath)]
+        // Record CDN source URL so callers can download and include the model file
+        const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinter_string}.step`
+        if (!this.ctx.pcbModel3dSourcePaths?.includes(cdnUrl)) {
+          this.ctx.pcbModel3dSourcePaths?.push(cdnUrl)
+        }
       }
     }
 
