@@ -57,7 +57,7 @@ test("pcb converter embeds KIPRJMOD 3D model paths for builtin and user footprin
   )
 
   // get3dModelURL() returns all source URLs for the CLI to download
-  const sourcePaths = converter.get3dModelURL().sort()
+  const sourcePaths = converter.getModel3dSourcePaths().sort()
   expect(sourcePaths).toContain(
     "https://modelcdn.tscircuit.com/jscad_models/0402.step",
   )

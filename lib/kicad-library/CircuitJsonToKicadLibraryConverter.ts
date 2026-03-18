@@ -93,7 +93,7 @@ export class CircuitJsonToKicadLibraryConverter {
     return this.getOutput().symLibTableString
   }
 
-  get3dModelURL(): string[] {
+  getModel3dSourcePaths(): string[] {
     return this.getOutput().model3dSourcePaths
   }
 }

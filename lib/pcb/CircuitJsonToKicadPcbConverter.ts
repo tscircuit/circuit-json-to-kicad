@@ -106,7 +106,7 @@ export class CircuitJsonToKicadPcbConverter {
    * Returns CDN URLs for 3D model files needed by builtin footprints in this PCB.
    * The CLI can use these to download and include the models in the project zip.
    */
-  get3dModelURL(): string[] {
+  getModel3dSourcePaths(): string[] {
     return this.ctx.pcbModel3dSourcePaths ?? []
   }
 }
