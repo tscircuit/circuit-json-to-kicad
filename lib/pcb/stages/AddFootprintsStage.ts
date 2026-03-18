@@ -295,24 +295,29 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       )
       const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
       if (models.length > 0) {
-        // Always rewrite user model paths to ${KIPRJMOD}/... (same pattern as ExtractFootprintsStage)
-        footprint.models = models.map((model) => {
-          if (!model.path) return model
-          const filename = getBasename(model.path)
-          const folderName =
-            this.ctx.projectName ?? filename.replace(/\.[^.]+$/, "")
-          const newModel = new FootprintModel(
-            `${KICAD_3D_BASE}/${folderName}.3dshapes/${filename}`,
-          )
-          if (model.offset) newModel.offset = model.offset
-          if (model.scale) newModel.scale = model.scale
-          if (model.rotate) newModel.rotate = model.rotate
-          // Track original source URL for the CLI to download
-          if (!this.ctx.pcbModel3dSourcePaths?.includes(model.path)) {
-            this.ctx.pcbModel3dSourcePaths?.push(model.path)
-          }
-          return newModel
-        })
+        if (this.includeBuiltin3dModels) {
+          // Rewrite user model paths to ${KIPRJMOD}/... and track source URLs
+          footprint.models = models.map((model) => {
+            if (!model.path) return model
+            const filename = getBasename(model.path)
+            const folderName =
+              this.ctx.projectName ?? filename.replace(/\.[^.]+$/, "")
+            const newModel = new FootprintModel(
+              `${KICAD_3D_BASE}/${folderName}.3dshapes/${filename}`,
+            )
+            if (model.offset) newModel.offset = model.offset
+            if (model.scale) newModel.scale = model.scale
+            if (model.rotate) newModel.rotate = model.rotate
+            // Track original source URL for the CLI to download
+            if (!this.ctx.pcbModel3dSourcePaths?.includes(model.path)) {
+              this.ctx.pcbModel3dSourcePaths?.push(model.path)
+            }
+            return newModel
+          })
+        } else {
+          // Keep original paths (e.g. for kicad-library extraction flow)
+          footprint.models = models
+        }
       } else if (
         cadComponent.footprinter_string &&
         this.includeBuiltin3dModels
