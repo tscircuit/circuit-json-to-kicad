@@ -19,7 +19,9 @@ test("pcb converter embeds KIPRJMOD 3D model paths for builtin footprints", asyn
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
 
-  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson, {
+    includeBuiltin3dModels: true,
+  })
   converter.runUntilFinished()
 
   const pcbContent = converter.getOutputString()

@@ -12,11 +12,11 @@ import { AddGraphicsStage } from "./stages/AddGraphicsStage"
 
 interface CircuitJsonToKicadPcbOptions {
   /**
-   * Base path for builtin 3D models in the generated .kicad_pcb.
-   * Defaults to "${KIPRJMOD}/3dmodels" so KiCad resolves models relative
-   * to the project directory. Set to undefined to omit 3D model references.
+   * Set to true to embed "${KIPRJMOD}/3dmodels" 3D model references for
+   * builtin footprints. Enable this in the CLI zip export.
+   * Defaults to false.
    */
-  builtinModel3dBasePath?: string | null
+  includeBuiltin3dModels?: boolean
 }
 
 export class CircuitJsonToKicadPcbConverter {
@@ -52,10 +52,9 @@ export class CircuitJsonToKicadPcbConverter {
         translate(KICAD_PCB_CENTER_X, KICAD_PCB_CENTER_Y),
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
-      builtinModel3dBasePath:
-        options?.builtinModel3dBasePath === null
-          ? undefined
-          : (options?.builtinModel3dBasePath ?? "${KIPRJMOD}/3dmodels"),
+      builtinModel3dBasePath: options?.includeBuiltin3dModels
+        ? "${KIPRJMOD}/3dmodels"
+        : undefined,
       pcbModel3dSourcePaths: [],
     }
 
