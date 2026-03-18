@@ -70,7 +70,6 @@ export interface ConverterContext {
   numLayers?: number // Number of copper layers (2, 4, 6, 8)
 
   // PCB 3D model options
-  builtinModel3dBasePath?: string
   /** Project name used as the .3dshapes folder for user-provided 3D models */
   projectName?: string
   /** CDN URLs of 3D models needed for this PCB (collected during footprint stage) */

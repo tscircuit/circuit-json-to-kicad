@@ -38,6 +38,7 @@ import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles
 export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
+  private includeBuiltin3dModels: boolean
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
     if (!pcbPortId) return undefined
@@ -65,9 +66,14 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     )
   }
 
-  constructor(input: CircuitJson, ctx: ConverterContext) {
+  constructor(
+    input: CircuitJson,
+    ctx: ConverterContext,
+    options?: { includeBuiltin3dModels?: boolean },
+  ) {
     super(input, ctx)
     this.pcbComponents = this.ctx.db.pcb_component.list()
+    this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
   }
 
   override _step(): void {
@@ -287,35 +293,33 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         cadComponent,
         component.center,
       )
+      const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
       if (models.length > 0) {
-        if (this.ctx.builtinModel3dBasePath) {
-          // Rewrite URL/path to project-relative path (same pattern as ExtractFootprintsStage)
-          footprint.models = models.map((model) => {
-            if (!model.path) return model
-            const filename = getBasename(model.path)
-            const folderName =
-              this.ctx.projectName ?? filename.replace(/\.[^.]+$/, "")
-            const newModel = new FootprintModel(
-              `${this.ctx.builtinModel3dBasePath}/${folderName}.3dshapes/${filename}`,
-            )
-            if (model.offset) newModel.offset = model.offset
-            if (model.scale) newModel.scale = model.scale
-            if (model.rotate) newModel.rotate = model.rotate
-            // Track original source URL for the CLI to download
-            if (!this.ctx.pcbModel3dSourcePaths?.includes(model.path)) {
-              this.ctx.pcbModel3dSourcePaths?.push(model.path)
-            }
-            return newModel
-          })
-        } else {
-          footprint.models = models
-        }
+        // Always rewrite user model paths to ${KIPRJMOD}/... (same pattern as ExtractFootprintsStage)
+        footprint.models = models.map((model) => {
+          if (!model.path) return model
+          const filename = getBasename(model.path)
+          const folderName =
+            this.ctx.projectName ?? filename.replace(/\.[^.]+$/, "")
+          const newModel = new FootprintModel(
+            `${KICAD_3D_BASE}/${folderName}.3dshapes/${filename}`,
+          )
+          if (model.offset) newModel.offset = model.offset
+          if (model.scale) newModel.scale = model.scale
+          if (model.rotate) newModel.rotate = model.rotate
+          // Track original source URL for the CLI to download
+          if (!this.ctx.pcbModel3dSourcePaths?.includes(model.path)) {
+            this.ctx.pcbModel3dSourcePaths?.push(model.path)
+          }
+          return newModel
+        })
       } else if (
         cadComponent.footprinter_string &&
-        this.ctx.builtinModel3dBasePath
+        this.includeBuiltin3dModels
       ) {
+        // Builtin CDN fallback: only when includeBuiltin3dModels is enabled
         const { footprinter_string } = cadComponent
-        const modelPath = `${this.ctx.builtinModel3dBasePath}/tscircuit_builtin.3dshapes/${footprinter_string}.step`
+        const modelPath = `${KICAD_3D_BASE}/tscircuit_builtin.3dshapes/${footprinter_string}.step`
         footprint.models = [new FootprintModel(modelPath)]
         // Record CDN source URL so callers can download and include the model file
         const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinter_string}.step`

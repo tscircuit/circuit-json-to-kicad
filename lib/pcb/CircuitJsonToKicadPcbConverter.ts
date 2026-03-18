@@ -57,9 +57,6 @@ export class CircuitJsonToKicadPcbConverter {
         translate(KICAD_PCB_CENTER_X, KICAD_PCB_CENTER_Y),
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
-      builtinModel3dBasePath: options?.includeBuiltin3dModels
-        ? "${KIPRJMOD}/3dmodels"
-        : undefined,
       projectName: options?.projectName,
       pcbModel3dSourcePaths: [],
     }
@@ -67,7 +64,9 @@ export class CircuitJsonToKicadPcbConverter {
     this.pipeline = [
       new InitializePcbStage(circuitJson, this.ctx),
       new AddNetsStage(circuitJson, this.ctx),
-      new AddFootprintsStage(circuitJson, this.ctx),
+      new AddFootprintsStage(circuitJson, this.ctx, {
+        includeBuiltin3dModels: options?.includeBuiltin3dModels,
+      }),
       new AddTracesStage(circuitJson, this.ctx),
       new AddViasStage(circuitJson, this.ctx),
       new AddGraphicsStage(circuitJson, this.ctx),
