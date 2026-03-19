@@ -300,17 +300,25 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           footprint.models = models.map((model) => {
             if (!model.path) return model
             const filename = getBasename(model.path)
-            const folderName =
-              this.ctx.projectName ?? filename.replace(/\.[^.]+$/, "")
+            const isRemote =
+              model.path.startsWith("http://modelcdn.tscircuit.com") ||
+              model.path.startsWith("https://modelcdn.tscircuit.com")
+            const folderName = isRemote
+              ? "tscircuit_builtin"
+              : (this.ctx.projectName ?? filename.replace(/\.[^.]+$/, ""))
             const newModel = new FootprintModel(
               `${KICAD_3D_BASE}/${folderName}.3dshapes/${filename}`,
             )
             if (model.offset) newModel.offset = model.offset
             if (model.scale) newModel.scale = model.scale
             if (model.rotate) newModel.rotate = model.rotate
-            // Track original source URL for the CLI to download
-            if (!this.ctx.pcbModel3dSourcePaths?.includes(model.path)) {
-              this.ctx.pcbModel3dSourcePaths?.push(model.path)
+            // Track original source URL for the CLI to download (strip query params)
+            const sourcePath = model.path?.split("?")[0]
+            if (
+              sourcePath &&
+              !this.ctx.pcbModel3dSourcePaths?.includes(sourcePath)
+            ) {
+              this.ctx.pcbModel3dSourcePaths?.push(sourcePath)
             }
             return newModel
           })

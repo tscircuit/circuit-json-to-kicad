@@ -37,7 +37,9 @@ const KICAD_FP_GENERATOR_VERSION = "8.0"
  */
 export function getBasename(filePath: string): string {
   const parts = filePath.split(/[/\\]/)
-  return parts[parts.length - 1] || filePath
+  const base = parts[parts.length - 1] || filePath
+  // Strip URL query parameters (e.g. ?cachebust_origin= added by tscircuit)
+  return base.split("?")[0] || base
 }
 
 /**
@@ -300,7 +302,11 @@ export class ExtractFootprintsStage extends ConverterStage<
     for (const model of models) {
       if (model.path) {
         const modelFilename = getBasename(model.path)
-        const newPath = `../../3dmodels/${fpLibraryName}.3dshapes/${modelFilename}`
+        const isRemote =
+          model.path.startsWith("http://modelcdn.tscircuit.com") ||
+          model.path.startsWith("https://modelcdn.tscircuit.com")
+        const shapesFolder = isRemote ? "tscircuit_builtin" : fpLibraryName
+        const newPath = `../../3dmodels/${shapesFolder}.3dshapes/${modelFilename}`
 
         const newModel = new FootprintModel(newPath)
         if (model.offset) newModel.offset = model.offset
@@ -308,7 +314,8 @@ export class ExtractFootprintsStage extends ConverterStage<
         if (model.rotate) newModel.rotate = model.rotate
 
         updatedModels.push(newModel)
-        modelFiles.push(model.path)
+        // Strip query params (e.g. ?cachebust_origin= added by tscircuit) for clean download URLs
+        modelFiles.push(model.path.split("?")[0] ?? model.path)
       }
     }
     // CDN fallback: if no explicit 3D model and footprint has a footprinter_string,
