@@ -37,12 +37,18 @@ export function renameKicadFootprint(params: {
       // Extract the filename from the path
       const filename = currentPath.split(/[\\/]/).pop() ?? ""
 
+      // Preserve tscircuit_builtin folder (used for remote/CDN models)
+      const isBuiltinPath = currentPath.includes("tscircuit_builtin.3dshapes")
+      const targetFolder = isBuiltinPath
+        ? "tscircuit_builtin"
+        : kicadLibraryName
+
       if (isPcm && kicadPcmPackageId) {
         // PCM format: ${KICAD_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/<library>.3dshapes/<model>.step
-        model.path = `${KICAD_3RD_PARTY_PLACEHOLDER}/3dmodels/${kicadPcmPackageId}/${kicadLibraryName}.3dshapes/${filename}`
+        model.path = `${KICAD_3RD_PARTY_PLACEHOLDER}/3dmodels/${kicadPcmPackageId}/${targetFolder}.3dshapes/${filename}`
       } else {
         // Standard format: relative path
-        model.path = `../../3dmodels/${kicadLibraryName}.3dshapes/${filename}`
+        model.path = `../../3dmodels/${targetFolder}.3dshapes/${filename}`
       }
     }
   }
