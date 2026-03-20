@@ -360,7 +360,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
       )
       (model "\${KICAD_3RD_PARTY}/3dmodels/com_tscircuit_author_my-keyboard-library/my-keyboard-library.3dshapes/SW_Push_1P1T_NO_CK_KMR2.step"
         (offset
-          (xyz 0 0 0.7)
+          (xyz 0 0 0)
         )
         (rotate
           (xyz 0 0 0)
