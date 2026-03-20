@@ -289,9 +289,19 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Add 3D models
     if (cadComponent) {
+      // circuit-json position.z is relative to PCB midplane (PCB center = z=0),
+      // but KiCad model offsets are relative to the PCB surface.
+      // Subtract boardThickness/2 (or -boardThickness/2 for bottom) to correct.
+      const pcbBoard = this.ctx.db.pcb_board?.list()[0]
+      const boardThickness = pcbBoard?.thickness ?? 0
+      const boardLayerZOffset =
+        component.layer === "bottom"
+          ? -(boardThickness / 2)
+          : boardThickness / 2
       const models = create3DModelsFromCadComponent(
         cadComponent,
         component.center,
+        { boardLayerZOffset },
       )
       const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
       if (models.length > 0) {

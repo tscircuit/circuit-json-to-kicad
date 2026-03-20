@@ -4,6 +4,7 @@ import { FootprintModel } from "kicadts"
 export function create3DModelsFromCadComponent(
   cadComponent: CadComponent,
   componentCenter: { x: number; y: number },
+  options?: { boardLayerZOffset?: number },
 ): FootprintModel[] {
   const models: FootprintModel[] = []
 
@@ -13,10 +14,15 @@ export function create3DModelsFromCadComponent(
   const model = new FootprintModel(modelUrl)
 
   if (cadComponent.position) {
+    // circuit-json position.z includes boardThickness/2 to place the component
+    // at the PCB surface in tscircuit's coordinate system (PCB center = z=0).
+    // KiCad model offsets are relative to the PCB surface, so we subtract
+    // the layer z offset (boardThickness/2 for top, -boardThickness/2 for bottom).
+    const boardLayerZOffset = options?.boardLayerZOffset ?? 0
     model.offset = {
       x: (cadComponent.position.x || 0) - componentCenter.x,
       y: -((cadComponent.position.y || 0) - componentCenter.y),
-      z: cadComponent.position.z || 0,
+      z: (cadComponent.position.z || 0) - boardLayerZOffset,
     }
   }
 
