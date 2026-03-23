@@ -144,12 +144,15 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     // Ensure fp_text reference exists — inline <footprint> components may not
     // have a silkscreen text matching the component name
     if (sourceComponent?.name && !fpTexts.some((t) => t.type === "reference")) {
+      // Position (0, -1) places the reference label 1mm above the footprint
+      // origin, which is the KiCad default for fp_text reference elements
+      const silkLayer = component.layer === "bottom" ? "B.SilkS" : "F.SilkS"
       fpTexts.push(
         new FpText({
           type: "reference",
           text: sourceComponent.name,
           position: { x: 0, y: -1, angle: 0 },
-          layer: "F.SilkS",
+          layer: silkLayer,
         }),
       )
     }

@@ -189,6 +189,12 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
           )
         )
       )
+      (fp_text
+        reference
+        "REF**"
+        (at 0 -1 0)
+        (layer F.SilkS)
+      )
       (pad "1" smd rect
         (at -3.175 -0.7000000000000002 0)
         (size 2.5 1.2)
