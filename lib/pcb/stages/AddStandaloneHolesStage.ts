@@ -53,7 +53,7 @@ export class AddStandaloneHolesStage extends ConverterStage<
 
     const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${kicadPos.x},${kicadPos.y}`
     const footprint = new Footprint({
-      libraryLink: "tscircuit:mounting_hole",
+      libraryLink: "tscircuit:MountingHole",
       layer: "F.Cu",
       at: [kicadPos.x, kicadPos.y, 0],
       uuid: generateDeterministicUuid(footprintSeed),
