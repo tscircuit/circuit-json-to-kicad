@@ -10,7 +10,7 @@ import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles
  * Adds standalone holes (pcb_hole with pcb_component_id: null) to the PCB.
  * Each hole is added as a standalone footprint.
  */
-export class AddStandaloneHolesStage extends ConverterStage<
+export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
 > {
@@ -40,7 +40,7 @@ export class AddStandaloneHolesStage extends ConverterStage<
       return
     }
 
-    const hole = this.standaloneHoles[this.holesProcessed]
+    const hole = this.standaloneHoles[this.holesProcessed] as PcbHole
     if (!hole) {
       this.holesProcessed++
       return

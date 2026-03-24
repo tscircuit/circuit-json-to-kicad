@@ -8,7 +8,7 @@ import { AddNetsStage } from "./stages/AddNetsStage"
 import { AddFootprintsStage } from "./stages/AddFootprintsStage"
 import { AddTracesStage } from "./stages/AddTracesStage"
 import { AddViasStage } from "./stages/AddViasStage"
-import { AddStandaloneHolesStage } from "./stages/AddStandaloneHolesStage"
+import { AddStandalonePcbElements } from "./stages/AddStandalonePcbElements"
 import { AddGraphicsStage } from "./stages/AddGraphicsStage"
 
 interface CircuitJsonToKicadPcbOptions {
@@ -70,7 +70,7 @@ export class CircuitJsonToKicadPcbConverter {
       }),
       new AddTracesStage(circuitJson, this.ctx),
       new AddViasStage(circuitJson, this.ctx),
-      new AddStandaloneHolesStage(circuitJson, this.ctx),
+      new AddStandalonePcbElements(circuitJson, this.ctx),
       new AddGraphicsStage(circuitJson, this.ctx),
     ]
   }
