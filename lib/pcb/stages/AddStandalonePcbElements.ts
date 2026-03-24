@@ -46,23 +46,20 @@ export class AddStandalonePcbElements extends ConverterStage<
       return
     }
 
-    const kicadPos = applyToPoint(c2kMatPcb, {
-      x: hole.x,
-      y: hole.y,
-    })
+    const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
 
-    const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${kicadPos.x},${kicadPos.y}`
+    const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
     const footprint = new Footprint({
       libraryLink: "tscircuit:MountingHole",
       layer: "F.Cu",
-      at: [kicadPos.x, kicadPos.y, 0],
+      at: [boardOrigin.x, boardOrigin.y, 0],
       uuid: generateDeterministicUuid(footprintSeed),
     })
 
     const ccwRotationDegrees = 0
     const npthPads = convertNpthHoles(
       [hole],
-      { x: hole.x, y: hole.y },
+      { x: 0, y: 0 }, // Relative to board origin
       ccwRotationDegrees,
     )
 

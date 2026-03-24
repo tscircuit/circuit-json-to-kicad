@@ -50,16 +50,6 @@
         )
       )
     )
-    (fp_rect
-      (start -1.23 -0.97)
-      (end 1.0299999999999998 0.97)
-      (layer F.CrtYd)
-      (stroke
-        (width 0.05)
-        (type default)
-      )
-      (fill no)
-    )
     (pad "1" smd rect
       (at -0.51 0 0)
       (size 0.54 0.64)
@@ -89,16 +79,6 @@
         )
       )
     )
-    (fp_rect
-      (start -1.2299999999999995 -0.97)
-      (end 1.0300000000000002 0.97)
-      (layer F.CrtYd)
-      (stroke
-        (width 0.05)
-        (type default)
-      )
-      (fill no)
-    )
     (pad "1" smd rect
       (at -0.5099999999999998 0 0)
       (size 0.54 0.64)
@@ -115,27 +95,27 @@
   (footprint
     "tscircuit:MountingHole"
     (layer F.Cu)
-    (uuid 6c881680-1217-d89f-4858-65425d375cdd)
-    (at 80 120 0)
+    (uuid 59c1051e-4d58-833e-40f0-015e34877f7e)
+    (at 100 100 0)
     (pad "" np_thru_hole circle
-      (at 0 0 0)
+      (at -20 20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 98dc034f-a5b8-4447-9d72-bacbcd642ce9)
+      (uuid 1fe7faca-5d3b-49bb-83cc-308d7b42437f)
     )
   )
   (footprint
     "tscircuit:MountingHole"
     (layer F.Cu)
-    (uuid 0b4b99a0-4f24-a441-566b-1dde04052003)
-    (at 120 80 0)
+    (uuid 39e1a7a8-5dae-5a58-0ac1-a3a87331a1a8)
+    (at 100 100 0)
     (pad "" np_thru_hole circle
-      (at 0 0 0)
+      (at 20 -20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 5c337c22-66e2-48e6-9cf8-c75bf5ef53f1)
+      (uuid b9e42e49-6b0f-45e5-9c12-90b477b6d0f3)
     )
   )
   (gr_line
