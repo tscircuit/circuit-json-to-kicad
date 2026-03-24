@@ -2,6 +2,7 @@ import type {
   CircuitJson,
   CadComponent,
   SourceComponentBase,
+  PcbHole,
 } from "circuit-json"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
@@ -15,6 +16,7 @@ import {
   type ConverterContext,
   type PcbNetInfo,
 } from "../../types"
+
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
@@ -201,7 +203,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       this.ctx.db.pcb_hole
         ?.list()
         .filter(
-          (hole: any) => hole.subcircuit_id === component.subcircuit_id,
+          (hole: PcbHole) =>
+            hole.pcb_component_id === component.pcb_component_id,
         ) || []
 
     const npthPads = convertNpthHoles(
