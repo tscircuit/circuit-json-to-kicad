@@ -1,4 +1,7 @@
-(kicad_pcb
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`pcb repro05 non-plated hole 1`] = `
+"(kicad_pcb
   (version 20241229)
   (generator circuit-json-to-kicad)
   (generator_version 0.0.1)
@@ -50,16 +53,6 @@
         )
       )
     )
-    (fp_rect
-      (start -1.23 -0.97)
-      (end 1.0299999999999998 0.97)
-      (layer F.CrtYd)
-      (stroke
-        (width 0.05)
-        (type default)
-      )
-      (fill no)
-    )
     (pad "1" smd rect
       (at -0.51 0 0)
       (size 0.54 0.64)
@@ -77,14 +70,14 @@
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 9cc42260-92ec-4e93-88e9-bfff13028e0d)
+      (uuid cba8fea2-878b-4903-b9b3-060503a9c9e3)
     )
     (pad "" np_thru_hole circle
       (at 20 -20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid eb5b41e3-7b38-4c24-9003-417ae9396c9c)
+      (uuid 87cb5a3c-24ba-4f32-a953-441e1498fa51)
     )
   )
   (footprint
@@ -103,16 +96,6 @@
         )
       )
     )
-    (fp_rect
-      (start -1.2299999999999995 -0.97)
-      (end 1.0300000000000002 0.97)
-      (layer F.CrtYd)
-      (stroke
-        (width 0.05)
-        (type default)
-      )
-      (fill no)
-    )
     (pad "1" smd rect
       (at -0.5099999999999998 0 0)
       (size 0.54 0.64)
@@ -130,14 +113,14 @@
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid becb8cd1-cbde-4297-bf2d-0183bb8cc079)
+      (uuid cd4564e5-d62d-4ae8-ab0b-047204df48e1)
     )
     (pad "" np_thru_hole circle
       (at 15 -20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 5ee524d0-db43-42b8-aab8-36762aaffc69)
+      (uuid 801506f0-7cba-4f67-9eca-dae138b3eeb1)
     )
   )
   (gr_line
@@ -200,4 +183,5 @@
     (width 0.1)
     (layer Edge.Cuts)
   )
-)
+)"
+`;
