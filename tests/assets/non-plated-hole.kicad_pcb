@@ -50,16 +50,6 @@
         )
       )
     )
-    (fp_rect
-      (start -1.23 -0.97)
-      (end 1.0299999999999998 0.97)
-      (layer F.CrtYd)
-      (stroke
-        (width 0.05)
-        (type default)
-      )
-      (fill no)
-    )
     (pad "1" smd rect
       (at -0.51 0 0)
       (size 0.54 0.64)
@@ -71,20 +61,6 @@
       (size 0.54 0.64)
       (layers F.Cu F.Paste F.Mask)
       (uuid 6f709752-43bc-da6e-0915-b3d255e84212)
-    )
-    (pad "" np_thru_hole circle
-      (at -20 20 0)
-      (size 3.2 3.2)
-      (drill 3.2)
-      (layers *.Cu *.Mask)
-      (uuid 9cc42260-92ec-4e93-88e9-bfff13028e0d)
-    )
-    (pad "" np_thru_hole circle
-      (at 20 -20 0)
-      (size 3.2 3.2)
-      (drill 3.2)
-      (layers *.Cu *.Mask)
-      (uuid eb5b41e3-7b38-4c24-9003-417ae9396c9c)
     )
   )
   (footprint
@@ -103,16 +79,6 @@
         )
       )
     )
-    (fp_rect
-      (start -1.2299999999999995 -0.97)
-      (end 1.0300000000000002 0.97)
-      (layer F.CrtYd)
-      (stroke
-        (width 0.05)
-        (type default)
-      )
-      (fill no)
-    )
     (pad "1" smd rect
       (at -0.5099999999999998 0 0)
       (size 0.54 0.64)
@@ -125,19 +91,31 @@
       (layers F.Cu F.Paste F.Mask)
       (uuid 41047c34-4e03-652c-22f4-b9746c1327ec)
     )
+  )
+  (footprint
+    "tscircuit:mounting_hole"
+    (layer F.Cu)
+    (uuid 6c881680-1217-d89f-4858-65425d375cdd)
+    (at 80 120 0)
     (pad "" np_thru_hole circle
-      (at -25 20 0)
+      (at 0 0 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid becb8cd1-cbde-4297-bf2d-0183bb8cc079)
+      (uuid 98dc034f-a5b8-4447-9d72-bacbcd642ce9)
     )
+  )
+  (footprint
+    "tscircuit:mounting_hole"
+    (layer F.Cu)
+    (uuid 0b4b99a0-4f24-a441-566b-1dde04052003)
+    (at 120 80 0)
     (pad "" np_thru_hole circle
-      (at 15 -20 0)
+      (at 0 0 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 5ee524d0-db43-42b8-aab8-36762aaffc69)
+      (uuid 5c337c22-66e2-48e6-9cf8-c75bf5ef53f1)
     )
   )
   (gr_line
