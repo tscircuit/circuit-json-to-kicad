@@ -70,14 +70,14 @@ exports[`pcb repro05 non-plated hole 1`] = `
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid cba8fea2-878b-4903-b9b3-060503a9c9e3)
+      (uuid bd42fccf-fa44-4c06-84b1-c33434622ec0)
     )
     (pad "" np_thru_hole circle
       (at 20 -20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 87cb5a3c-24ba-4f32-a953-441e1498fa51)
+      (uuid e42ec24c-b2c0-4ae1-9db0-5db087c93fa2)
     )
   )
   (footprint
@@ -113,14 +113,14 @@ exports[`pcb repro05 non-plated hole 1`] = `
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid cd4564e5-d62d-4ae8-ab0b-047204df48e1)
+      (uuid 65ea958a-49d3-4d4a-817d-e60b10098ff5)
     )
     (pad "" np_thru_hole circle
       (at 15 -20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 801506f0-7cba-4f67-9eca-dae138b3eeb1)
+      (uuid 8411bcb8-516f-4844-bd91-37bd2afffcab)
     )
   )
   (gr_line
