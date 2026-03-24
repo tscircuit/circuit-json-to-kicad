@@ -25,7 +25,7 @@ test("pcb repro05 non-plated hole", async () => {
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
 
-  const converter = new CircuitJsonToKicadPcbConverter(circuitJson as any)
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
 
   converter.runUntilFinished()
 
@@ -69,7 +69,7 @@ test("pcb repro05 non-plated hole", async () => {
   expect(
     stackCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
-        circuitJson: circuitJson as any,
+        circuitJson: circuitJson,
         outputType: "pcb",
       }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
