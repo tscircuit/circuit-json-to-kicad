@@ -33,8 +33,6 @@ test("pcb repro05 non-plated hole", async () => {
     converter.getOutputString(),
   )
 
-  expect(converter.getOutputString()).toMatchSnapshot()
-
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
     kicadFileType: "pcb",

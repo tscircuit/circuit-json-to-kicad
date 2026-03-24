@@ -1,7 +1,4 @@
-// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
-
-exports[`pcb repro05 non-plated hole 1`] = `
-"(kicad_pcb
+(kicad_pcb
   (version 20241229)
   (generator circuit-json-to-kicad)
   (generator_version 0.0.1)
@@ -53,6 +50,16 @@ exports[`pcb repro05 non-plated hole 1`] = `
         )
       )
     )
+    (fp_rect
+      (start -1.23 -0.97)
+      (end 1.0299999999999998 0.97)
+      (layer F.CrtYd)
+      (stroke
+        (width 0.05)
+        (type default)
+      )
+      (fill no)
+    )
     (pad "1" smd rect
       (at -0.51 0 0)
       (size 0.54 0.64)
@@ -70,14 +77,14 @@ exports[`pcb repro05 non-plated hole 1`] = `
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid bd42fccf-fa44-4c06-84b1-c33434622ec0)
+      (uuid 9cc42260-92ec-4e93-88e9-bfff13028e0d)
     )
     (pad "" np_thru_hole circle
       (at 20 -20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid e42ec24c-b2c0-4ae1-9db0-5db087c93fa2)
+      (uuid eb5b41e3-7b38-4c24-9003-417ae9396c9c)
     )
   )
   (footprint
@@ -96,6 +103,16 @@ exports[`pcb repro05 non-plated hole 1`] = `
         )
       )
     )
+    (fp_rect
+      (start -1.2299999999999995 -0.97)
+      (end 1.0300000000000002 0.97)
+      (layer F.CrtYd)
+      (stroke
+        (width 0.05)
+        (type default)
+      )
+      (fill no)
+    )
     (pad "1" smd rect
       (at -0.5099999999999998 0 0)
       (size 0.54 0.64)
@@ -113,14 +130,14 @@ exports[`pcb repro05 non-plated hole 1`] = `
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 65ea958a-49d3-4d4a-817d-e60b10098ff5)
+      (uuid becb8cd1-cbde-4297-bf2d-0183bb8cc079)
     )
     (pad "" np_thru_hole circle
       (at 15 -20 0)
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 8411bcb8-516f-4844-bd91-37bd2afffcab)
+      (uuid 5ee524d0-db43-42b8-aab8-36762aaffc69)
     )
   )
   (gr_line
@@ -183,5 +200,4 @@ exports[`pcb repro05 non-plated hole 1`] = `
     (width 0.1)
     (layer Edge.Cuts)
   )
-)"
-`;
+)
