@@ -72,4 +72,5 @@ test("pcb repro05 non-plated hole", async () => {
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
+  // add pcb snapshot
 })
