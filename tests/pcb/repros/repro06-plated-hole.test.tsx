@@ -47,29 +47,16 @@ test("pcb repro06 plated hole", async () => {
 
   const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
 
-  // There are 2 footprints: R1, C1
-  expect(kicadPcb.footprints.length).toBe(2)
+  // There are 4 footprints: R1, C1, and 2 standalone plated holes
+  expect(kicadPcb.footprints.length).toBe(4)
 
-  /**
-   * BUG: Standalone plated holes are missing from the KiCad output.
-   *
-   * The circuit.json correctly contains 2 `pcb_plated_hole` elements, but
-   * they are not associated with any component (pcb_component_id: null).
-   *
-   * Current converter behavior:
-   * 1. AddFootprintsStage skips them because of the null pcb_component_id.
-   * 2. AddStandalonePcbElements only handles `pcb_hole` (non-plated), ignoring `pcb_plated_hole`.
-   *
-   * EXPECTED: 2 thru_hole pads (one per plated hole)
-   * ACTUAL: 0 pads
-   */
   const totalHoles = kicadPcb.footprints.reduce(
     (acc, f) => acc + f.fpPads.filter((p) => p.padType === "thru_hole").length,
     0,
   )
 
-  // This currently passes as 0, confirming they are missing.
-  expect(totalHoles).toBe(0)
+  // Verify that there are 2 thru_hole pads (one per plated hole)
+  expect(totalHoles).toBe(2)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,

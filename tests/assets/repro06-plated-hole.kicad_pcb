@@ -112,6 +112,32 @@
       (uuid 41047c34-4e03-652c-22f4-b9746c1327ec)
     )
   )
+  (footprint
+    "tscircuit:MountingHole_Pad"
+    (layer F.Cu)
+    (uuid 498372c2-0b57-8a3e-6032-873e4af27bc2)
+    (at 100 100 0)
+    (pad "1" thru_hole circle
+      (at -20 20 0)
+      (size 4 4)
+      (drill 2)
+      (layers *.Cu *.Mask)
+      (uuid 2d502520-09cd-7b61-19b5-2e5e3d37d81d)
+    )
+  )
+  (footprint
+    "tscircuit:MountingHole_Pad"
+    (layer F.Cu)
+    (uuid 57ad84bc-3c26-c39c-20a0-027c0519415c)
+    (at 100 100 0)
+    (pad "1" thru_hole circle
+      (at 20 -20 0)
+      (size 4 4)
+      (drill 2)
+      (layers *.Cu *.Mask)
+      (uuid 13062fe0-107c-79df-33ff-239e5781cd5d)
+    )
+  )
   (gr_line
     (start 100.51 99.28)
     (end 99.02 99.28)
