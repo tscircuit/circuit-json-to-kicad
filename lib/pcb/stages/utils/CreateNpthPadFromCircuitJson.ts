@@ -45,8 +45,8 @@ export function createNpthPadFromCircuitJson({
   } else if (pcbHole.hole_shape === "oval" || pcbHole.hole_shape === "pill") {
     // Oval or Pill-shaped non-plated hole
     padShape = "oval"
-    const width = pcbHole.hole_width ?? 1
-    const height = pcbHole.hole_height ?? 1
+    const width = pcbHole.hole_width
+    const height = pcbHole.hole_height
     padSize = [width, height]
     drill = new PadDrill({
       oval: true,
