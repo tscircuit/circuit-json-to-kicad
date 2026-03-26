@@ -1,87 +1,72 @@
-(kicad_pcb
-  (version 20241229)
-  (generator circuit-json-to-kicad)
-  (generator_version 0.0.1)
-  (general
-    (thickness 1.6)
-  )
-  (paper
-    A4
-  )
-  (layers
-    (0 "F.Cu" signal)
-    (31 "B.Cu" signal)
-    (32 "B.Adhes" user)
-    (33 "F.Adhes" user)
-    (34 "B.Paste" user)
-    (35 "F.Paste" user)
-    (36 "B.SilkS" user)
-    (37 "F.SilkS" user)
-    (38 "B.Mask" user)
-    (39 "F.Mask" user)
-    (40 "Dwgs.User" user)
-    (41 "Cmts.User" user)
-    (42 "Eco1.User" user)
-    (43 "Eco2.User" user)
-    (44 "Edge.Cuts" user)
-    (45 "Margin" user)
-    (46 "B.CrtYd" user)
-    (47 "F.CrtYd" user)
-    (48 "B.Fab" user)
-    (49 "F.Fab" user)
-  )
-  (setup
-    (pad_to_mask_clearance 0)
-  )
-  (net 0 "")
-  (footprint
-    "tscircuit:hole_circle_2mm"
-    (layer F.Cu)
-    (uuid 762bfac0-60c4-3cbf-4b5c-7ebe35f4c0bd)
-    (at 100 100 0)
-    (pad "" np_thru_hole circle
-      (at -5 -5 0)
-      (size 2 2)
-      (drill 2)
-      (layers *.Cu *.Mask)
-      (uuid c2d700fc-6244-4e86-af2b-c9d9517972f9)
-    )
-  )
-  (footprint
-    "tscircuit:hole_pill_2mm_4mm"
-    (layer F.Cu)
-    (uuid 2759fab4-3b0e-076c-6289-f6740021f454)
-    (at 100 100 0)
-    (pad "" np_thru_hole oval
-      (at 5 -5 0)
-      (size 2 4)
-      (drill oval 2 4)
-      (layers *.Cu *.Mask)
-      (uuid 5dd86e50-b2a8-4032-85e1-d23bdd1866c3)
-    )
-  )
-  (gr_line
-    (start 90 110)
-    (end 110 110)
-    (width 0.1)
-    (layer Edge.Cuts)
-  )
-  (gr_line
-    (start 110 110)
-    (end 110 90)
-    (width 0.1)
-    (layer Edge.Cuts)
-  )
-  (gr_line
-    (start 110 90)
-    (end 90 90)
-    (width 0.1)
-    (layer Edge.Cuts)
-  )
-  (gr_line
-    (start 90 90)
-    (end 90 110)
-    (width 0.1)
-    (layer Edge.Cuts)
-  )
-)
+[
+  {
+    "type": "source_project_metadata",
+    "source_project_metadata_id": "source_project_metadata_0",
+    "software_used_string": "@tscircuit/core@0.0.1123"
+  },
+  {
+    "type": "source_group",
+    "source_group_id": "source_group_0",
+    "is_subcircuit": true,
+    "was_automatically_named": true,
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "source_board",
+    "source_board_id": "source_board_0",
+    "source_group_id": "source_group_0"
+  },
+  {
+    "type": "schematic_group",
+    "schematic_group_id": "schematic_group_0",
+    "is_subcircuit": true,
+    "subcircuit_id": "subcircuit_source_group_0",
+    "name": "unnamed_board1",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "width": 0,
+    "height": 0,
+    "schematic_component_ids": [],
+    "source_group_id": "source_group_0",
+    "show_as_schematic_box": false
+  },
+  {
+    "type": "pcb_board",
+    "pcb_board_id": "pcb_board_0",
+    "source_board_id": "source_board_0",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "thickness": 1.4,
+    "num_layers": 2,
+    "width": 20,
+    "height": 20,
+    "material": "fr4"
+  },
+  {
+    "type": "pcb_hole",
+    "pcb_hole_id": "pcb_hole_0",
+    "pcb_component_id": null,
+    "hole_shape": "circle",
+    "hole_diameter": 2,
+    "x": -5,
+    "y": 5,
+    "is_covered_with_solder_mask": false,
+    "subcircuit_id": "subcircuit_source_group_0"
+  },
+  {
+    "type": "pcb_hole",
+    "pcb_hole_id": "pcb_hole_1",
+    "pcb_component_id": null,
+    "hole_shape": "pill",
+    "hole_width": 2,
+    "hole_height": 4,
+    "x": 5,
+    "y": 5,
+    "is_covered_with_solder_mask": false,
+    "subcircuit_id": "subcircuit_source_group_0"
+  }
+]
