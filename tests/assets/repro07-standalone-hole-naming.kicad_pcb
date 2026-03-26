@@ -1,0 +1,87 @@
+(kicad_pcb
+  (version 20241229)
+  (generator circuit-json-to-kicad)
+  (generator_version 0.0.1)
+  (general
+    (thickness 1.6)
+  )
+  (paper
+    A4
+  )
+  (layers
+    (0 "F.Cu" signal)
+    (31 "B.Cu" signal)
+    (32 "B.Adhes" user)
+    (33 "F.Adhes" user)
+    (34 "B.Paste" user)
+    (35 "F.Paste" user)
+    (36 "B.SilkS" user)
+    (37 "F.SilkS" user)
+    (38 "B.Mask" user)
+    (39 "F.Mask" user)
+    (40 "Dwgs.User" user)
+    (41 "Cmts.User" user)
+    (42 "Eco1.User" user)
+    (43 "Eco2.User" user)
+    (44 "Edge.Cuts" user)
+    (45 "Margin" user)
+    (46 "B.CrtYd" user)
+    (47 "F.CrtYd" user)
+    (48 "B.Fab" user)
+    (49 "F.Fab" user)
+  )
+  (setup
+    (pad_to_mask_clearance 0)
+  )
+  (net 0 "")
+  (footprint
+    "tscircuit:hole_circle_holeDiameter3mm"
+    (layer F.Cu)
+    (uuid 26d3071a-1a6a-853a-0e02-035a0199817a)
+    (at 100 100 0)
+    (pad "" np_thru_hole circle
+      (at -10 10 0)
+      (size 3 3)
+      (drill 3)
+      (layers *.Cu *.Mask)
+      (uuid 470bf2d5-49a0-49ed-8a30-18025b6b5d09)
+    )
+  )
+  (footprint
+    "tscircuit:hole_pill_holeWidth4mm_holeHeight2mm"
+    (layer F.Cu)
+    (uuid 16f40798-517b-f668-4614-0b98225bf268)
+    (at 100 100 0)
+    (pad "" np_thru_hole oval
+      (at 10 -10 0)
+      (size 4 2)
+      (drill oval 4 2)
+      (layers *.Cu *.Mask)
+      (uuid 1ed3140a-b672-452f-af84-687249e29ce6)
+    )
+  )
+  (gr_line
+    (start 75 125)
+    (end 125 125)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 125 125)
+    (end 125 75)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 125 75)
+    (end 75 75)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 75 75)
+    (end 75 125)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+)

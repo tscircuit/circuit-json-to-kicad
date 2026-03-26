@@ -82,6 +82,16 @@ export class AddStandalonePcbElements extends ConverterStage<
           at: [boardOrigin.x, boardOrigin.y, 0],
           uuid: generateDeterministicUuid(footprintSeed),
         })
+    const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
+    const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
+    const libraryLink = this.getHoleLibraryLink(hole)
+
+    const footprint = new Footprint({
+      libraryLink,
+      layer: "F.Cu",
+      at: [boardOrigin.x, boardOrigin.y, 0],
+      uuid: generateDeterministicUuid(footprintSeed),
+    })
 
         const pad = createThruHolePadFromCircuitJson({
           platedHole: hole,
@@ -102,6 +112,18 @@ export class AddStandalonePcbElements extends ConverterStage<
     }
 
     this.finished = true
+  }
+
+  private getHoleLibraryLink(hole: PcbHole): string {
+    const { hole_shape: shape } = hole
+    if (shape === "circle") {
+      return `tscircuit:hole_${shape}_holeDiameter${hole.hole_diameter}mm`
+    }
+    if (shape === "pill" || shape === "oval") {
+      const h = hole
+      return `tscircuit:hole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm`
+    }
+    return "tscircuit:hole"
   }
 
   override getOutput(): KicadPcb {
