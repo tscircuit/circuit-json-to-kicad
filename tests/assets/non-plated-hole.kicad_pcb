@@ -113,7 +113,7 @@
     )
   )
   (footprint
-    "tscircuit:MountingHole"
+    "tscircuit:hole_circle_3.2mm"
     (layer F.Cu)
     (uuid 59c1051e-4d58-833e-40f0-015e34877f7e)
     (at 100 100 0)
@@ -122,11 +122,11 @@
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid 1fe7faca-5d3b-49bb-83cc-308d7b42437f)
+      (uuid de9fc7e4-1bc7-49fd-a648-cf6cfcabb9aa)
     )
   )
   (footprint
-    "tscircuit:MountingHole"
+    "tscircuit:hole_circle_3.2mm"
     (layer F.Cu)
     (uuid 39e1a7a8-5dae-5a58-0ac1-a3a87331a1a8)
     (at 100 100 0)
@@ -135,7 +135,7 @@
       (size 3.2 3.2)
       (drill 3.2)
       (layers *.Cu *.Mask)
-      (uuid b9e42e49-6b0f-45e5-9c12-90b477b6d0f3)
+      (uuid 72125524-a57b-4da4-8a9c-4d13029d6e4a)
     )
   )
   (gr_line
