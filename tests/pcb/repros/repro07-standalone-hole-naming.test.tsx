@@ -24,7 +24,7 @@ test("standalone hole footprint naming", async () => {
 
   // Write to assets for future use
   await Bun.write(
-    "tests/assets/repro07-standalone-hole-naming.kicad_pcb",
+    "./debug-output/repro07-standalone-hole-naming.kicad_pcb",
     outputString,
   )
 
