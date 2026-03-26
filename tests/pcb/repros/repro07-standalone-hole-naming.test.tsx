@@ -33,8 +33,12 @@ test("standalone hole footprint naming", async () => {
   const getFp = (name: string) =>
     kicadPcb.footprints.find((f) => f.libraryLink?.includes(name))
 
-  expect(getFp("hole_circle")?.libraryLink).toBe("tscircuit:hole_circle_holeDiameter3mm")
-  expect(getFp("hole_pill")?.libraryLink).toBe("tscircuit:hole_pill_holeWidth4mm_holeHeight2mm")
+  expect(getFp("hole_circle")?.libraryLink).toBe(
+    "tscircuit:hole_circle_holeDiameter3mm",
+  )
+  expect(getFp("hole_pill")?.libraryLink).toBe(
+    "tscircuit:hole_pill_holeWidth4mm_holeHeight2mm",
+  )
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
