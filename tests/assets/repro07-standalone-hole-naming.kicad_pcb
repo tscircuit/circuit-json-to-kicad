@@ -44,7 +44,7 @@
       (size 3 3)
       (drill 3)
       (layers *.Cu *.Mask)
-      (uuid 844fcaff-da00-48e4-a2c3-875fa63604c3)
+      (uuid 470bf2d5-49a0-49ed-8a30-18025b6b5d09)
     )
   )
   (footprint
@@ -57,7 +57,7 @@
       (size 4 2)
       (drill oval 4 2)
       (layers *.Cu *.Mask)
-      (uuid ffc194c9-8984-4fc6-963f-7ccba4bedf20)
+      (uuid 1ed3140a-b672-452f-af84-687249e29ce6)
     )
   )
   (gr_line
