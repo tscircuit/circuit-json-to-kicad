@@ -49,18 +49,16 @@ export class AddStandalonePcbElements extends ConverterStage<
       return
     }
 
-    const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
-
     if (elm.type === "pcb_hole") {
       const hole = elm
       const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
-      const holeCenter = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
+      const kicadPos = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
       const libraryLink = this.getHoleLibraryLink(hole)
 
       const footprint = new Footprint({
         libraryLink,
         layer: "F.Cu",
-        at: [holeCenter.x, holeCenter.y, 0],
+        at: [kicadPos.x, kicadPos.y, 0],
         uuid: generateDeterministicUuid(footprintSeed),
       })
 
@@ -80,13 +78,13 @@ export class AddStandalonePcbElements extends ConverterStage<
     } else if (elm.type === "pcb_plated_hole") {
       const hole = elm
       const footprintSeed = `standalone_plated_hole:${hole.pcb_plated_hole_id}:${hole.x},${hole.y}`
-      const platedHoleCenter = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
+      const kicadPos = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
       const libraryLink = this.getPlatedHoleLibraryLink(hole)
 
       const footprint = new Footprint({
         libraryLink,
         layer: "F.Cu",
-        at: [platedHoleCenter.x, platedHoleCenter.y, 0],
+        at: [kicadPos.x, kicadPos.y, 0],
         uuid: generateDeterministicUuid(footprintSeed),
       })
 
