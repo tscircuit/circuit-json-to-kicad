@@ -54,19 +54,20 @@ export class AddStandalonePcbElements extends ConverterStage<
     if (elm.type === "pcb_hole") {
       const hole = elm
       const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
+      const holeCenter = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
       const libraryLink = this.getHoleLibraryLink(hole)
 
       const footprint = new Footprint({
         libraryLink,
         layer: "F.Cu",
-        at: [boardOrigin.x, boardOrigin.y, 0],
+        at: [holeCenter.x, holeCenter.y, 0],
         uuid: generateDeterministicUuid(footprintSeed),
       })
 
       const ccwRotationDegrees = 0
       const npthPads = convertNpthHoles(
         [hole],
-        { x: 0, y: 0 }, // Relative to board origin
+        { x: hole.x, y: hole.y }, // Use hole center for negative offset
         ccwRotationDegrees,
       )
 
@@ -79,18 +80,19 @@ export class AddStandalonePcbElements extends ConverterStage<
     } else if (elm.type === "pcb_plated_hole") {
       const hole = elm
       const footprintSeed = `standalone_plated_hole:${hole.pcb_plated_hole_id}:${hole.x},${hole.y}`
+      const platedHoleCenter = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
       const libraryLink = this.getPlatedHoleLibraryLink(hole)
 
       const footprint = new Footprint({
         libraryLink,
         layer: "F.Cu",
-        at: [boardOrigin.x, boardOrigin.y, 0],
+        at: [platedHoleCenter.x, platedHoleCenter.y, 0],
         uuid: generateDeterministicUuid(footprintSeed),
       })
 
       const pad = createThruHolePadFromCircuitJson({
         platedHole: hole,
-        componentCenter: { x: 0, y: 0 },
+        componentCenter: { x: hole.x, y: hole.y },
         padNumber: 1,
         componentRotation: 0,
       })
