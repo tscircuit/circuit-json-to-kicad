@@ -1,4 +1,11 @@
-import type { CircuitJson, PcbHole, PcbPlatedHole } from "circuit-json"
+import type {
+  CircuitJson,
+  PcbHole,
+  PcbPlatedHole,
+  PcbPlatedHoleOval,
+  PcbHolePillWithRectPad,
+  PcbHoleCircularWithRectPad,
+} from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
@@ -115,15 +122,15 @@ export class AddStandalonePcbElements extends ConverterStage<
       return `tscircuit:platedhole_${shape}_holeDiameter${hole.hole_diameter}mm_outerDiameter${hole.outer_diameter}mm`
     }
     if (shape === "pill" || shape === "oval") {
-      const h = hole as any
+      const h = hole as PcbPlatedHoleOval
       return `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_outerWidth${h.outer_width}mm_outerHeight${h.outer_height}mm`
     }
     if (shape === "pill_hole_with_rect_pad") {
-      const h = hole as any
+      const h = hole as PcbHolePillWithRectPad
       return `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
     }
     if (shape === "circular_hole_with_rect_pad") {
-      const h = hole as any
+      const h = hole as PcbHoleCircularWithRectPad
       return `tscircuit:platedhole_${shape}_holeDiameter${h.hole_diameter}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
     }
     return "tscircuit:platedhole"
