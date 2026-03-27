@@ -1,0 +1,113 @@
+(kicad_pcb
+  (version 20241229)
+  (generator circuit-json-to-kicad)
+  (generator_version 0.0.1)
+  (general
+    (thickness 1.6)
+  )
+  (paper
+    A4
+  )
+  (layers
+    (0 "F.Cu" signal)
+    (31 "B.Cu" signal)
+    (32 "B.Adhes" user)
+    (33 "F.Adhes" user)
+    (34 "B.Paste" user)
+    (35 "F.Paste" user)
+    (36 "B.SilkS" user)
+    (37 "F.SilkS" user)
+    (38 "B.Mask" user)
+    (39 "F.Mask" user)
+    (40 "Dwgs.User" user)
+    (41 "Cmts.User" user)
+    (42 "Eco1.User" user)
+    (43 "Eco2.User" user)
+    (44 "Edge.Cuts" user)
+    (45 "Margin" user)
+    (46 "B.CrtYd" user)
+    (47 "F.CrtYd" user)
+    (48 "B.Fab" user)
+    (49 "F.Fab" user)
+  )
+  (setup
+    (pad_to_mask_clearance 0)
+  )
+  (net 0 "")
+  (footprint
+    "tscircuit:platedhole_circle_holeDiameter2mm_outerDiameter4mm"
+    (layer F.Cu)
+    (uuid 10ba4720-4497-1bdf-6617-812210c61e23)
+    (at 100 100 0)
+    (pad "1" thru_hole circle
+      (at -10 -20 0)
+      (size 4 4)
+      (drill 2)
+      (layers *.Cu *.Mask)
+      (uuid 7a337e56-2d60-f016-1f71-9e2a6c442c6a)
+    )
+  )
+  (footprint
+    "tscircuit:platedhole_pill_holeWidth2mm_holeHeight4mm_outerWidth4mm_outerHeight6mm"
+    (layer F.Cu)
+    (uuid 64b94602-7fbf-f8de-6439-37be48b2769e)
+    (at 100 100 0)
+    (pad "1" thru_hole oval
+      (at 10 -20 0)
+      (size 4 6)
+      (drill oval 2 4)
+      (layers *.Cu *.Mask)
+      (uuid 6d6d3b80-6f10-1ac1-4b8d-7102280ac743)
+    )
+  )
+  (footprint
+    "tscircuit:platedhole_pill_hole_with_rect_pad_holeWidth2mm_holeHeight4mm_rectPadWidth4mm_rectPadHeight6mm"
+    (layer F.Cu)
+    (uuid 5279dcb2-36f3-1b92-1b6c-5a72001a66ae)
+    (at 100 100 0)
+    (pad "1" thru_hole rect
+      (at -10 0 0)
+      (size 4 6)
+      (drill oval 2 4)
+      (layers *.Cu *.Mask)
+      (uuid 5de93db4-6f65-1fec-3cb3-7d8c0a01db2c)
+    )
+  )
+  (footprint
+    "tscircuit:platedhole_circular_hole_with_rect_pad_holeDiameter2mm_rectPadWidth4mm_rectPadHeight6mm"
+    (layer F.Cu)
+    (uuid 0a0eee20-6402-5341-420a-479e17e91d83)
+    (at 100 100 0)
+    (pad "1" thru_hole rect
+      (at 10 0 0)
+      (size 4 6)
+      (drill 2)
+      (layers *.Cu *.Mask)
+      (uuid 2c7981e0-3318-f041-39b8-5ea24057cd03)
+    )
+  )
+  (gr_line
+    (start 85 125)
+    (end 115 125)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 115 125)
+    (end 115 75)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 115 75)
+    (end 85 75)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 85 75)
+    (end 85 125)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+)

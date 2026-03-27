@@ -4,64 +4,69 @@ import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbCon
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { KicadPcb } from "kicadts"
 
-test("pcb repro06 plated hole", async () => {
+test("pcb basics15 plated hole shapes", async () => {
   const circuit = new Circuit()
   circuit.add(
-    <board width="50mm" height="50mm">
+    <board width="30mm" height="50mm">
+      {/* 1. Circle */}
       <platedhole
-        pcbX={-20}
-        pcbY={-20}
-        holeDiameter="2mm"
-        outerDiameter="4mm"
-        shape="circle"
-      />
-      <resistor name="R1" resistance="10k" pcbX={0} pcbY={0} footprint="0402" />
-      <capacitor
-        name="C1"
-        capacitance="100nF"
-        pcbX={5}
-        pcbY={0}
-        footprint="0402"
-      />
-      <platedhole
-        pcbX={20}
+        pcbX={-10}
         pcbY={20}
+        shape="circle"
         holeDiameter="2mm"
         outerDiameter="4mm"
-        shape="circle"
+      />
+
+      {/* 2. Pill / Oval */}
+      <platedhole
+        pcbX={10}
+        pcbY={20}
+        shape="pill"
+        holeWidth="2mm"
+        holeHeight="4mm"
+        outerWidth="4mm"
+        outerHeight="6mm"
+      />
+
+      {/* 3. Pill hole with rect pad */}
+
+      <platedhole
+        pcbX={-10}
+        pcbY={0}
+        shape="pill_hole_with_rect_pad"
+        holeWidth="2mm"
+        holeHeight="4mm"
+        rectPadWidth="4mm"
+        rectPadHeight="6mm"
+      />
+
+      {/* 4. Circular hole with rect pad */}
+      <platedhole
+        pcbX={10}
+        pcbY={0}
+        shape="circular_hole_with_rect_pad"
+        holeDiameter="2mm"
+        rectPadWidth="4mm"
+        rectPadHeight="6mm"
       />
     </board>,
   )
+
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
-
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
-
-  Bun.write("./debug-output/plated-hole.kicad_pcb", outputString)
-
-  const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
-
-  // There are 4 footprints: R1, C1, and 2 standalone plated holes
-  expect(kicadPcb.footprints.length).toBe(4)
-
-  const totalHoles = kicadPcb.footprints.reduce(
-    (acc, f) => acc + f.fpPads.filter((p) => p.padType === "thru_hole").length,
-    0,
-  )
-
-  // Verify that there are 2 thru_hole pads (one per plated hole)
-  expect(totalHoles).toBe(2)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
   })
+
+  expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
     stackCircuitJsonKicadPngs(
