@@ -113,7 +113,7 @@
     )
   )
   (footprint
-    "tscircuit:MountingHole_Pad"
+    "tscircuit:platedhole_circle_holeDiameter2mm_outerDiameter4mm"
     (layer F.Cu)
     (uuid 498372c2-0b57-8a3e-6032-873e4af27bc2)
     (at 100 100 0)
@@ -126,7 +126,7 @@
     )
   )
   (footprint
-    "tscircuit:MountingHole_Pad"
+    "tscircuit:platedhole_circle_holeDiameter2mm_outerDiameter4mm"
     (layer F.Cu)
     (uuid 57ad84bc-3c26-c39c-20a0-027c0519415c)
     (at 100 100 0)

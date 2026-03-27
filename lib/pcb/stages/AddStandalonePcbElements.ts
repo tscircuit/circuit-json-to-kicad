@@ -43,8 +43,9 @@ export class AddStandalonePcbElements extends ConverterStage<
         const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
 
         const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
+        const libraryLink = this.getHoleLibraryLink(hole)
         const footprint = new Footprint({
-          libraryLink: "tscircuit:MountingHole",
+          libraryLink,
           layer: "F.Cu",
           at: [boardOrigin.x, boardOrigin.y, 0],
           uuid: generateDeterministicUuid(footprintSeed),
@@ -74,24 +75,15 @@ export class AddStandalonePcbElements extends ConverterStage<
       ] as PcbPlatedHole
       if (hole) {
         const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
-
         const footprintSeed = `standalone_plated_hole:${hole.pcb_plated_hole_id}:${hole.x},${hole.y}`
+        const libraryLink = this.getPlatedHoleLibraryLink(hole)
+
         const footprint = new Footprint({
-          libraryLink: "tscircuit:MountingHole_Pad",
+          libraryLink,
           layer: "F.Cu",
           at: [boardOrigin.x, boardOrigin.y, 0],
           uuid: generateDeterministicUuid(footprintSeed),
         })
-    const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
-    const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
-    const libraryLink = this.getHoleLibraryLink(hole)
-
-    const footprint = new Footprint({
-      libraryLink,
-      layer: "F.Cu",
-      at: [boardOrigin.x, boardOrigin.y, 0],
-      uuid: generateDeterministicUuid(footprintSeed),
-    })
 
         const pad = createThruHolePadFromCircuitJson({
           platedHole: hole,
@@ -124,6 +116,26 @@ export class AddStandalonePcbElements extends ConverterStage<
       return `tscircuit:hole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm`
     }
     return "tscircuit:hole"
+  }
+
+  private getPlatedHoleLibraryLink(hole: PcbPlatedHole): string {
+    const shape = hole.shape
+    if (shape === "circle") {
+      return `tscircuit:platedhole_${shape}_holeDiameter${hole.hole_diameter}mm_outerDiameter${hole.outer_diameter}mm`
+    }
+    if (shape === "pill" || shape === "oval") {
+      const h = hole as any
+      return `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_outerWidth${h.outer_width}mm_outerHeight${h.outer_height}mm`
+    }
+    if (shape === "pill_hole_with_rect_pad") {
+      const h = hole as any
+      return `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
+    }
+    if (shape === "circular_hole_with_rect_pad") {
+      const h = hole as any
+      return `tscircuit:platedhole_${shape}_holeDiameter${h.hole_diameter}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
+    }
+    return "tscircuit:platedhole"
   }
 
   override getOutput(): KicadPcb {
