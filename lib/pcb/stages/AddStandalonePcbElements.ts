@@ -11,19 +11,18 @@ export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
 > {
-  private holesProcessed = 0
-  private platedHolesProcessed = 0
-  private standaloneHoles: PcbHole[] = []
-  private standalonePlatedHoles: PcbPlatedHole[] = []
+  private unprocessedElements: Array<PcbHole | PcbPlatedHole> = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
-    this.standaloneHoles = (this.ctx.db.pcb_hole.list() as PcbHole[]).filter(
-      (hole) => !hole.pcb_component_id,
-    )
-    this.standalonePlatedHoles = (
-      this.ctx.db.pcb_plated_hole.list() as PcbPlatedHole[]
-    ).filter((hole) => !hole.pcb_component_id)
+    this.unprocessedElements = [
+      ...(this.ctx.db.pcb_hole.list() as PcbHole[]).filter(
+        (hole) => !hole.pcb_component_id,
+      ),
+      ...(this.ctx.db.pcb_plated_hole.list() as PcbPlatedHole[]).filter(
+        (hole) => !hole.pcb_component_id,
+      ),
+    ]
   }
 
   override _step(): void {
@@ -37,73 +36,65 @@ export class AddStandalonePcbElements extends ConverterStage<
       throw new Error("PCB transformation matrix not initialized in context")
     }
 
-    if (this.holesProcessed < this.standaloneHoles.length) {
-      const hole = this.standaloneHoles[this.holesProcessed] as PcbHole
-      if (hole) {
-        const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
-
-        const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
-        const libraryLink = this.getHoleLibraryLink(hole)
-        const footprint = new Footprint({
-          libraryLink,
-          layer: "F.Cu",
-          at: [boardOrigin.x, boardOrigin.y, 0],
-          uuid: generateDeterministicUuid(footprintSeed),
-        })
-
-        const ccwRotationDegrees = 0
-        const npthPads = convertNpthHoles(
-          [hole],
-          { x: 0, y: 0 }, // Relative to board origin
-          ccwRotationDegrees,
-        )
-
-        if (npthPads.length > 0) {
-          footprint.fpPads = npthPads
-          const footprints = kicadPcb.footprints
-          footprints.push(footprint)
-          kicadPcb.footprints = footprints
-        }
-      }
-      this.holesProcessed++
+    const elm = this.unprocessedElements.shift()
+    if (!elm) {
+      this.finished = true
       return
     }
 
-    if (this.platedHolesProcessed < this.standalonePlatedHoles.length) {
-      const hole = this.standalonePlatedHoles[
-        this.platedHolesProcessed
-      ] as PcbPlatedHole
-      if (hole) {
-        const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
-        const footprintSeed = `standalone_plated_hole:${hole.pcb_plated_hole_id}:${hole.x},${hole.y}`
-        const libraryLink = this.getPlatedHoleLibraryLink(hole)
+    const boardOrigin = applyToPoint(c2kMatPcb, { x: 0, y: 0 })
 
-        const footprint = new Footprint({
-          libraryLink,
-          layer: "F.Cu",
-          at: [boardOrigin.x, boardOrigin.y, 0],
-          uuid: generateDeterministicUuid(footprintSeed),
-        })
+    if (elm.type === "pcb_hole") {
+      const hole = elm
+      const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
+      const libraryLink = this.getHoleLibraryLink(hole)
 
-        const pad = createThruHolePadFromCircuitJson({
-          platedHole: hole,
-          componentCenter: { x: 0, y: 0 },
-          padNumber: 1,
-          componentRotation: 0,
-        })
+      const footprint = new Footprint({
+        libraryLink,
+        layer: "F.Cu",
+        at: [boardOrigin.x, boardOrigin.y, 0],
+        uuid: generateDeterministicUuid(footprintSeed),
+      })
 
-        if (pad) {
-          footprint.fpPads = [pad]
-          const footprints = kicadPcb.footprints
-          footprints.push(footprint)
-          kicadPcb.footprints = footprints
-        }
+      const ccwRotationDegrees = 0
+      const npthPads = convertNpthHoles(
+        [hole],
+        { x: 0, y: 0 }, // Relative to board origin
+        ccwRotationDegrees,
+      )
+
+      if (npthPads.length > 0) {
+        footprint.fpPads = npthPads
+        const footprints = kicadPcb.footprints
+        footprints.push(footprint)
+        kicadPcb.footprints = footprints
       }
-      this.platedHolesProcessed++
-      return
-    }
+    } else if (elm.type === "pcb_plated_hole") {
+      const hole = elm
+      const footprintSeed = `standalone_plated_hole:${hole.pcb_plated_hole_id}:${hole.x},${hole.y}`
+      const libraryLink = this.getPlatedHoleLibraryLink(hole)
 
-    this.finished = true
+      const footprint = new Footprint({
+        libraryLink,
+        layer: "F.Cu",
+        at: [boardOrigin.x, boardOrigin.y, 0],
+        uuid: generateDeterministicUuid(footprintSeed),
+      })
+
+      const pad = createThruHolePadFromCircuitJson({
+        platedHole: hole,
+        componentCenter: { x: 0, y: 0 },
+        padNumber: 1,
+        componentRotation: 0,
+      })
+
+      if (pad) {
+        footprint.fpPads = [pad]
+        const footprints = kicadPcb.footprints
+        footprints.push(footprint)
+        kicadPcb.footprints = footprints
+      }
+    }
   }
 
   private getHoleLibraryLink(hole: PcbHole): string {
