@@ -24,7 +24,5 @@ test("repro10: trace width inflated from per-point 0.15mm to fallback 0.25mm", (
 
   const correctCount = segmentWidths.filter((w) => w === 0.15).length
 
-  // BUG: AddTracesStage:116 — `width: trace.width || 0.25`
-  // trace.width is undefined → 0.25 used instead of startPoint.width (0.15)
-  expect(correctCount).toBe(0) // all 102 segments get 0.25, not 0.15 (should equal segmentWidths.length after fix)
+  expect(correctCount).toBe(segmentWidths.length)
 })
