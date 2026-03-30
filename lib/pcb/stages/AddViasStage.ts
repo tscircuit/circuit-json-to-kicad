@@ -80,6 +80,16 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
                 }
               }
             }
+            // Bug 1 fix: source_trace_id may actually be a source_net ID
+            // (capacity-autorouter sets it this way)
+            if (!connectivityKey) {
+              const sourceNet = this.ctx.db.source_net?.get(
+                pcbTrace.source_trace_id,
+              )
+              if (sourceNet?.subcircuit_connectivity_map_key) {
+                connectivityKey = sourceNet.subcircuit_connectivity_map_key
+              }
+            }
           }
         }
       }
@@ -109,12 +119,16 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
         )
       : getViaLayers(numLayers)
 
+    // KiCad minimum via sizes
+    const viaSize = Math.max(via.outer_diameter || 0.8, 0.5)
+    const viaDrill = Math.max(via.hole_diameter || 0.4, 0.3)
+
     // Create a via with deterministic UUID
-    const viaData = `via:${transformedPos.x},${transformedPos.y}:${via.outer_diameter || 0.8}:${via.hole_diameter || 0.4}:${netInfo?.id ?? 0}`
+    const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}`
     const kicadVia = new Via({
       at: [transformedPos.x, transformedPos.y],
-      size: via.outer_diameter || 0.8,
-      drill: via.hole_diameter || 0.4,
+      size: viaSize,
+      drill: viaDrill,
       layers: viaLayers,
       net: new ViaNet(netInfo?.id ?? 0),
       uuid: generateDeterministicUuid(viaData),

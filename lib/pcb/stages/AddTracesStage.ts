@@ -113,7 +113,7 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         start: { x: transformedStart.x, y: transformedStart.y },
         end: { x: transformedEnd.x, y: transformedEnd.y },
         layer: kicadLayer,
-        width: trace.width || 0.25,
+        width: startPoint.width ?? endPoint.width ?? trace.width ?? 0.25,
         net: new SegmentNet(netInfo?.id ?? 0),
         uuid: generateDeterministicUuid(segmentData),
       })

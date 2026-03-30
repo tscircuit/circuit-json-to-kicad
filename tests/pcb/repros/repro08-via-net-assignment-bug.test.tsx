@@ -24,5 +24,5 @@ test("repro08: vias lose net assignment when pcb_trace.source_trace_id is a sour
 
   // BUG: AddViasStage tries db.source_trace.get("source_net_1") → null, no fallback
   // All vias should have a real net, not net 0
-  expect(viaNet0Count).toBeGreaterThan(0) // 4 of 10 vias get net 0 (should be 0 after fix)
+  expect(viaNet0Count).toBe(0)
 })

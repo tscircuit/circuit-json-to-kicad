@@ -28,7 +28,5 @@ test("repro09: via sizes below KiCad minimums (0.3mm/0.2mm) pass through unchang
     (m) => Number(m[1]) < 0.5 || Number(m[2]) < 0.3,
   )
 
-  // BUG: AddViasStage:113 uses `via.outer_diameter || 0.8` with no minimum clamp
-  // All vias should be clamped to KiCad minimums (0.5mm outer / 0.3mm drill)
-  expect(subMinVias.length).toBeGreaterThan(0) // all 10 vias written as 0.3mm/0.2mm (should be 0 after fix)
+  expect(subMinVias.length).toBe(0)
 })
