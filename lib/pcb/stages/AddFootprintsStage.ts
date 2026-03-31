@@ -355,6 +355,16 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    if (!footprint.models || footprint.models.length === 0) {
+      const footprinter_string = cadComponent?.footprinter_string
+      const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinter_string}.step`
+      footprint.models = [new FootprintModel(cdnUrl)]
+
+      if (!this.ctx.pcbModel3dSourcePaths?.includes(cdnUrl)) {
+        this.ctx.pcbModel3dSourcePaths?.push(cdnUrl)
+      }
+    }
+
     // Apply kicadFootprintMetadata from circuit-json element
     const footprintMetadata = component.metadata?.kicad_footprint as
       | KicadFootprintMetadata
