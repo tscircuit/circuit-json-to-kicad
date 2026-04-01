@@ -356,9 +356,16 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     if (!footprint.models || footprint.models.length === 0) {
-      const footprinter_string = cadComponent?.footprinter_string
+      const footprinter_string =
+        cadComponent?.footprinter_string || footprintName
+      const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
       const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinter_string}.step`
-      footprint.models = [new FootprintModel(cdnUrl)]
+
+      const modelPath = this.includeBuiltin3dModels
+        ? `${KICAD_3D_BASE}/tscircuit_builtin.3dshapes/${footprinter_string}.step`
+        : cdnUrl
+
+      footprint.models = [new FootprintModel(modelPath)]
 
       if (!this.ctx.pcbModel3dSourcePaths?.includes(cdnUrl)) {
         this.ctx.pcbModel3dSourcePaths?.push(cdnUrl)

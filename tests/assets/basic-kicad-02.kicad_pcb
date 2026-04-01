@@ -1,0 +1,179 @@
+(kicad_pcb
+  (version 20241229)
+  (generator circuit-json-to-kicad)
+  (generator_version 0.0.1)
+  (general
+    (thickness 1.6)
+  )
+  (paper
+    A4
+  )
+  (layers
+    (0 "F.Cu" signal)
+    (31 "B.Cu" signal)
+    (32 "B.Adhes" user)
+    (33 "F.Adhes" user)
+    (34 "B.Paste" user)
+    (35 "F.Paste" user)
+    (36 "B.SilkS" user)
+    (37 "F.SilkS" user)
+    (38 "B.Mask" user)
+    (39 "F.Mask" user)
+    (40 "Dwgs.User" user)
+    (41 "Cmts.User" user)
+    (42 "Eco1.User" user)
+    (43 "Eco2.User" user)
+    (44 "Edge.Cuts" user)
+    (45 "Margin" user)
+    (46 "B.CrtYd" user)
+    (47 "F.CrtYd" user)
+    (48 "B.Fab" user)
+    (49 "F.Fab" user)
+  )
+  (setup
+    (pad_to_mask_clearance 0)
+  )
+  (net 0 "")
+  (footprint
+    "tscircuit:resistor_0402"
+    (layer F.Cu)
+    (uuid 54aa756a-42e5-8c96-258a-716a72059096)
+    (at 92 100 0)
+    (fp_text
+      reference
+      "R1"
+      (at 0 -1.22 0)
+      (layer F.SilkS)
+      (effects
+        (font
+          (size 0.26666666666666666 0.26666666666666666)
+        )
+      )
+    )
+    (fp_rect
+      (start -1.2299999999999995 -0.97)
+      (end 1.0300000000000002 0.97)
+      (layer F.CrtYd)
+      (stroke
+        (width 0.05)
+        (type default)
+      )
+      (fill no)
+    )
+    (pad "1" smd rect
+      (at -0.5099999999999998 0 0)
+      (size 0.54 0.64)
+      (layers F.Cu F.Paste F.Mask)
+      (uuid 387bcc20-1978-7e9f-6b6c-c95e429eebe3)
+    )
+    (pad "2" smd rect
+      (at 0.5099999999999998 0 0)
+      (size 0.54 0.64)
+      (layers F.Cu F.Paste F.Mask)
+      (uuid 58ca6cce-182d-b1d2-76da-2f8e05e210ee)
+    )
+    (model "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/0402.step"
+    )
+  )
+  (footprint
+    "tscircuit:capacitor_0603"
+    (layer F.Cu)
+    (uuid 555ec800-5030-fa1f-0a3f-43c264af81a3)
+    (at 100 100 0)
+    (fp_text
+      reference
+      "C1"
+      (at 0 -1.375 0)
+      (layer F.SilkS)
+      (effects
+        (font
+          (size 0.26666666666666666 0.26666666666666666)
+        )
+      )
+    )
+    (fp_rect
+      (start -1.6750000000000003 -1.125)
+      (end 1.475 1.125)
+      (layer F.CrtYd)
+      (stroke
+        (width 0.05)
+        (type default)
+      )
+      (fill no)
+    )
+    (pad "1" smd rect
+      (at -0.825 0 0)
+      (size 0.8 0.95)
+      (layers F.Cu F.Paste F.Mask)
+      (uuid 1f2687be-7e71-7622-1c09-7402465e8e1e)
+    )
+    (pad "2" smd rect
+      (at 0.825 0 0)
+      (size 0.8 0.95)
+      (layers F.Cu F.Paste F.Mask)
+      (uuid 35685ca0-1816-dd3f-6596-171e4ceaaf03)
+    )
+    (model "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/0603.step"
+    )
+  )
+  (gr_line
+    (start 92.51 99.28)
+    (end 91.02 99.28)
+    (width 0.1)
+    (layer F.SilkS)
+  )
+  (gr_line
+    (start 91.02 99.28)
+    (end 91.02 100.72)
+    (width 0.1)
+    (layer F.SilkS)
+  )
+  (gr_line
+    (start 91.02 100.72)
+    (end 92.51 100.72)
+    (width 0.1)
+    (layer F.SilkS)
+  )
+  (gr_line
+    (start 100.825 99.125)
+    (end 98.575 99.125)
+    (width 0.1)
+    (layer F.SilkS)
+  )
+  (gr_line
+    (start 98.575 99.125)
+    (end 98.575 100.875)
+    (width 0.1)
+    (layer F.SilkS)
+  )
+  (gr_line
+    (start 98.575 100.875)
+    (end 100.825 100.875)
+    (width 0.1)
+    (layer F.SilkS)
+  )
+  (gr_line
+    (start 85 110)
+    (end 115 110)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 115 110)
+    (end 115 90)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 115 90)
+    (end 85 90)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+  (gr_line
+    (start 85 90)
+    (end 85 110)
+    (width 0.1)
+    (layer Edge.Cuts)
+  )
+)
