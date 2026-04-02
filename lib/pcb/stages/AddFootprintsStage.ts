@@ -27,6 +27,8 @@ import { convertFabricationNoteRects } from "./footprints-stage-converters/conve
 import { convertNoteRects } from "./footprints-stage-converters/convertNoteRects"
 import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
+import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
+import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
@@ -270,7 +272,32 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpRects.push(...convertCourtyardRects(pcbCourtyardRects, component.center))
+
+    const pcbSilkscreenRects =
+      this.ctx.db.pcb_silkscreen_rect
+        ?.list()
+        .filter(
+          (rect: any) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    fpRects.push(
+      ...convertSilkscreenRects(pcbSilkscreenRects, component.center),
+    )
     footprint.fpRects = fpRects
+
+    // Convert silkscreen paths to fp_line
+    const pcbSilkscreenPaths =
+      this.ctx.db.pcb_silkscreen_path
+        ?.list()
+        .filter(
+          (path: any) => path.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const fpLines = footprint.fpLines ?? []
+    fpLines.push(
+      ...convertSilkscreenPaths(pcbSilkscreenPaths, component.center),
+    )
+    footprint.fpLines = fpLines
 
     // Convert polygons
     const pcbCourtyardOutlines =
