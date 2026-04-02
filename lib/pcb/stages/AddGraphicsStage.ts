@@ -21,8 +21,10 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       throw new Error("PCB transformation matrix not initialized in context")
     }
 
-    // Get PCB board silkscreen paths if they exist
-    const pcbSilkscreenPaths = this.ctx.db.pcb_silkscreen_path?.list() || []
+    // Get PCB board silkscreen paths if they exist (exclude component-owned paths)
+    const pcbSilkscreenPaths = (
+      this.ctx.db.pcb_silkscreen_path?.list() || []
+    ).filter((path: any) => !path.pcb_component_id)
 
     for (const path of pcbSilkscreenPaths) {
       if (!path.route || path.route.length < 2) continue
