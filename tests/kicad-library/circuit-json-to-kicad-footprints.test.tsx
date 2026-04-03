@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
-import { convertCircuitJsonToKicadFootprints } from "lib"
+import { CircuitJsonToKicadLibraryConverter } from "lib"
 import type { CircuitJson } from "circuit-json"
 
-test("convertCircuitJsonToKicadFootprints returns kicad_mod entries", async () => {
+test("CircuitJsonToKicadLibraryConverter.convert returns footprint entries", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="20mm" height="20mm">
@@ -21,13 +21,13 @@ test("convertCircuitJsonToKicadFootprints returns kicad_mod entries", async () =
 
   await circuit.renderUntilSettled()
 
-  const footprints = convertCircuitJsonToKicadFootprints(
+  const footprints = CircuitJsonToKicadLibraryConverter.convert(
     circuit.getCircuitJson() as CircuitJson,
     {
       libraryName: "test_library",
       footprintLibraryName: "test_library",
     },
-  )
+  ).getFootprints()
 
   expect(footprints.length).toBeGreaterThanOrEqual(2)
 

@@ -13,7 +13,7 @@ import { ExtractFootprintsStage } from "./stages/ExtractFootprintsStage"
 import { GenerateSymbolLibraryStage } from "./stages/GenerateSymbolLibraryStage"
 import { GenerateLibraryTablesStage } from "./stages/GenerateLibraryTablesStage"
 
-interface CircuitJsonToKicadLibraryOptions {
+export interface CircuitJsonToKicadLibraryOptions {
   libraryName?: string
   footprintLibraryName?: string
 }
@@ -22,6 +22,15 @@ interface CircuitJsonToKicadLibraryOptions {
 export type { SymbolEntry, FootprintEntry, KicadLibraryOutput }
 
 export class CircuitJsonToKicadLibraryConverter {
+  static convert(
+    circuitJson: CircuitJson,
+    options: CircuitJsonToKicadLibraryOptions = {},
+  ) {
+    const converter = new CircuitJsonToKicadLibraryConverter(circuitJson, options)
+    converter.runUntilFinished()
+    return converter
+  }
+
   ctx: ConverterContext
 
   pipeline: ConverterStage<CircuitJson, KicadLibraryOutput>[]
