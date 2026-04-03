@@ -26,7 +26,10 @@ export class CircuitJsonToKicadLibraryConverter {
     circuitJson: CircuitJson,
     options: CircuitJsonToKicadLibraryOptions = {},
   ) {
-    const converter = new CircuitJsonToKicadLibraryConverter(circuitJson, options)
+    const converter = new CircuitJsonToKicadLibraryConverter(
+      circuitJson,
+      options,
+    )
     converter.runUntilFinished()
     return converter
   }
