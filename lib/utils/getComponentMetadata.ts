@@ -81,10 +81,6 @@ export function getComponentMetadata(sourceComp: any): {
   }
 }
 
-/**
- * Extracts a human-readable value string from a source component.
- * e.g., "1kΩ" for resistors, "1uF" for capacitors, etc.
- */
 export function getComponentValue(
   sourceComp: SourceComponentBase | any,
 ): string {
