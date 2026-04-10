@@ -8,7 +8,6 @@ import {
   getReferenceDesignator,
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
-import { getComponentMetadata } from "../../utils/getComponentMetadata"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FootprintModel } from "kicadts"
 import {
@@ -24,6 +23,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
+import { getComponentLabels } from "../../utils/getComponentLabels"
 import type { KicadFootprintMetadata } from "@tscircuit/props"
 import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
 import { convertCourtyardCircles } from "./footprints-stage-converters/convertCourtyardCircles"
@@ -360,23 +360,18 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     // Apply kicadFootprintMetadata from circuit-json element
-    const footprintMetadata =
-      (component.metadata?.kicad_footprint as
-        | KicadFootprintMetadata
-        | undefined) || {}
+    const footprintMetadata = component.metadata?.kicad_footprint as
+      | KicadFootprintMetadata
+      | undefined
 
-    const { reference: componentReference, value: componentValue } =
-      sourceComponent
-        ? getComponentMetadata(sourceComponent)
-        : {
-            reference: footprintName,
-            value: footprintName,
-          }
+    if (footprintMetadata && sourceComponent) {
+      const { reference, label } = getComponentLabels(sourceComponent)
 
-    applyMetadataToFootprint(footprint, footprintMetadata as any, {
-      reference: componentReference,
-      value: componentValue,
-    })
+      applyMetadataToFootprint(footprint, footprintMetadata, {
+        reference,
+        label,
+      })
+    }
 
     const footprints = kicadPcb.footprints
     footprints.push(footprint)

@@ -1,21 +1,22 @@
-import type { SourceComponentBase } from "circuit-json"
 import { getReferenceDesignator } from "./getKicadCompatibleComponentName"
 
-/**
- * Get component metadata (reference, value, description)
- */
-export function getComponentMetadata(sourceComp: any): {
+export interface ComponentLabels {
   reference: string
-  value: string
+  label: string
   description: string
-} {
+}
+
+/**
+ * Get component labels (reference designator and display label)
+ */
+export function getComponentLabels(sourceComp: any): ComponentLabels {
   const name = sourceComp.name || "?"
   const reference = getReferenceDesignator(sourceComp)
 
   if (sourceComp.ftype === "simple_resistor") {
     return {
       reference,
-      value: sourceComp.display_resistance || "R",
+      label: sourceComp.display_resistance || "R",
       description: "Resistor",
     }
   }
@@ -23,7 +24,7 @@ export function getComponentMetadata(sourceComp: any): {
   if (sourceComp.ftype === "simple_capacitor") {
     return {
       reference,
-      value: sourceComp.display_capacitance || "C",
+      label: sourceComp.display_capacitance || "C",
       description: "Capacitor",
     }
   }
@@ -31,7 +32,7 @@ export function getComponentMetadata(sourceComp: any): {
   if (sourceComp.ftype === "simple_inductor") {
     return {
       reference,
-      value: sourceComp.display_inductance || "L",
+      label: sourceComp.display_inductance || "L",
       description: "Inductor",
     }
   }
@@ -39,7 +40,7 @@ export function getComponentMetadata(sourceComp: any): {
   if (sourceComp.ftype === "simple_diode") {
     return {
       reference,
-      value: "D",
+      label: "D",
       description: "Diode",
     }
   }
@@ -47,28 +48,31 @@ export function getComponentMetadata(sourceComp: any): {
   if (sourceComp.ftype === "simple_chip") {
     return {
       reference,
-      value: name,
+      label: name,
       description: "Integrated Circuit",
     }
   }
+
   if (sourceComp.ftype === "simple_led") {
     return {
       reference,
-      value: sourceComp.manufacturer_part_number || "LED",
+      label: sourceComp.manufacturer_part_number || "LED",
       description: "LED",
     }
   }
+
   if (sourceComp.ftype === "simple_switch") {
     return {
       reference,
-      value: sourceComp.manufacturer_part_number || "SW",
+      label: sourceComp.manufacturer_part_number || "SW",
       description: "Switch",
     }
   }
+
   if (sourceComp.ftype === "simple_potentiometer") {
     return {
       reference,
-      value: sourceComp.display_max_resistance || "RV",
+      label: sourceComp.display_max_resistance || "POT",
       description: "Potentiometer",
     }
   }
@@ -76,13 +80,7 @@ export function getComponentMetadata(sourceComp: any): {
   // Default
   return {
     reference,
-    value: name,
+    label: name,
     description: "Component",
   }
-}
-
-export function getComponentValue(
-  sourceComp: SourceComponentBase | any,
-): string {
-  return getComponentMetadata(sourceComp).value
 }

@@ -37,21 +37,18 @@ function createTextEffects(metadataEffects?: KicadEffects): TextEffects {
 export function applyMetadataToFootprint(
   footprint: Footprint,
   metadata: KicadFootprintMetadata,
-  componentMetadata: {
-    reference: string
-    value: string
-  },
+  componentLabels: { reference: string; label: string },
 ): void {
-  const componentName = componentMetadata.reference
+  // Apply properties if provided
   let newProperties: Property[] = []
 
-  if (metadata.properties) {
-    // Reference property - use explicit metadata value if provided, otherwise fall back to componentName
-    const refMeta = metadata.properties?.Reference
+  if (metadata?.properties) {
+    // Reference property - use explicit metadata value if provided, otherwise fall back to componentLabels.reference
+    const refMeta = metadata.properties.Reference
     newProperties.push(
       new Property({
         key: "Reference",
-        value: refMeta?.value ?? componentName,
+        value: refMeta?.value ?? componentLabels.reference,
         position: refMeta?.at
           ? [
               Number(refMeta.at.x),
@@ -60,20 +57,21 @@ export function applyMetadataToFootprint(
             ]
           : [0, -3, 0],
         layer: refMeta?.layer ?? "F.SilkS",
-        uuid: generateDeterministicUuid(`${componentName}-property-Reference`),
+        uuid: generateDeterministicUuid(
+          `${componentLabels.reference}-property-Reference`,
+        ),
         effects: createTextEffects(refMeta?.effects),
         hidden: refMeta?.hide,
       }),
     )
   }
-
-  // Value property - use explicit Value.value first, then footprintName as fallback
+  // 2. Value property
   const valMeta = metadata.properties?.Value
-  const valueText = valMeta?.value ?? componentMetadata.value ?? ""
   newProperties.push(
     new Property({
       key: "Value",
-      value: valueText,
+      value:
+        valMeta?.value ?? metadata.footprintName ?? componentLabels.label ?? "",
       position: valMeta?.at
         ? [
             Number(valMeta.at.x),
@@ -82,9 +80,11 @@ export function applyMetadataToFootprint(
           ]
         : [0, 3, 0],
       layer: valMeta?.layer ?? "F.Fab",
-      uuid: generateDeterministicUuid(`${componentName}-property-Value`),
+      uuid: generateDeterministicUuid(
+        `${componentLabels.reference}-property-Value`,
+      ),
       effects: createTextEffects(valMeta?.effects),
-      hidden: valMeta?.hide ?? true,
+      hidden: valMeta?.hide,
     }),
   )
 
@@ -102,7 +102,9 @@ export function applyMetadataToFootprint(
           ]
         : [0, 0, 0],
       layer: dsMeta?.layer ?? "F.Fab",
-      uuid: generateDeterministicUuid(`${componentName}-property-Datasheet`),
+      uuid: generateDeterministicUuid(
+        `${componentLabels.reference}-property-Datasheet`,
+      ),
       effects: createTextEffects(dsMeta?.effects),
       hidden: dsMeta?.hide ?? true,
     }),
@@ -122,7 +124,9 @@ export function applyMetadataToFootprint(
           ]
         : [0, 0, 0],
       layer: descMeta?.layer ?? "F.Fab",
-      uuid: generateDeterministicUuid(`${componentName}-property-Description`),
+      uuid: generateDeterministicUuid(
+        `${componentLabels.reference}-property-Description`,
+      ),
       effects: createTextEffects(descMeta?.effects),
       hidden: descMeta?.hide ?? true,
     }),
@@ -131,22 +135,22 @@ export function applyMetadataToFootprint(
   footprint.properties = newProperties
 
   // Apply attributes if provided
-  if (metadata?.attributes) {
+  const attributes = metadata?.attributes
+  if (attributes) {
     // Create attr if it doesn't exist
     if (!footprint.attr) {
       footprint.attr = new FootprintAttr()
     }
-    if (metadata.attributes.through_hole) {
+    if (attributes.through_hole) {
       footprint.attr.type = "through_hole"
-    } else if (metadata.attributes.smd) {
+    } else if (attributes.smd) {
       footprint.attr.type = "smd"
     }
-    if (metadata.attributes.exclude_from_pos_files !== undefined) {
-      footprint.attr.excludeFromPosFiles =
-        metadata.attributes.exclude_from_pos_files
+    if (attributes.exclude_from_pos_files !== undefined) {
+      footprint.attr.excludeFromPosFiles = attributes.exclude_from_pos_files
     }
-    if (metadata.attributes.exclude_from_bom !== undefined) {
-      footprint.attr.excludeFromBom = metadata.attributes.exclude_from_bom
+    if (attributes.exclude_from_bom !== undefined) {
+      footprint.attr.excludeFromBom = attributes.exclude_from_bom
     }
   }
 

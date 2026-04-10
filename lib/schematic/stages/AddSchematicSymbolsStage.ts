@@ -20,8 +20,11 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
-import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
-import { getComponentMetadata } from "../../utils/getComponentMetadata"
+import {
+  getReferenceDesignator,
+  getKicadCompatibleComponentName,
+} from "../../utils/getKicadCompatibleComponentName"
+import { getComponentLabels } from "../../utils/getComponentLabels"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 /**
@@ -134,9 +137,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
 
-      // Get component metadata
-      const { reference, value, description } =
-        getComponentMetadata(sourceComponent)
+      // Get component labels
+      const { reference, label, description } =
+        getComponentLabels(sourceComponent)
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
@@ -175,7 +178,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
-        value: valMeta?.value ?? value,
+        value: valMeta?.value ?? label,
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(
