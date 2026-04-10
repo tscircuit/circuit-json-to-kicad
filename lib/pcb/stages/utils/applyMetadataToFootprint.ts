@@ -135,22 +135,22 @@ export function applyMetadataToFootprint(
   footprint.properties = newProperties
 
   // Apply attributes if provided
-  const attributes = metadata?.attributes
-  if (attributes) {
+  if (metadata.attributes) {
     // Create attr if it doesn't exist
     if (!footprint.attr) {
       footprint.attr = new FootprintAttr()
     }
-    if (attributes.through_hole) {
+    if (metadata.attributes.through_hole) {
       footprint.attr.type = "through_hole"
-    } else if (attributes.smd) {
+    } else if (metadata.attributes.smd) {
       footprint.attr.type = "smd"
     }
-    if (attributes.exclude_from_pos_files !== undefined) {
-      footprint.attr.excludeFromPosFiles = attributes.exclude_from_pos_files
+    if (metadata.attributes.exclude_from_pos_files !== undefined) {
+      footprint.attr.excludeFromPosFiles =
+        metadata.attributes.exclude_from_pos_files
     }
-    if (attributes.exclude_from_bom !== undefined) {
-      footprint.attr.excludeFromBom = attributes.exclude_from_bom
+    if (metadata.attributes.exclude_from_bom !== undefined) {
+      footprint.attr.excludeFromBom = metadata.attributes.exclude_from_bom
     }
   }
 
