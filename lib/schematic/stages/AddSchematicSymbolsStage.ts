@@ -20,11 +20,8 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
-import {
-  getReferenceDesignator,
-  getKicadCompatibleComponentName,
-} from "../../utils/getKicadCompatibleComponentName"
-import { getComponentValue } from "../../utils/getComponentValue"
+import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import { getComponentMetadata } from "../../utils/getComponentMetadata"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 /**
@@ -139,7 +136,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Get component metadata
       const { reference, value, description } =
-        this.getComponentMetadata(sourceComponent)
+        getComponentMetadata(sourceComponent)
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
@@ -450,36 +447,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
     return { refTextPos, valTextPos }
-  }
-
-  /**
-   * Get component metadata (reference, value, description)
-   */
-  private getComponentMetadata(sourceComp: any): {
-    reference: string
-    value: string
-    description: string
-  } {
-    const reference = getReferenceDesignator(sourceComp)
-    const value = getComponentValue(sourceComp)
-
-    let description = "Component"
-    if (sourceComp.ftype === "simple_resistor") description = "Resistor"
-    else if (sourceComp.ftype === "simple_capacitor") description = "Capacitor"
-    else if (sourceComp.ftype === "simple_inductor") description = "Inductor"
-    else if (sourceComp.ftype === "simple_diode") description = "Diode"
-    else if (sourceComp.ftype === "simple_chip")
-      description = "Integrated Circuit"
-    else if (sourceComp.ftype === "simple_led") description = "LED"
-    else if (sourceComp.ftype === "simple_switch") description = "Switch"
-    else if (sourceComp.ftype === "simple_potentiometer")
-      description = "Potentiometer"
-
-    return {
-      reference,
-      value,
-      description,
-    }
   }
 
   /**

@@ -36,40 +36,40 @@ function createTextEffects(metadataEffects?: KicadEffects): TextEffects {
  */
 export function applyMetadataToFootprint(
   footprint: Footprint,
-  metadata: KicadFootprintMetadata | undefined | null,
-  opts: {
-    defaultReference: string
-    defaultValue: string
+  metadata: KicadFootprintMetadata,
+  componentMetadata: {
+    reference: string
+    value: string
   },
 ): void {
-  const componentName = opts.defaultReference
-  const metadataProperties = metadata?.properties || {}
+  const componentName = componentMetadata.reference
+  let newProperties: Property[] = []
 
-  const newProperties: Property[] = []
+  if (metadata.properties) {
+    // Reference property - use explicit metadata value if provided, otherwise fall back to componentName
+    const refMeta = metadata.properties?.Reference
+    newProperties.push(
+      new Property({
+        key: "Reference",
+        value: refMeta?.value ?? componentName,
+        position: refMeta?.at
+          ? [
+              Number(refMeta.at.x),
+              Number(refMeta.at.y),
+              Number(refMeta.at.rotation ?? 0),
+            ]
+          : [0, -3, 0],
+        layer: refMeta?.layer ?? "F.SilkS",
+        uuid: generateDeterministicUuid(`${componentName}-property-Reference`),
+        effects: createTextEffects(refMeta?.effects),
+        hidden: refMeta?.hide,
+      }),
+    )
+  }
 
-  // Reference property - use explicit metadata value if provided, otherwise fall back to defaultReference
-  const refMeta = metadataProperties.Reference
-  newProperties.push(
-    new Property({
-      key: "Reference",
-      value: refMeta?.value ?? opts.defaultReference,
-      position: refMeta?.at
-        ? [
-            Number(refMeta.at.x),
-            Number(refMeta.at.y),
-            Number(refMeta.at.rotation ?? 0),
-          ]
-        : [0, -3, 0],
-      layer: refMeta?.layer ?? "F.SilkS",
-      uuid: generateDeterministicUuid(`${componentName}-property-Reference`),
-      effects: createTextEffects(refMeta?.effects),
-      hidden: refMeta?.hide,
-    }),
-  )
-
-  // Value property - use explicit Value.value first, then defaultValue as fallback
-  const valMeta = metadataProperties.Value
-  const valueText = valMeta?.value ?? opts.defaultValue
+  // Value property - use explicit Value.value first, then footprintName as fallback
+  const valMeta = metadata.properties?.Value
+  const valueText = valMeta?.value ?? componentMetadata.value ?? ""
   newProperties.push(
     new Property({
       key: "Value",
@@ -84,12 +84,12 @@ export function applyMetadataToFootprint(
       layer: valMeta?.layer ?? "F.Fab",
       uuid: generateDeterministicUuid(`${componentName}-property-Value`),
       effects: createTextEffects(valMeta?.effects),
-      hidden: valMeta?.hide,
+      hidden: valMeta?.hide ?? true,
     }),
   )
 
   // Datasheet property
-  const dsMeta = metadataProperties.Datasheet
+  const dsMeta = metadata.properties?.Datasheet
   newProperties.push(
     new Property({
       key: "Datasheet",
@@ -109,7 +109,7 @@ export function applyMetadataToFootprint(
   )
 
   // Description property
-  const descMeta = metadataProperties.Description
+  const descMeta = metadata.properties?.Description
   newProperties.push(
     new Property({
       key: "Description",

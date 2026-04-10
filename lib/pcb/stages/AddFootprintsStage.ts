@@ -8,7 +8,7 @@ import {
   getReferenceDesignator,
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
-import { getComponentValue } from "../../utils/getComponentValue"
+import { getComponentMetadata } from "../../utils/getComponentMetadata"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FootprintModel } from "kicadts"
 import {
@@ -363,16 +363,19 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const footprintMetadata =
       (component.metadata?.kicad_footprint as
         | KicadFootprintMetadata
-        | undefined) || null
+        | undefined) || {}
 
-    const defaultReference = getReferenceDesignator(sourceComponent)
-    const defaultValue = sourceComponent
-      ? getComponentValue(sourceComponent)
-      : footprintName
+    const { reference: componentReference, value: componentValue } =
+      sourceComponent
+        ? getComponentMetadata(sourceComponent)
+        : {
+            reference: footprintName,
+            value: footprintName,
+          }
 
-    applyMetadataToFootprint(footprint, footprintMetadata, {
-      defaultReference,
-      defaultValue,
+    applyMetadataToFootprint(footprint, footprintMetadata as any, {
+      reference: componentReference,
+      value: componentValue,
     })
 
     const footprints = kicadPcb.footprints
