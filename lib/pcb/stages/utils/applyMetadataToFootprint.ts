@@ -155,22 +155,22 @@ export function applyMetadataToFootprint(
   }
 
   // Apply footprintName if provided (modifies libraryLink)
-  if (metadata?.footprintName) {
+  if (metadata.footprintName) {
     footprint.libraryLink = metadata.footprintName
   }
 
   // Apply layer if provided
-  if (metadata?.layer) {
+  if (metadata.layer) {
     footprint.layer = metadata.layer
   }
 
   // Apply embeddedFonts if provided
-  if (metadata?.embeddedFonts !== undefined) {
+  if (metadata.embeddedFonts !== undefined) {
     footprint.embeddedFonts = new EmbeddedFonts(metadata.embeddedFonts)
   }
 
   // Apply model if provided
-  if (metadata?.model) {
+  if (metadata.model) {
     const model = new FootprintModel(metadata.model.path)
     if (metadata.model.offset) {
       model.offset = {
