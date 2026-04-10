@@ -24,6 +24,7 @@ import {
   getReferenceDesignator,
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
+import { getComponentValue } from "../../utils/getComponentValue"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 /**
@@ -459,75 +460,25 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     value: string
     description: string
   } {
-    const name = sourceComp.name || "?"
     const reference = getReferenceDesignator(sourceComp)
+    const value = getComponentValue(sourceComp)
 
-    if (sourceComp.ftype === "simple_resistor") {
-      return {
-        reference,
-        value: sourceComp.display_resistance || "R",
-        description: "Resistor",
-      }
-    }
+    let description = "Component"
+    if (sourceComp.ftype === "simple_resistor") description = "Resistor"
+    else if (sourceComp.ftype === "simple_capacitor") description = "Capacitor"
+    else if (sourceComp.ftype === "simple_inductor") description = "Inductor"
+    else if (sourceComp.ftype === "simple_diode") description = "Diode"
+    else if (sourceComp.ftype === "simple_chip")
+      description = "Integrated Circuit"
+    else if (sourceComp.ftype === "simple_led") description = "LED"
+    else if (sourceComp.ftype === "simple_switch") description = "Switch"
+    else if (sourceComp.ftype === "simple_potentiometer")
+      description = "Potentiometer"
 
-    if (sourceComp.ftype === "simple_capacitor") {
-      return {
-        reference,
-        value: sourceComp.display_capacitance || "C",
-        description: "Capacitor",
-      }
-    }
-
-    if (sourceComp.ftype === "simple_inductor") {
-      return {
-        reference,
-        value: sourceComp.display_inductance || "L",
-        description: "Inductor",
-      }
-    }
-
-    if (sourceComp.ftype === "simple_diode") {
-      return {
-        reference,
-        value: "D",
-        description: "Diode",
-      }
-    }
-
-    if (sourceComp.ftype === "simple_chip") {
-      return {
-        reference,
-        value: name,
-        description: "Integrated Circuit",
-      }
-    }
-    if (sourceComp.ftype === "simple_led") {
-      return {
-        reference,
-        value: sourceComp.manufacturer_part_number || "",
-        description: "LED",
-      }
-    }
-    if (sourceComp.ftype === "simple_switch") {
-      return {
-        reference,
-        value: sourceComp.manufacturer_part_number || "",
-        description: "Switch",
-      }
-    }
-    if (sourceComp.ftype === "simple_potentiometer") {
-      return {
-        reference,
-        value: sourceComp.display_max_resistance || "",
-        description: "Potentiometer",
-      }
-    }
-
-    // Default
     return {
       reference,
-      value: name,
-      description: "Component",
+      value,
+      description,
     }
   }
 
