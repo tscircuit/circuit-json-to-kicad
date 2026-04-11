@@ -24,7 +24,6 @@ import {
   getReferenceDesignator,
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
-import { getComponentLabels } from "../../utils/getComponentLabels"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 /**
@@ -137,9 +136,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
 
-      // Get component labels
-      const { reference, label, description } =
-        getComponentLabels(sourceComponent)
+      // Get component metadata
+      const { reference, value, description } =
+        this.getComponentMetadata(sourceComponent)
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
@@ -178,7 +177,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
-        value: valMeta?.value ?? label,
+        value: valMeta?.value ?? value,
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(
@@ -450,6 +449,86 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
     return { refTextPos, valTextPos }
+  }
+
+  /**
+   * Get component metadata (reference, value, description)
+   */
+  private getComponentMetadata(sourceComp: any): {
+    reference: string
+    value: string
+    description: string
+  } {
+    const name = sourceComp.name || "?"
+    const reference = getReferenceDesignator(sourceComp)
+
+    if (sourceComp.ftype === "simple_resistor") {
+      return {
+        reference,
+        value: sourceComp.display_resistance || "R",
+        description: "Resistor",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_capacitor") {
+      return {
+        reference,
+        value: sourceComp.display_capacitance || "C",
+        description: "Capacitor",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_inductor") {
+      return {
+        reference,
+        value: sourceComp.display_inductance || "L",
+        description: "Inductor",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_diode") {
+      return {
+        reference,
+        value: "D",
+        description: "Diode",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_chip") {
+      return {
+        reference,
+        value: name,
+        description: "Integrated Circuit",
+      }
+    }
+    if (sourceComp.ftype === "simple_led") {
+      return {
+        reference,
+        value: sourceComp.manufacturer_part_number || "",
+        description: "LED",
+      }
+    }
+    if (sourceComp.ftype === "simple_switch") {
+      return {
+        reference,
+        value: sourceComp.manufacturer_part_number || "",
+        description: "Switch",
+      }
+    }
+    if (sourceComp.ftype === "simple_potentiometer") {
+      return {
+        reference,
+        value: sourceComp.display_max_resistance || "",
+        description: "Potentiometer",
+      }
+    }
+
+    // Default
+    return {
+      reference,
+      value: name,
+      description: "Component",
+    }
   }
 
   /**
