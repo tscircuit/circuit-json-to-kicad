@@ -113,6 +113,9 @@ export class AddStandalonePcbElements extends ConverterStage<
       const h = hole
       return `tscircuit:hole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm`
     }
+    if (shape === "rotated_pill") {
+      return `tscircuit:hole_${shape}_holeWidth${hole.hole_width}mm_holeHeight${hole.hole_height}mm_ccwRotation${hole.ccw_rotation}deg`
+    }
     return "tscircuit:hole"
   }
 

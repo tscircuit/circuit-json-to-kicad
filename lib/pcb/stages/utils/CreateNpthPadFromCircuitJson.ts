@@ -33,6 +33,7 @@ export function createNpthPadFromCircuitJson({
   let padShape: "circle" | "oval" | "rect" = "circle"
   let padSize: [number, number]
   let drill: PadDrill
+  let rotation = 0
 
   if (pcbHole.hole_shape === "circle") {
     // Circular non-plated hole
@@ -53,6 +54,18 @@ export function createNpthPadFromCircuitJson({
       diameter: width,
       width: height,
     })
+  } else if (pcbHole.hole_shape === "rotated_pill") {
+    // Rotated pill-shaped non-plated hole
+    padShape = "oval"
+    const width = pcbHole.hole_width
+    const height = pcbHole.hole_height
+    padSize = [width, height]
+    drill = new PadDrill({
+      oval: true,
+      diameter: width,
+      width: height,
+    })
+    rotation = pcbHole.ccw_rotation || 0
   } else {
     // Default fallback for unknown shapes
     padShape = "circle"
@@ -65,7 +78,7 @@ export function createNpthPadFromCircuitJson({
     number: "", // Non-plated holes have no pad number
     padType: "np_thru_hole",
     shape: padShape,
-    at: [rotatedPos.x, rotatedPos.y, 0],
+    at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
     drill: drill,
     layers: ["*.Cu", "*.Mask"],
