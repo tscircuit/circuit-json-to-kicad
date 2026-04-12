@@ -12,6 +12,14 @@ test("standalone hole footprint naming", async () => {
     <board width="50mm" height="50mm">
       <hole pcbX={-10} pcbY={-10} diameter="3mm" />
       <hole pcbX={10} pcbY={10} shape="pill" width="4mm" height="2mm" />
+      <hole
+        pcbX={0}
+        pcbY={0}
+        shape="pill"
+        width="4mm"
+        height="2mm"
+        pcbRotation={30}
+      />
     </board>,
   )
   await circuit.renderUntilSettled()
@@ -39,6 +47,10 @@ test("standalone hole footprint naming", async () => {
   expect(getFp("hole_pill")?.libraryLink).toBe(
     "tscircuit:hole_pill_holeWidth4mm_holeHeight2mm",
   )
+  expect(getFp("hole_rotated_pill")?.libraryLink).toBe(
+    "tscircuit:hole_rotated_pill_holeWidth4mm_holeHeight2mm_ccwRotation30deg",
+  )
+  expect(getFp("hole_rotated_pill")?.fpPads?.[0]?.at?.angle).toBe(30)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
