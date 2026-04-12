@@ -38,26 +38,39 @@
     "tscircuit:hole_circle_holeDiameter3mm"
     (layer F.Cu)
     (uuid 26d3071a-1a6a-853a-0e02-035a0199817a)
-    (at 100 100 0)
+    (at 90 110 0)
     (pad "" np_thru_hole circle
       (at -10 10 0)
       (size 3 3)
       (drill 3)
       (layers *.Cu *.Mask)
-      (uuid e3697d65-546a-4b55-bdd2-ecd9fa953d13)
+      (uuid 10fb5c82-59b6-4b65-9755-3d3790c413f5)
     )
   )
   (footprint
     "tscircuit:hole_pill_holeWidth4mm_holeHeight2mm"
     (layer F.Cu)
     (uuid 16f40798-517b-f668-4614-0b98225bf268)
-    (at 100 100 0)
+    (at 110 90 0)
     (pad "" np_thru_hole oval
-      (at 10 -10 0)
+      (at 0 0 0)
       (size 4 2)
       (drill oval 4 2)
       (layers *.Cu *.Mask)
-      (uuid 854013fa-a86a-4d9c-99e0-42f99ed995cc)
+      (uuid 09baa6ca-b88e-4604-af20-5bd4982bf788)
+    )
+  )
+  (footprint
+    "tscircuit:hole_rotated_pill_holeWidth4mm_holeHeight2mm_ccwRotation30deg"
+    (layer F.Cu)
+    (uuid 61ca347a-3bcd-c966-269a-38ba76fdc526)
+    (at 100 100 0)
+    (pad "" np_thru_hole oval
+      (at 0 0 30)
+      (size 4 2)
+      (drill oval 4 2)
+      (layers *.Cu *.Mask)
+      (uuid c77c1f47-feca-48be-a21c-544cc3f1061e)
     )
   )
   (gr_line
