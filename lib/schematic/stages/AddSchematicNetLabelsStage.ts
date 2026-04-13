@@ -214,37 +214,53 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     })
 
-    // Map anchor_side to KiCad angle and justify
+    // circuit-json anchor_side is "which edge of the label is attached to net".
+    // KiCad justify is applied in text-local coordinates (after rotation), so
+    // top/bottom anchors for rotated labels (90/270) map to horizontal justify.
+    // This table encodes the canonical circuit-json -> KiCad global-label
+    // orientation mapping used by the converter.
     const anchorSide = netLabel.anchor_side || "left"
-    const angleMap: Record<string, number> = {
-      left: 0, // Anchor on left, arrow points right
-      right: 180, // Anchor on right, arrow points left
-      top: 270, // Anchor on top, arrow points down
-      bottom: 90, // Anchor on bottom, arrow points up
-    }
-    const angle = angleMap[anchorSide] || 0
-
-    // Justify matches the arrow direction
-    const justifyMap: Record<
+    const orientationMap: Record<
       string,
-      { horizontal?: "left" | "right"; vertical?: "top" | "bottom" }
+      {
+        angle: number
+        shape: "input" | "output" | "bidirectional" | "tri_state"
+        justify: { horizontal?: "left" | "right"; vertical?: "top" | "bottom" }
+      }
     > = {
-      left: { horizontal: "left" }, // Anchor on left, text on left
-      right: { horizontal: "right" }, // Anchor on right, text on right
-      top: { vertical: "top" }, // Anchor on top, text on top
-      bottom: { vertical: "bottom" }, // Anchor on bottom, text on bottom
+      left: {
+        angle: 0,
+        shape: "input",
+        justify: { horizontal: "left" },
+      },
+      right: {
+        angle: 180,
+        shape: "input",
+        justify: { horizontal: "right" },
+      },
+      top: {
+        angle: 270,
+        shape: "input",
+        justify: { horizontal: "right" },
+      },
+      bottom: {
+        angle: 90,
+        shape: "input",
+        justify: { horizontal: "left" },
+      },
     }
-    const justify = justifyMap[anchorSide] || {}
+    const orientation = orientationMap[anchorSide] || orientationMap["left"]!
 
     // Create text effects with justify
     const effects = this.createTextEffects(1.27, false)
-    if (Object.keys(justify).length > 0) {
-      effects.justify = new TextEffectsJustify(justify)
+    if (Object.keys(orientation.justify).length > 0) {
+      effects.justify = new TextEffectsJustify(orientation.justify)
     }
 
     const globalLabel = new GlobalLabel({
       value: labelText,
-      at: [x, y, angle],
+      shape: orientation.shape,
+      at: [x, y, orientation.angle],
       effects: effects,
       uuid: crypto.randomUUID(),
       fieldsAutoplaced: true,
