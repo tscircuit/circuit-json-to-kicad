@@ -4,7 +4,10 @@ import type {
   SourceComponentBase,
   PcbHole,
 } from "circuit-json"
-import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getReferenceDesignator,
+  getKicadCompatibleComponentName,
+} from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FootprintModel } from "kicadts"
 import {
@@ -16,10 +19,10 @@ import {
   type ConverterContext,
   type PcbNetInfo,
 } from "../../types"
-
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
+import { getkicadComponentProperty } from "./utils/getKicadComponentProperty"
 import type { KicadFootprintMetadata } from "@tscircuit/props"
 import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
 import { convertCourtyardCircles } from "./footprints-stage-converters/convertCourtyardCircles"
@@ -359,11 +362,14 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const footprintMetadata = component.metadata?.kicad_footprint as
       | KicadFootprintMetadata
       | undefined
-    if (footprintMetadata && sourceComponent?.name) {
+
+    if (sourceComponent) {
+      const kicadComponentProperty = getkicadComponentProperty(sourceComponent)
+
       applyMetadataToFootprint(
         footprint,
         footprintMetadata,
-        sourceComponent.name,
+        kicadComponentProperty,
       )
     }
 

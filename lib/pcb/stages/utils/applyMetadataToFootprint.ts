@@ -8,6 +8,7 @@ import {
   FootprintAttr,
 } from "kicadts"
 import type { KicadFootprintMetadata, KicadEffects } from "@tscircuit/props"
+import type { kicadComponentProperty } from "./getKicadComponentProperty"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 /**
@@ -36,102 +37,106 @@ function createTextEffects(metadataEffects?: KicadEffects): TextEffects {
  */
 export function applyMetadataToFootprint(
   footprint: Footprint,
-  metadata: KicadFootprintMetadata,
-  componentName: string,
+  metadata: KicadFootprintMetadata | undefined,
+  componentProperty: kicadComponentProperty,
 ): void {
   // Apply properties if provided
-  if (metadata.properties) {
-    const newProperties: Property[] = []
+  let newProperties: Property[] = []
+  // Reference property - use explicit metadata value if provided, otherwise fall back to componentLabels.reference
+  const refMeta = metadata?.properties?.Reference
+  newProperties.push(
+    new Property({
+      key: "Reference",
+      value: refMeta?.value ?? componentProperty.reference,
+      position: refMeta?.at
+        ? [
+            Number(refMeta.at.x),
+            Number(refMeta.at.y),
+            Number(refMeta.at.rotation ?? 0),
+          ]
+        : [0, -3, 0],
+      layer: refMeta?.layer ?? "F.SilkS",
+      uuid: generateDeterministicUuid(
+        `${componentProperty.reference}-property-Reference`,
+      ),
+      effects: createTextEffects(refMeta?.effects),
+      hidden: refMeta?.hide ?? true,
+    }),
+  )
+  // Value property
+  const valMeta = metadata?.properties?.Value
+  const valueText =
+    valMeta?.value ?? componentProperty.kicadComponentValue ?? ""
+  newProperties.push(
+    new Property({
+      key: "Value",
+      value: valueText,
+      position: valMeta?.at
+        ? [
+            Number(valMeta.at.x),
+            Number(valMeta.at.y),
+            Number(valMeta.at.rotation ?? 0),
+          ]
+        : [0, 3, 0],
+      layer: valMeta?.layer ?? "F.Fab",
+      uuid: generateDeterministicUuid(
+        `${componentProperty.reference}-property-Value`,
+      ),
+      effects: createTextEffects(valMeta?.effects),
+      hidden: valMeta?.hide ?? true,
+    }),
+  )
+  // Datasheet property
 
-    // Reference property - use explicit metadata value if provided, otherwise fall back to componentName
-    const refMeta = metadata.properties.Reference
-    newProperties.push(
-      new Property({
-        key: "Reference",
-        value: refMeta?.value ?? componentName,
-        position: refMeta?.at
-          ? [
-              Number(refMeta.at.x),
-              Number(refMeta.at.y),
-              Number(refMeta.at.rotation ?? 0),
-            ]
-          : [0, -3, 0],
-        layer: refMeta?.layer ?? "F.SilkS",
-        uuid: generateDeterministicUuid(`${componentName}-property-Reference`),
-        effects: createTextEffects(refMeta?.effects),
-        hidden: refMeta?.hide,
-      }),
-    )
+  const dsMeta = metadata?.properties?.Datasheet
+  newProperties.push(
+    new Property({
+      key: "Datasheet",
+      value: dsMeta?.value ?? "",
+      position: dsMeta?.at
+        ? [
+            Number(dsMeta.at.x),
+            Number(dsMeta.at.y),
+            Number(dsMeta.at.rotation ?? 0),
+          ]
+        : [0, 0, 0],
+      layer: dsMeta?.layer ?? "F.Fab",
+      uuid: generateDeterministicUuid(
+        `${componentProperty.reference}-property-Datasheet`,
+      ),
+      effects: createTextEffects(dsMeta?.effects),
+      hidden: dsMeta?.hide ?? true,
+    }),
+  )
+  // Description property
 
-    // Value property - use explicit Value.value first, then footprintName as fallback
-    const valMeta = metadata.properties.Value
-    const valueText = valMeta?.value ?? metadata.footprintName ?? ""
-    newProperties.push(
-      new Property({
-        key: "Value",
-        value: valueText,
-        position: valMeta?.at
-          ? [
-              Number(valMeta.at.x),
-              Number(valMeta.at.y),
-              Number(valMeta.at.rotation ?? 0),
-            ]
-          : [0, 3, 0],
-        layer: valMeta?.layer ?? "F.Fab",
-        uuid: generateDeterministicUuid(`${componentName}-property-Value`),
-        effects: createTextEffects(valMeta?.effects),
-        hidden: valMeta?.hide,
-      }),
-    )
+  const descMeta = metadata?.properties?.Description
+  newProperties.push(
+    new Property({
+      key: "Description",
+      value: descMeta?.value ?? "",
+      position: descMeta?.at
+        ? [
+            Number(descMeta.at.x),
+            Number(descMeta.at.y),
+            Number(descMeta.at.rotation ?? 0),
+          ]
+        : [0, 0, 0],
+      layer: descMeta?.layer ?? "F.Fab",
+      uuid: generateDeterministicUuid(
+        `${componentProperty.reference}-property-Description`,
+      ),
+      effects: createTextEffects(descMeta?.effects),
+      hidden: descMeta?.hide ?? true,
+    }),
+  )
 
-    // Datasheet property
-    const dsMeta = metadata.properties.Datasheet
-    newProperties.push(
-      new Property({
-        key: "Datasheet",
-        value: dsMeta?.value ?? "",
-        position: dsMeta?.at
-          ? [
-              Number(dsMeta.at.x),
-              Number(dsMeta.at.y),
-              Number(dsMeta.at.rotation ?? 0),
-            ]
-          : [0, 0, 0],
-        layer: dsMeta?.layer ?? "F.Fab",
-        uuid: generateDeterministicUuid(`${componentName}-property-Datasheet`),
-        effects: createTextEffects(dsMeta?.effects),
-        hidden: dsMeta?.hide ?? true,
-      }),
-    )
-
-    // Description property
-    const descMeta = metadata.properties.Description
-    newProperties.push(
-      new Property({
-        key: "Description",
-        value: descMeta?.value ?? "",
-        position: descMeta?.at
-          ? [
-              Number(descMeta.at.x),
-              Number(descMeta.at.y),
-              Number(descMeta.at.rotation ?? 0),
-            ]
-          : [0, 0, 0],
-        layer: descMeta?.layer ?? "F.Fab",
-        uuid: generateDeterministicUuid(
-          `${componentName}-property-Description`,
-        ),
-        effects: createTextEffects(descMeta?.effects),
-        hidden: descMeta?.hide ?? true,
-      }),
-    )
-
-    footprint.properties = newProperties
-  }
-
+  footprint.properties = newProperties
   // Apply attributes if provided
-  if (metadata.attributes) {
+
+  if (metadata?.attributes) {
     // Create attr if it doesn't exist
+
     if (!footprint.attr) {
       footprint.attr = new FootprintAttr()
     }
@@ -148,24 +153,24 @@ export function applyMetadataToFootprint(
       footprint.attr.excludeFromBom = metadata.attributes.exclude_from_bom
     }
   }
-
   // Apply footprintName if provided (modifies libraryLink)
-  if (metadata.footprintName) {
+
+  if (metadata?.footprintName) {
     footprint.libraryLink = metadata.footprintName
   }
-
   // Apply layer if provided
-  if (metadata.layer) {
+
+  if (metadata?.layer) {
     footprint.layer = metadata.layer
   }
-
   // Apply embeddedFonts if provided
-  if (metadata.embeddedFonts !== undefined) {
+
+  if (metadata?.embeddedFonts !== undefined) {
     footprint.embeddedFonts = new EmbeddedFonts(metadata.embeddedFonts)
   }
-
   // Apply model if provided
-  if (metadata.model) {
+
+  if (metadata?.model) {
     const model = new FootprintModel(metadata.model.path)
     if (metadata.model.offset) {
       model.offset = {
