@@ -187,9 +187,9 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     // For through-hole vias, span all copper layers
     const viaLayers = this.getKicadViaLayers(via)
 
-    // KiCad minimum via sizes
-    const viaSize = Math.max(via.outer_diameter || 0.8, 0.5)
-    const viaDrill = Math.max(via.hole_diameter || 0.4, 0.3)
+    // Preserve explicit Circuit JSON via dimensions; only fall back when absent.
+    const viaSize = via.outer_diameter ?? 0.8
+    const viaDrill = via.hole_diameter ?? 0.4
 
     // Create a via with deterministic UUID
     const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}`
