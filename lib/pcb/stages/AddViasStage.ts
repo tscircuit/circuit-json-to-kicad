@@ -82,8 +82,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       return [...via.layers]
     }
 
-    return [via.from_layer, via.to_layer].filter(
-      (layer): layer is string => Boolean(layer),
+    return [via.from_layer, via.to_layer].filter((layer): layer is string =>
+      Boolean(layer),
     )
   }
 
