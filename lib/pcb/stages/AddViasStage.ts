@@ -8,19 +8,92 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
-import { getViaLayers } from "../utils/layerMapping"
+import { getKicadLayer, getViaLayers } from "../utils/layerMapping"
+
+type ViaLike = {
+  x: number
+  y: number
+  outer_diameter?: number
+  hole_diameter?: number
+  layers?: string[]
+  from_layer?: string
+  to_layer?: string
+  pcb_trace_id?: string
+  subcircuit_connectivity_map_key?: string
+  connection_name?: string
+}
 
 /**
  * Adds vias to the PCB from circuit JSON
  */
 export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   private viasProcessed = 0
-  private pcbVias: any[] = []
+  private pcbVias: ViaLike[] = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
-    // Get all PCB vias from circuit JSON if they exist
-    this.pcbVias = this.ctx.db.pcb_via?.list() || []
+    this.pcbVias = this.collectPcbVias()
+  }
+
+  private collectPcbVias(): ViaLike[] {
+    const standaloneVias = (this.ctx.db.pcb_via?.list() || []) as ViaLike[]
+    const seenViaKeys = new Set(
+      standaloneVias.map((via) => this.getViaDedupeKey(via)),
+    )
+
+    const routeDefinedVias = (this.ctx.db.pcb_trace?.list() || []).flatMap(
+      (trace: any) =>
+        (trace.route || [])
+          .filter((point: any) => point.route_type === "via")
+          .map(
+            (point: any): ViaLike => ({
+              x: point.x,
+              y: point.y,
+              outer_diameter: point.outer_diameter,
+              hole_diameter: point.hole_diameter,
+              from_layer: point.from_layer,
+              to_layer: point.to_layer,
+              pcb_trace_id: trace.pcb_trace_id,
+              subcircuit_connectivity_map_key:
+                trace.subcircuit_connectivity_map_key,
+              connection_name: trace.connection_name,
+            }),
+          )
+          .filter((via: ViaLike) => {
+            const viaKey = this.getViaDedupeKey(via)
+            if (seenViaKeys.has(viaKey)) {
+              return false
+            }
+            seenViaKeys.add(viaKey)
+            return true
+          }),
+    )
+
+    return [...standaloneVias, ...routeDefinedVias]
+  }
+
+  private getViaDedupeKey(via: ViaLike): string {
+    const layers = this.getRawViaLayers(via).sort().join(",")
+    return `${via.pcb_trace_id ?? ""}:${via.x}:${via.y}:${layers}`
+  }
+
+  private getRawViaLayers(via: ViaLike): string[] {
+    if (via.layers?.length) {
+      return [...via.layers]
+    }
+
+    return [via.from_layer, via.to_layer].filter((layer): layer is string =>
+      Boolean(layer),
+    )
+  }
+
+  private getKicadViaLayers(via: ViaLike): string[] {
+    const rawLayers = this.getRawViaLayers(via)
+    if (rawLayers.length > 0) {
+      return rawLayers.map((layer) => getKicadLayer(layer))
+    }
+
+    return getViaLayers(this.ctx.numLayers ?? 2)
   }
 
   override _step(): void {
@@ -40,6 +113,10 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     const via = this.pcbVias[this.viasProcessed]
+    if (!via) {
+      this.finished = true
+      return
+    }
 
     // Transform the via position to KiCad coordinates
     const transformedPos = applyToPoint(c2kMatPcb, {
@@ -108,16 +185,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Get via layers based on board layer count
     // For through-hole vias, span all copper layers
-    const numLayers = this.ctx.numLayers ?? 2
-    const viaLayers = via.layers
-      ? via.layers.map((l: string) =>
-          l === "top"
-            ? "F.Cu"
-            : l === "bottom"
-              ? "B.Cu"
-              : `In${l.replace("inner", "")}.Cu`,
-        )
-      : getViaLayers(numLayers)
+    const viaLayers = this.getKicadViaLayers(via)
 
     // KiCad minimum via sizes
     const viaSize = Math.max(via.outer_diameter || 0.8, 0.5)
