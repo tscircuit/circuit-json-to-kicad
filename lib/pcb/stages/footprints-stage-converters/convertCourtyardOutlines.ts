@@ -1,5 +1,6 @@
 import type { PcbCourtyardOutline } from "circuit-json"
 import { FpPoly, Pts, Xy, Stroke } from "kicadts"
+import { generateDeterministicUuid } from "../utils/generateDeterministicUuid"
 
 export function convertCourtyardOutlines(
   courtyardOutlines: PcbCourtyardOutline[],
@@ -26,6 +27,7 @@ export function convertCourtyardOutlines(
     fpPoly.points = new Pts(xyPoints)
     fpPoly.layer = kicadLayer
     fpPoly.fill = false
+    fpPoly.uuid = generateDeterministicUuid(outline.pcb_courtyard_outline_id)
 
     const stroke = new Stroke()
     stroke.width = 0.05
