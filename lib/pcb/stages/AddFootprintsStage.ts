@@ -366,11 +366,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (sourceComponent) {
       const kicadComponentProperty = getkicadComponentProperty(sourceComponent)
 
-      applyMetadataToFootprint(
+      applyMetadataToFootprint({
         footprint,
-        footprintMetadata,
-        kicadComponentProperty,
-      )
+        metadata: footprintMetadata,
+        componentProperty: kicadComponentProperty,
+      })
     }
 
     const footprints = kicadPcb.footprints

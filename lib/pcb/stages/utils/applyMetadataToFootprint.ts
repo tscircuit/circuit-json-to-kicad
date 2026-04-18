@@ -11,6 +11,12 @@ import type { KicadFootprintMetadata, KicadEffects } from "@tscircuit/props"
 import type { kicadComponentProperty } from "./getKicadComponentProperty"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
+interface ApplyMetadataToFootprintParams {
+  footprint: Footprint
+  metadata: KicadFootprintMetadata | undefined
+  componentProperty: kicadComponentProperty
+}
+
 /**
  * Creates TextEffects from metadata effects, falling back to defaults.
  */
@@ -35,11 +41,11 @@ function createTextEffects(metadataEffects?: KicadEffects): TextEffects {
 /**
  * Applies kicadFootprintMetadata to a Footprint object.
  */
-export function applyMetadataToFootprint(
-  footprint: Footprint,
-  metadata: KicadFootprintMetadata | undefined,
-  componentProperty: kicadComponentProperty,
-): void {
+export function applyMetadataToFootprint({
+  footprint,
+  metadata,
+  componentProperty,
+}: ApplyMetadataToFootprintParams): void {
   // Apply properties if provided
   let newProperties: Property[] = []
   // Reference property - use explicit metadata value if provided, otherwise fall back to componentLabels.reference
