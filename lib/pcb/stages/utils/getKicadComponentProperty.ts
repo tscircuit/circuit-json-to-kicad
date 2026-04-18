@@ -1,3 +1,10 @@
+import type {
+  SourceComponentBase,
+  SourceSimpleCapacitor,
+  SourceSimpleInductor,
+  SourceSimplePotentiometer,
+  SourceSimpleResistor,
+} from "circuit-json"
 import { getReferenceDesignator } from "../../../utils/getKicadCompatibleComponentName"
 
 export interface kicadComponentProperty {
@@ -9,29 +16,32 @@ export interface kicadComponentProperty {
  * Get default footprint text fields from a source component.
  */
 export function getkicadComponentProperty(
-  sourceComp: any,
+  sourceComp: SourceComponentBase,
 ): kicadComponentProperty {
   const name = sourceComp.name || "?"
   const reference = getReferenceDesignator(sourceComp)
 
   if (sourceComp.ftype === "simple_resistor") {
+    const resistor = sourceComp as SourceSimpleResistor
     return {
       reference,
-      kicadComponentValue: sourceComp.display_resistance || "R",
+      kicadComponentValue: resistor.display_resistance || "R",
     }
   }
 
   if (sourceComp.ftype === "simple_capacitor") {
+    const capacitor = sourceComp as SourceSimpleCapacitor
     return {
       reference,
-      kicadComponentValue: sourceComp.display_capacitance || "C",
+      kicadComponentValue: capacitor.display_capacitance || "C",
     }
   }
 
   if (sourceComp.ftype === "simple_inductor") {
+    const inductor = sourceComp as SourceSimpleInductor
     return {
       reference,
-      kicadComponentValue: sourceComp.display_inductance || "L",
+      kicadComponentValue: inductor.display_inductance || "L",
     }
   }
 
@@ -64,9 +74,10 @@ export function getkicadComponentProperty(
   }
 
   if (sourceComp.ftype === "simple_potentiometer") {
+    const potentiometer = sourceComp as SourceSimplePotentiometer
     return {
       reference,
-      kicadComponentValue: sourceComp.display_max_resistance || "POT",
+      kicadComponentValue: potentiometer.display_max_resistance || "POT",
     }
   }
 
