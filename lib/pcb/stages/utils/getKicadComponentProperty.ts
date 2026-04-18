@@ -55,7 +55,7 @@ export function getkicadComponentProperty(
   if (sourceComp.ftype === "simple_chip") {
     return {
       reference,
-      kicadComponentValue: name,
+      kicadComponentValue: sourceComp.manufacturer_part_number || name,
     }
   }
 
