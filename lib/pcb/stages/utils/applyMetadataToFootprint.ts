@@ -69,7 +69,7 @@ export function applyMetadataToFootprint({
       hidden: refMeta?.hide ?? true,
     }),
   )
-  // Value property
+  // Value property - use explicit Value.value first, then footprintName as fallback
   const valMeta = metadata?.properties?.Value
   const valueText =
     valMeta?.value ?? componentProperty.kicadComponentValue ?? ""
