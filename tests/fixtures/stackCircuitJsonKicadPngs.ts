@@ -3,7 +3,12 @@ import sharp from "sharp"
 export const stackCircuitJsonKicadPngs = async (
   circuitJsonPng: Buffer,
   kicadPng: Buffer,
+  options: {
+    circuitJsonLabel?: string
+    kicadLabel?: string
+  } = {},
 ): Promise<Buffer> => {
+  const { circuitJsonLabel = "Circuit JSON", kicadLabel = "KiCad" } = options
   const labelFontSize = 24
   const labelPadding = 8
 
@@ -43,8 +48,8 @@ export const stackCircuitJsonKicadPngs = async (
     `)
   }
 
-  const cjLabel = createLabel("Circuit JSON")
-  const kicadLabel = createLabel("KiCad")
+  const cjLabel = createLabel(circuitJsonLabel)
+  const kicadLabelPng = createLabel(kicadLabel)
 
   // Create composite operations - images first, then labels on top
   const compositeOps = [
@@ -64,7 +69,7 @@ export const stackCircuitJsonKicadPngs = async (
       top: 0,
     },
     {
-      input: await sharp(kicadLabel).png().toBuffer(),
+      input: await sharp(kicadLabelPng).png().toBuffer(),
       left: 0,
       top: cjHeight,
     },
