@@ -1,5 +1,5 @@
-import type { CircuitJson } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
+import type { CircuitJson } from "circuit-json"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
@@ -41,7 +41,13 @@ interface KicadProProject {
       version: number
     }
     last_net_id: number
-    classes: unknown[]
+    classes: Array<{
+      clearance: number
+      diff_pair_width: number
+      track_width: number
+      via_diameter: number
+      via_drill: number
+    }>
   }
   pcbnew: {
     page_layout_descr_file: string
@@ -85,6 +91,10 @@ export class CircuitJsonToKicadProConverter {
       options.schematicFilename ?? `${projectName}.kicad_sch`
     const pcbFilename = options.pcbFilename ?? `${projectName}.kicad_pcb`
     const timestamp = new Date().toISOString()
+    const defaultTrackWidth = 0.1
+    const defaultClearance = 0.1
+    const defaultViaDiameter = 0.3
+    const defaultViaDrill = 0.2
 
     this.ctx = {
       db: cju(circuitJson),
@@ -125,7 +135,15 @@ export class CircuitJsonToKicadProConverter {
           version: 1,
         },
         last_net_id: 0,
-        classes: [],
+        classes: [
+          {
+            clearance: defaultClearance,
+            diff_pair_width: defaultTrackWidth,
+            track_width: defaultTrackWidth,
+            via_diameter: defaultViaDiameter,
+            via_drill: defaultViaDrill,
+          },
+        ],
       },
       pcbnew: {
         page_layout_descr_file: "",
