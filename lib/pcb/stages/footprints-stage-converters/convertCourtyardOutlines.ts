@@ -1,12 +1,28 @@
 import type { PcbCourtyardOutline } from "circuit-json"
-import { FpPoly, Pts, Xy, Stroke } from "kicadts"
+import { FpPoly, Pts, Stroke, Xy } from "kicadts"
+import {
+  applyToPoint,
+  compose,
+  rotate,
+  scale,
+  translate,
+} from "transformation-matrix"
 import { generateDeterministicUuid } from "../utils/generateDeterministicUuid"
 
 export function convertCourtyardOutlines(
   courtyardOutlines: PcbCourtyardOutline[],
   componentCenter: { x: number; y: number },
+  componentRotation = 0,
 ): FpPoly[] {
   const fpPolys: FpPoly[] = []
+
+  const cj2kicadMatrix = compose(
+    componentRotation !== 0
+      ? rotate((componentRotation * Math.PI) / 180)
+      : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
+    scale(1, -1),
+    translate(-componentCenter.x, -componentCenter.y),
+  )
 
   for (const outline of courtyardOutlines) {
     if (!outline.outline || outline.outline.length < 2) continue
@@ -18,9 +34,8 @@ export function convertCourtyardOutlines(
     const kicadLayer = layerMap[outline.layer] || "F.CrtYd"
 
     const xyPoints = outline.outline.map((point) => {
-      const relX = point.x - componentCenter.x
-      const relY = -(point.y - componentCenter.y)
-      return new Xy(relX, relY)
+      const transformedPoint = applyToPoint(cj2kicadMatrix, point)
+      return new Xy(transformedPoint.x, transformedPoint.y)
     })
 
     const fpPoly = new FpPoly()
