@@ -1,5 +1,5 @@
-import type { CircuitJson } from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
+import type { CircuitJson, PcbBoard } from "circuit-json"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
@@ -58,6 +58,33 @@ interface KicadProProject {
     meta: {
       version: number
     }
+    design_settings: {
+      rules: {
+        allow_blind_buried_vias?: boolean
+        allow_microvias?: boolean
+        max_error?: number
+        min_clearance?: number
+        min_connection?: number
+        min_copper_edge_clearance?: number
+        min_groove_width?: number
+        min_hole_clearance?: number
+        min_hole_to_hole?: number
+        min_microvia_diameter?: number
+        min_microvia_drill?: number
+        min_resolved_spokes?: number
+        min_silk_clearance?: number
+        min_text_height?: number
+        min_text_thickness?: number
+        min_through_hole_diameter?: number
+        min_track_width?: number
+        min_via_annular_width?: number
+        min_via_diameter?: number
+        solder_mask_clearance?: number
+        solder_mask_min_width?: number
+        solder_mask_to_copper_clearance?: number
+        use_height_for_length_calcs?: boolean
+      }
+    }
     last_opened_board: string
   }
   sheets: [string, string][]
@@ -90,6 +117,14 @@ export class CircuitJsonToKicadProConverter {
       db: cju(circuitJson),
       circuitJson,
     }
+
+    const pcbBoard = circuitJson.filter(
+      (component) => component.type === "pcb_board",
+    )[0] as PcbBoard
+
+    const minViaDiameter = pcbBoard?.min_via_pad_diameter ?? 0.3
+    const minViaDrill = pcbBoard?.min_via_hole_diameter ?? 0.2
+    const minViaAnnularWidth = (minViaDiameter - minViaDrill) / 2
 
     this.project = {
       version: 1,
@@ -141,6 +176,11 @@ export class CircuitJsonToKicadProConverter {
       board: {
         meta: {
           version: 1,
+        },
+        design_settings: {
+          rules: {
+            min_via_annular_width: minViaAnnularWidth,
+          },
         },
         last_opened_board: pcbFilename,
       },
