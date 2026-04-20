@@ -3,6 +3,8 @@ import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbCon
 import { CircuitJsonToKicadProConverter } from "lib/project/CircuitJsonToKicadProConverter"
 import circuitJson from "tests/assets/motor-controller.json"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 
 test("motor controller pcb", async () => {
   const proConverter = new CircuitJsonToKicadProConverter(circuitJson as any, {
@@ -29,6 +31,16 @@ test("motor controller pcb", async () => {
     kicadFileContent: converter.getOutputString(),
     kicadFileType: "pcb",
   })
+
+  expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson: circuitJson as any,
+        outputType: "pcb",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
 
   expect(kicadSnapshot.exitCode).toBe(0)
 })

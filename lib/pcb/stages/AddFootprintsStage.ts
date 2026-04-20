@@ -287,6 +287,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const fpPolys = convertCourtyardOutlines(
       pcbCourtyardOutlines,
       component.center,
+      component.rotation || 0,
     )
 
     if (fpPolys.length > 0) {
