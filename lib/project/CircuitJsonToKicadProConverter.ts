@@ -7,6 +7,25 @@ interface CircuitJsonToKicadProOptions {
   pcbFilename?: string
 }
 
+interface KicadProNetClass {
+  bus_width?: number
+  clearance?: number
+  diff_pair_gap?: number
+  diff_pair_via_gap?: number
+  diff_pair_width?: number
+  line_style?: number
+  microvia_diameter?: number
+  microvia_drill?: number
+  name?: string
+  pcb_color?: string
+  priority?: number
+  schematic_color?: string
+  track_width?: number
+  via_diameter?: number
+  via_drill?: number
+  wire_width?: number
+}
+
 interface KicadProProject {
   version: number
   head: {
@@ -41,7 +60,7 @@ interface KicadProProject {
       version: number
     }
     last_net_id: number
-    classes: unknown[]
+    classes: KicadProNetClass[]
   }
   pcbnew: {
     page_layout_descr_file: string
@@ -98,6 +117,22 @@ export class CircuitJsonToKicadProConverter {
 
   private project: KicadProProject
 
+  private createBaseNetClass(params: {
+    name: string
+    clearance: number
+    trackWidth: number
+    viaDiameter: number
+    viaDrill: number
+  }): KicadProNetClass {
+    return {
+      name: params.name,
+      track_width: params.trackWidth,
+      via_diameter: params.viaDiameter,
+      via_drill: params.viaDrill,
+      clearance: params.clearance,
+    }
+  }
+
   constructor(
     circuitJson: CircuitJson,
     options: CircuitJsonToKicadProOptions = {},
@@ -125,6 +160,17 @@ export class CircuitJsonToKicadProConverter {
     const minViaDiameter = pcbBoard?.min_via_pad_diameter ?? 0.3
     const minViaDrill = pcbBoard?.min_via_hole_diameter ?? 0.2
     const minViaAnnularWidth = (minViaDiameter - minViaDrill) / 2
+    const minTraceToPadSpacing = pcbBoard?.min_trace_to_pad_spacing ?? 0.1
+    const minTrackWidth = pcbBoard?.min_trace_width ?? 0.16
+    const netClasses: KicadProNetClass[] = [
+      this.createBaseNetClass({
+        name: "Default",
+        viaDiameter: minViaDiameter,
+        viaDrill: minViaDrill,
+        clearance: minTraceToPadSpacing,
+        trackWidth: minTrackWidth,
+      }),
+    ]
 
     this.project = {
       version: 1,
@@ -159,8 +205,8 @@ export class CircuitJsonToKicadProConverter {
         meta: {
           version: 1,
         },
-        last_net_id: 0,
-        classes: [],
+        last_net_id: netClasses.length - 1,
+        classes: netClasses,
       },
       pcbnew: {
         page_layout_descr_file: "",
@@ -180,6 +226,7 @@ export class CircuitJsonToKicadProConverter {
         design_settings: {
           rules: {
             min_via_annular_width: minViaAnnularWidth,
+            min_hole_clearance: minTraceToPadSpacing,
           },
         },
         last_opened_board: pcbFilename,
