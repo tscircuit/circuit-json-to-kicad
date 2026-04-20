@@ -16,8 +16,14 @@ test("motor controller pcb", async () => {
 
   converter.runUntilFinished()
 
-  Bun.write("./debug-output/motor-controller.kicad_pro", proConverter.getOutputString())
-  Bun.write("./debug-output/motor-controller.kicad_pcb", converter.getOutputString())
+  Bun.write(
+    "./debug-output/motor-controller.kicad_pro",
+    proConverter.getOutputString(),
+  )
+  Bun.write(
+    "./debug-output/motor-controller.kicad_pcb",
+    converter.getOutputString(),
+  )
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
