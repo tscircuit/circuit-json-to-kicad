@@ -9,7 +9,7 @@ import { getReferenceDesignator } from "../../../utils/getKicadCompatibleCompone
 
 export interface kicadComponentProperty {
   reference: string
-  kicadComponentValue: string
+  kicadComponentValue?: string
 }
 
 /**
@@ -55,7 +55,7 @@ export function getkicadComponentProperty(
   if (sourceComp.ftype === "simple_chip") {
     return {
       reference,
-      kicadComponentValue: sourceComp.manufacturer_part_number,
+      kicadComponentValue: sourceComp?.manufacturer_part_number,
     }
   }
 
