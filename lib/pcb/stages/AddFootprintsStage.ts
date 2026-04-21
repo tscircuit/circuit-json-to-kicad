@@ -36,7 +36,6 @@ import { create3DModelsFromCadComponent } from "./footprints-stage-converters/cr
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
-import { getKiCadPadNumber } from "./utils/getKiCadPadNumber"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -168,15 +167,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const fpPads = footprint.fpPads
     const getNetInfo = (pcbPortId?: string) =>
       this.getNetInfoForPcbPort(pcbPortId)
-    const getPadNumber = (
-      pad: { pcb_port_id?: string; port_hints?: string[] },
-      fallback: number,
-    ) =>
-      getKiCadPadNumber({
-        pad,
-        db: this.ctx.db,
-        fallbackNumber: fallback,
-      })
 
     const pcbPads =
       this.ctx.db.pcb_smtpad
@@ -186,13 +176,15 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     const { pads: smdPads, nextPadNumber } = convertSmdPads(
-      pcbPads,
-      component.center,
-      component.rotation || 0,
-      component.pcb_component_id,
-      1,
-      getNetInfo,
-      getPadNumber,
+      {
+        pcbPads,
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+        componentId: component.pcb_component_id,
+        startPadNumber: 1,
+        getNetInfo,
+      },
+      this.ctx,
     )
     fpPads.push(...smdPads)
 
@@ -204,13 +196,15 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     const { pads: thruHolePads } = convertPlatedHoles(
-      pcbPlatedHoles,
-      component.center,
-      component.rotation || 0,
-      component.pcb_component_id,
-      nextPadNumber,
-      getNetInfo,
-      getPadNumber,
+      {
+        platedHoles: pcbPlatedHoles,
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+        componentId: component.pcb_component_id,
+        startPadNumber: nextPadNumber,
+        getNetInfo,
+      },
+      this.ctx,
     )
     fpPads.push(...thruHolePads)
 
