@@ -31,7 +31,7 @@ export function createSmdPadFromCircuitJson({
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
-  padNumber: number
+  padNumber: number | string
   componentRotation?: number
   netInfo?: PcbNetInfo
   componentId?: string

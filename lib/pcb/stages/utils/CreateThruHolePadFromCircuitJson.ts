@@ -14,7 +14,7 @@ export function createThruHolePadFromCircuitJson({
 }: {
   platedHole: PcbPlatedHole
   componentCenter: { x: number; y: number }
-  padNumber: number
+  padNumber: number | string
   componentRotation?: number
   netInfo?: PcbNetInfo
   componentId?: string
