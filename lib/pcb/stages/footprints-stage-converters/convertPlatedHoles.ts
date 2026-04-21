@@ -10,16 +10,20 @@ export function convertPlatedHoles(
   componentId: string,
   startPadNumber: number,
   getNetInfo: (pcbPortId?: string) => PcbNetInfo | undefined,
+  getPadNumber?: (pad: PcbPlatedHole, fallback: number) => string,
 ): { pads: FootprintPad[]; nextPadNumber: number } {
   const pads: FootprintPad[] = []
   let padNumber = startPadNumber
 
   for (const platedHole of platedHoles) {
     const netInfo = getNetInfo(platedHole.pcb_port_id)
+    const resolvedPadNumber = getPadNumber
+      ? getPadNumber(platedHole, padNumber)
+      : String(padNumber)
     const pad = createThruHolePadFromCircuitJson({
       platedHole,
       componentCenter,
-      padNumber,
+      padNumber: resolvedPadNumber,
       componentRotation,
       netInfo,
       componentId,

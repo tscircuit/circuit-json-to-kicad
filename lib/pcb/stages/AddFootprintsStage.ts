@@ -36,6 +36,7 @@ import { create3DModelsFromCadComponent } from "./footprints-stage-converters/cr
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
+import { getKiCadPadNumber } from "./utils/getKiCadPadNumber"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -167,6 +168,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const fpPads = footprint.fpPads
     const getNetInfo = (pcbPortId?: string) =>
       this.getNetInfoForPcbPort(pcbPortId)
+    const getPadNumber = (
+      pad: { pcb_port_id?: string; port_hints?: string[] },
+      fallback: number,
+    ) => getKiCadPadNumber(pad, this.ctx.db, fallback)
 
     const pcbPads =
       this.ctx.db.pcb_smtpad
@@ -182,6 +187,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       component.pcb_component_id,
       1,
       getNetInfo,
+      getPadNumber,
     )
     fpPads.push(...smdPads)
 
@@ -199,6 +205,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       component.pcb_component_id,
       nextPadNumber,
       getNetInfo,
+      getPadNumber,
     )
     fpPads.push(...thruHolePads)
 

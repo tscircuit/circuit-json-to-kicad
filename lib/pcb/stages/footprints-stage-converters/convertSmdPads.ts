@@ -10,16 +10,20 @@ export function convertSmdPads(
   componentId: string,
   startPadNumber: number,
   getNetInfo: (pcbPortId?: string) => PcbNetInfo | undefined,
+  getPadNumber?: (pad: PcbSmtPad, fallback: number) => string,
 ): { pads: FootprintPad[]; nextPadNumber: number } {
   const pads: FootprintPad[] = []
   let padNumber = startPadNumber
 
   for (const pcbPad of pcbPads) {
     const netInfo = getNetInfo(pcbPad.pcb_port_id)
+    const resolvedPadNumber = getPadNumber
+      ? getPadNumber(pcbPad, padNumber)
+      : String(padNumber)
     const pad = createSmdPadFromCircuitJson({
       pcbPad,
       componentCenter,
-      padNumber,
+      padNumber: resolvedPadNumber,
       componentRotation,
       netInfo,
       componentId,
