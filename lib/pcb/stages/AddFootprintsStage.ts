@@ -171,7 +171,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const getPadNumber = (
       pad: { pcb_port_id?: string; port_hints?: string[] },
       fallback: number,
-    ) => getKiCadPadNumber(pad, this.ctx.db, fallback)
+    ) =>
+      getKiCadPadNumber({
+        pad,
+        db: this.ctx.db,
+        fallbackNumber: fallback,
+      })
 
     const pcbPads =
       this.ctx.db.pcb_smtpad

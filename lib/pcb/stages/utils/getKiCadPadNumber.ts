@@ -8,11 +8,15 @@ import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
  * Pad array order is NOT the physical pin number — this preserves the
  * identity declared on the original `<smtpad portHints={["pin4"]} ... />`.
  */
-export function getKiCadPadNumber(
-  pad: { pcb_port_id?: string; port_hints?: string[] },
-  db: CircuitJsonUtilObjects,
-  fallbackNumber: number,
-): string {
+export function getKiCadPadNumber({
+  pad,
+  db,
+  fallbackNumber,
+}: {
+  pad: { pcb_port_id?: string; port_hints?: string[] }
+  db: CircuitJsonUtilObjects
+  fallbackNumber: number
+}): string {
   const pcbPort = pad.pcb_port_id
     ? db.pcb_port?.get(pad.pcb_port_id)
     : undefined
