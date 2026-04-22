@@ -136,22 +136,21 @@ export function applyMetadataToFootprint({
       hidden: descMeta?.hide ?? true,
     }),
   )
+  // Supplier Part Number property
 
-  if (componentProperty.supplierPartNumber) {
-    newProperties.push(
-      new Property({
-        key: "Supplier Part Number",
-        value: componentProperty.supplierPartNumber,
-        position: [0, 0, 0],
-        layer: "F.Fab",
-        uuid: generateDeterministicUuid(
-          `${componentProperty.reference}-property-SupplierPartNumber`,
-        ),
-        effects: createTextEffects(),
-        hidden: true,
-      }),
-    )
-  }
+  newProperties.push(
+    new Property({
+      key: "Supplier Part Number",
+      value: componentProperty.supplierPartNumber,
+      position: [0, 0, 0],
+      layer: "F.Fab",
+      uuid: generateDeterministicUuid(
+        `${componentProperty.reference}-property-SupplierPartNumber`,
+      ),
+      effects: createTextEffects(),
+      hidden: true,
+    }),
+  )
 
   footprint.properties = newProperties
   // Apply attributes if provided
