@@ -13,6 +13,16 @@ export interface kicadComponentProperty {
   supplierPartNumber?: string
 }
 
+function getJlcpcbSupplierPartNumber(
+  sourceComp: SourceComponentBase,
+): string | undefined {
+  const jlcpcbPartNumbers = sourceComp.supplier_part_numbers?.jlcpcb
+
+  return jlcpcbPartNumbers && jlcpcbPartNumbers.length > 0
+    ? jlcpcbPartNumbers.join(", ")
+    : undefined
+}
+
 /**
  * Get default footprint text fields from a source component.
  */
@@ -21,16 +31,7 @@ export function getkicadComponentProperty(
 ): kicadComponentProperty {
   const name = sourceComp.name || "?"
   const reference = getReferenceDesignator(sourceComp)
-  const supplierPartNumberCandidate = (
-    sourceComp as {
-      supplier_part_numbers?: Record<string, string | string[] | undefined>
-    }
-  ).supplier_part_numbers
-  const supplierPartNumberRaw =
-    supplierPartNumberCandidate?.lcsc || supplierPartNumberCandidate?.jlcpcb
-  const supplierPartNumber = Array.isArray(supplierPartNumberRaw)
-    ? supplierPartNumberRaw.join(", ")
-    : supplierPartNumberRaw
+  const supplierPartNumber = getJlcpcbSupplierPartNumber(sourceComp)
 
   if (sourceComp.ftype === "simple_resistor") {
     const resistor = sourceComp as SourceSimpleResistor
