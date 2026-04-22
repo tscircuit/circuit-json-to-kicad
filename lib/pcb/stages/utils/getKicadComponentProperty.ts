@@ -32,8 +32,6 @@ export function getkicadComponentProperty(
     ? supplierPartNumberRaw.join(", ")
     : supplierPartNumberRaw
 
-  console.log("supplierPartNumber", supplierPartNumber)
-
   if (sourceComp.ftype === "simple_resistor") {
     const resistor = sourceComp as SourceSimpleResistor
     return {
