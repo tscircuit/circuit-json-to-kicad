@@ -28,8 +28,11 @@ export const takeKicadSnapshot = async (params: {
   // Check to make sure kicad-cli is installed
   const kicadCliVersion = await $`kicad-cli --version`
 
-  if (!kicadCliVersion.stdout.toString().trim().startsWith("10.")) {
-    throw new Error("kicad-cli version 9.0.0 or higher is required")
+  const version = kicadCliVersion.stdout.toString().trim()
+  if (!version.startsWith("9.") && !version.startsWith("10.")) {
+    throw new Error(
+      `kicad-cli version 9.0.0 or higher is required, found ${version}`,
+    )
   }
 
   // Create a temporary directory for working with files

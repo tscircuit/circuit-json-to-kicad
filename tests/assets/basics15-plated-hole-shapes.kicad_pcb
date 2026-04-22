@@ -44,7 +44,7 @@
       (size 4 4)
       (drill 2)
       (layers *.Cu *.Mask)
-      (uuid 7a337e56-2d60-f016-1f71-9e2a6c442c6a)
+      (uuid 754c2a84-7dc4-ec04-79c2-527c714990fc)
     )
   )
   (footprint
@@ -57,7 +57,7 @@
       (size 4 6)
       (drill oval 2 4)
       (layers *.Cu *.Mask)
-      (uuid 6d6d3b80-6f10-1ac1-4b8d-7102280ac743)
+      (uuid 754c2a84-7dc4-ec04-79c2-527c714990fc)
     )
   )
   (footprint
@@ -70,7 +70,7 @@
       (size 4 6)
       (drill oval 2 4)
       (layers *.Cu *.Mask)
-      (uuid 5de93db4-6f65-1fec-3cb3-7d8c0a01db2c)
+      (uuid 754c2a84-7dc4-ec04-79c2-527c714990fc)
     )
   )
   (footprint
@@ -83,7 +83,33 @@
       (size 4 6)
       (drill 2)
       (layers *.Cu *.Mask)
-      (uuid 2c7981e0-3318-f041-39b8-5ea24057cd03)
+      (uuid 754c2a84-7dc4-ec04-79c2-527c714990fc)
+    )
+  )
+  (footprint
+    "tscircuit:platedhole_circular_hole_with_rect_pad_holeDiameter2mm_rectPadWidth6mm_rectPadHeight4mm_ccwRotation45deg"
+    (layer F.Cu)
+    (uuid 5f9bf530-4415-3410-288e-72f00d07b1d0)
+    (at 100 120 0)
+    (pad "1" thru_hole rect
+      (at 0 0 45)
+      (size 6 4)
+      (drill 2)
+      (layers *.Cu *.Mask)
+      (uuid 754c2a84-7dc4-ec04-79c2-527c714990fc)
+    )
+  )
+  (footprint
+    "tscircuit:platedhole_rotated_pill_hole_with_rect_pad_holeWidth4mm_holeHeight2mm_rectPadWidth6mm_rectPadHeight4mm_ccwRotation45deg"
+    (layer F.Cu)
+    (uuid 495be480-0bf5-7e7f-6146-e17e4967bb83)
+    (at 110 120 0)
+    (pad "1" thru_hole rect
+      (at 0 0 45)
+      (size 6 4)
+      (drill oval 4 2)
+      (layers *.Cu *.Mask)
+      (uuid 754c2a84-7dc4-ec04-79c2-527c714990fc)
     )
   )
   (gr_line
