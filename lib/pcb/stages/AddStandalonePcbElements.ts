@@ -5,6 +5,7 @@ import type {
   PcbPlatedHoleOval,
   PcbHolePillWithRectPad,
   PcbHoleCircularWithRectPad,
+  PcbHoleRotatedPillWithRectPad,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
@@ -133,8 +134,22 @@ export class AddStandalonePcbElements extends ConverterStage<
       return `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
     }
     if (shape === "circular_hole_with_rect_pad") {
-      const h = hole as PcbHoleCircularWithRectPad
-      return `tscircuit:platedhole_${shape}_holeDiameter${h.hole_diameter}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
+      const h = hole as PcbHoleCircularWithRectPad & {
+        rect_ccw_rotation?: number
+      }
+      let link = `tscircuit:platedhole_${shape}_holeDiameter${h.hole_diameter}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
+      if (h.rect_ccw_rotation) {
+        link += `_ccwRotation${h.rect_ccw_rotation}deg`
+      }
+      return link
+    }
+    if (shape === "rotated_pill_hole_with_rect_pad") {
+      const h = hole as PcbHoleRotatedPillWithRectPad
+      let link = `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
+      if (h.rect_ccw_rotation) {
+        link += `_ccwRotation${h.rect_ccw_rotation}deg`
+      }
+      return link
     }
     return "tscircuit:platedhole"
   }

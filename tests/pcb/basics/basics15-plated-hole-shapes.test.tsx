@@ -50,6 +50,27 @@ test("pcb basics15 plated hole shapes", async () => {
         rectPadWidth="4mm"
         rectPadHeight="6mm"
       />
+      <platedhole
+        pcbX={0}
+        pcbY={-20}
+        shape="circular_hole_with_rect_pad"
+        holeDiameter="2mm"
+        rectPadWidth="6mm"
+        rectPadHeight="4mm"
+        pcbRotation={45}
+      />
+
+      {/* 5. Rotated pill hole with rect pad */}
+      <platedhole
+        pcbX={10}
+        pcbY={-20}
+        shape="pill_hole_with_rect_pad"
+        holeWidth="4mm"
+        holeHeight="2mm"
+        rectPadWidth="6mm"
+        rectPadHeight="4mm"
+        pcbRotation={45}
+      />
     </board>,
   )
 
