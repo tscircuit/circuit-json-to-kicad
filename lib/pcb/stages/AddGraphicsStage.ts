@@ -1,4 +1,4 @@
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, PcbSilkscreenPath } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { GrLine } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
@@ -22,7 +22,10 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     // Get PCB board silkscreen paths if they exist
-    const pcbSilkscreenPaths = this.ctx.db.pcb_silkscreen_path?.list() || []
+    const pcbSilkscreenPaths =
+      this.ctx.db.pcb_silkscreen_path
+        ?.list()
+        .filter((path: PcbSilkscreenPath) => !path.pcb_component_id) || []
 
     for (const path of pcbSilkscreenPaths) {
       if (!path.route || path.route.length < 2) continue
