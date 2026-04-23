@@ -3,6 +3,7 @@ import type {
   CadComponent,
   SourceComponentBase,
   PcbHole,
+  PcbSilkscreenPath,
 } from "circuit-json"
 import {
   getReferenceDesignator,
@@ -31,6 +32,7 @@ import { convertNoteRects } from "./footprints-stage-converters/convertNoteRects
 import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
+import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
@@ -162,6 +164,23 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     )
 
     footprint.fpTexts = fpTexts
+
+    const pcbSilkscreenPaths =
+      this.ctx.db.pcb_silkscreen_path
+        ?.list()
+        .filter(
+          (path: PcbSilkscreenPath) =>
+            path.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const fpLines = footprint.fpLines ?? []
+    fpLines.push(
+      ...convertSilkscreenPaths(pcbSilkscreenPaths, {
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
+    )
+    footprint.fpLines = fpLines
 
     // Convert pads
     const fpPads = footprint.fpPads

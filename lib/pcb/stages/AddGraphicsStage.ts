@@ -1,10 +1,36 @@
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, PcbSilkscreenPath } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { GrLine } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
+
+const pointsAreEqual = (
+  a?: { x: number; y: number },
+  b?: { x: number; y: number },
+) => !!a && !!b && a.x === b.x && a.y === b.y
+
+const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
+  const dedupedCorners: Array<{ x: number; y: number }> = []
+
+  for (const corner of corners) {
+    const previousCorner = dedupedCorners[dedupedCorners.length - 1]
+
+    if (pointsAreEqual(previousCorner, corner)) continue
+
+    dedupedCorners.push(corner)
+  }
+
+  while (
+    dedupedCorners.length > 1 &&
+    pointsAreEqual(dedupedCorners[0], dedupedCorners[dedupedCorners.length - 1])
+  ) {
+    dedupedCorners.pop()
+  }
+
+  return dedupedCorners
+}
 
 /**
  * Adds graphics (silkscreen, board outline, etc.) to the PCB from circuit JSON
@@ -22,7 +48,10 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     // Get PCB board silkscreen paths if they exist
-    const pcbSilkscreenPaths = this.ctx.db.pcb_silkscreen_path?.list() || []
+    const pcbSilkscreenPaths =
+      this.ctx.db.pcb_silkscreen_path
+        ?.list()
+        .filter((path: PcbSilkscreenPath) => !path.pcb_component_id) || []
 
     for (const path of pcbSilkscreenPaths) {
       if (!path.route || path.route.length < 2) continue
@@ -116,7 +145,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       // Check if board has a custom outline, otherwise use width/height to create rectangle
       if (board.outline && board.outline.length > 0) {
         // Use the custom outline points
-        corners = board.outline
+        corners = normalizeOutlineCorners(board.outline)
       } else {
         // Fallback to rectangular outline based on width and height
         const halfWidth = board.width ? board.width / 2 : 0
@@ -136,12 +165,18 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         applyToPoint(c2kMatPcb, corner),
       )
 
+      if (transformedCorners.length < 2) {
+        this.finished = true
+        return
+      }
+
       // Create edge cut lines connecting the corners
       for (let i = 0; i < transformedCorners.length; i++) {
         const start = transformedCorners[i]
         const end = transformedCorners[(i + 1) % transformedCorners.length]
 
         if (!start || !end) continue
+        if (pointsAreEqual(start, end)) continue
 
         const edgeLine = new GrLine({
           start: { x: start.x, y: start.y },
