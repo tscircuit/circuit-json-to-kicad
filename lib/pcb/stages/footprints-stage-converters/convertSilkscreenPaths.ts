@@ -9,10 +9,7 @@ interface ConvertSilkscreenPathsOptions {
 
 export function convertSilkscreenPaths(
   silkscreenPaths: PcbSilkscreenPath[],
-  {
-    componentCenter,
-    componentRotation = 0,
-  }: ConvertSilkscreenPathsOptions,
+  { componentCenter, componentRotation = 0 }: ConvertSilkscreenPathsOptions,
 ): FpLine[] {
   const fpLines: FpLine[] = []
 
