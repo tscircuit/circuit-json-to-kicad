@@ -175,11 +175,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const fpLines = footprint.fpLines ?? []
     fpLines.push(
-      ...convertSilkscreenPaths(
-        pcbSilkscreenPaths,
-        component.center,
-        component.rotation || 0,
-      ),
+      ...convertSilkscreenPaths(pcbSilkscreenPaths, {
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
     )
     footprint.fpLines = fpLines
 

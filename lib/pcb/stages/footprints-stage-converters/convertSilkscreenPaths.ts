@@ -2,10 +2,17 @@ import type { PcbSilkscreenPath } from "circuit-json"
 import { FpLine, Stroke } from "kicadts"
 import { applyToPoint, identity, rotate } from "transformation-matrix"
 
+interface ConvertSilkscreenPathsOptions {
+  componentCenter: { x: number; y: number }
+  componentRotation?: number
+}
+
 export function convertSilkscreenPaths(
   silkscreenPaths: PcbSilkscreenPath[],
-  componentCenter: { x: number; y: number },
-  componentRotation = 0,
+  {
+    componentCenter,
+    componentRotation = 0,
+  }: ConvertSilkscreenPathsOptions,
 ): FpLine[] {
   const fpLines: FpLine[] = []
 
