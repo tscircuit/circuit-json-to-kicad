@@ -143,6 +143,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
         schematicComponent,
+        sourceComponent,
         { x, y },
       )
 
@@ -172,8 +173,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         ),
       })
 
-      // Hide value for chips since reference is usually sufficient
-      const hideValue = sourceComponent.ftype === "simple_chip"
+      const hasChipManufacturerValue =
+        sourceComponent.ftype === "simple_chip" &&
+        Boolean(sourceComponent.manufacturer_part_number)
+      const hideValue =
+        sourceComponent.ftype === "simple_chip" && !hasChipManufacturerValue
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
@@ -358,11 +362,18 @@ export class AddSchematicSymbolsStage extends ConverterStage<
    */
   private getTextPositions(
     schematicComponent: any,
+    sourceComponent: any,
     symbolKicadPos: { x: number; y: number },
   ): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
   } {
+    const schematicScale = this.ctx.c2kMatSch?.a ?? 15
+    const componentHeightMm =
+      (schematicComponent.size?.height || 1) * schematicScale
+    const referenceAboveBodyY =
+      symbolKicadPos.y - componentHeightMm / 2 - 3
+
     // First check if there are schematic_text elements for this component
     const schematicTexts =
       this.ctx.db.schematic_text
@@ -378,12 +389,22 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     if (refText && this.ctx.c2kMatSch) {
       // Use the schematic_text position for reference
-      const refTextPos = applyToPoint(this.ctx.c2kMatSch, {
+      const nameTextPos = applyToPoint(this.ctx.c2kMatSch, {
         x: refText.position.x,
         y: refText.position.y,
       })
 
-      // For value, place it below the component (we'll hide it anyway for chips)
+      if (
+        sourceComponent?.ftype === "simple_chip" &&
+        sourceComponent?.manufacturer_part_number
+      ) {
+        return {
+          refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
+          valTextPos: nameTextPos,
+        }
+      }
+
+      const refTextPos = nameTextPos
       const valTextPos = { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
       return { refTextPos, valTextPos }
@@ -395,7 +416,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Default positions if symbol not found
     if (!symbol) {
       return {
-        refTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 },
+        refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
         valTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 },
       }
     }
@@ -433,7 +454,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
               schematicComponent.center.y +
               (refTextPrimitive.y - symbolCenter.y),
           })
-        : { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 }
+        : { x: symbolKicadPos.x, y: referenceAboveBodyY }
 
     const valTextPos =
       valTextPrimitive && this.ctx.c2kMatSch

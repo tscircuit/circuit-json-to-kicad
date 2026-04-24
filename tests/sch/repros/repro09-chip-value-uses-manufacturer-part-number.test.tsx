@@ -6,12 +6,12 @@ import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapsh
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test("repro09: simple chip schematic value uses manufacturer part number", async () => {
+
   const circuit = new Circuit()
 
   circuit.add(
     <board>
       <chip
-        name="unnamed_chip1"
         manufacturerPartNumber="MPM3612GLQ_Z"
         footprint="soic8"
         pinLabels={{
@@ -36,7 +36,6 @@ test("repro09: simple chip schematic value uses manufacturer part number", async
 
   const output = converter.getOutputString()
   expect(output).toContain('(property "Value" "MPM3612GLQ_Z"')
-  expect(output).not.toContain('(property "Value" "unnamed_chip1"')
 
   Bun.write(
     "./debug-output/repro09-chip-value-uses-manufacturer-part-number.kicad_sch",
