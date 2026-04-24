@@ -2,9 +2,9 @@ import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { KicadPcb } from "kicadts"
-import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeKicadSnapshot } from "../../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../../fixtures/stackCircuitJsonKicadPngs"
 
 test(
   "0402 footprints keep pad rotation when component is rotated 45 degrees",
@@ -60,11 +60,11 @@ test(
 
       expect(pad1!.at?.x).toBeCloseTo(-0.51, 2)
       expect(pad1!.at?.y).toBeCloseTo(0, 5)
-      expect(pad1!.at?.angle).toBe(0)
+      expect(pad1!.at?.angle).toBe(45)
 
       expect(pad2!.at?.x).toBeCloseTo(0.51, 2)
       expect(pad2!.at?.y).toBeCloseTo(0, 5)
-      expect(pad2!.at?.angle).toBe(0)
+      expect(pad2!.at?.angle).toBe(45)
     }
 
     const kicadSnapshot = await takeKicadSnapshot({
