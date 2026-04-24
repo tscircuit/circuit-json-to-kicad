@@ -514,7 +514,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     if (sourceComp.ftype === "simple_chip") {
       return {
         reference,
-        value: sourceComp.manufacturer_part_number || name,
+        value: sourceComp.manufacturer_part_number || "",
         description: "Integrated Circuit",
       }
     }
