@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test"
+import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 
 test("duplicate adjacent trace points should not create a zero-length segment", () => {
-  const circuitJson = [
+  const circuitJson: CircuitJson = [
     {
       type: "pcb_board",
       pcb_board_id: "pcb_board_0",
@@ -31,7 +32,7 @@ test("duplicate adjacent trace points should not create a zero-length segment", 
         { route_type: "wire", x: 2, y: 0, width: 0.15, layer: "top" },
       ],
     },
-  ] as any
+  ]
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
