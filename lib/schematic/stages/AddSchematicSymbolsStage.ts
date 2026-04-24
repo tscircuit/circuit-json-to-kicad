@@ -139,11 +139,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Get component metadata
       const { reference, value, description } =
         this.getComponentMetadata(sourceComponent)
+      const hasChipManufacturerValue =
+        sourceComponent.ftype === "simple_chip" &&
+        Boolean(sourceComponent.manufacturer_part_number)
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
         schematicComponent,
-        sourceComponent,
+        hasChipManufacturerValue,
         { x, y },
       )
 
@@ -173,9 +176,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         ),
       })
 
-      const hasChipManufacturerValue =
-        sourceComponent.ftype === "simple_chip" &&
-        Boolean(sourceComponent.manufacturer_part_number)
       const hideValue =
         sourceComponent.ftype === "simple_chip" && !hasChipManufacturerValue
       const valMeta = symbolMetadata?.properties?.Value
@@ -362,7 +362,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
    */
   private getTextPositions(
     schematicComponent: any,
-    sourceComponent: any,
+    placeValueAtNamePosition: boolean,
     symbolKicadPos: { x: number; y: number },
   ): {
     refTextPos: { x: number; y: number }
@@ -393,10 +393,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         y: refText.position.y,
       })
 
-      if (
-        sourceComponent?.ftype === "simple_chip" &&
-        sourceComponent?.manufacturer_part_number
-      ) {
+      if (placeValueAtNamePosition) {
         return {
           refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
           valTextPos: nameTextPos,
