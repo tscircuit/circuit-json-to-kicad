@@ -371,8 +371,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     const schematicScale = this.ctx.c2kMatSch?.a ?? 15
     const componentHeightMm =
       (schematicComponent.size?.height || 1) * schematicScale
-    const referenceAboveBodyY =
-      symbolKicadPos.y - componentHeightMm / 2 - 3
+    const referenceAboveBodyY = symbolKicadPos.y - componentHeightMm / 2 - 3
 
     // First check if there are schematic_text elements for this component
     const schematicTexts =
