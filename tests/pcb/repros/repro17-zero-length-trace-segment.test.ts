@@ -37,8 +37,7 @@ test("duplicate adjacent trace points should not create a zero-length segment", 
   converter.runUntilFinished()
 
   const output = converter.getOutputString()
-  const segments =
-    output.match(/\(segment[\s\S]*?\(uuid [^)]+\)\n  \)/g) || []
+  const segments = output.match(/\(segment[\s\S]*?\(uuid [^)]+\)\n  \)/g) || []
 
   expect(segments.length).toBe(1)
   expect(output).not.toContain("(start 100 100)\n    (end 100 100)")
