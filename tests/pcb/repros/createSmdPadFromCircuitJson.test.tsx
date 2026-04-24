@@ -2,9 +2,9 @@ import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { KicadPcb } from "kicadts"
-import { takeKicadSnapshot } from "../../../fixtures/take-kicad-snapshot"
-import { takeCircuitJsonSnapshot } from "../../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../../fixtures/stackCircuitJsonKicadPngs"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test(
   "0402 footprints keep pad rotation when component is rotated 45 degrees",
