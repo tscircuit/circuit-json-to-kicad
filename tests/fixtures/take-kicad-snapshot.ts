@@ -22,8 +22,9 @@ export const takeKicadSnapshot = async (params: {
   kicadFilePath?: string
   kicadFileContent?: string
   kicadFileType: "sch" | "pcb" | "3d"
+  layer?: "top" | "bottom"
 }): Promise<KicadOutput> => {
-  const { kicadFilePath, kicadFileContent, kicadFileType } = params
+  const { kicadFilePath, kicadFileContent, kicadFileType, layer } = params
 
   // Check to make sure kicad-cli is installed
   const kicadCliVersion = await $`kicad-cli --version`
@@ -82,7 +83,11 @@ export const takeKicadSnapshot = async (params: {
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
-        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers B.Cu,In1.Cu,In2.Cu,F.Cu,F.SilkS,B.SilkS,F.Fab,B.Fab,F.CrtYd,B.CrtYd,Edge.Cuts --mode-single --page-size-mode 2 --exclude-drawing-sheet`
+        : layer === "top"
+          ? $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers F.Cu,F.SilkS,F.Fab,F.CrtYd,Edge.Cuts --mode-single --page-size-mode 2 --exclude-drawing-sheet`
+          : layer === "bottom"
+            ? $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers B.Cu,B.SilkS,B.Fab,B.CrtYd,Edge.Cuts --mirror --mode-single --page-size-mode 2 --exclude-drawing-sheet`
+            : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers B.Cu,In1.Cu,In2.Cu,F.Cu,F.SilkS,B.SilkS,F.Fab,B.Fab,F.CrtYd,B.CrtYd,Edge.Cuts --mode-single --page-size-mode 2 --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
 
