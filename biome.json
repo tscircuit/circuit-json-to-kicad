@@ -6,7 +6,8 @@
     "indentStyle": "space"
   },
   "files": {
-    "includes": ["**", "!**/cosmos-export", "!**/dist", "!**/package.json"]
+    "includes": ["**", "!**/cosmos-export", "!**/dist", "!**/package.json"],
+    "maxSize": 2097152
   },
   "javascript": {
     "formatter": {

@@ -84,13 +84,13 @@ test("pcb basics18 - plated hole offset sign is preserved correctly", () => {
 
   // Pad 1: hole_offset_x=-0.25, hole_offset_y=0
   // Expected KiCad offset: x=-0.25 (same), y=0 (no flip needed for zero)
-  const offset1 = offsetMatches[0]
-  expect(parseFloat(offset1[1])).toBeCloseTo(-0.25, 5)
-  expect(parseFloat(offset1[2])).toBeCloseTo(0, 5)
+  const offset1 = offsetMatches[0]!
+  expect(parseFloat(offset1[1]!)).toBeCloseTo(-0.25, 5)
+  expect(parseFloat(offset1[2]!)).toBeCloseTo(0, 5)
 
   // Pad 2: hole_offset_x=0, hole_offset_y=0.3 (circuit-json Y-up)
   // Expected KiCad offset: x=0, y=-0.3 (Y flipped to Y-down)
-  const offset2 = offsetMatches[1]
-  expect(parseFloat(offset2[1])).toBeCloseTo(0, 5)
-  expect(parseFloat(offset2[2])).toBeCloseTo(-0.3, 5)
+  const offset2 = offsetMatches[1]!
+  expect(parseFloat(offset2[1]!)).toBeCloseTo(0, 5)
+  expect(parseFloat(offset2[2]!)).toBeCloseTo(-0.3, 5)
 })
