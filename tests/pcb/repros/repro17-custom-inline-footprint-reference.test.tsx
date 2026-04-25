@@ -49,7 +49,9 @@ test("repro227: custom inline footprint has non-empty Reference designator", asy
   const outputString = converter.getOutputString()
 
   // The Reference property must not be empty
-  const referenceMatch = outputString.match(/\(property\s+"Reference"\s+"([^"]*)"/)
+  const referenceMatch = outputString.match(
+    /\(property\s+"Reference"\s+"([^"]*)"/,
+  )
   expect(referenceMatch).toBeTruthy()
   expect(referenceMatch![1]).not.toBe("")
 
