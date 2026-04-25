@@ -63,6 +63,15 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         y: endPoint.y,
       })
 
+      // Skip zero-length segments (duplicate consecutive route points).
+      // KiCad's DRC reports these as "trace crossing" errors.
+      if (
+        Math.abs(transformedStart.x - transformedEnd.x) < 1e-9 &&
+        Math.abs(transformedStart.y - transformedEnd.y) < 1e-9
+      ) {
+        continue
+      }
+
       let netInfo: PcbNetInfo | undefined
       if (pcbNetMap) {
         let connectivityKey: string | undefined =
