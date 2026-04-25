@@ -77,6 +77,7 @@ export function createSmdPadFromCircuitJson({
   let padSize: [number, number]
   let padOptions: PadOptions | undefined
   let padPrimitives: PadPrimitives | undefined
+  let rotation = 0
 
   if (pcbPad.shape === "circle") {
     padShape = "circle"
@@ -115,12 +116,13 @@ export function createSmdPadFromCircuitJson({
 
     // Set a small anchor size (the anchor is just for the pad number)
     padSize = [0.2, 0.2]
+  } else if (pcbPad.shape === "rotated_rect") {
+    padShape = "rect"
+    padSize = [pcbPad.width, pcbPad.height]
+    rotation = pcbPad.ccw_rotation
   } else {
     padShape = "rect"
-    padSize = [
-      "width" in pcbPad ? pcbPad.width : 0.5,
-      "height" in pcbPad ? pcbPad.height : 0.5,
-    ]
+    padSize = [pcbPad.width, pcbPad.height]
   }
 
   // Generate deterministic UUID for pad
@@ -129,7 +131,7 @@ export function createSmdPadFromCircuitJson({
     number: String(padNumber),
     padType: "smd",
     shape: padShape,
-    at: [rotatedPos.x, rotatedPos.y, 0],
+    at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
     layers: [
       `${padLayer}`,

@@ -60,11 +60,11 @@ test(
 
       expect(pad1!.at?.x).toBeCloseTo(-0.51, 2)
       expect(pad1!.at?.y).toBeCloseTo(0, 5)
-      expect(pad1!.at?.angle).toBe(0)
+      expect(pad1!.at?.angle).toBe(45)
 
       expect(pad2!.at?.x).toBeCloseTo(0.51, 2)
       expect(pad2!.at?.y).toBeCloseTo(0, 5)
-      expect(pad2!.at?.angle).toBe(0)
+      expect(pad2!.at?.angle).toBe(45)
     }
 
     const kicadSnapshot = await takeKicadSnapshot({
