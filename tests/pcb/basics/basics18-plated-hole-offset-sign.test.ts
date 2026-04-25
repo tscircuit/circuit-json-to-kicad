@@ -79,7 +79,9 @@ test("pcb basics18 - plated hole offset sign is preserved correctly", () => {
   const output = converter.getOutputString()
 
   // Extract all drill offset lines
-  const offsetMatches = [...output.matchAll(/\(offset\s+([-\d.]+)\s+([-\d.]+)\)/g)]
+  const offsetMatches = [
+    ...output.matchAll(/\(offset\s+([-\d.]+)\s+([-\d.]+)\)/g),
+  ]
   expect(offsetMatches.length).toBe(2)
 
   // Pad 1: hole_offset_x=-0.25, hole_offset_y=0
