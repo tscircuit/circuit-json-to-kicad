@@ -131,6 +131,13 @@ export function getReferenceDesignator(
     return name!.trim()
   }
 
+  // If the component has a non-empty name that isn't a strict ref-designator
+  // (e.g. "U_TEST", "MyChip"), use it directly as the reference so that
+  // custom inline footprints get a meaningful Reference property instead of "U?".
+  if (name && name.trim()) {
+    return name.trim()
+  }
+
   const prefix = getReferencePrefixForComponent(sourceComponent)
   return `${prefix}?`
 }
