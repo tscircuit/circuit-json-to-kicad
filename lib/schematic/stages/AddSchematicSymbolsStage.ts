@@ -446,31 +446,27 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       symbolName.includes("_down") || symbolName.includes("_up")
     const horizontalTextOffset = isVertical ? 0.15 : 0
 
-    const refTextPos =
-      refTextPrimitive
-        ? applyToPoint(c2kMatSch, {
-            x:
-              schematicComponent.center.x +
-              (refTextPrimitive.x - symbolCenter.x) +
-              horizontalTextOffset,
-            y:
-              schematicComponent.center.y +
-              (refTextPrimitive.y - symbolCenter.y),
-          })
-        : { x: symbolKicadPos.x, y: referenceAboveBodyY }
+    const refTextPos = refTextPrimitive
+      ? applyToPoint(c2kMatSch, {
+          x:
+            schematicComponent.center.x +
+            (refTextPrimitive.x - symbolCenter.x) +
+            horizontalTextOffset,
+          y:
+            schematicComponent.center.y + (refTextPrimitive.y - symbolCenter.y),
+        })
+      : { x: symbolKicadPos.x, y: referenceAboveBodyY }
 
-    const valTextPos =
-      valTextPrimitive
-        ? applyToPoint(c2kMatSch, {
-            x:
-              schematicComponent.center.x +
-              (valTextPrimitive.x - symbolCenter.x) +
-              horizontalTextOffset,
-            y:
-              schematicComponent.center.y +
-              (valTextPrimitive.y - symbolCenter.y),
-          })
-        : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
+    const valTextPos = valTextPrimitive
+      ? applyToPoint(c2kMatSch, {
+          x:
+            schematicComponent.center.x +
+            (valTextPrimitive.x - symbolCenter.x) +
+            horizontalTextOffset,
+          y:
+            schematicComponent.center.y + (valTextPrimitive.y - symbolCenter.y),
+        })
+      : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
     return { refTextPos, valTextPos }
   }
