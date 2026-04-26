@@ -33,6 +33,7 @@ import { convertCourtyardRects } from "./footprints-stage-converters/convertCour
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
 import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
+import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
@@ -298,6 +299,17 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpRects.push(...convertCourtyardRects(pcbCourtyardRects, component.center))
+
+    const pcbSilkscreenRects =
+      this.ctx.db.pcb_silkscreen_rect
+        ?.list()
+        .filter(
+          (rect: any) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    fpRects.push(
+      ...convertSilkscreenRects(pcbSilkscreenRects, component.center),
+    )
     footprint.fpRects = fpRects
 
     // Convert polygons

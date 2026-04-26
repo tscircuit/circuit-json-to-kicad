@@ -55,11 +55,11 @@ export function createThruHolePadFromCircuitJson({
     }
 
     if (rawOffset.x !== 0 || rawOffset.y !== 0) {
-      // KiCad's drill offset convention: positive X moves drill LEFT (inverted from normal)
-      // Y offset is relative to the pad which is already in KiCad's Y-down coordinate system
+      // Convert from circuit-json coordinates (Y-up) to KiCad coordinates (Y-down).
+      // X stays the same; Y is negated to flip the axis.
       const rotatedOffset = applyToPoint(rotationMatrix, {
-        x: -rawOffset.x,
-        y: rawOffset.y,
+        x: rawOffset.x,
+        y: -rawOffset.y,
       })
 
       drillOffset = rotatedOffset
