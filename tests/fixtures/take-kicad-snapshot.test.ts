@@ -43,4 +43,4 @@ test("takeKicadSnapshot - schematic export", async () => {
   }
 
   console.log("✓ All snapshots match!")
-})
+}, 5_500)

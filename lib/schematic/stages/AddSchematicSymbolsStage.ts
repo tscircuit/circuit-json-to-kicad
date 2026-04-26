@@ -139,11 +139,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Get component metadata
       const { reference, value, description } =
         this.getComponentMetadata(sourceComponent)
+      const hasChipManufacturerValue =
+        sourceComponent.ftype === "simple_chip" &&
+        Boolean(sourceComponent.manufacturer_part_number)
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
         schematicComponent,
-        { x, y },
+        hasChipManufacturerValue,
       )
 
       // Check for kicadSymbolMetadata from circuit-json element
@@ -172,8 +175,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         ),
       })
 
-      // Hide value for chips since reference is usually sufficient
-      const hideValue = sourceComponent.ftype === "simple_chip"
+      const hideValue =
+        sourceComponent.ftype === "simple_chip" && !hasChipManufacturerValue
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
@@ -358,11 +361,21 @@ export class AddSchematicSymbolsStage extends ConverterStage<
    */
   private getTextPositions(
     schematicComponent: any,
-    symbolKicadPos: { x: number; y: number },
+    placeValueAtNamePosition: boolean,
   ): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
   } {
+    const c2kMatSch = this.ctx.c2kMatSch!
+    const schematicScale = c2kMatSch.a
+    const symbolKicadPos = applyToPoint(c2kMatSch, {
+      x: schematicComponent.center.x,
+      y: schematicComponent.center.y,
+    })
+    const componentHeightMm =
+      (schematicComponent.size?.height || 1) * schematicScale
+    const referenceAboveBodyY = symbolKicadPos.y - componentHeightMm / 2 - 3
+
     // First check if there are schematic_text elements for this component
     const schematicTexts =
       this.ctx.db.schematic_text
@@ -376,14 +389,21 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Look for reference text (usually the component name like "U1")
     const refText = schematicTexts.find((t: any) => t.text && t.text.length > 0)
 
-    if (refText && this.ctx.c2kMatSch) {
+    if (refText) {
       // Use the schematic_text position for reference
-      const refTextPos = applyToPoint(this.ctx.c2kMatSch, {
+      const nameTextPos = applyToPoint(c2kMatSch, {
         x: refText.position.x,
         y: refText.position.y,
       })
 
-      // For value, place it below the component (we'll hide it anyway for chips)
+      if (placeValueAtNamePosition) {
+        return {
+          refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
+          valTextPos: nameTextPos,
+        }
+      }
+
+      const refTextPos = nameTextPos
       const valTextPos = { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
       return { refTextPos, valTextPos }
@@ -395,7 +415,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Default positions if symbol not found
     if (!symbol) {
       return {
-        refTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 },
+        refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
         valTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 },
       }
     }
@@ -422,31 +442,27 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       symbolName.includes("_down") || symbolName.includes("_up")
     const horizontalTextOffset = isVertical ? 0.15 : 0
 
-    const refTextPos =
-      refTextPrimitive && this.ctx.c2kMatSch
-        ? applyToPoint(this.ctx.c2kMatSch, {
-            x:
-              schematicComponent.center.x +
-              (refTextPrimitive.x - symbolCenter.x) +
-              horizontalTextOffset,
-            y:
-              schematicComponent.center.y +
-              (refTextPrimitive.y - symbolCenter.y),
-          })
-        : { x: symbolKicadPos.x, y: symbolKicadPos.y - 6 }
+    const refTextPos = refTextPrimitive
+      ? applyToPoint(c2kMatSch, {
+          x:
+            schematicComponent.center.x +
+            (refTextPrimitive.x - symbolCenter.x) +
+            horizontalTextOffset,
+          y:
+            schematicComponent.center.y + (refTextPrimitive.y - symbolCenter.y),
+        })
+      : { x: symbolKicadPos.x, y: referenceAboveBodyY }
 
-    const valTextPos =
-      valTextPrimitive && this.ctx.c2kMatSch
-        ? applyToPoint(this.ctx.c2kMatSch, {
-            x:
-              schematicComponent.center.x +
-              (valTextPrimitive.x - symbolCenter.x) +
-              horizontalTextOffset,
-            y:
-              schematicComponent.center.y +
-              (valTextPrimitive.y - symbolCenter.y),
-          })
-        : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
+    const valTextPos = valTextPrimitive
+      ? applyToPoint(c2kMatSch, {
+          x:
+            schematicComponent.center.x +
+            (valTextPrimitive.x - symbolCenter.x) +
+            horizontalTextOffset,
+          y:
+            schematicComponent.center.y + (valTextPrimitive.y - symbolCenter.y),
+        })
+      : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
 
     return { refTextPos, valTextPos }
   }
@@ -497,7 +513,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     if (sourceComp.ftype === "simple_chip") {
       return {
         reference,
-        value: name,
+        value: sourceComp.manufacturer_part_number || "",
         description: "Integrated Circuit",
       }
     }
