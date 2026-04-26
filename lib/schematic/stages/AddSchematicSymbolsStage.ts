@@ -147,7 +147,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const { refTextPos, valTextPos } = this.getTextPositions(
         schematicComponent,
         hasChipManufacturerValue,
-        { x, y },
       )
 
       // Check for kicadSymbolMetadata from circuit-json element
@@ -363,12 +362,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   private getTextPositions(
     schematicComponent: any,
     placeValueAtNamePosition: boolean,
-    symbolKicadPos: { x: number; y: number },
   ): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
   } {
-    const schematicScale = this.ctx.c2kMatSch?.a ?? 15
+    const c2kMatSch = this.ctx.c2kMatSch
+    if (!c2kMatSch) {
+      throw new Error("Expected schematic transform matrix to be defined")
+    }
+
+    const schematicScale = c2kMatSch.a
+    const symbolKicadPos = applyToPoint(c2kMatSch, {
+      x: schematicComponent.center.x,
+      y: schematicComponent.center.y,
+    })
     const componentHeightMm =
       (schematicComponent.size?.height || 1) * schematicScale
     const referenceAboveBodyY = symbolKicadPos.y - componentHeightMm / 2 - 3
@@ -386,9 +393,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Look for reference text (usually the component name like "U1")
     const refText = schematicTexts.find((t: any) => t.text && t.text.length > 0)
 
-    if (refText && this.ctx.c2kMatSch) {
+    if (refText) {
       // Use the schematic_text position for reference
-      const nameTextPos = applyToPoint(this.ctx.c2kMatSch, {
+      const nameTextPos = applyToPoint(c2kMatSch, {
         x: refText.position.x,
         y: refText.position.y,
       })
@@ -440,8 +447,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     const horizontalTextOffset = isVertical ? 0.15 : 0
 
     const refTextPos =
-      refTextPrimitive && this.ctx.c2kMatSch
-        ? applyToPoint(this.ctx.c2kMatSch, {
+      refTextPrimitive
+        ? applyToPoint(c2kMatSch, {
             x:
               schematicComponent.center.x +
               (refTextPrimitive.x - symbolCenter.x) +
@@ -453,8 +460,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         : { x: symbolKicadPos.x, y: referenceAboveBodyY }
 
     const valTextPos =
-      valTextPrimitive && this.ctx.c2kMatSch
-        ? applyToPoint(this.ctx.c2kMatSch, {
+      valTextPrimitive
+        ? applyToPoint(c2kMatSch, {
             x:
               schematicComponent.center.x +
               (valTextPrimitive.x - symbolCenter.x) +
