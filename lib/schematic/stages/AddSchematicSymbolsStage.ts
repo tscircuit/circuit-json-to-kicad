@@ -366,11 +366,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
   } {
-    const c2kMatSch = this.ctx.c2kMatSch
-    if (!c2kMatSch) {
-      throw new Error("Expected schematic transform matrix to be defined")
-    }
-
+    const c2kMatSch = this.ctx.c2kMatSch!
     const schematicScale = c2kMatSch.a
     const symbolKicadPos = applyToPoint(c2kMatSch, {
       x: schematicComponent.center.x,
