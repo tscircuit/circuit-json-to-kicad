@@ -73,10 +73,11 @@ export function createSmdPadFromCircuitJson({
   const padLayer = layerMap[pcbPad.layer] || "F.Cu"
 
   // Handle different pad shapes (circle pads have radius, rect pads have width/height, polygon pads use custom shape)
-  let padShape: string
-  let padSize: [number, number]
+  let padShape: string | undefined
+  let padSize: [number, number] | undefined
   let padOptions: PadOptions | undefined
   let padPrimitives: PadPrimitives | undefined
+  let roundrect_rratio: number | undefined
   let rotation = 0
 
   if (pcbPad.shape === "circle") {
@@ -117,11 +118,23 @@ export function createSmdPadFromCircuitJson({
     // Set a small anchor size (the anchor is just for the pad number)
     padSize = [0.2, 0.2]
   } else if (pcbPad.shape === "rotated_rect") {
-    padShape = "rect"
+    const cornerRadius = pcbPad.corner_radius ?? pcbPad.rect_border_radius
+    if (cornerRadius) {
+      padShape = "roundrect"
+      roundrect_rratio = cornerRadius / Math.min(pcbPad.width, pcbPad.height)
+    } else {
+      padShape = "rect"
+    }
     padSize = [pcbPad.width, pcbPad.height]
     rotation = pcbPad.ccw_rotation
-  } else {
-    padShape = "rect"
+  } else if (pcbPad.shape === "rect") {
+    const cornerRadius = pcbPad.corner_radius ?? pcbPad.rect_border_radius
+    if (cornerRadius) {
+      padShape = "roundrect"
+      roundrect_rratio = cornerRadius / Math.min(pcbPad.width, pcbPad.height)
+    } else {
+      padShape = "rect"
+    }
     padSize = [pcbPad.width, pcbPad.height]
   }
 
