@@ -401,19 +401,19 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         (t: any) => t.text && t.text.length > 0,
       )
 
-    if (refText) {
-      // Use the schematic_text position for reference
-      const nameTextPos = applyToPoint(c2kMatSch, {
-        x: refText.position.x,
-        y: refText.position.y,
-      })
+      if (refText) {
+        // Use the schematic_text position for reference
+        const nameTextPos = applyToPoint(c2kMatSch, {
+          x: refText.position.x,
+          y: refText.position.y,
+        })
 
-      if (placeValueAtNamePosition) {
-        return {
-          refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
-          valTextPos: nameTextPos,
+        if (placeValueAtNamePosition) {
+          return {
+            refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
+            valTextPos: nameTextPos,
+          }
         }
-      }
 
         const refTextPos = nameTextPos
         const valTextPos = { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
