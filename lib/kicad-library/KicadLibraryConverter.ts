@@ -135,6 +135,9 @@ export class KicadLibraryConverter {
       const libConverter = new CircuitJsonToKicadLibraryConverter(circuitJson, {
         libraryName: this.ctx.kicadLibraryName,
         footprintLibraryName: this.ctx.kicadLibraryName,
+        kicadSchematicScaleFactor: this.options.kicadSchematicScaleFactor,
+        scaleCustomSymbolsWithSchematic:
+          this.options.scaleCustomSymbolsWithSchematic,
       })
       libConverter.runUntilFinished()
       const libOutput = libConverter.getOutput()

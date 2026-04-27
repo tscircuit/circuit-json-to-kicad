@@ -19,6 +19,11 @@ export class GenerateKicadSchAndPcbStage extends ConverterStage<
     // Generate schematic to extract symbols
     const schConverter = new CircuitJsonToKicadSchConverter(
       this.ctx.circuitJson,
+      {
+        kicadSchematicScaleFactor: this.ctx.kicadSchematicScaleFactor,
+        scaleCustomSymbolsWithSchematic:
+          this.ctx.scaleCustomSymbolsWithSchematic,
+      },
     )
     schConverter.runUntilFinished()
     this.ctx.kicadSchString = schConverter.getOutputString()

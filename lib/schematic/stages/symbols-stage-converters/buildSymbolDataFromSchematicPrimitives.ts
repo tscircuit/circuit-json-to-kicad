@@ -12,12 +12,16 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   schematicSymbolId: string
   schematicSymbol: any
   schematicComponentId?: string
+  schematicComponentCenter?: { x: number; y: number }
+  schematicComponentSize?: { width: number; height: number }
 }) {
   const {
     circuitJson,
     schematicSymbolId,
     schematicSymbol,
     schematicComponentId,
+    schematicComponentCenter,
+    schematicComponentSize,
   } = params
   // Collect all primitives linked to this schematic_symbol
   const circles = circuitJson.filter(
@@ -162,9 +166,13 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   // Sort ports by pin_number
   symbolPorts.sort((a, b) => a.pinNumber - b.pinNumber)
 
+  const symbolCenter = schematicSymbol.center ||
+    schematicComponentCenter || { x: 0, y: 0 }
+
   return {
-    center: schematicSymbol.center || { x: 0, y: 0 },
-    size: schematicSymbol.size || { width: 1, height: 1 },
+    center: symbolCenter,
+    size: schematicSymbol.size ||
+      schematicComponentSize || { width: 1, height: 1 },
     primitives,
     texts: symbolTexts,
     ports: symbolPorts,

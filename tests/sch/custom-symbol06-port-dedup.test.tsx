@@ -191,3 +191,62 @@ test("custom-symbol06: keeps ports with different pin_numbers", () => {
   expect(kicadOutput).toContain('(number "1"')
   expect(kicadOutput).toContain('(number "2"')
 })
+
+test("custom-symbol06: scales custom symbol pins with kicadSchematicScaleFactor", () => {
+  const circuitJson = [
+    {
+      type: "source_component",
+      source_component_id: "source_component_0",
+      name: "U1",
+      ftype: "simple_chip",
+    },
+    {
+      type: "source_port",
+      source_port_id: "source_port_0",
+      name: "1",
+      pin_number: 1,
+      source_component_id: "source_component_0",
+    },
+    {
+      type: "schematic_component",
+      schematic_component_id: "schematic_component_0",
+      source_component_id: "source_component_0",
+      center: { x: 0, y: 0 },
+      rotation: 0,
+      size: { width: 2, height: 1 },
+    },
+    {
+      type: "schematic_symbol",
+      schematic_symbol_id: "schematic_symbol_0",
+      center: { x: 0, y: 0 },
+      size: { width: 2, height: 1 },
+    },
+    {
+      type: "schematic_port",
+      schematic_port_id: "schematic_port_0",
+      schematic_component_id: "schematic_component_0",
+      source_port_id: "source_port_0",
+      center: { x: 1.5, y: 0 },
+      facing_direction: "right",
+      pin_number: 1,
+    },
+    {
+      type: "schematic_circle",
+      schematic_circle_id: "schematic_circle_0",
+      schematic_component_id: "schematic_component_0",
+      schematic_symbol_id: "schematic_symbol_0",
+      center: { x: 0, y: 0 },
+      radius: 0.5,
+      stroke_width: 0.05,
+      is_filled: true,
+    },
+  ]
+
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any, {
+    kicadSchematicScaleFactor: 10,
+  })
+  converter.runUntilFinished()
+  const kicadOutput = converter.getOutputString()
+
+  expect(kicadOutput).toContain("(at 15 0 180)")
+})

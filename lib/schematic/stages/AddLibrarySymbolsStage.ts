@@ -240,6 +240,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicSymbolId,
       schematicSymbol,
       schematicComponentId: schematicComponent.schematic_component_id,
+      schematicComponentCenter: this.ctx.scaleCustomSymbolsWithSchematic
+        ? schematicComponent.center
+        : undefined,
+      schematicComponentSize: this.ctx.scaleCustomSymbolsWithSchematic
+        ? schematicComponent.size
+        : undefined,
     })
 
     // Get footprint name for symbol-footprint linkage
@@ -258,7 +264,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       fpFilters: this.getFpFilters(sourceComp, schematicSymbol.name),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
-      symbolScale: 1, // Custom symbols are already at KiCad-appropriate scale
+      symbolScale: this.ctx.scaleCustomSymbolsWithSchematic
+        ? this.ctx.kicadSchematicScaleFactor
+        : 1,
     })
   }
 
@@ -339,9 +347,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     referencePrefix?: string
     symbolScale?: number
   }): SchematicSymbol {
-    const CIRCUIT_JSON_SCALE_FACTOR = 15
     const c2kMatSchScale =
-      symbolScale ?? this.ctx.c2kMatSch?.a ?? CIRCUIT_JSON_SCALE_FACTOR
+      symbolScale ??
+      this.ctx.kicadSchematicScaleFactor ??
+      this.ctx.c2kMatSch?.a ??
+      15
     const symbol = new SchematicSymbol({
       libraryId: libId,
       excludeFromSim: false,

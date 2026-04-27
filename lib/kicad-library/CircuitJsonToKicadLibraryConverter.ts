@@ -16,6 +16,8 @@ import { GenerateLibraryTablesStage } from "./stages/GenerateLibraryTablesStage"
 interface CircuitJsonToKicadLibraryOptions {
   libraryName?: string
   footprintLibraryName?: string
+  kicadSchematicScaleFactor?: number
+  scaleCustomSymbolsWithSchematic?: boolean
 }
 
 // Re-export types for backwards compatibility
@@ -42,6 +44,8 @@ export class CircuitJsonToKicadLibraryConverter {
       circuitJson,
       libraryName: options.libraryName ?? "tscircuit",
       fpLibraryName: options.footprintLibraryName ?? "tscircuit",
+      kicadSchematicScaleFactor: options.kicadSchematicScaleFactor,
+      scaleCustomSymbolsWithSchematic: options.scaleCustomSymbolsWithSchematic,
     }
 
     this.pipeline = [
