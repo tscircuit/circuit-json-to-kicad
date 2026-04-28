@@ -15,7 +15,7 @@ import {
 } from "kicadts"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../getLibraryId"
+import { getLibraryId, getConnectorLibraryId } from "../getLibraryId"
 import {
   getKicadCompatibleComponentName,
   getReferencePrefixForComponent,
@@ -140,6 +140,18 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         sourceComp,
         cadComponent,
         schematicSymbolId,
+      )
+    }
+
+    // Handle connector / pin header components with standard KiCad Connector_Generic symbols
+    if (
+      sourceComp.ftype === "simple_pin_header" ||
+      sourceComp.ftype === "simple_connector"
+    ) {
+      return this.createConnectorLibrarySymbol(
+        schematicComponent,
+        sourceComp,
+        cadComponent,
       )
     }
 
@@ -399,10 +411,65 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     return symbol
   }
 
+  /**
+   * Create a library symbol for connector / pin header components using
+   * KiCad's standard Connector_Generic symbol format.
+   */
+  private createConnectorLibrarySymbol(
+    schematicComponent: SchematicComponent,
+    sourceComp: SourceComponentBase,
+    cadComponent: any,
+  ): SchematicSymbol | null {
+    const libId = getConnectorLibraryId(sourceComp)
+    if (!libId) return null
+
+    // Avoid duplicate library symbols
+    if (this.processedSymbolNames.has(libId)) {
+      return null
+    }
+    this.processedSymbolNames.add(libId)
+
+    const pinCount = (sourceComp as any).pin_count ?? 1
+    const gender: string = (sourceComp as any).gender ?? "male"
+    const isMale = gender !== "female"
+
+    // Generate connector symbol data matching KiCad's Connector_Generic format
+    const symbolData = createGenericChipSymbolData(
+      schematicComponent,
+      this.ctx.db,
+    )
+
+    // Get footprint name for symbol-footprint linkage
+    const footprintName = getKicadCompatibleComponentName(
+      sourceComp,
+      cadComponent,
+    )
+
+    const description = isMale
+      ? `Generic connector, single row, 01x${String(pinCount).padStart(2, "0")}, script generated`
+      : `Generic connector, single row, 01x${String(pinCount).padStart(2, "0")}, script generated`
+    const keywords = "connector"
+    const fpFilters = `Connector*:*_1x${String(pinCount).padStart(2, "0")}_*`
+
+    return this.createLibrarySymbol({
+      libId,
+      symbolData,
+      isChip: false,
+      schematicComponent,
+      description,
+      keywords,
+      fpFilters,
+      footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
+      referencePrefix: "J",
+    })
+  }
+
   private getDescription(sourceComp: any): string {
     if (sourceComp?.ftype === "simple_resistor") return "Resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "Capacitor"
     if (sourceComp?.ftype === "simple_chip") return "Integrated Circuit"
+    if (sourceComp?.ftype === "simple_pin_header") return "Pin Header"
+    if (sourceComp?.ftype === "simple_connector") return "Connector"
     return "Component"
   }
 
@@ -410,6 +477,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (sourceComp?.ftype === "simple_resistor") return "R res resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "C cap capacitor"
     if (sourceComp?.ftype === "simple_chip") return "U IC chip"
+    if (
+      sourceComp?.ftype === "simple_pin_header" ||
+      sourceComp?.ftype === "simple_connector"
+    )
+      return "connector"
     return ""
   }
 
@@ -422,6 +494,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (sourceComp?.ftype === "simple_resistor") return "R_*"
     if (sourceComp?.ftype === "simple_capacitor") return "C_*"
     if (sourceComp?.ftype === "simple_chip") return "*"
+    if (
+      sourceComp?.ftype === "simple_pin_header" ||
+      sourceComp?.ftype === "simple_connector"
+    ) {
+      const pinCount = (sourceComp as any).pin_count ?? 1
+      return `Connector*:*_1x${String(pinCount).padStart(2, "0")}_*`
+    }
     return "*"
   }
 
