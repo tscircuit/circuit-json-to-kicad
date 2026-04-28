@@ -173,6 +173,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       fpFilters: this.getFpFilters(sourceComp),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
+      symbolScale: this.ctx.kicadSchematicScaleFactor!,
     })
   }
 
@@ -264,9 +265,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       fpFilters: this.getFpFilters(sourceComp, schematicSymbol.name),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
-      symbolScale: this.ctx.scaleCustomSymbolsWithSchematic
-        ? this.ctx.kicadSchematicScaleFactor
-        : 1,
+      symbolScale: this.ctx.customSymbolScaleFactor!,
     })
   }
 
@@ -303,6 +302,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       keywords: isPower ? "power net" : isGround ? "ground net" : "net",
       fpFilters: "",
       referencePrefix: libId.split(":")[1]?.[0] || "U",
+      symbolScale: this.ctx.kicadSchematicScaleFactor!,
     })
   }
 
@@ -345,13 +345,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     fpFilters: string
     footprintRef?: string
     referencePrefix?: string
-    symbolScale?: number
+    symbolScale: number
   }): SchematicSymbol {
-    const c2kMatSchScale =
-      symbolScale ??
-      this.ctx.kicadSchematicScaleFactor ??
-      this.ctx.c2kMatSch?.a ??
-      15
+    const c2kMatSchScale = symbolScale
     const symbol = new SchematicSymbol({
       libraryId: libId,
       excludeFromSim: false,

@@ -59,6 +59,7 @@ export interface ConverterContext {
    * with the same factor as the schematic transform.
    */
   scaleCustomSymbolsWithSchematic?: boolean
+  customSymbolScaleFactor?: number
 
   /** Circuit JSON to KiCad schematic transformation matrix */
   c2kMatSch?: Matrix

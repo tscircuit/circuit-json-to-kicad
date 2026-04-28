@@ -51,6 +51,9 @@ export class CircuitJsonToKicadSchConverter {
     const scaleCustomSymbolsWithSchematic =
       options.scaleCustomSymbolsWithSchematic ??
       options.kicadSchematicScaleFactor !== undefined
+    const customSymbolScaleFactor = scaleCustomSymbolsWithSchematic
+      ? kicadSchematicScaleFactor
+      : 1
 
     const db = cju(circuitJson)
 
@@ -81,6 +84,7 @@ export class CircuitJsonToKicadSchConverter {
       }),
       kicadSchematicScaleFactor,
       scaleCustomSymbolsWithSchematic,
+      customSymbolScaleFactor,
       schematicPaperSize: paperSize,
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),

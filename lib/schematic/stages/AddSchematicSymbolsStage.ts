@@ -26,8 +26,6 @@ import {
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
-const DEFAULT_KICAD_TEXT_HEIGHT_MM = 1.27
-
 /**
  * Adds schematic symbol instances (placed components) to the schematic
  */
@@ -378,6 +376,28 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       (schematicComponent.size?.height || 1) * schematicScale
     const referenceAboveBodyY = symbolKicadPos.y - componentHeightMm / 2 - 3
 
+    const isCustomSymbol = this.isCustomSymbolComponent(schematicComponent)
+    if (isCustomSymbol) {
+      const customScale = this.ctx.customSymbolScaleFactor!
+      const customHeightMm =
+        (schematicComponent.size?.height || 1) * customScale
+      const refTextPos = {
+        x: symbolKicadPos.x,
+        y: symbolKicadPos.y - customHeightMm / 2 - 3,
+      }
+      const valTextPos = {
+        x: symbolKicadPos.x,
+        y: symbolKicadPos.y + customHeightMm / 2 + 3,
+      }
+      if (placeValueAtNamePosition) {
+        return {
+          refTextPos,
+          valTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y },
+        }
+      }
+      return { refTextPos, valTextPos }
+    }
+
     // First check if there are schematic_text elements for this component
     const schematicTexts =
       this.ctx.db.schematic_text
@@ -388,56 +408,25 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             schematicComponent.schematic_component_id,
         ) || []
 
-    const isCustomSymbol = this.isCustomSymbolComponent(schematicComponent)
-    const useScaledCustomPlacement =
-      isCustomSymbol && Boolean(this.ctx.scaleCustomSymbolsWithSchematic)
+    // Look for reference text (usually the component name like "U1")
+    const refText = schematicTexts.find((t: any) => t.text && t.text.length > 0)
 
-    // First check if there are schematic_text elements for this component.
-    // For custom symbols we skip this branch because arbitrary symbol texts
-    // (e.g. +/- labels or {NAME}) are part of symbol graphics, not ref/value anchors.
-    if (!useScaledCustomPlacement) {
-      // Look for reference text (usually the component name like "U1")
-      const refText = schematicTexts.find(
-        (t: any) => t.text && t.text.length > 0,
-      )
+    if (refText) {
+      // Use the schematic_text position for reference
+      const nameTextPos = applyToPoint(c2kMatSch, {
+        x: refText.position.x,
+        y: refText.position.y,
+      })
 
-      if (refText) {
-        // Use the schematic_text position for reference
-        const nameTextPos = applyToPoint(c2kMatSch, {
-          x: refText.position.x,
-          y: refText.position.y,
-        })
-
-        if (placeValueAtNamePosition) {
-          return {
-            refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
-            valTextPos: nameTextPos,
-          }
+      if (placeValueAtNamePosition) {
+        return {
+          refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
+          valTextPos: nameTextPos,
         }
-
-        const refTextPos = nameTextPos
-        const valTextPos = { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
-        return { refTextPos, valTextPos }
       }
-    }
 
-    // For custom symbols, use component center/size directly so ref/value stay
-    // stable with any schematic scale factor and without scanning primitives.
-    if (useScaledCustomPlacement) {
-      const center = schematicComponent.center || { x: 0, y: 0 }
-      const size = schematicComponent.size || { width: 1, height: 1 }
-      const halfHeight = (size.height || 1) / 2
-      const scaleFactor = this.ctx.kicadSchematicScaleFactor || 15
-      const halfTextHeightSch = DEFAULT_KICAD_TEXT_HEIGHT_MM / scaleFactor / 2
-      const yOffset = halfHeight + halfTextHeightSch
-      const refTextPos = applyToPoint(c2kMatSch, {
-        x: center.x,
-        y: center.y + yOffset,
-      })
-      const valTextPos = applyToPoint(c2kMatSch, {
-        x: center.x,
-        y: center.y - yOffset,
-      })
+      const refTextPos = nameTextPos
+      const valTextPos = { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
       return { refTextPos, valTextPos }
     }
 
