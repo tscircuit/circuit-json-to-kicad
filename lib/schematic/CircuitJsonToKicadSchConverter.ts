@@ -45,19 +45,12 @@ export class CircuitJsonToKicadSchConverter {
     circuitJson: CircuitJson,
     options: CircuitJsonToKicadSchOptions = {},
   ) {
-    const requestedScaleFactor = options.kicadSchematicScaleFactor
-    const hasValidRequestedScaleFactor =
-      requestedScaleFactor !== undefined &&
-      Number.isFinite(requestedScaleFactor) &&
-      requestedScaleFactor > 0
-
-    // Keep library behavior non-throwing; CLI can enforce strict validation UX.
-    const kicadSchematicScaleFactor = hasValidRequestedScaleFactor
-      ? requestedScaleFactor
-      : DEFAULT_SCHEMATIC_SCALE_FACTOR
+    const kicadSchematicScaleFactor =
+      options.kicadSchematicScaleFactor ?? DEFAULT_SCHEMATIC_SCALE_FACTOR
 
     const scaleCustomSymbolsWithSchematic =
-      options.scaleCustomSymbolsWithSchematic ?? hasValidRequestedScaleFactor
+      options.scaleCustomSymbolsWithSchematic ??
+      options.kicadSchematicScaleFactor !== undefined
 
     const db = cju(circuitJson)
 
