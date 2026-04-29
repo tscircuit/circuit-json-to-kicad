@@ -241,12 +241,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicSymbolId,
       schematicSymbol,
       schematicComponentId: schematicComponent.schematic_component_id,
-      schematicComponentCenter: this.ctx.scaleCustomSymbolsWithSchematic
-        ? schematicComponent.center
-        : undefined,
-      schematicComponentSize: this.ctx.scaleCustomSymbolsWithSchematic
-        ? schematicComponent.size
-        : undefined,
+      schematicComponentCenter: schematicComponent.center,
+      schematicComponentSize: schematicComponent.size,
     })
 
     // Get footprint name for symbol-footprint linkage
@@ -265,7 +261,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       fpFilters: this.getFpFilters(sourceComp, schematicSymbol.name),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
-      symbolScale: this.ctx.customSymbolScaleFactor!,
+      symbolScale: this.ctx.kicadSchematicScaleFactor!,
     })
   }
 
@@ -347,7 +343,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     referencePrefix?: string
     symbolScale: number
   }): SchematicSymbol {
-    const c2kMatSchScale = symbolScale
     const symbol = new SchematicSymbol({
       libraryId: libId,
       excludeFromSim: false,
@@ -383,7 +378,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       libId,
       symbolData,
       isChip,
-      c2kMatSchScale,
+      c2kMatSchScale: symbolScale,
     })
     symbol.subSymbols.push(drawingSymbol)
 
@@ -394,7 +389,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       isChip,
       schematicComponent,
       schematicPorts: this.ctx.db.schematic_port.list(),
-      c2kMatSchScale,
+      c2kMatSchScale: symbolScale,
     })
     symbol.subSymbols.push(pinSymbol)
 

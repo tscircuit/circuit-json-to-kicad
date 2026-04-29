@@ -65,17 +65,6 @@ export interface KicadLibraryConverterOptions {
    * ${KICAD9_3RD_PARTY}/3dmodels/<kicadPcmPackageId>/<library>.3dshapes/<model>.step
    */
   kicadPcmPackageId?: string
-
-  /**
-   * Scale factor for schematic conversion when extracting symbols from
-   * circuit-json.
-   */
-  kicadSchematicScaleFactor?: number
-
-  /**
-   * If true, custom symbols use the same scale as schematic placement/wires.
-   */
-  scaleCustomSymbolsWithSchematic?: boolean
 }
 
 export interface KicadLibraryConverterOutput {

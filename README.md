@@ -22,13 +22,7 @@ import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad"
 // Assuming you have circuit JSON from tscircuit or another source
 const circuitJson = /* your circuit JSON */
 
-const converter = new CircuitJsonToKicadSchConverter(circuitJson, {
-  // Optional: set schematic scaling explicitly (default: 15)
-  kicadSchematicScaleFactor: 15,
-  // Optional: scale custom symbol geometry with the schematic scale
-  // (defaults to true when kicadSchematicScaleFactor is provided)
-  scaleCustomSymbolsWithSchematic: true,
-})
+const converter = new CircuitJsonToKicadSchConverter(circuitJson)
 converter.runUntilFinished()
 
 // Get the KiCad schematic file content

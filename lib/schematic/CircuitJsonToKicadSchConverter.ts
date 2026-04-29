@@ -14,21 +14,6 @@ import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
 
-export interface CircuitJsonToKicadSchOptions {
-  /**
-   * Scale factor for converting schematic coordinates to KiCad mm.
-   * Defaults to 15 to preserve existing behavior.
-   */
-  kicadSchematicScaleFactor?: number
-
-  /**
-   * Whether custom symbols (defined with schematic primitives) should use the
-   * same schematic scale factor. Defaults to `true` when an explicit
-   * kicadSchematicScaleFactor is provided, otherwise `false` for compatibility.
-   */
-  scaleCustomSymbolsWithSchematic?: boolean
-}
-
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
 
@@ -41,19 +26,8 @@ export class CircuitJsonToKicadSchConverter {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(
-    circuitJson: CircuitJson,
-    options: CircuitJsonToKicadSchOptions = {},
-  ) {
-    const kicadSchematicScaleFactor =
-      options.kicadSchematicScaleFactor ?? DEFAULT_SCHEMATIC_SCALE_FACTOR
-
-    const scaleCustomSymbolsWithSchematic =
-      options.scaleCustomSymbolsWithSchematic ??
-      options.kicadSchematicScaleFactor !== undefined
-    const customSymbolScaleFactor = scaleCustomSymbolsWithSchematic
-      ? kicadSchematicScaleFactor
-      : 1
+  constructor(circuitJson: CircuitJson) {
+    const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
 
     const db = cju(circuitJson)
 
@@ -83,8 +57,6 @@ export class CircuitJsonToKicadSchConverter {
         generatorVersion: "0.0.1",
       }),
       kicadSchematicScaleFactor,
-      scaleCustomSymbolsWithSchematic,
-      customSymbolScaleFactor,
       schematicPaperSize: paperSize,
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),

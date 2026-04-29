@@ -54,13 +54,6 @@ export interface ConverterContext {
   /** Scale factor used to convert circuit-json schematic units into KiCad mm */
   kicadSchematicScaleFactor?: number
 
-  /**
-   * When true, custom symbols generated from schematic primitives are scaled
-   * with the same factor as the schematic transform.
-   */
-  scaleCustomSymbolsWithSchematic?: boolean
-  customSymbolScaleFactor?: number
-
   /** Circuit JSON to KiCad schematic transformation matrix */
   c2kMatSch?: Matrix
 

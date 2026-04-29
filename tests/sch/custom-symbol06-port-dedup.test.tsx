@@ -98,9 +98,9 @@ test("custom-symbol06: deduplicates ports with same pin_number", () => {
   const pin1Matches = kicadOutput.match(/\(number "1"/g)
   expect(pin1Matches?.length).toBe(1)
 
-  // Verify the pin is at the FIRST port's position (x=1.5, unscaled for custom symbols)
-  // The library symbol pin should be at (1.5 0) since custom symbols use scale=1
-  expect(kicadOutput).toContain("(at 1.5 0")
+  // Verify the pin is at the FIRST port's position, scaled to KiCad units.
+  // With default schematic scale factor (15), x=1.5 becomes x=22.5.
+  expect(kicadOutput).toContain("(at 22.5 0")
 })
 
 /**
@@ -192,7 +192,7 @@ test("custom-symbol06: keeps ports with different pin_numbers", () => {
   expect(kicadOutput).toContain('(number "2"')
 })
 
-test("custom-symbol06: scales custom symbol pins with kicadSchematicScaleFactor", () => {
+test("custom-symbol06: custom symbol pins use default schematic scaling", () => {
   const circuitJson = [
     {
       type: "source_component",
@@ -242,11 +242,9 @@ test("custom-symbol06: scales custom symbol pins with kicadSchematicScaleFactor"
     },
   ]
 
-  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any, {
-    kicadSchematicScaleFactor: 10,
-  })
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any)
   converter.runUntilFinished()
   const kicadOutput = converter.getOutputString()
 
-  expect(kicadOutput).toContain("(at 15 0 180)")
+  expect(kicadOutput).toContain("(at 22.5 0 180)")
 })

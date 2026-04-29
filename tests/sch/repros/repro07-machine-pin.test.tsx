@@ -22,7 +22,7 @@ const getSymbolBody = (kicad: string, symbolName: string) => {
   return kicad.slice(start, end)
 }
 
-test("repro07: MachinePin symbol width should remain 2mm in KiCad", async () => {
+test("repro07: MachinePin symbol width should scale with default schematic factor", async () => {
   const circuit = new Circuit()
 
   circuit.add(
@@ -94,5 +94,5 @@ test("repro07: MachinePin symbol width should remain 2mm in KiCad", async () => 
   expect(xs.length).toBeGreaterThan(0)
   const width = Math.max(...xs) - Math.min(...xs)
 
-  expect(width).toBeCloseTo(1.818, 2)
+  expect(width).toBeCloseTo(27.273, 2)
 })

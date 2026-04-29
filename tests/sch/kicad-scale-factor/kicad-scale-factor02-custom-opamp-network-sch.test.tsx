@@ -120,9 +120,7 @@ test("kicad-scale-factor02 custom opamp symbol with mixed components", async () 
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson() as any
 
-  const converter = new CircuitJsonToKicadSchConverter(circuitJson, {
-    kicadSchematicScaleFactor: 10,
-  })
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
 
   const kicadOutput = converter.getOutputString()
