@@ -378,9 +378,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     const isCustomSymbol = this.isCustomSymbolComponent(schematicComponent)
     if (isCustomSymbol) {
-      const customScale = this.ctx.kicadSchematicScaleFactor!
       const customHeightMm =
-        (schematicComponent.size?.height || 1) * customScale
+        (schematicComponent.size?.height || 1) *
+        this.ctx.kicadSchematicScaleFactor!
       const refTextPos = {
         x: symbolKicadPos.x,
         y: symbolKicadPos.y - customHeightMm / 2 - 3,
