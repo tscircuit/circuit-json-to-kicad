@@ -461,6 +461,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       fpFilters,
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: "J",
+      symbolScale: this.ctx.kicadSchematicScaleFactor!,
     })
   }
 
