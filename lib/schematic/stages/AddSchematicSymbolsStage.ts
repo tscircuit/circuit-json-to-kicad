@@ -581,26 +581,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       }
     }
 
-    if (sourceComp.ftype === "simple_pin_header") {
-      const pinCount = sourceComp.pin_count ?? 1
-      const paddedCount = String(pinCount).padStart(2, "0")
-      return {
-        reference,
-        value: `Conn_01x${paddedCount}`,
-        description: "Pin Header",
-      }
-    }
-
-    if (sourceComp.ftype === "simple_connector") {
-      const pinCount = sourceComp.pin_count ?? 1
-      const paddedCount = String(pinCount).padStart(2, "0")
-      return {
-        reference,
-        value: `Conn_01x${paddedCount}`,
-        description: "Connector",
-      }
-    }
-
     // Default
     return {
       reference,
