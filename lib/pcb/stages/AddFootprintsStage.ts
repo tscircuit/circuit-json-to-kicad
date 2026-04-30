@@ -4,6 +4,7 @@ import type {
   SourceComponentBase,
   PcbHole,
   PcbSilkscreenPath,
+  PcbSilkscreenRect,
 } from "circuit-json"
 import {
   getReferenceDesignator,
@@ -30,6 +31,7 @@ import { convertCourtyardCircles } from "./footprints-stage-converters/convertCo
 import { convertFabricationNoteRects } from "./footprints-stage-converters/convertFabricationNoteRects"
 import { convertNoteRects } from "./footprints-stage-converters/convertNoteRects"
 import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
+import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
 import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
@@ -298,6 +300,22 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpRects.push(...convertCourtyardRects(pcbCourtyardRects, component.center))
+
+    const pcbSilkscreenRects =
+      this.ctx.db.pcb_silkscreen_rect
+        ?.list()
+        .filter(
+          (rect: PcbSilkscreenRect) =>
+            rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    fpRects.push(
+      ...convertSilkscreenRects(pcbSilkscreenRects, {
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
+    )
+
     footprint.fpRects = fpRects
 
     // Convert polygons
