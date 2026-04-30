@@ -52,5 +52,5 @@ test("pcb inline footprint has fp_text reference", async () => {
 
   // Verify the output contains fp_text reference with the component name "U1"
   // KiCad s-expression format puts these on separate lines
-  expect(output).toContain("fp_text\n      reference\n      \"U1\"")
+  expect(output).toContain('fp_text\n      reference\n      "U1"')
 })
