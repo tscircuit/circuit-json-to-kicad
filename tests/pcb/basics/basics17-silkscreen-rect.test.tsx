@@ -55,5 +55,4 @@ test("pcb_silkscreen_rect is converted to KiCad fp_rect inside footprint (not gr
   // Confirm it's NOT at board level (gr_rect should not contain F.SilkS)
   const grRectMatches = outputString.match(/gr_rect[\s\S]*?F\.SilkS/g)
   expect(grRectMatches).toBeNull()
-
 })
