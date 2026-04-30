@@ -47,6 +47,12 @@ export function getLibraryId(
     return "Device:Component"
   }
 
+  // Check for pin header / connector components - use KiCad standard Connector_Generic library
+  const connectorLibId = getConnectorLibraryId(sourceComp)
+  if (connectorLibId) {
+    return connectorLibId
+  }
+
   // Check if there's a symbol_name
   if (schematicComp.symbol_name) {
     // If it's a known builtin symbol, use Device: prefix
@@ -68,4 +74,29 @@ export function getLibraryId(
 
   // Combine prefix with ergonomic name for the library ID
   return `Device:${refPrefix}_${ergonomicName}`
+}
+
+/**
+ * Returns a KiCad standard Connector_Generic library ID for pin headers and connectors.
+ * For a pin header with N pins:
+ *   - male:   Connector_Generic:Conn_01x{N}_Pin
+ *   - female: Connector_Generic:Conn_01x{N}_Socket
+ * Returns null if the component is not a connector type.
+ */
+export function getConnectorLibraryId(
+  sourceComp: SourceComponentBase,
+): string | null {
+  if (
+    sourceComp.ftype !== "simple_pin_header" &&
+    sourceComp.ftype !== "simple_connector"
+  ) {
+    return null
+  }
+
+  const pinCount = (sourceComp as any).pin_count ?? 1
+  const gender: string = (sourceComp as any).gender ?? "male"
+  const suffix = gender === "female" ? "Socket" : "Pin"
+  const paddedCount = String(pinCount).padStart(2, "0")
+
+  return `Connector_Generic:Conn_01x${paddedCount}_${suffix}`
 }
