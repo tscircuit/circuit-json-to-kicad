@@ -1,4 +1,8 @@
-import type { CircuitJson, PcbSilkscreenPath, PcbSilkscreenRect } from "circuit-json"
+import type {
+  CircuitJson,
+  PcbSilkscreenPath,
+  PcbSilkscreenRect,
+} from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { GrLine, GrRect, Stroke } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
