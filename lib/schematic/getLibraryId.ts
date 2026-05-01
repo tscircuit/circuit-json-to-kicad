@@ -57,7 +57,11 @@ export function getLibraryId(
     return `Custom:${schematicComp.symbol_name}`
   }
   if (sourceComp.ftype === "simple_pin_header") {
-    return `Device:generic_chip_${schematicComp.source_component_id}`
+    const pinCount = (sourceComp as { pin_count?: number }).pin_count
+    if (pinCount) {
+      return `Connector_Generic:Conn_01x${pinCount}`
+    }
+    return `Connector_Generic:Conn_01x01`
   }
 
   // Generate ergonomic name using manufacturer part number or footprint string
