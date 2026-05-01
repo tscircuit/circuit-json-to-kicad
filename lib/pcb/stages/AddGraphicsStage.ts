@@ -1,6 +1,10 @@
-import type { CircuitJson, PcbSilkscreenPath } from "circuit-json"
+import type {
+  CircuitJson,
+  PcbSilkscreenPath,
+  PcbSilkscreenRect,
+} from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { GrLine } from "kicadts"
+import { GrLine, GrRect, Stroke } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint } from "transformation-matrix"
@@ -93,6 +97,48 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         graphicLines.push(grLine)
         kicadPcb.graphicLines = graphicLines
       }
+    }
+
+    // Add standalone (board-level) silkscreen rects not owned by any component
+    const standaloneSilkscreenRects = (
+      this.ctx.db.pcb_silkscreen_rect?.list() || []
+    ).filter((rect: PcbSilkscreenRect) => !rect.pcb_component_id)
+
+    for (const rect of standaloneSilkscreenRects) {
+      const layerMap: Record<string, string> = {
+        top: "F.SilkS",
+        bottom: "B.SilkS",
+      }
+      const kicadLayer = layerMap[rect.layer] ?? rect.layer ?? "F.SilkS"
+
+      const halfW = rect.width / 2
+      const halfH = rect.height / 2
+
+      const tl = applyToPoint(c2kMatPcb, {
+        x: rect.center.x - halfW,
+        y: rect.center.y - halfH,
+      })
+      const br = applyToPoint(c2kMatPcb, {
+        x: rect.center.x + halfW,
+        y: rect.center.y + halfH,
+      })
+
+      const grRect = new GrRect({
+        start: { x: Math.min(tl.x, br.x), y: Math.min(tl.y, br.y) },
+        end: { x: Math.max(tl.x, br.x), y: Math.max(tl.y, br.y) },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: false,
+      })
+
+      if (grRect.stroke) {
+        grRect.stroke.width = rect.stroke_width ?? 0.05
+        grRect.stroke.type = "default"
+      }
+
+      const graphicRects = kicadPcb.graphicRects ?? []
+      graphicRects.push(grRect)
+      kicadPcb.graphicRects = graphicRects
     }
 
     // Add standalone silkscreen text elements (not associated with components)
