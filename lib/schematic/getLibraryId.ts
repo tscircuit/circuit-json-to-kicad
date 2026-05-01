@@ -2,6 +2,7 @@ import type {
   SourceComponentBase,
   SchematicComponent,
   CadComponent,
+  SourceSimplePinHeader,
 } from "circuit-json"
 import {
   getKicadCompatibleComponentName,
@@ -57,11 +58,8 @@ export function getLibraryId(
     return `Custom:${schematicComp.symbol_name}`
   }
   if (sourceComp.ftype === "simple_pin_header") {
-    const pinCount = (sourceComp as { pin_count?: number }).pin_count
-    if (pinCount) {
-      return `Connector_Generic:Conn_01x${pinCount}`
-    }
-    return `Connector_Generic:Conn_01x01`
+    const pinCount = (sourceComp as SourceSimplePinHeader).pin_count
+    return `Connector_Generic:Conn_01x${pinCount}`
   }
 
   // Generate ergonomic name using manufacturer part number or footprint string
