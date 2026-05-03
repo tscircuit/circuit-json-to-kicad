@@ -178,7 +178,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const hideValue =
         (sourceComponent.ftype === "simple_chip" &&
           !hasChipManufacturerValue) ||
-        (sourceComponent.ftype === "simple_pin_header" && value === reference)
+        (sourceComponent.ftype === "simple_pin_header")
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
