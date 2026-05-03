@@ -32,6 +32,7 @@ import { convertNoteRects } from "./footprints-stage-converters/convertNoteRects
 import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
+import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
 import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
