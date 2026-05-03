@@ -97,7 +97,7 @@ const referencePrefixByFtype: Record<string, string> = {
   simple_battery: "BT",
 }
 
-const referenceDesignatorPattern = /^[A-Za-z]+\d+$/
+const referenceDesignatorPattern = /^[A-Za-z]+[A-Za-z0-9_-]*[A-Za-z0-9]$|^[A-Za-z]+\d+$/
 
 export function isReferenceDesignator(value?: string | null): boolean {
   if (!value) return false
