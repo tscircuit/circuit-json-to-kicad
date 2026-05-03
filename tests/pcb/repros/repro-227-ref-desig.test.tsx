@@ -48,7 +48,7 @@ test("custom inline footprint should have correct Reference (issue #227)", async
   const outputString = converter.getOutputString()
   const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
 
-  const u1 = kicadPcb.footprints[0]
+  const u1 = kicadPcb.footprints[0]!
   expect(u1).toBeDefined()
 
   // Find Reference property
