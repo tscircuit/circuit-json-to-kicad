@@ -10,6 +10,11 @@ import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { getKicadLayer } from "../utils/layerMapping"
 
+const pointsAreEqual = (
+  a?: { x: number; y: number },
+  b?: { x: number; y: number },
+) => !!a && !!b && a.x === b.x && a.y === b.y
+
 /**
  * Adds traces (segments/tracks) to the PCB from circuit JSON
  */
@@ -62,6 +67,16 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         x: endPoint.x,
         y: endPoint.y,
       })
+
+      if (pointsAreEqual(transformedStart, transformedEnd)) {
+        if (startPoint.layer) {
+          lastKnownLayer = startPoint.layer
+        }
+        if (endPoint.layer) {
+          lastKnownLayer = endPoint.layer
+        }
+        continue
+      }
 
       let netInfo: PcbNetInfo | undefined
       if (pcbNetMap) {
