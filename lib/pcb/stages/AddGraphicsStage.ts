@@ -93,8 +93,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
 
       const fpRects = (kicadPcb as any).fpRects
-      fpRects.push(fpRect)
-      (kicadPcb as any).fpRects = fpRects
+      fpRects.push(fpRect)(kicadPcb as any).fpRects = fpRects
     }
 
     // Get PCB board silkscreen paths if they exist
