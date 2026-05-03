@@ -1,6 +1,6 @@
 import type { CircuitJson, PcbSilkscreenPath } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { GrLine } from "kicadts"
+import { GrLine, FpRect, Stroke } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint } from "transformation-matrix"
@@ -45,6 +45,56 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     if (!c2kMatPcb) {
       throw new Error("PCB transformation matrix not initialized in context")
+    }
+
+    // Get PCB board silkscreen rects (not associated with components)
+    const pcbSilkscreenRects =
+      this.ctx.db.pcb_silkscreen_rect
+        ?.list()
+        .filter((rect: any) => !rect.pcb_component_id) || []
+
+    for (const rect of pcbSilkscreenRects) {
+      const transformedCenter = applyToPoint(c2kMatPcb, {
+        x: rect.center.x,
+        y: rect.center.y,
+      })
+
+      const layerMap: Record<string, string> = {
+        top: "F.SilkS",
+        bottom: "B.SilkS",
+      }
+      const kicadLayer = layerMap[rect.layer] || "F.SilkS"
+
+      const halfW =
+        (typeof rect.width === "number" ? rect.width : parseFloat(rect.width)) /
+        2
+      const halfH =
+        (typeof rect.height === "number"
+          ? rect.height
+          : parseFloat(rect.height)) / 2
+
+      const fpRect = new FpRect({
+        start: {
+          x: transformedCenter.x - halfW,
+          y: transformedCenter.y - halfH,
+        },
+        end: { x: transformedCenter.x + halfW, y: transformedCenter.y + halfH },
+        layer: kicadLayer,
+        stroke: new Stroke(),
+        fill: rect.is_filled ?? false,
+      })
+
+      if (fpRect.stroke) {
+        fpRect.stroke.width =
+          typeof rect.stroke_width === "number"
+            ? rect.stroke_width
+            : parseFloat(rect.stroke_width ?? "0.1")
+        fpRect.stroke.type = "default"
+      }
+
+      const footprintRects = kicadPcb.footprintRects
+      footprintRects.push(fpRect)
+      kicadPcb.footprintRects = footprintRects
     }
 
     // Get PCB board silkscreen paths if they exist

@@ -182,6 +182,20 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     )
     footprint.fpLines = fpLines
 
+    // Convert silkscreen rects
+    const pcbSilkscreenRects =
+      this.ctx.db.pcb_silkscreen_rect
+        ?.list()
+        .filter(
+          (rect: any) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const fpSilkscreenRects = footprint.fpRects ?? []
+    fpSilkscreenRects.push(
+      ...convertSilkscreenRects(pcbSilkscreenRects, component.center),
+    )
+    footprint.fpRects = fpSilkscreenRects
+
     // Convert pads
     const fpPads = footprint.fpPads
     const getNetInfo = (pcbPortId?: string) =>
