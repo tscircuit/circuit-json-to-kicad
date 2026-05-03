@@ -36,9 +36,12 @@ test("custom inline footprint should have correct Reference (issue #227)", async
   )
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
-  
-  console.log("Circuit JSON sample:", JSON.stringify(circuitJson.slice(0,3), null, 2))
-  
+
+  console.log(
+    "Circuit JSON sample:",
+    JSON.stringify(circuitJson.slice(0, 3), null, 2),
+  )
+
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
 
@@ -47,10 +50,10 @@ test("custom inline footprint should have correct Reference (issue #227)", async
 
   const u1 = kicadPcb.footprints[0]
   expect(u1).toBeDefined()
-  
+
   // Find Reference property
-  const refProp = u1.properties?.find(p => p.key === "Reference")
+  const refProp = u1.properties?.find((p) => p.key === "Reference")
   console.log("Reference property:", refProp?.value)
-  
+
   expect(outputString).toContain('(property "Reference" "U_TEST"')
 })
