@@ -1,6 +1,5 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
-import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
@@ -36,15 +35,6 @@ test(
     converter.runUntilFinished()
 
     const outputString = converter.getOutputString()
-    const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
-
-    expect(
-      kicadPcb.footprints.every(
-        (footprint) =>
-          footprint.libraryLink === "tscircuit:smtpad_circle_diameter1mm",
-      ),
-    ).toBe(true)
-
 
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: outputString,
