@@ -32,9 +32,9 @@ export class AddStandalonePcbElements extends ConverterStage<
       ...(this.ctx.db.pcb_plated_hole.list() as PcbPlatedHole[]).filter(
         (hole) => !hole.pcb_component_id,
       ),
-      ...(
-        (this.ctx.db.pcb_smtpad?.list() as PcbSmtPad[] | undefined) ?? []
-      ).filter((pad) => !pad.pcb_component_id),
+      ...(this.ctx.db.pcb_smtpad.list() as PcbSmtPad[]).filter(
+        (pad) => !pad.pcb_component_id,
+      ),
     ]
   }
 
