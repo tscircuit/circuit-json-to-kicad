@@ -6,6 +6,7 @@ import type {
   PcbHolePillWithRectPad,
   PcbHoleCircularWithRectPad,
   PcbHoleRotatedPillWithRectPad,
+  PcbSmtPad,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
@@ -14,12 +15,13 @@ import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
+import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
 > {
-  private unprocessedElements: Array<PcbHole | PcbPlatedHole> = []
+  private unprocessedElements: Array<PcbHole | PcbPlatedHole | PcbSmtPad> = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
@@ -30,6 +32,9 @@ export class AddStandalonePcbElements extends ConverterStage<
       ...(this.ctx.db.pcb_plated_hole.list() as PcbPlatedHole[]).filter(
         (hole) => !hole.pcb_component_id,
       ),
+      ...(
+        (this.ctx.db.pcb_smtpad?.list() as PcbSmtPad[] | undefined) ?? []
+      ).filter((pad) => !pad.pcb_component_id),
     ]
   }
 
@@ -50,7 +55,32 @@ export class AddStandalonePcbElements extends ConverterStage<
       return
     }
 
-    if (elm.type === "pcb_hole") {
+    if (elm.type === "pcb_smtpad") {
+      const pcbPad = elm
+      const padCenter = this.getPcbSmtPadCenter(pcbPad)
+      const footprintSeed = `standalone_smtpad:${pcbPad.pcb_smtpad_id}:${padCenter.x},${padCenter.y}`
+      const kicadPos = applyToPoint(c2kMatPcb, padCenter)
+
+      const footprint = new Footprint({
+        libraryLink: this.getSmtPadLibraryLink(pcbPad),
+        layer: "F.Cu",
+        at: [kicadPos.x, kicadPos.y, 0],
+        uuid: generateDeterministicUuid(footprintSeed),
+      })
+
+      footprint.fpPads = [
+        createSmdPadFromCircuitJson({
+          pcbPad,
+          componentCenter: padCenter,
+          padNumber: 1,
+          componentRotation: 0,
+          componentId: pcbPad.pcb_smtpad_id,
+        }),
+      ]
+      const footprints = kicadPcb.footprints
+      footprints.push(footprint)
+      kicadPcb.footprints = footprints
+    } else if (elm.type === "pcb_hole") {
       const hole = elm
       const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
       const kicadPos = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
@@ -152,6 +182,32 @@ export class AddStandalonePcbElements extends ConverterStage<
       return link
     }
     return "tscircuit:platedhole"
+  }
+
+  private getPcbSmtPadCenter(pcbPad: PcbSmtPad): { x: number; y: number } {
+    if ("x" in pcbPad && "y" in pcbPad) {
+      return { x: pcbPad.x, y: pcbPad.y }
+    }
+
+    const points = pcbPad.points as Array<{ x: number; y: number }>
+    return {
+      x: points.reduce((sum, point) => sum + point.x, 0) / points.length,
+      y: points.reduce((sum, point) => sum + point.y, 0) / points.length,
+    }
+  }
+
+  private getSmtPadLibraryLink(pcbPad: PcbSmtPad): string {
+    if (pcbPad.shape === "circle" && "radius" in pcbPad) {
+      return `tscircuit:smtpad_circle_diameter${pcbPad.radius * 2}mm`
+    }
+    if (
+      (pcbPad.shape === "rect" || pcbPad.shape === "rotated_rect") &&
+      "width" in pcbPad &&
+      "height" in pcbPad
+    ) {
+      return `tscircuit:smtpad_${pcbPad.shape}_width${pcbPad.width}mm_height${pcbPad.height}mm`
+    }
+    return "tscircuit:smtpad"
   }
 
   override getOutput(): KicadPcb {
