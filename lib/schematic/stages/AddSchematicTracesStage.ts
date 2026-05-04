@@ -4,6 +4,8 @@ import { Wire, Pts, Xy, Stroke, Junction, Uuid } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 
+const DEFAULT_WIRE_STROKE_WIDTH_MM = 0.254
+
 /**
  * Adds schematic traces (wires) and junctions to the schematic
  */
@@ -84,7 +86,7 @@ export class AddSchematicTracesStage extends ConverterStage<
 
     // Create stroke for the wire
     const stroke = new Stroke()
-    stroke.width = 0.254
+    stroke.width = DEFAULT_WIRE_STROKE_WIDTH_MM
     stroke.type = "default"
     wire.stroke = stroke
 
