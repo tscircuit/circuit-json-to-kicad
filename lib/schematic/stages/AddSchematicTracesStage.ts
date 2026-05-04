@@ -82,9 +82,9 @@ export class AddSchematicTracesStage extends ConverterStage<
     const pts = new Pts([new Xy(x1, y1), new Xy(x2, y2)])
     wire.points = pts
 
-    // Create stroke for the wire (default wire stroke)
+    // Create stroke for the wire
     const stroke = new Stroke()
-    stroke.width = 0 // 0 means use default width
+    stroke.width = 0.254
     stroke.type = "default"
     wire.stroke = stroke
 
