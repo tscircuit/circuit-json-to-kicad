@@ -160,7 +160,7 @@ export class CircuitJsonToKicadProConverter {
     const minViaDiameter = pcbBoard?.min_via_pad_diameter ?? 0.3
     const minViaDrill = pcbBoard?.min_via_hole_diameter ?? 0.2
     const minViaAnnularWidth = (minViaDiameter - minViaDrill) / 2
-    const minTraceToPadSpacing =
+    const minTraceToPadClearance =
       pcbBoard?.min_trace_to_pad_edge_clearance ?? 0.1
     const minTrackWidth = pcbBoard?.min_trace_width ?? 0.1
     const netClasses: KicadProNetClass[] = [
@@ -168,7 +168,7 @@ export class CircuitJsonToKicadProConverter {
         name: "Default",
         viaDiameter: minViaDiameter,
         viaDrill: minViaDrill,
-        clearance: minTraceToPadSpacing,
+        clearance: minTraceToPadClearance,
         trackWidth: minTrackWidth,
       }),
     ]
@@ -227,7 +227,7 @@ export class CircuitJsonToKicadProConverter {
         design_settings: {
           rules: {
             min_via_annular_width: minViaAnnularWidth,
-            min_hole_clearance: minTraceToPadSpacing,
+            min_hole_clearance: minTraceToPadClearance,
             min_via_diameter: minViaDiameter,
             min_track_width: minTrackWidth,
             min_through_hole_diameter: minViaDrill, // Minimum Drill Size in kicad ui constraints
