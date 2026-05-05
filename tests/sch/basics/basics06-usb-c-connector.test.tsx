@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import type { PartsEngine } from "@tscircuit/props"
 import type { AnyCircuitElement } from "circuit-json"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -109,4 +110,21 @@ test("sch basics06 usb-c connector", async () => {
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
+
+  const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson as any)
+  pcbConverter.runUntilFinished()
+
+  const kicadPcbSnapshot = await takeKicadSnapshot({
+    kicadFileContent: pcbConverter.getOutputString(),
+    kicadFileType: "pcb",
+  })
+
+  expect(kicadPcbSnapshot.exitCode).toBe(0)
+
+  expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
+      kicadPcbSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path, "basics06-usb-c-connector-pcb")
 })
