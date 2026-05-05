@@ -33,7 +33,13 @@ export function createCircleFromPrimitive({
   c._sxStroke = stroke
 
   const fill = new SymbolCircleFill()
-  fill.type = primitive.fill ? "background" : "none"
+  fill.type = "none"
+  if (primitive.fill) {
+    fill.type = "background"
+    if (primitive.kicadFillType === "outline") {
+      fill.type = "outline"
+    }
+  }
   c._sxFill = fill
 
   return circle

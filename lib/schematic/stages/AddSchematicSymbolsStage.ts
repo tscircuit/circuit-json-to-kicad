@@ -139,14 +139,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Get component metadata
       const { reference, value, description } =
         this.getComponentMetadata(sourceComponent)
-      const hasChipManufacturerValue =
-        sourceComponent.ftype === "simple_chip" &&
+      const hasManufacturerValueForValuePlacement =
+        (sourceComponent.ftype === "simple_chip" ||
+          sourceComponent.ftype === "simple_connector") &&
         Boolean(sourceComponent.manufacturer_part_number)
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions(
         schematicComponent,
-        hasChipManufacturerValue,
+        hasManufacturerValueForValuePlacement,
       )
 
       // Check for kicadSymbolMetadata from circuit-json element
@@ -177,7 +178,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       const hideValue =
         (sourceComponent.ftype === "simple_chip" &&
-          !hasChipManufacturerValue) ||
+          !hasManufacturerValueForValuePlacement) ||
         sourceComponent.ftype === "simple_pin_header"
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
@@ -580,6 +581,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         reference,
         value: sourceComp.display_max_resistance || "",
         description: "Potentiometer",
+      }
+    }
+    if (sourceComp.ftype === "simple_connector") {
+      return {
+        reference,
+        value: sourceComp.manufacturer_part_number || "",
+        description: "Connector",
       }
     }
 
