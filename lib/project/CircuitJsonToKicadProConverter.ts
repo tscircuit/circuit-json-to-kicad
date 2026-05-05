@@ -160,7 +160,8 @@ export class CircuitJsonToKicadProConverter {
     const minViaDiameter = pcbBoard?.min_via_pad_diameter ?? 0.3
     const minViaDrill = pcbBoard?.min_via_hole_diameter ?? 0.2
     const minViaAnnularWidth = (minViaDiameter - minViaDrill) / 2
-    const minTraceToPadSpacing = pcbBoard?.min_trace_to_pad_spacing ?? 0.1
+    const minTraceToPadSpacing = pcbBoard?.min_trace_to_pad_edge_clearance ??
+      0.1
     const minTrackWidth = pcbBoard?.min_trace_width ?? 0.1
     const netClasses: KicadProNetClass[] = [
       this.createBaseNetClass({
