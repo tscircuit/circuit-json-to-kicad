@@ -42,7 +42,7 @@ test("generates KiCad net classes from source net settings", async () => {
 
   expect(defaultClass).toMatchObject({
     name: "Default",
-    track_width: 0.16,
+    track_width: 0.1,
     clearance: 0.1,
     via_diameter: 0.3,
     via_drill: 0.2,

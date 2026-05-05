@@ -8,7 +8,7 @@ export function createPolylineFromPoints({
 }: {
   points: Array<{ x: number; y: number }>
   transform: Matrix
-  fillType: "none" | "background"
+  fillType: "none" | "background" | "outline"
 }): SymbolPolyline {
   const polyline = new SymbolPolyline()
 

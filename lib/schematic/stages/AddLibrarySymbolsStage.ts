@@ -143,6 +143,71 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       )
     }
 
+    const hasInnerSymbolPrimitives = this.hasComponentLevelSymbolPrimitives(
+      schematicComponent.schematic_component_id,
+    )
+
+    if (hasInnerSymbolPrimitives) {
+      const innerSymbolData = buildSymbolDataFromSchematicPrimitives({
+        circuitJson: this.ctx.circuitJson,
+        schematicComponentId: schematicComponent.schematic_component_id,
+        schematicComponentCenter: schematicComponent.center,
+        schematicComponentSize: schematicComponent.size,
+        schematicSymbol: {
+          center: schematicComponent.center,
+          size: schematicComponent.size,
+        },
+      })
+
+      if (innerSymbolData.primitives?.length > 0) {
+        const baseSymbolData = createGenericChipSymbolData(
+          schematicComponent,
+          this.ctx.db,
+        )
+        const innerPrimitivesWithFillHints = (
+          innerSymbolData.primitives || []
+        ).map((primitive: any) => {
+          if (primitive.fill && primitive.fillColor) {
+            return { ...primitive, kicadFillType: "outline" }
+          }
+          return primitive
+        })
+        const symbolData = {
+          ...baseSymbolData,
+          // Keep the generic box and ports, append component-level inner artwork.
+          primitives: [
+            ...(baseSymbolData.primitives || []),
+            ...innerPrimitivesWithFillHints,
+          ],
+          // Avoid duplicate U1/MPN text: Value/Reference are emitted as properties.
+          texts: [],
+        }
+
+        const libId = getLibraryId(sourceComp, schematicComponent, cadComponent)
+        const footprintName = getKicadCompatibleComponentName(
+          sourceComp,
+          cadComponent,
+        )
+        let footprintRef = ""
+        if (footprintName) {
+          footprintRef = `tscircuit:${footprintName}`
+        }
+
+        return this.createLibrarySymbol({
+          libId,
+          symbolData,
+          isChip: true,
+          schematicComponent,
+          description: this.getDescription(sourceComp),
+          keywords: this.getKeywords(sourceComp),
+          fpFilters: this.getFpFilters(sourceComp),
+          footprintRef,
+          referencePrefix: getReferencePrefixForComponent(sourceComp),
+          symbolScale: this.ctx.kicadSchematicScaleFactor!,
+        })
+      }
+    }
+
     const symbolName =
       schematicComponent.symbol_name ||
       (sourceComp.ftype === "simple_chip" ||
@@ -158,7 +223,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const libId = getLibraryId(sourceComp, schematicComponent, cadComponent)
     const isChip =
       sourceComp.ftype === "simple_chip" ||
-      sourceComp.ftype === "simple_pin_header"
+      sourceComp.ftype === "simple_pin_header" ||
+      sourceComp.ftype === "simple_connector"
 
     // Get footprint name for symbol-footprint linkage using ergonomic naming
     const footprintName = getKicadCompatibleComponentName(
@@ -406,6 +472,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (sourceComp?.ftype === "simple_resistor") return "Resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "Capacitor"
     if (sourceComp?.ftype === "simple_chip") return "Integrated Circuit"
+    if (sourceComp?.ftype === "simple_connector") return "Connector"
     return "Component"
   }
 
@@ -413,6 +480,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (sourceComp?.ftype === "simple_resistor") return "R res resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "C cap capacitor"
     if (sourceComp?.ftype === "simple_chip") return "U IC chip"
+    if (sourceComp?.ftype === "simple_connector") return "connector"
     return ""
   }
 
@@ -425,7 +493,23 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (sourceComp?.ftype === "simple_resistor") return "R_*"
     if (sourceComp?.ftype === "simple_capacitor") return "C_*"
     if (sourceComp?.ftype === "simple_chip") return "*"
+    if (sourceComp?.ftype === "simple_connector") return "*"
     return "*"
+  }
+
+  private hasComponentLevelSymbolPrimitives(
+    schematicComponentId: string | undefined,
+  ): boolean {
+    if (!schematicComponentId) return false
+    return this.ctx.circuitJson.some(
+      (el: any) =>
+        (el.type === "schematic_path" ||
+          el.type === "schematic_circle" ||
+          el.type === "schematic_line" ||
+          el.type === "schematic_text") &&
+        el.schematic_component_id === schematicComponentId &&
+        !el.schematic_symbol_id,
+    )
   }
 
   override getOutput(): KicadSch {

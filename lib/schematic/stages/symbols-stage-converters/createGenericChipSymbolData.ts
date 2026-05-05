@@ -22,6 +22,7 @@ export function createGenericChipSymbolData(
 
   const boxPath = {
     type: "path",
+    fill: true,
     points: [
       { x: -width / 2, y: -height / 2 },
       { x: width / 2, y: -height / 2 },

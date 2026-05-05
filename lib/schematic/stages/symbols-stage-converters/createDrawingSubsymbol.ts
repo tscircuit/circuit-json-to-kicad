@@ -33,7 +33,13 @@ export function createDrawingSubsymbol({
 
   for (const primitive of symbolData.primitives || []) {
     if (primitive.type === "path" && primitive.points) {
-      const fillType = isChip || primitive.fill ? "background" : "none"
+      let fillType: "none" | "background" | "outline" = "none"
+      if (primitive.fill) {
+        fillType = "background"
+        if (primitive.kicadFillType === "outline") {
+          fillType = "outline"
+        }
+      }
       const polyline = createPolylineFromPoints({
         points: primitive.points,
         transform,
