@@ -61,6 +61,7 @@ test("pcb repro06 plated hole", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(

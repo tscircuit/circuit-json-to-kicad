@@ -12,6 +12,32 @@ export interface KicadOutput {
   generatedFileContent: Record<FilePath, FileContent>
 }
 
+const KICAD_10_DRILL_FILL_STYLE =
+  "fill:#000000; fill-opacity:1.0000; stroke:none;"
+const KICAD_10_OVAL_HOLE_STROKE_REGEX =
+  /(<g style="fill:none;\s*stroke:)#000000(; stroke-width:[^"]*stroke-linecap:round; stroke-linejoin:round;">)/g
+
+/**
+ * KiCad 10 renders circular drill holes as filled black circles and pill/oval
+ * drill holes as black stroked round-cap paths in SVG exports. This helper can
+ * remap those hole colors for snapshot readability without changing the KiCad
+ * PCB data itself.
+ */
+export function normalizePcbSvgForSnapshot(
+  svg: string,
+  pcbDrillHoleColor?: string,
+): string {
+  if (!pcbDrillHoleColor) {
+    return svg
+  }
+
+  const drillFillStyle = `fill:${pcbDrillHoleColor}; fill-opacity:1.0000; stroke:none;`
+
+  return svg
+    .replaceAll(KICAD_10_DRILL_FILL_STYLE, drillFillStyle)
+    .replace(KICAD_10_OVAL_HOLE_STROKE_REGEX, `$1${pcbDrillHoleColor}$2`)
+}
+
 /**
  * Executes kicad-cli commands e.g.
  * - kicad-cli sch export svg ./flat_hierarchy.kicad_sch -o out/svg --theme "Modern" --no-background-color
@@ -22,8 +48,10 @@ export const takeKicadSnapshot = async (params: {
   kicadFilePath?: string
   kicadFileContent?: string
   kicadFileType: "sch" | "pcb" | "3d"
+  pcbDrillHoleColor?: string
 }): Promise<KicadOutput> => {
-  const { kicadFilePath, kicadFileContent, kicadFileType } = params
+  const { kicadFilePath, kicadFileContent, kicadFileType, pcbDrillHoleColor } =
+    params
 
   // Check to make sure kicad-cli is installed
   const kicadCliVersion = await $`kicad-cli --version`
@@ -105,8 +133,17 @@ export const takeKicadSnapshot = async (params: {
 
     // Convert each SVG to PNG using sharp
     for (const svgFilePath of svgFilePaths) {
-      const svgBuffer = await readFile(svgFilePath)
-      let pngProcessor = sharp(svgBuffer, { density: 100 })
+      const rawSvgBuffer = await readFile(svgFilePath)
+      const normalizedSvgBuffer =
+        kicadFileType === "pcb"
+          ? Buffer.from(
+              normalizePcbSvgForSnapshot(
+                rawSvgBuffer.toString("utf8"),
+                pcbDrillHoleColor,
+              ),
+            )
+          : rawSvgBuffer
+      let pngProcessor = sharp(normalizedSvgBuffer, { density: 100 })
 
       // For PCB files, scale 3x and add black background
       if (kicadFileType === "pcb") {

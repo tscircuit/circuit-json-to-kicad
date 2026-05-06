@@ -34,6 +34,7 @@ test("pcb basics14-npth-shapes", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: kicadOutput,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)
