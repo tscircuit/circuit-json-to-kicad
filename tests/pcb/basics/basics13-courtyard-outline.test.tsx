@@ -67,6 +67,7 @@ test("pcb_courtyard_outline is converted to KiCad fp_poly on courtyard layer", a
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)

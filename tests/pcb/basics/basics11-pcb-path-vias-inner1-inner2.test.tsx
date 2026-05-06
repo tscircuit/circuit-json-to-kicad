@@ -67,6 +67,7 @@ test("pcb basics09 pcbPath vias inner1 inner2", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)

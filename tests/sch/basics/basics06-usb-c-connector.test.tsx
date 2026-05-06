@@ -117,6 +117,7 @@ test("sch basics06 usb-c connector", async () => {
   const kicadPcbSnapshot = await takeKicadSnapshot({
     kicadFileContent: pcbConverter.getOutputString(),
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(kicadPcbSnapshot.exitCode).toBe(0)

@@ -1,7 +1,34 @@
 import { test, expect } from "bun:test"
 import { join } from "node:path"
-import { takeKicadSnapshot } from "./take-kicad-snapshot"
+import {
+  normalizePcbSvgForSnapshot,
+  takeKicadSnapshot,
+} from "./take-kicad-snapshot"
 import "./png-matcher"
+
+test("normalizePcbSvgForSnapshot remaps both circular and oval drill holes", () => {
+  const inputSvg = `
+<svg>
+  <g style="fill:#000000; fill-opacity:1.0000; stroke:none;">
+    <circle cx="5.0000" cy="45.0000" r="1.6000" />
+  </g>
+  <g style="fill:none;
+stroke:#000000; stroke-width:2.0000; stroke-opacity:1;
+stroke-linecap:round; stroke-linejoin:round;">
+    <path d="M15.0000 4.0000
+L15.0000 6.0000" />
+  </g>
+</svg>
+`
+
+  const normalizedSvg = normalizePcbSvgForSnapshot(inputSvg, "pink")
+
+  expect(normalizedSvg).toContain(
+    'style="fill:pink; fill-opacity:1.0000; stroke:none;"',
+  )
+  expect(normalizedSvg).toContain("stroke:pink; stroke-width:2.0000;")
+  expect(normalizedSvg).toContain('<circle cx="5.0000" cy="45.0000"')
+})
 
 test("takeKicadSnapshot - schematic export", async () => {
   console.log("Testing KiCad schematic snapshot...")

@@ -55,6 +55,7 @@ test("standalone hole footprint naming", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(

@@ -68,6 +68,7 @@ test("pcb basics06 - plated hole with hole offsets", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: kicadOutput,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)

@@ -58,6 +58,7 @@ test("pcb_courtyard_rect is converted to KiCad fp_rect on courtyard layer", asyn
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)

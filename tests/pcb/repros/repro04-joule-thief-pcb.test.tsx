@@ -27,6 +27,7 @@ test("pcb repro04 joule thief", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFilePath,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)
