@@ -22,6 +22,24 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
     this.pcbTraces = this.ctx.db.pcb_trace.list()
   }
 
+  private getRoutePointPosition(point: any, edge: "start" | "end") {
+    const position =
+      typeof point.x === "number" && typeof point.y === "number"
+        ? { x: point.x, y: point.y }
+        : point[edge]
+
+    if (
+      typeof position?.x !== "number" ||
+      typeof position?.y !== "number" ||
+      !Number.isFinite(position.x) ||
+      !Number.isFinite(position.y)
+    ) {
+      return null
+    }
+
+    return position
+  }
+
   override _step(): void {
     const { kicadPcb, c2kMatPcb, pcbNetMap } = this.ctx
 
@@ -52,16 +70,27 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
     for (let i = 0; i < trace.route.length - 1; i++) {
       const startPoint = trace.route[i]
       const endPoint = trace.route[i + 1]
+      const startPosition = this.getRoutePointPosition(startPoint, "end")
+      const endPosition = this.getRoutePointPosition(endPoint, "start")
+
+      if (!startPosition || !endPosition) continue
 
       // Transform points to KiCad coordinates
       const transformedStart = applyToPoint(c2kMatPcb, {
-        x: startPoint.x,
-        y: startPoint.y,
+        x: startPosition.x,
+        y: startPosition.y,
       })
       const transformedEnd = applyToPoint(c2kMatPcb, {
-        x: endPoint.x,
-        y: endPoint.y,
+        x: endPosition.x,
+        y: endPosition.y,
       })
+
+      if (
+        transformedStart.x === transformedEnd.x &&
+        transformedStart.y === transformedEnd.y
+      ) {
+        continue
+      }
 
       let netInfo: PcbNetInfo | undefined
       if (pcbNetMap) {
