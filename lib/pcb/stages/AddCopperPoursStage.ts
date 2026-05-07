@@ -11,13 +11,13 @@ import { Zone } from "kicadts"
 import {
   applyToPoint,
   compose,
+  type Matrix,
   rotate,
   translate,
-  type Matrix,
 } from "transformation-matrix"
 import {
-  ConverterStage,
   type ConverterContext,
+  ConverterStage,
   type PcbNetInfo,
 } from "../../types"
 import { getKicadLayer } from "../utils/layerMapping"
@@ -136,6 +136,7 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
         ["filled_areas_thickness", "no"],
         ["fill", "yes", ["thermal_gap", 0.5], ["thermal_bridge_width", 0.5]],
         ["polygon", ["pts", ...polygonPoints]],
+        ["filled_polygon", ["layer", kicadLayer], ["pts", ...polygonPoints]],
       ]
 
       const zones = kicadPcb.zones
