@@ -125,6 +125,7 @@ test(
     const pcbSnapshot = await takeKicadSnapshot({
       kicadFileContent: pcbConverter.getOutputString(),
       kicadFileType: "pcb",
+      pcbDrillHoleColor: "white",
     })
     expect(pcbSnapshot.exitCode).toBe(0)
 

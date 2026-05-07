@@ -30,6 +30,7 @@ test("motor controller pcb", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
   })
 
   expect(
