@@ -60,6 +60,28 @@ const getPolygonPoints = (
   })
 }
 
+const rotatePointsToTopRight = (
+  points: Array<(string | number)[]>,
+): Array<(string | number)[]> => {
+  if (points.length < 2) return points
+
+  let startIndex = 0
+  for (let i = 1; i < points.length; i++) {
+    const point = points[i]
+    const startPoint = points[startIndex]
+    if (!point || !startPoint) continue
+
+    const x = point[1] as number
+    const y = point[2] as number
+    const startX = startPoint[1] as number
+    const startY = startPoint[2] as number
+
+    if (x > startX || (x === startX && y > startY)) startIndex = i
+  }
+
+  return [...points.slice(startIndex), ...points.slice(0, startIndex)]
+}
+
 const getRectRingPoints = (
   pour: PcbCopperPourRect,
   c2kMatPcb: Matrix,
@@ -79,7 +101,7 @@ const getRectRingPoints = (
     { x: -halfWidth, y: halfHeight },
   ].map((corner) => applyToPoint(cornerTransform, corner))
 
-  return getPolygonPoints(corners, c2kMatPcb)
+  return rotatePointsToTopRight(getPolygonPoints(corners, c2kMatPcb))
 }
 
 const getCopperPourPolygonPoints = (
@@ -91,11 +113,15 @@ const getCopperPourPolygonPoints = (
   }
 
   if (pour.shape === "polygon") {
-    return getPolygonPoints((pour as PcbCopperPourPolygon).points, c2kMatPcb)
+    return rotatePointsToTopRight(
+      getPolygonPoints((pour as PcbCopperPourPolygon).points, c2kMatPcb),
+    )
   }
 
   const outerRing = (pour as PcbCopperPourBRep).brep_shape?.outer_ring
-  return outerRing ? getRingPoints(outerRing, c2kMatPcb) : []
+  return outerRing
+    ? rotatePointsToTopRight(getRingPoints(outerRing, c2kMatPcb))
+    : []
 }
 
 export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {

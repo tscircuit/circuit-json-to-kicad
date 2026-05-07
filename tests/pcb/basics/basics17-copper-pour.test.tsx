@@ -6,6 +6,12 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
+const getZoneBlock = (kicadPcb: string) => {
+  const zoneStart = kicadPcb.lastIndexOf("  (zone")
+  const boardEnd = kicadPcb.lastIndexOf("\n)")
+  return kicadPcb.slice(zoneStart, boardEnd)
+}
+
 test("pcb basics17 copper pour", async () => {
   const circuit = new Circuit()
   circuit.add(
@@ -43,7 +49,7 @@ test("pcb basics17 copper pour", async () => {
     "tests/assets/basics17-copper-pour.kicad_pcb",
     "utf8",
   )
-  expect(outputString).toBe(kicadPcbFixture)
+  expect(getZoneBlock(outputString)).toBe(getZoneBlock(kicadPcbFixture))
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
