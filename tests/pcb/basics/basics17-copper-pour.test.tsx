@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { readFile } from "node:fs/promises"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -37,6 +38,12 @@ test("pcb basics17 copper pour", async () => {
   expect(outputString).toContain("(zone")
   expect(outputString).toContain("(layer F.Cu)")
   expect(outputString).toContain("(filled_polygon")
+
+  const kicadPcbFixture = await readFile(
+    "tests/assets/basics17-copper-pour.kicad_pcb",
+    "utf8",
+  )
+  expect(outputString).toBe(kicadPcbFixture)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
