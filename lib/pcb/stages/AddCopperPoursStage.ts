@@ -51,7 +51,7 @@ const getCopperPourNetInfo = (
 }
 
 const getRingPoints = (ring: Ring, c2kMatPcb: Matrix): Xy[] => {
-  return (ring.vertices ?? []).map((point) => {
+  return (ring.vertices).map((point) => {
     const transformedPoint = applyToPoint(c2kMatPcb, point)
     return new Xy(transformedPoint.x, transformedPoint.y)
   })
@@ -154,11 +154,11 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       const polygonPts = new Pts(polygonPoints)
       const zone = new Zone({
-        net: netInfo?.id ?? 0,
-        netName: netInfo?.name ?? "",
+        net: netInfo?.id ,
+        netName: netInfo?.name,
         layer: kicadLayer,
         uuid: generateDeterministicUuid(
-          `zone:${pour.pcb_copper_pour_id ?? ""}`,
+          `zone:${pour.pcb_copper_pour_id}`,
         ),
         hatch: new ZoneHatch("edge", 0.5),
         connectPads: new ZoneConnectPads({ enabled: true, clearance: 0.15 }),
