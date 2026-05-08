@@ -8,13 +8,11 @@ import type {
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import {
-  Layer,
   Pts,
   Xy,
   Zone,
   ZoneConnectPads,
   ZoneFill,
-  ZoneFilledPolygon,
   ZoneHatch,
   ZonePolygon,
 } from "kicadts"
@@ -170,12 +168,6 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
           thermalBridgeWidth: 0.5,
         }),
         polygons: [new ZonePolygon(polygonPts)],
-        filledPolygons: [
-          new ZoneFilledPolygon({
-            layer: new Layer([kicadLayer]),
-            pts: polygonPts,
-          }),
-        ],
       })
 
       const zones = kicadPcb.zones

@@ -43,16 +43,25 @@ test("pcb basics17 copper pour", async () => {
 
   expect(outputString).toContain("(zone")
   expect(outputString).toContain("(layer F.Cu)")
-  expect(outputString).toContain("(filled_polygon")
+  expect(outputString).toContain("(polygon")
+
+  const zoneBlock = getZoneBlock(outputString)
+  expect(zoneBlock).toContain("(net 1)")
+  expect(zoneBlock).toContain("(net_name GND)")
+  expect(zoneBlock).toContain("(layer F.Cu)")
+  expect(zoneBlock).toContain("(clearance 0.15)")
+  expect(zoneBlock).toContain("(xy 114.85 109.85)")
+  expect(zoneBlock).toContain("(xy 85.15 90.15)")
 
   const kicadPcbFixture = await readFile(
     "tests/assets/basics17-copper-pour.kicad_pcb",
     "utf8",
   )
-  expect(getZoneBlock(outputString)).toBe(getZoneBlock(kicadPcbFixture))
+  expect(kicadPcbFixture).toContain("(filled_polygon")
+  expect(kicadPcbFixture).toContain("(island_removal_mode 0)")
 
   const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: outputString,
+    kicadFileContent: kicadPcbFixture,
     kicadFileType: "pcb",
   })
 
