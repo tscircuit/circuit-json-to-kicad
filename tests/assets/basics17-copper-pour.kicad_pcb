@@ -354,7 +354,7 @@
         )
       )
     )
-    (property "Supplier Part Number" "C25744, C60490, C25531"
+    (property "Supplier Part Number" ""
       (at 0 0 0)
       (layer F.Fab)
       (hide yes)
@@ -481,7 +481,7 @@
         )
       )
     )
-    (property "Supplier Part Number" "C1525, C307331, C60474"
+    (property "Supplier Part Number" ""
       (at 0 0 0)
       (layer F.Fab)
       (hide yes)
@@ -564,6 +564,14 @@
     (uuid 10ae7f80-6ff9-3abf-0f5f-0b027148af3d)
   )
   (segment
+    (start 106.51 96)
+    (end 106.51 96)
+    (width 0.15)
+    (layer F.Cu)
+    (net 1)
+    (uuid 70359ec0-63cd-1ce0-5764-9b004afc1920)
+  )
+  (segment
     (start 106.51 104)
     (end 107.01 104)
     (width 0.15)
@@ -573,11 +581,27 @@
   )
   (segment
     (start 107.01 104)
+    (end 107.01 104)
+    (width 0.15)
+    (layer F.Cu)
+    (net 1)
+    (uuid 45e04130-25d0-3110-6e7f-5cb002ceea70)
+  )
+  (segment
+    (start 107.01 104)
     (end 107.167 104)
     (width 0.15)
     (layer F.Cu)
     (net 1)
     (uuid 60ef1fa0-5691-49ff-4c33-745e41d59ebd)
+  )
+  (segment
+    (start 107.167 104)
+    (end 107.167 104)
+    (width 0.15)
+    (layer F.Cu)
+    (net 1)
+    (uuid 04c83e04-3c94-a05c-7df1-7ebc40b1a2e4)
   )
   (segment
     (start 107.167 104)
@@ -610,6 +634,14 @@
     (layer B.Cu)
     (net 1)
     (uuid 5cd1ccbc-3875-b364-3242-cc7c6304b3a4)
+  )
+  (segment
+    (start 100.97003043769668 102.67003043769668)
+    (end 100.97003043769668 102.67003043769668)
+    (width 0.15)
+    (layer B.Cu)
+    (net 1)
+    (uuid 64fdd014-78d8-ce4c-56af-6cac34860b0c)
   )
   (segment
     (start 100.97003043769668 102.67003043769668)
@@ -697,11 +729,31 @@
     (layer F.Cu)
     (uuid 5647a1aa-3262-fbb6-44f2-66ea43b83676)
     (hatch edge 0.5)
-    (connect_pads yes (clearance 0.15))
+    (connect_pads yes
+      (clearance 0.15)
+    )
     (min_thickness 0.25)
     (filled_areas_thickness no)
-    (fill yes (thermal_gap 0.5) (thermal_bridge_width 0.5))
-    (polygon (pts (xy 114.85 109.85) (xy 85.15 109.85) (xy 85.15 90.15) (xy 114.85 90.15)))
-    (filled_polygon (layer F.Cu) (pts (xy 114.85 109.85) (xy 85.15 109.85) (xy 85.15 90.15) (xy 114.85 90.15)))
+    (fill yes
+      (thermal_gap 0.5)
+      (thermal_bridge_width 0.5)
+    )
+    (polygon
+      (pts
+        (xy 114.85 109.85)
+        (xy 85.15 109.85)
+        (xy 85.15 90.15)
+        (xy 114.85 90.15)
+      )
+    )
+    (filled_polygon
+      (layer F.Cu)
+      (pts
+        (xy 114.85 109.85)
+        (xy 85.15 109.85)
+        (xy 85.15 90.15)
+        (xy 114.85 90.15)
+      )
+    )
   )
 )

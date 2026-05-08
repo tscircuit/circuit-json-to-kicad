@@ -7,7 +7,17 @@ import type {
   Ring,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Zone } from "kicadts"
+import {
+  Layer,
+  Pts,
+  Xy,
+  Zone,
+  ZoneConnectPads,
+  ZoneFill,
+  ZoneFilledPolygon,
+  ZoneHatch,
+  ZonePolygon,
+} from "kicadts"
 import {
   applyToPoint,
   compose,
@@ -40,29 +50,24 @@ const getCopperPourNetInfo = (
   return ctx.pcbNetMap?.get(connectivityKey)
 }
 
-const getRingPoints = (
-  ring: Ring,
-  c2kMatPcb: Matrix,
-): Array<(string | number)[]> => {
+const getRingPoints = (ring: Ring, c2kMatPcb: Matrix): Xy[] => {
   return (ring.vertices ?? []).map((point) => {
     const transformedPoint = applyToPoint(c2kMatPcb, point)
-    return ["xy", transformedPoint.x, transformedPoint.y]
+    return new Xy(transformedPoint.x, transformedPoint.y)
   })
 }
 
 const getPolygonPoints = (
   points: Array<{ x: number; y: number }> | undefined,
   c2kMatPcb: Matrix,
-): Array<(string | number)[]> => {
+): Xy[] => {
   return (points ?? []).map((point) => {
     const transformedPoint = applyToPoint(c2kMatPcb, point)
-    return ["xy", transformedPoint.x, transformedPoint.y]
+    return new Xy(transformedPoint.x, transformedPoint.y)
   })
 }
 
-const rotatePointsToTopRight = (
-  points: Array<(string | number)[]>,
-): Array<(string | number)[]> => {
+const rotatePointsToTopRight = (points: Xy[]): Xy[] => {
   if (points.length < 2) return points
 
   let startIndex = 0
@@ -71,12 +76,12 @@ const rotatePointsToTopRight = (
     const startPoint = points[startIndex]
     if (!point || !startPoint) continue
 
-    const x = point[1] as number
-    const y = point[2] as number
-    const startX = startPoint[1] as number
-    const startY = startPoint[2] as number
-
-    if (x > startX || (x === startX && y > startY)) startIndex = i
+    if (
+      point.x > startPoint.x ||
+      (point.x === startPoint.x && point.y > startPoint.y)
+    ) {
+      startIndex = i
+    }
   }
 
   return [...points.slice(startIndex), ...points.slice(0, startIndex)]
@@ -85,7 +90,7 @@ const rotatePointsToTopRight = (
 const getRectRingPoints = (
   pour: PcbCopperPourRect,
   c2kMatPcb: Matrix,
-): Array<(string | number)[]> => {
+): Xy[] => {
   const ccwRotationDegrees = pour.rotation ?? 0
   const cornerTransform = compose(
     translate(pour.center.x, pour.center.y),
@@ -107,7 +112,7 @@ const getRectRingPoints = (
 const getCopperPourPolygonPoints = (
   pour: PcbCopperPour,
   c2kMatPcb: Matrix,
-): Array<(string | number)[]> => {
+): Xy[] => {
   if (pour.shape === "rect") {
     return getRectRingPoints(pour, c2kMatPcb)
   }
@@ -147,23 +152,31 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
       const netInfo = getCopperPourNetInfo(pour, this.ctx)
       const kicadLayer = getKicadLayer(pour.layer)
 
-      const zone = new Zone()
-      zone.rawChildren = [
-        ["net", netInfo?.id ?? 0],
-        ["net_name", netInfo?.name ?? ""],
-        ["layer", kicadLayer],
-        [
-          "uuid",
-          generateDeterministicUuid(`zone:${pour.pcb_copper_pour_id ?? ""}`),
+      const polygonPts = new Pts(polygonPoints)
+      const zone = new Zone({
+        net: netInfo?.id ?? 0,
+        netName: netInfo?.name ?? "",
+        layer: kicadLayer,
+        uuid: generateDeterministicUuid(
+          `zone:${pour.pcb_copper_pour_id ?? ""}`,
+        ),
+        hatch: new ZoneHatch("edge", 0.5),
+        connectPads: new ZoneConnectPads({ enabled: true, clearance: 0.15 }),
+        minThickness: 0.25,
+        filledAreasThickness: false,
+        fill: new ZoneFill({
+          filled: true,
+          thermalGap: 0.5,
+          thermalBridgeWidth: 0.5,
+        }),
+        polygons: [new ZonePolygon(polygonPts)],
+        filledPolygons: [
+          new ZoneFilledPolygon({
+            layer: new Layer([kicadLayer]),
+            pts: polygonPts,
+          }),
         ],
-        ["hatch", "edge", 0.5],
-        ["connect_pads", "yes", ["clearance", 0.15]],
-        ["min_thickness", 0.25],
-        ["filled_areas_thickness", "no"],
-        ["fill", "yes", ["thermal_gap", 0.5], ["thermal_bridge_width", 0.5]],
-        ["polygon", ["pts", ...polygonPoints]],
-        ["filled_polygon", ["layer", kicadLayer], ["pts", ...polygonPoints]],
-      ]
+      })
 
       const zones = kicadPcb.zones
       zones.push(zone)
