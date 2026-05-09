@@ -10,6 +10,7 @@ const Repro20RotatedChipPillPlatedHole = () => (
   <board width="11mm" height="11mm">
     <chip
       pcbRotation={-90}
+      pcbY={-5}
       name="U1"
       footprint={
         <footprint>
