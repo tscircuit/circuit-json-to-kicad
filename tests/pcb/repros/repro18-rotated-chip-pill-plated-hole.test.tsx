@@ -1,4 +1,5 @@
 import { test, expect } from "bun:test"
+import { readFile } from "node:fs/promises"
 import { Circuit } from "tscircuit"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
@@ -43,6 +44,16 @@ test("pcb repro18 rotated chip pill plated hole", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
+  const expectedKicadPcb = await readFile(
+    "tests/assets/repro18-rotated-chip-pill-plated-hole.kicad_pcb",
+    "utf8",
+  )
+  const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
+  const footprint = kicadPcb.footprints[0]
+  const pad = footprint?.fpPads.find((candidate) => candidate.number === "13")
+
+  expect(outputString).toBe(expectedKicadPcb)
+  expect(pad?.at?.angle).toBe(270)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
