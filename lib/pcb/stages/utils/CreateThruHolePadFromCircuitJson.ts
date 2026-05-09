@@ -4,7 +4,6 @@ import { applyToPoint, rotate, identity } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
-const normalizeDegrees = (degrees: number) => ((degrees % 360) + 360) % 360
 
 export function createThruHolePadFromCircuitJson({
   platedHole,
@@ -79,7 +78,7 @@ export function createThruHolePadFromCircuitJson({
   } else if (platedHole.shape === "pill" || platedHole.shape === "oval") {
     // Pill-shaped plated hole (oval)
     padShape = "oval"
-    rotation = normalizeDegrees((platedHole.ccw_rotation || 0) - 180)
+    rotation = platedHole.ccw_rotation || 0
     padSize = [platedHole.outer_width, platedHole.outer_height]
     drill = new PadDrill({
       oval: true,
