@@ -6,11 +6,10 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
-const Repro20RotatedChipPillPlatedHole = () => (
+const Repro18RotatedChipPillPlatedHole = () => (
   <board width="11mm" height="11mm">
     <chip
       pcbRotation={-90}
-      pcbY={-5}
       name="U1"
       footprint={
         <footprint>
@@ -31,11 +30,11 @@ const Repro20RotatedChipPillPlatedHole = () => (
   </board>
 )
 
-export default Repro20RotatedChipPillPlatedHole
+export default Repro18RotatedChipPillPlatedHole
 
-test("pcb repro20 rotated chip pill plated hole", async () => {
+test("pcb repro18 rotated chip pill plated hole", async () => {
   const circuit = new Circuit()
-  circuit.add(<Repro20RotatedChipPillPlatedHole />)
+  circuit.add(<Repro18RotatedChipPillPlatedHole />)
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
 
@@ -59,6 +58,7 @@ test("pcb repro20 rotated chip pill plated hole", async () => {
         outputType: "pcb",
       }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
+      { kicadCanvasHeight: 180 },
     ),
   ).toMatchPngSnapshot(import.meta.path)
 })

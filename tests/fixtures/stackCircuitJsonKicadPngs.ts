@@ -3,6 +3,9 @@ import sharp from "sharp"
 export const stackCircuitJsonKicadPngs = async (
   circuitJsonPng: Buffer,
   kicadPng: Buffer,
+  options?: {
+    kicadCanvasHeight?: number
+  },
 ): Promise<Buffer> => {
   const labelFontSize = 24
   const labelPadding = 8
@@ -17,10 +20,14 @@ export const stackCircuitJsonKicadPngs = async (
   const cjHeight = cjMetadata.height || 0
   const kicadWidth = kicadMetadata.width || 0
   const kicadHeight = kicadMetadata.height || 0
+  const kicadCanvasHeight = Math.max(
+    kicadHeight,
+    options?.kicadCanvasHeight ?? 0,
+  )
 
   // Calculate canvas dimensions
   const maxWidth = Math.max(cjWidth, kicadWidth)
-  const totalHeight = cjHeight + kicadHeight
+  const totalHeight = cjHeight + kicadCanvasHeight
 
   // Create text labels as SVG with black background and white text
   const createLabel = (text: string) => {
