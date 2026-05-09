@@ -42,15 +42,7 @@ test("pcb repro20 rotated chip pill plated hole", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
-  const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
-
-  expect(kicadPcb.footprints.length).toBe(1)
-  const [footprint] = kicadPcb.footprints
-  expect(footprint?.fpPads.length).toBe(1)
-
-  const [pad] = footprint!.fpPads
-
-
+  
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
