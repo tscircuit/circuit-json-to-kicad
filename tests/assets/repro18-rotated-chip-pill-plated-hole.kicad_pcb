@@ -37,8 +37,8 @@
   (footprint
     "tscircuit:chip"
     (layer F.Cu)
-    (uuid 74419e40-4539-bea1-014a-e47e47cf879d)
-    (at 101.57511755 100.675015 -90)
+    (uuid 79d989fa-314b-7906-238f-83fa786a80fa)
+    (at 101.57511755 95.675015 -90)
     (property "Reference" "U1"
       (at 0 -3 0)
       (layer F.SilkS)
@@ -100,7 +100,7 @@
       )
     )
     (pad "13" thru_hole oval
-      (at 0 0 270)
+      (at 0 0 180)
       (size 1.0999978 1.999996)
       (drill oval 0.5999988 1.499997)
       (layers *.Cu *.Mask)

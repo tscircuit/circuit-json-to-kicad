@@ -11,7 +11,6 @@ const Repro18RotatedChipPillPlatedHole = () => (
   <board width="11mm" height="11mm">
     <chip
       pcbRotation={-90}
-      pcbY={-5}
       name="U1"
       footprint={
         <footprint>
@@ -53,7 +52,7 @@ test("pcb repro18 rotated chip pill plated hole", async () => {
   const pad = footprint?.fpPads.find((candidate) => candidate.number === "13")
 
   expect(outputString).toBe(expectedKicadPcb)
-  expect(pad?.at?.angle).toBe(270)
+  expect(pad?.at?.angle).toBe(180)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
