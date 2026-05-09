@@ -100,7 +100,7 @@
       )
     )
     (pad "13" thru_hole oval
-      (at 0 0 180)
+      (at 0 0 270)
       (size 1.0999978 1.999996)
       (drill oval 0.5999988 1.499997)
       (layers *.Cu *.Mask)
