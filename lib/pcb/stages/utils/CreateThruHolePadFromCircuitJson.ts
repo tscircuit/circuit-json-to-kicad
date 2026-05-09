@@ -4,7 +4,6 @@ import { applyToPoint, rotate, identity } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
-
 export function createThruHolePadFromCircuitJson({
   platedHole,
   componentCenter,
