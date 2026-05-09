@@ -42,7 +42,7 @@ test("pcb repro20 rotated chip pill plated hole", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
-  
+
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
