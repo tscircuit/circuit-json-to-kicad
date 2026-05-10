@@ -27,13 +27,7 @@ test("repro11: schematic wire endpoints have at most 4 decimal places (no floati
         schY={0}
         connections={{ pin1: "R1.pin1" }}
       />
-      <resistor
-        name="R1"
-        resistance="100"
-        footprint="0402"
-        schX={3}
-        schY={0}
-      />
+      <resistor name="R1" resistance="100" footprint="0402" schX={3} schY={0} />
     </board>,
   )
 
