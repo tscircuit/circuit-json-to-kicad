@@ -1,0 +1,101 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`pcb copper pour - rect shape is exported as KiCad zone 1`] = `
+"(kicad_pcb
+  (version 20241229)
+  (generator circuit-json-to-kicad)
+  (generator_version 0.0.1)
+  (general
+    (thickness 1.6)
+  )
+  (paper
+    A4
+  )
+  (layers
+    (0 "F.Cu" signal)
+    (31 "B.Cu" signal)
+    (32 "B.Adhes" user)
+    (33 "F.Adhes" user)
+    (34 "B.Paste" user)
+    (35 "F.Paste" user)
+    (36 "B.SilkS" user)
+    (37 "F.SilkS" user)
+    (38 "B.Mask" user)
+    (39 "F.Mask" user)
+    (40 "Dwgs.User" user)
+    (41 "Cmts.User" user)
+    (42 "Eco1.User" user)
+    (43 "Eco2.User" user)
+    (44 "Edge.Cuts" user)
+    (45 "Margin" user)
+    (46 "B.CrtYd" user)
+    (47 "F.CrtYd" user)
+    (48 "B.Fab" user)
+    (49 "F.Fab" user)
+  )
+  (setup
+    (pad_to_mask_clearance 0)
+  )
+  (net 0 "")
+  (net 1 "GND")
+  (zone
+    (net 1)
+    (net_name GND)
+    (layer F.Cu)
+    (hatch edge 0.508)
+    (fill yes)
+    (uuid 3c16c552-3b3e-9d4e-4d6c-001229e9628e)
+    (polygon (pts (xy 95 105) (xy 105 105) (xy 105 95) (xy 95 95)))
+  )
+)"
+`;
+
+exports[`pcb copper pour - polygon shape is exported as KiCad zone 1`] = `
+"(kicad_pcb
+  (version 20241229)
+  (generator circuit-json-to-kicad)
+  (generator_version 0.0.1)
+  (general
+    (thickness 1.6)
+  )
+  (paper
+    A4
+  )
+  (layers
+    (0 "F.Cu" signal)
+    (31 "B.Cu" signal)
+    (32 "B.Adhes" user)
+    (33 "F.Adhes" user)
+    (34 "B.Paste" user)
+    (35 "F.Paste" user)
+    (36 "B.SilkS" user)
+    (37 "F.SilkS" user)
+    (38 "B.Mask" user)
+    (39 "F.Mask" user)
+    (40 "Dwgs.User" user)
+    (41 "Cmts.User" user)
+    (42 "Eco1.User" user)
+    (43 "Eco2.User" user)
+    (44 "Edge.Cuts" user)
+    (45 "Margin" user)
+    (46 "B.CrtYd" user)
+    (47 "F.CrtYd" user)
+    (48 "B.Fab" user)
+    (49 "F.Fab" user)
+  )
+  (setup
+    (pad_to_mask_clearance 0)
+  )
+  (net 0 "")
+  (net 1 "VCC")
+  (zone
+    (net 1)
+    (net_name VCC)
+    (layer B.Cu)
+    (hatch edge 0.508)
+    (fill yes)
+    (uuid 50f8034c-265d-5f54-624d-3e0c15082494)
+    (polygon (pts (xy 95 105) (xy 105 105) (xy 105 95) (xy 100 92) (xy 95 95)))
+  )
+)"
+`;
