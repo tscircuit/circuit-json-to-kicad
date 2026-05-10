@@ -1,15 +1,7 @@
 import type { CircuitJson } from "circuit-json"
+import type { Matrix } from "transformation-matrix"
 import type { KicadPcb } from "kicadts"
-import {
-  Zone,
-  ZoneFill,
-  ZoneHatch,
-  ZoneNet,
-  ZoneNetName,
-  ZonePolygon,
-  Pts,
-  Xy,
-} from "kicadts"
+import { Zone } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
@@ -47,8 +39,7 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
-    this.pours = (this.ctx.db.pcb_copper_pour?.list() ??
-      []) as CopperPourLike[]
+    this.pours = (this.ctx.db.pcb_copper_pour?.list() ?? []) as CopperPourLike[]
   }
 
   override _step(): void {
@@ -79,11 +70,8 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
     let netId = 0
     let netName = ""
     if (pcbNetMap && pour.source_net_id) {
-      // pcbNetMap is keyed by subcircuit_connectivity_map_key; we also try
-      // source_net_id directly since copper pours reference it that way.
       let netInfo = pcbNetMap.get(pour.source_net_id)
       if (!netInfo) {
-        // Fall back: scan for matching source_net
         const sourceNet = this.ctx.db.source_net?.get(pour.source_net_id)
         if (sourceNet?.subcircuit_connectivity_map_key) {
           netInfo = pcbNetMap.get(sourceNet.subcircuit_connectivity_map_key)
@@ -104,21 +92,23 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
       return
     }
 
-    const pts = new Pts(kicadPoints.map((p) => new Xy(p.x, p.y)))
-    const polygon = new ZonePolygon(pts)
-
-    const zone = new Zone({
-      net: new ZoneNet(netId),
-      netName: new ZoneNetName(netName || ""),
-      layer: kicadLayer,
-      hatch: new ZoneHatch("edge", 0.508),
-      fill: new ZoneFill({ filled: true }),
-      polygons: [polygon],
-    })
-
-    // Assign a deterministic UUID derived from pour identity + layer
     const seed = `copper_pour:${pour.pcb_copper_pour_id}:${kicadLayer}`
-    ;(zone as any)._sxUuid = { getString: () => `(uuid "${generateDeterministicUuid(seed)}")` }
+    const zone = new Zone()
+    zone.rawChildren = [
+      ["net", netId],
+      ["net_name", netName],
+      ["layer", kicadLayer],
+      ["hatch", "edge", 0.508],
+      ["fill", "yes"],
+      ["uuid", generateDeterministicUuid(seed)],
+      [
+        "polygon",
+        [
+          "pts",
+          ...kicadPoints.map((p): [string, number, number] => ["xy", p.x, p.y]),
+        ],
+      ],
+    ]
 
     const zones = kicadPcb.zones ?? []
     zones.push(zone)
@@ -127,7 +117,7 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
 
   private getKicadPoints(
     pour: CopperPourLike,
-    transform: import("transformation-matrix").Matrix,
+    transform: Matrix,
   ): Array<{ x: number; y: number }> {
     if (pour.shape === "rect") {
       if (
