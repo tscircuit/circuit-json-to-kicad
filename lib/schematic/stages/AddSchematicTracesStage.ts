@@ -75,10 +75,14 @@ export class AddSchematicTracesStage extends ConverterStage<
       y: edge.to.y,
     })
 
-    const x1 = from.x
-    const y1 = from.y
-    const x2 = to.x
-    const y2 = to.y
+    // Round to 4 decimal places (0.0001mm) to eliminate floating-point drift
+    // from the c2kMatSch matrix transformation, which can cause tiny misalignments
+    // that break wire-to-pin connectivity in KiCad (issues #283, #292).
+    const snap = (n: number) => Math.round(n * 10000) / 10000
+    const x1 = snap(from.x)
+    const y1 = snap(from.y)
+    const x2 = snap(to.x)
+    const y2 = snap(to.y)
 
     // Create points for the wire
     const pts = new Pts([new Xy(x1, y1), new Xy(x2, y2)])
@@ -107,10 +111,13 @@ export class AddSchematicTracesStage extends ConverterStage<
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
-    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+    const raw = applyToPoint(this.ctx.c2kMatSch, {
       x: junction.x,
       y: junction.y,
     })
+    const snap = (n: number) => Math.round(n * 10000) / 10000
+    const x = snap(raw.x)
+    const y = snap(raw.y)
 
     const kicadJunction = new Junction({
       at: [x, y],
