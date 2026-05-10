@@ -77,6 +77,7 @@ export function createThruHolePadFromCircuitJson({
   } else if (platedHole.shape === "pill" || platedHole.shape === "oval") {
     // Pill-shaped plated hole (oval)
     padShape = "oval"
+    rotation = platedHole.ccw_rotation || 0
     padSize = [platedHole.outer_width, platedHole.outer_height]
     drill = new PadDrill({
       oval: true,
