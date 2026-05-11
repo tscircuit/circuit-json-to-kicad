@@ -78,7 +78,7 @@ export class AddSchematicTracesStage extends ConverterStage<
     // Round to 4 decimal places (0.0001mm) to eliminate floating-point drift
     // from the c2kMatSch matrix transformation, which can cause tiny misalignments
     // that break wire-to-pin connectivity in KiCad (issues #283, #292).
-    const snap = (n: number) => Math.round(n * 10000) / 10000
+    const snap = (n: number) => Number(n.toFixed(4))
     const x1 = snap(from.x)
     const y1 = snap(from.y)
     const x2 = snap(to.x)
@@ -115,7 +115,7 @@ export class AddSchematicTracesStage extends ConverterStage<
       x: junction.x,
       y: junction.y,
     })
-    const snap = (n: number) => Math.round(n * 10000) / 10000
+    const snap = (n: number) => Number(n.toFixed(4))
     const x = snap(raw.x)
     const y = snap(raw.y)
 
