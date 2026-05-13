@@ -1,6 +1,4 @@
-import { CircuitJsonToKicadSchConverter } from "../lib/schematic/CircuitJsonToKicadSchConverter"
-import { CircuitJsonToKicadPcbConverter } from "../lib/pcb/CircuitJsonToKicadPcbConverter"
-import { CircuitJsonToKicadProConverter } from "../lib/project/CircuitJsonToKicadProConverter"
+import { convertCircuitJsonToKicadProjectZip } from "../lib/project/convertCircuitJsonToKicadProjectZip"
 
 // Get DOM elements
 const uploadArea = document.getElementById("uploadArea")!
@@ -95,30 +93,14 @@ convertBtn.addEventListener("click", async () => {
     // Get base filename without extension
     const baseName = currentFile!.name.replace(/\.json$/i, "")
 
-    // Convert to schematic
-    const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
-    schConverter.runUntilFinished()
-    const schContent = schConverter.getOutputString()
+    const zip = await convertCircuitJsonToKicadProjectZip(circuitJson, {
+      projectName: baseName,
+    })
+    const zipBlob = await zip.generateAsync({ type: "blob" })
 
-    // Convert to PCB
-    const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)
-    pcbConverter.runUntilFinished()
-    const pcbContent = pcbConverter.getOutputString()
+    downloadFile(`${baseName}_kicad_project.zip`, zipBlob)
 
-    // Convert to project file
-    const proConverter = new CircuitJsonToKicadProConverter(circuitJson)
-    proConverter.runUntilFinished()
-    const proContent = proConverter.getOutputString()
-
-    // Create zip file with all outputs
-    // For simplicity, we'll download them separately
-    // In a real app, you might want to use JSZip library
-
-    downloadFile(`${baseName}.kicad_sch`, schContent)
-    downloadFile(`${baseName}.kicad_pcb`, pcbContent)
-    downloadFile(`${baseName}.kicad_pro`, proContent)
-
-    showStatus("Conversion complete! Files downloaded.", "success")
+    showStatus("Conversion complete! Project zip downloaded.", "success")
     convertBtn.disabled = false
   } catch (error) {
     showStatus(
@@ -141,8 +123,11 @@ clearBtn.addEventListener("click", () => {
 })
 
 // Helper function to download a file
-function downloadFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/plain" })
+function downloadFile(filename: string, content: string | Blob) {
+  let blob = content
+  if (typeof content === "string") {
+    blob = new Blob([content], { type: "text/plain" })
+  }
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
