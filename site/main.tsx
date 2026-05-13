@@ -1,4 +1,8 @@
-import { convertCircuitJsonToKicadProjectZip } from "../lib/project/convertCircuitJsonToKicadProjectZip"
+import JSZip from "jszip"
+import { CircuitJsonToKicadPcbConverter } from "../lib/pcb/CircuitJsonToKicadPcbConverter"
+import { CircuitJsonToKicadSchConverter } from "../lib/schematic/CircuitJsonToKicadSchConverter"
+import { CircuitJsonToKicadProConverter } from "../lib/project/CircuitJsonToKicadProConverter"
+import { getKicadProject3dModelFiles } from "../lib/project/getKicadProject3dModelFiles"
 
 // Get DOM elements
 const uploadArea = document.getElementById("uploadArea")!
@@ -93,9 +97,43 @@ convertBtn.addEventListener("click", async () => {
     // Get base filename without extension
     const baseName = currentFile!.name.replace(/\.json$/i, "")
 
-    const zip = await convertCircuitJsonToKicadProjectZip(circuitJson, {
+    const schematicFileName = `${baseName}.kicad_sch`
+    const boardFileName = `${baseName}.kicad_pcb`
+    const projectFileName = `${baseName}.kicad_pro`
+
+    const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
+    schConverter.runUntilFinished()
+
+    const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson, {
+      includeBuiltin3dModels: true,
       projectName: baseName,
     })
+    pcbConverter.runUntilFinished()
+
+    const proConverter = new CircuitJsonToKicadProConverter(circuitJson, {
+      projectName: baseName,
+      schematicFilename: schematicFileName,
+      pcbFilename: boardFileName,
+    })
+    proConverter.runUntilFinished()
+
+    const zip = new JSZip()
+    zip.file(schematicFileName, schConverter.getOutputString())
+    zip.file(boardFileName, pcbConverter.getOutputString())
+    zip.file(projectFileName, proConverter.getOutputString())
+
+    const modelFiles = getKicadProject3dModelFiles({
+      projectName: baseName,
+      model3dSourcePaths: pcbConverter.getModel3dSourcePaths(),
+    })
+    for (const file of modelFiles) {
+      const response = await fetch(file.sourcePath)
+      if (!response.ok) {
+        throw new Error(`Failed to fetch 3D model from ${file.sourcePath}`)
+      }
+
+      zip.file(file.projectPath, await response.arrayBuffer())
+    }
     const zipBlob = await zip.generateAsync({ type: "blob" })
 
     downloadFile(`${baseName}_kicad_project.zip`, zipBlob)
