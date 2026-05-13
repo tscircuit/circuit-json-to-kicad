@@ -17,6 +17,7 @@ export const getKicadProject3dModelFiles = ({
   model3dSourcePaths,
 }: GetKicadProject3dModelFilesOptions): KicadProject3dModelFile[] => {
   const files: KicadProject3dModelFile[] = []
+  // Return paths only; callers decide how to fetch and package model files.
   for (const modelPath of model3dSourcePaths) {
     // Builtin tscircuit models share one KiCad 3D model folder.
     let shapesDir = `${projectName}.3dshapes`
