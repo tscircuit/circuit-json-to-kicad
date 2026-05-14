@@ -1,6 +1,8 @@
+import JSZip from "jszip"
 import { CircuitJsonToKicadSchConverter } from "../lib/schematic/CircuitJsonToKicadSchConverter"
 import { CircuitJsonToKicadPcbConverter } from "../lib/pcb/CircuitJsonToKicadPcbConverter"
 import { CircuitJsonToKicadProConverter } from "../lib/project/CircuitJsonToKicadProConverter"
+import { resolveAndLoadKicad3dModelFiles } from "../lib/utils/resolveAndLoadKicad3dModelFiles"
 
 // Get DOM elements
 const uploadArea = document.getElementById("uploadArea")!
@@ -95,30 +97,47 @@ convertBtn.addEventListener("click", async () => {
     // Get base filename without extension
     const baseName = currentFile!.name.replace(/\.json$/i, "")
 
-    // Convert to schematic
+    const schematicFileName = `${baseName}.kicad_sch`
+    const boardFileName = `${baseName}.kicad_pcb`
+    const projectFileName = `${baseName}.kicad_pro`
+
     const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
     schConverter.runUntilFinished()
-    const schContent = schConverter.getOutputString()
 
-    // Convert to PCB
-    const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)
+    const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson, {
+      includeBuiltin3dModels: true,
+      projectName: baseName,
+    })
     pcbConverter.runUntilFinished()
-    const pcbContent = pcbConverter.getOutputString()
 
-    // Convert to project file
-    const proConverter = new CircuitJsonToKicadProConverter(circuitJson)
+    const proConverter = new CircuitJsonToKicadProConverter(circuitJson, {
+      projectName: baseName,
+      schematicFilename: schematicFileName,
+      pcbFilename: boardFileName,
+    })
     proConverter.runUntilFinished()
-    const proContent = proConverter.getOutputString()
 
-    // Create zip file with all outputs
-    // For simplicity, we'll download them separately
-    // In a real app, you might want to use JSZip library
+    const zip = new JSZip()
+    zip.file(schematicFileName, schConverter.getOutputString())
+    zip.file(boardFileName, pcbConverter.getOutputString())
+    zip.file(projectFileName, proConverter.getOutputString())
 
-    downloadFile(`${baseName}.kicad_sch`, schContent)
-    downloadFile(`${baseName}.kicad_pcb`, pcbContent)
-    downloadFile(`${baseName}.kicad_pro`, proContent)
+    await resolveAndLoadKicad3dModelFiles({
+      projectName: baseName,
+      model3dSourcePaths: pcbConverter.getModel3dSourcePaths(),
+      fetch,
+      onModelFile: ({ outputPath, content }) => {
+        zip.file(outputPath, content)
+      },
+      onError: ({ sourcePath }) => {
+        console.warn(`Failed to load 3D model from ${sourcePath}`)
+      },
+    })
+    const zipBlob = await zip.generateAsync({ type: "blob" })
 
-    showStatus("Conversion complete! Files downloaded.", "success")
+    downloadFile(`${baseName}_kicad_project.zip`, zipBlob)
+
+    showStatus("Conversion complete! Project zip downloaded.", "success")
     convertBtn.disabled = false
   } catch (error) {
     showStatus(
@@ -141,8 +160,11 @@ clearBtn.addEventListener("click", () => {
 })
 
 // Helper function to download a file
-function downloadFile(filename: string, content: string) {
-  const blob = new Blob([content], { type: "text/plain" })
+function downloadFile(filename: string, content: string | Blob) {
+  let blob = content
+  if (typeof content === "string") {
+    blob = new Blob([content], { type: "text/plain" })
+  }
   const url = URL.createObjectURL(blob)
   const a = document.createElement("a")
   a.href = url
