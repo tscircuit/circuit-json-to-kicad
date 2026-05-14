@@ -54,14 +54,14 @@ test("pcb nets derive from source connectivity keys", async () => {
 
   for (const pad of padsWithNets) {
     expect(pad.net).toBeDefined()
-    expect(netIds.has(pad.net!.id)).toBe(true)
+    expect(netIds.has(pad.net!.id!)).toBe(true)
   }
 
   const segmentsWithNets = pcb.segments.filter((segment) => segment.net)
   expect(segmentsWithNets.length).toBeGreaterThan(0)
 
   for (const segment of segmentsWithNets) {
-    expect(netIds.has(segment.net!.id)).toBe(true)
+    expect(netIds.has(segment.net!.id!)).toBe(true)
   }
 
   const viasWithNets = pcb.vias.filter(
@@ -70,6 +70,6 @@ test("pcb nets derive from source connectivity keys", async () => {
   expect(viasWithNets.length).toBeGreaterThan(0)
 
   for (const via of viasWithNets) {
-    expect(netIds.has(via.net!.id)).toBe(true)
+    expect(netIds.has(via.net!.id!)).toBe(true)
   }
 })
