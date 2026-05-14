@@ -2,7 +2,7 @@ import JSZip from "jszip"
 import { CircuitJsonToKicadSchConverter } from "../lib/schematic/CircuitJsonToKicadSchConverter"
 import { CircuitJsonToKicadPcbConverter } from "../lib/pcb/CircuitJsonToKicadPcbConverter"
 import { CircuitJsonToKicadProConverter } from "../lib/project/CircuitJsonToKicadProConverter"
-import { resolveAndLoadKicad3dModelFiles } from "../lib/project/resolveAndLoadKicad3dModelFiles"
+import { resolveAndLoadKicad3dModelFiles } from "../lib/utils/resolveAndLoadKicad3dModelFiles"
 
 // Get DOM elements
 const uploadArea = document.getElementById("uploadArea")!
