@@ -31,6 +31,7 @@ const isBuiltinModelPath = (modelPath: string) =>
   modelPath.startsWith("https://modelcdn.tscircuit.com")
 
 const getModelFileName = (modelPath: string) => {
+  // Strip URL suffixes and normalize local paths before taking the filename.
   const modelPathWithoutQuery = modelPath.split("?")[0] || modelPath
   const modelPathWithoutHash =
     modelPathWithoutQuery.split("#")[0] || modelPathWithoutQuery
@@ -48,6 +49,7 @@ export const resolveAndLoadKicad3dModelFiles = async ({
   onError,
 }: ResolveAndLoadKicad3dModelFilesOptions) => {
   for (const sourcePath of model3dSourcePaths) {
+    // Builtin tscircuit models share one KiCad 3D model folder.
     let shapesDir = `${projectName}.3dshapes`
     if (isBuiltinModelPath(sourcePath)) {
       shapesDir = "tscircuit_builtin.3dshapes"
@@ -83,6 +85,7 @@ export const resolveAndLoadKicad3dModelFiles = async ({
         throw error
       }
 
+      // Callers such as the CLI can skip failed model loads and keep exporting.
       await onError({ sourcePath, error })
       continue
     }
