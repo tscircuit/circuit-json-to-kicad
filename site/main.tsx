@@ -1,8 +1,8 @@
 import JSZip from "jszip"
-import { CircuitJsonToKicadPcbConverter } from "../lib/pcb/CircuitJsonToKicadPcbConverter"
 import { CircuitJsonToKicadSchConverter } from "../lib/schematic/CircuitJsonToKicadSchConverter"
+import { CircuitJsonToKicadPcbConverter } from "../lib/pcb/CircuitJsonToKicadPcbConverter"
 import { CircuitJsonToKicadProConverter } from "../lib/project/CircuitJsonToKicadProConverter"
-import { getKicadProject3dModelFiles } from "../lib/project/getKicadProject3dModelFiles"
+import { resolveAndLoadKicad3dModelFiles } from "../lib/project/resolveAndLoadKicad3dModelFiles"
 
 // Get DOM elements
 const uploadArea = document.getElementById("uploadArea")!
@@ -122,18 +122,17 @@ convertBtn.addEventListener("click", async () => {
     zip.file(boardFileName, pcbConverter.getOutputString())
     zip.file(projectFileName, proConverter.getOutputString())
 
-    const modelFiles = getKicadProject3dModelFiles({
+    await resolveAndLoadKicad3dModelFiles({
       projectName: baseName,
       model3dSourcePaths: pcbConverter.getModel3dSourcePaths(),
+      fetch,
+      onModelFile: ({ outputPath, content }) => {
+        zip.file(outputPath, content)
+      },
+      onError: ({ sourcePath }) => {
+        console.warn(`Failed to load 3D model from ${sourcePath}`)
+      },
     })
-    for (const file of modelFiles) {
-      const response = await fetch(file.sourcePath)
-      if (!response.ok) {
-        throw new Error(`Failed to fetch 3D model from ${file.sourcePath}`)
-      }
-
-      zip.file(file.projectPath, await response.arrayBuffer())
-    }
     const zipBlob = await zip.generateAsync({ type: "blob" })
 
     downloadFile(`${baseName}_kicad_project.zip`, zipBlob)
