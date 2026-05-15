@@ -122,9 +122,17 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     })
 
     const footprintData = `footprint:${component.pcb_component_id}:${transformedPos.x},${transformedPos.y}`
+    // The (layer ...) line at the top of a (footprint ...) block is what
+    // KiCad reads to set the footprint's "Board Side" property. Pad-level
+    // layers within the footprint (B.Cu / B.Paste / B.Mask etc.) are
+    // already correctly emitted from CreateSmdPadFromCircuitJson, but
+    // without setting this header, KiCad shows "Front" for every component
+    // regardless of its actual side. Map the circuit-json `pcb_component`'s
+    // `layer` ("top"/"bottom") to the corresponding KiCad copper layer.
+    const footprintLayer = component.layer === "bottom" ? "B.Cu" : "F.Cu"
     const footprint = new Footprint({
       libraryLink: `tscircuit:${footprintName}`,
-      layer: "F.Cu",
+      layer: footprintLayer,
       at: [transformedPos.x, transformedPos.y, component.rotation || 0],
       uuid: generateDeterministicUuid(footprintData),
     })
