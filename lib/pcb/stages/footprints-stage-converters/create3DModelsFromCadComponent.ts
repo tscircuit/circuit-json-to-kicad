@@ -4,7 +4,7 @@ import { FootprintModel } from "kicadts"
 export function create3DModelsFromCadComponent(
   cadComponent: CadComponent,
   componentCenter: { x: number; y: number },
-  options?: { boardLayerZOffset?: number },
+  options?: { boardLayerZOffset?: number; componentRotationDegrees?: number },
 ): FootprintModel[] {
   const models: FootprintModel[] = []
 
@@ -21,18 +21,30 @@ export function create3DModelsFromCadComponent(
     // NOTE: unlike 2D footprint geometry, KiCad 3D model Y offsets map directly
     // from circuit-json local footprint Y. Do not mirror Y here.
     const boardLayerZOffset = options?.boardLayerZOffset ?? 0
+    const modelOriginPosition = cadComponent.model_origin_position
     model.offset = {
-      x: (cadComponent.position.x || 0) - componentCenter.x,
-      y: (cadComponent.position.y || 0) - componentCenter.y,
-      z: (cadComponent.position.z || 0) - boardLayerZOffset,
+      x:
+        (cadComponent.position.x || 0) -
+        componentCenter.x -
+        (modelOriginPosition?.x || 0),
+      y:
+        (cadComponent.position.y || 0) -
+        componentCenter.y -
+        (modelOriginPosition?.y || 0),
+      z:
+        (cadComponent.position.z || 0) -
+        boardLayerZOffset -
+        (modelOriginPosition?.z || 0),
     }
   }
 
   if (cadComponent.rotation) {
+    const componentRotationDegrees = options?.componentRotationDegrees ?? 0
+
     model.rotate = {
       x: cadComponent.rotation.x || 0,
       y: cadComponent.rotation.y || 0,
-      z: cadComponent.rotation.z || 0,
+      z: (cadComponent.rotation.z || 0) - componentRotationDegrees,
     }
   }
 

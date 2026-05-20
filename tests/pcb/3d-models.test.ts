@@ -23,7 +23,7 @@ test("footprint includes 3D model from cad_component", () => {
       center: { x: 0, y: 0 },
       width: 5,
       height: 5,
-      rotation: 0,
+      rotation: -90,
       layer: "top",
     },
     {
@@ -32,7 +32,8 @@ test("footprint includes 3D model from cad_component", () => {
       pcb_component_id: "pcb_component_0",
       source_component_id: "source_component_0",
       position: { x: 0, y: 0, z: 1.0 },
-      rotation: { x: 0, y: 0, z: 90 },
+      rotation: { x: 0, y: 0, z: 270 },
+      model_origin_position: { x: -0.25, y: 1.5, z: -0.5 },
       model_step_url: "${KIPRJMOD}/3dmodels/chip.step",
     },
     {
@@ -57,5 +58,12 @@ test("footprint includes 3D model from cad_component", () => {
   expect(output).toContain("(model")
   expect(output).toContain("chip.step")
   expect(output).toContain("(offset")
+  expect(output).toContain(`(offset
+        (xyz 0.25 -1.5 1.5)
+      )`)
   expect(output).toContain("(rotate")
+  expect(output).toContain("(at 100 100 -90)")
+  expect(output).toContain(`(rotate
+        (xyz 0 0 360)
+      )`)
 })
