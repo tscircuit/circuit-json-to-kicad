@@ -16,11 +16,7 @@
     "source_port_id": "source_port_0",
     "name": "EH1",
     "pin_number": 13,
-    "port_hints": [
-      "EH1",
-      "pin13",
-      "13"
-    ],
+    "port_hints": ["EH1", "pin13", "13"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -29,11 +25,7 @@
     "source_port_id": "source_port_1",
     "name": "EH2",
     "pin_number": 14,
-    "port_hints": [
-      "EH2",
-      "pin14",
-      "14"
-    ],
+    "port_hints": ["EH2", "pin14", "14"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -42,11 +34,7 @@
     "source_port_id": "source_port_2",
     "name": "pin13_alt1",
     "pin_number": 15,
-    "port_hints": [
-      "pin13_alt1",
-      "pin15",
-      "15"
-    ],
+    "port_hints": ["pin13_alt1", "pin15", "15"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -55,11 +43,7 @@
     "source_port_id": "source_port_3",
     "name": "pin14_alt1",
     "pin_number": 16,
-    "port_hints": [
-      "pin14_alt1",
-      "pin16",
-      "16"
-    ],
+    "port_hints": ["pin14_alt1", "pin16", "16"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -68,11 +52,7 @@
     "source_port_id": "source_port_4",
     "name": "A1B12",
     "pin_number": 17,
-    "port_hints": [
-      "A1B12",
-      "pin17",
-      "17"
-    ],
+    "port_hints": ["A1B12", "pin17", "17"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -81,11 +61,7 @@
     "source_port_id": "source_port_5",
     "name": "A4B9",
     "pin_number": 18,
-    "port_hints": [
-      "A4B9",
-      "pin18",
-      "18"
-    ],
+    "port_hints": ["A4B9", "pin18", "18"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -94,11 +70,7 @@
     "source_port_id": "source_port_6",
     "name": "B8",
     "pin_number": 19,
-    "port_hints": [
-      "B8",
-      "pin19",
-      "19"
-    ],
+    "port_hints": ["B8", "pin19", "19"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -107,11 +79,7 @@
     "source_port_id": "source_port_7",
     "name": "A5",
     "pin_number": 20,
-    "port_hints": [
-      "A5",
-      "pin20",
-      "20"
-    ],
+    "port_hints": ["A5", "pin20", "20"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -120,11 +88,7 @@
     "source_port_id": "source_port_8",
     "name": "B7",
     "pin_number": 21,
-    "port_hints": [
-      "B7",
-      "pin21",
-      "21"
-    ],
+    "port_hints": ["B7", "pin21", "21"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -133,11 +97,7 @@
     "source_port_id": "source_port_9",
     "name": "A6",
     "pin_number": 22,
-    "port_hints": [
-      "A6",
-      "pin22",
-      "22"
-    ],
+    "port_hints": ["A6", "pin22", "22"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -146,11 +106,7 @@
     "source_port_id": "source_port_10",
     "name": "A7",
     "pin_number": 23,
-    "port_hints": [
-      "A7",
-      "pin23",
-      "23"
-    ],
+    "port_hints": ["A7", "pin23", "23"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -159,11 +115,7 @@
     "source_port_id": "source_port_11",
     "name": "B6",
     "pin_number": 24,
-    "port_hints": [
-      "B6",
-      "pin24",
-      "24"
-    ],
+    "port_hints": ["B6", "pin24", "24"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -172,11 +124,7 @@
     "source_port_id": "source_port_12",
     "name": "A8",
     "pin_number": 25,
-    "port_hints": [
-      "A8",
-      "pin25",
-      "25"
-    ],
+    "port_hints": ["A8", "pin25", "25"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -185,11 +133,7 @@
     "source_port_id": "source_port_13",
     "name": "B5",
     "pin_number": 26,
-    "port_hints": [
-      "B5",
-      "pin26",
-      "26"
-    ],
+    "port_hints": ["B5", "pin26", "26"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -198,11 +142,7 @@
     "source_port_id": "source_port_14",
     "name": "B4A9",
     "pin_number": 27,
-    "port_hints": [
-      "B4A9",
-      "pin27",
-      "27"
-    ],
+    "port_hints": ["B4A9", "pin27", "27"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -211,11 +151,7 @@
     "source_port_id": "source_port_15",
     "name": "B1A12",
     "pin_number": 28,
-    "port_hints": [
-      "B1A12",
-      "pin28",
-      "28"
-    ],
+    "port_hints": ["B1A12", "pin28", "28"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -224,10 +160,7 @@
     "source_port_id": "source_port_16",
     "name": "pin1",
     "pin_number": 1,
-    "port_hints": [
-      "pin1",
-      "1"
-    ],
+    "port_hints": ["pin1", "1"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -236,10 +169,7 @@
     "source_port_id": "source_port_17",
     "name": "pin2",
     "pin_number": 2,
-    "port_hints": [
-      "pin2",
-      "2"
-    ],
+    "port_hints": ["pin2", "2"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -248,10 +178,7 @@
     "source_port_id": "source_port_18",
     "name": "pin3",
     "pin_number": 3,
-    "port_hints": [
-      "pin3",
-      "3"
-    ],
+    "port_hints": ["pin3", "3"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -260,10 +187,7 @@
     "source_port_id": "source_port_19",
     "name": "pin4",
     "pin_number": 4,
-    "port_hints": [
-      "pin4",
-      "4"
-    ],
+    "port_hints": ["pin4", "4"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -272,10 +196,7 @@
     "source_port_id": "source_port_20",
     "name": "pin5",
     "pin_number": 5,
-    "port_hints": [
-      "pin5",
-      "5"
-    ],
+    "port_hints": ["pin5", "5"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -284,10 +205,7 @@
     "source_port_id": "source_port_21",
     "name": "pin6",
     "pin_number": 6,
-    "port_hints": [
-      "pin6",
-      "6"
-    ],
+    "port_hints": ["pin6", "6"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -296,10 +214,7 @@
     "source_port_id": "source_port_22",
     "name": "pin7",
     "pin_number": 7,
-    "port_hints": [
-      "pin7",
-      "7"
-    ],
+    "port_hints": ["pin7", "7"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -308,10 +223,7 @@
     "source_port_id": "source_port_23",
     "name": "pin8",
     "pin_number": 8,
-    "port_hints": [
-      "pin8",
-      "8"
-    ],
+    "port_hints": ["pin8", "8"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -320,10 +232,7 @@
     "source_port_id": "source_port_24",
     "name": "pin9",
     "pin_number": 9,
-    "port_hints": [
-      "pin9",
-      "9"
-    ],
+    "port_hints": ["pin9", "9"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -332,10 +241,7 @@
     "source_port_id": "source_port_25",
     "name": "pin10",
     "pin_number": 10,
-    "port_hints": [
-      "pin10",
-      "10"
-    ],
+    "port_hints": ["pin10", "10"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -344,10 +250,7 @@
     "source_port_id": "source_port_26",
     "name": "pin11",
     "pin_number": 11,
-    "port_hints": [
-      "pin11",
-      "11"
-    ],
+    "port_hints": ["pin11", "11"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -356,10 +259,7 @@
     "source_port_id": "source_port_27",
     "name": "pin12",
     "pin_number": 12,
-    "port_hints": [
-      "pin12",
-      "12"
-    ],
+    "port_hints": ["pin12", "12"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -370,9 +270,7 @@
     "name": "J1",
     "manufacturer_part_number": "TYPE_C_16PIN_2MD_073_",
     "supplier_part_numbers": {
-      "jlcpcb": [
-        "C2765186"
-      ]
+      "jlcpcb": ["C2765186"]
     },
     "source_group_id": "source_group_0"
   },
@@ -381,11 +279,7 @@
     "source_port_id": "source_port_28",
     "name": "EH1",
     "pin_number": 13,
-    "port_hints": [
-      "EH1",
-      "pin13",
-      "13"
-    ],
+    "port_hints": ["EH1", "pin13", "13"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -394,11 +288,7 @@
     "source_port_id": "source_port_29",
     "name": "EH2",
     "pin_number": 14,
-    "port_hints": [
-      "EH2",
-      "pin14",
-      "14"
-    ],
+    "port_hints": ["EH2", "pin14", "14"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -407,11 +297,7 @@
     "source_port_id": "source_port_30",
     "name": "pin13_alt1",
     "pin_number": 15,
-    "port_hints": [
-      "pin13_alt1",
-      "pin15",
-      "15"
-    ],
+    "port_hints": ["pin13_alt1", "pin15", "15"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -420,11 +306,7 @@
     "source_port_id": "source_port_31",
     "name": "pin14_alt1",
     "pin_number": 16,
-    "port_hints": [
-      "pin14_alt1",
-      "pin16",
-      "16"
-    ],
+    "port_hints": ["pin14_alt1", "pin16", "16"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -433,11 +315,7 @@
     "source_port_id": "source_port_32",
     "name": "A1B12",
     "pin_number": 17,
-    "port_hints": [
-      "A1B12",
-      "pin17",
-      "17"
-    ],
+    "port_hints": ["A1B12", "pin17", "17"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -446,11 +324,7 @@
     "source_port_id": "source_port_33",
     "name": "A4B9",
     "pin_number": 18,
-    "port_hints": [
-      "A4B9",
-      "pin18",
-      "18"
-    ],
+    "port_hints": ["A4B9", "pin18", "18"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -459,11 +333,7 @@
     "source_port_id": "source_port_34",
     "name": "B8",
     "pin_number": 19,
-    "port_hints": [
-      "B8",
-      "pin19",
-      "19"
-    ],
+    "port_hints": ["B8", "pin19", "19"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -472,11 +342,7 @@
     "source_port_id": "source_port_35",
     "name": "A5",
     "pin_number": 20,
-    "port_hints": [
-      "A5",
-      "pin20",
-      "20"
-    ],
+    "port_hints": ["A5", "pin20", "20"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -485,11 +351,7 @@
     "source_port_id": "source_port_36",
     "name": "B7",
     "pin_number": 21,
-    "port_hints": [
-      "B7",
-      "pin21",
-      "21"
-    ],
+    "port_hints": ["B7", "pin21", "21"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -498,11 +360,7 @@
     "source_port_id": "source_port_37",
     "name": "A6",
     "pin_number": 22,
-    "port_hints": [
-      "A6",
-      "pin22",
-      "22"
-    ],
+    "port_hints": ["A6", "pin22", "22"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -511,11 +369,7 @@
     "source_port_id": "source_port_38",
     "name": "A7",
     "pin_number": 23,
-    "port_hints": [
-      "A7",
-      "pin23",
-      "23"
-    ],
+    "port_hints": ["A7", "pin23", "23"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -524,11 +378,7 @@
     "source_port_id": "source_port_39",
     "name": "B6",
     "pin_number": 24,
-    "port_hints": [
-      "B6",
-      "pin24",
-      "24"
-    ],
+    "port_hints": ["B6", "pin24", "24"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -537,11 +387,7 @@
     "source_port_id": "source_port_40",
     "name": "A8",
     "pin_number": 25,
-    "port_hints": [
-      "A8",
-      "pin25",
-      "25"
-    ],
+    "port_hints": ["A8", "pin25", "25"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -550,11 +396,7 @@
     "source_port_id": "source_port_41",
     "name": "B5",
     "pin_number": 26,
-    "port_hints": [
-      "B5",
-      "pin26",
-      "26"
-    ],
+    "port_hints": ["B5", "pin26", "26"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -563,11 +405,7 @@
     "source_port_id": "source_port_42",
     "name": "B4A9",
     "pin_number": 27,
-    "port_hints": [
-      "B4A9",
-      "pin27",
-      "27"
-    ],
+    "port_hints": ["B4A9", "pin27", "27"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -576,11 +414,7 @@
     "source_port_id": "source_port_43",
     "name": "B1A12",
     "pin_number": 28,
-    "port_hints": [
-      "B1A12",
-      "pin28",
-      "28"
-    ],
+    "port_hints": ["B1A12", "pin28", "28"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -589,10 +423,7 @@
     "source_port_id": "source_port_44",
     "name": "pin1",
     "pin_number": 1,
-    "port_hints": [
-      "pin1",
-      "1"
-    ],
+    "port_hints": ["pin1", "1"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -601,10 +432,7 @@
     "source_port_id": "source_port_45",
     "name": "pin2",
     "pin_number": 2,
-    "port_hints": [
-      "pin2",
-      "2"
-    ],
+    "port_hints": ["pin2", "2"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -613,10 +441,7 @@
     "source_port_id": "source_port_46",
     "name": "pin3",
     "pin_number": 3,
-    "port_hints": [
-      "pin3",
-      "3"
-    ],
+    "port_hints": ["pin3", "3"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -625,10 +450,7 @@
     "source_port_id": "source_port_47",
     "name": "pin4",
     "pin_number": 4,
-    "port_hints": [
-      "pin4",
-      "4"
-    ],
+    "port_hints": ["pin4", "4"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -637,10 +459,7 @@
     "source_port_id": "source_port_48",
     "name": "pin5",
     "pin_number": 5,
-    "port_hints": [
-      "pin5",
-      "5"
-    ],
+    "port_hints": ["pin5", "5"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -649,10 +468,7 @@
     "source_port_id": "source_port_49",
     "name": "pin6",
     "pin_number": 6,
-    "port_hints": [
-      "pin6",
-      "6"
-    ],
+    "port_hints": ["pin6", "6"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -661,10 +477,7 @@
     "source_port_id": "source_port_50",
     "name": "pin7",
     "pin_number": 7,
-    "port_hints": [
-      "pin7",
-      "7"
-    ],
+    "port_hints": ["pin7", "7"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -673,10 +486,7 @@
     "source_port_id": "source_port_51",
     "name": "pin8",
     "pin_number": 8,
-    "port_hints": [
-      "pin8",
-      "8"
-    ],
+    "port_hints": ["pin8", "8"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -685,10 +495,7 @@
     "source_port_id": "source_port_52",
     "name": "pin9",
     "pin_number": 9,
-    "port_hints": [
-      "pin9",
-      "9"
-    ],
+    "port_hints": ["pin9", "9"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -697,10 +504,7 @@
     "source_port_id": "source_port_53",
     "name": "pin10",
     "pin_number": 10,
-    "port_hints": [
-      "pin10",
-      "10"
-    ],
+    "port_hints": ["pin10", "10"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -709,10 +513,7 @@
     "source_port_id": "source_port_54",
     "name": "pin11",
     "pin_number": 11,
-    "port_hints": [
-      "pin11",
-      "11"
-    ],
+    "port_hints": ["pin11", "11"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -721,10 +522,7 @@
     "source_port_id": "source_port_55",
     "name": "pin12",
     "pin_number": 12,
-    "port_hints": [
-      "pin12",
-      "12"
-    ],
+    "port_hints": ["pin12", "12"],
     "source_component_id": "source_component_1",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -735,9 +533,7 @@
     "name": "J2",
     "manufacturer_part_number": "TYPE_C_16PIN_2MD_073_",
     "supplier_part_numbers": {
-      "jlcpcb": [
-        "C2765186"
-      ]
+      "jlcpcb": ["C2765186"]
     },
     "source_group_id": "source_group_0"
   },
@@ -746,11 +542,7 @@
     "source_port_id": "source_port_56",
     "name": "EH1",
     "pin_number": 13,
-    "port_hints": [
-      "EH1",
-      "pin13",
-      "13"
-    ],
+    "port_hints": ["EH1", "pin13", "13"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -759,11 +551,7 @@
     "source_port_id": "source_port_57",
     "name": "EH2",
     "pin_number": 14,
-    "port_hints": [
-      "EH2",
-      "pin14",
-      "14"
-    ],
+    "port_hints": ["EH2", "pin14", "14"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -772,11 +560,7 @@
     "source_port_id": "source_port_58",
     "name": "pin13_alt1",
     "pin_number": 15,
-    "port_hints": [
-      "pin13_alt1",
-      "pin15",
-      "15"
-    ],
+    "port_hints": ["pin13_alt1", "pin15", "15"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -785,11 +569,7 @@
     "source_port_id": "source_port_59",
     "name": "pin14_alt1",
     "pin_number": 16,
-    "port_hints": [
-      "pin14_alt1",
-      "pin16",
-      "16"
-    ],
+    "port_hints": ["pin14_alt1", "pin16", "16"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -798,11 +578,7 @@
     "source_port_id": "source_port_60",
     "name": "A1B12",
     "pin_number": 17,
-    "port_hints": [
-      "A1B12",
-      "pin17",
-      "17"
-    ],
+    "port_hints": ["A1B12", "pin17", "17"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -811,11 +587,7 @@
     "source_port_id": "source_port_61",
     "name": "A4B9",
     "pin_number": 18,
-    "port_hints": [
-      "A4B9",
-      "pin18",
-      "18"
-    ],
+    "port_hints": ["A4B9", "pin18", "18"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -824,11 +596,7 @@
     "source_port_id": "source_port_62",
     "name": "B8",
     "pin_number": 19,
-    "port_hints": [
-      "B8",
-      "pin19",
-      "19"
-    ],
+    "port_hints": ["B8", "pin19", "19"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -837,11 +605,7 @@
     "source_port_id": "source_port_63",
     "name": "A5",
     "pin_number": 20,
-    "port_hints": [
-      "A5",
-      "pin20",
-      "20"
-    ],
+    "port_hints": ["A5", "pin20", "20"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -850,11 +614,7 @@
     "source_port_id": "source_port_64",
     "name": "B7",
     "pin_number": 21,
-    "port_hints": [
-      "B7",
-      "pin21",
-      "21"
-    ],
+    "port_hints": ["B7", "pin21", "21"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -863,11 +623,7 @@
     "source_port_id": "source_port_65",
     "name": "A6",
     "pin_number": 22,
-    "port_hints": [
-      "A6",
-      "pin22",
-      "22"
-    ],
+    "port_hints": ["A6", "pin22", "22"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -876,11 +632,7 @@
     "source_port_id": "source_port_66",
     "name": "A7",
     "pin_number": 23,
-    "port_hints": [
-      "A7",
-      "pin23",
-      "23"
-    ],
+    "port_hints": ["A7", "pin23", "23"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -889,11 +641,7 @@
     "source_port_id": "source_port_67",
     "name": "B6",
     "pin_number": 24,
-    "port_hints": [
-      "B6",
-      "pin24",
-      "24"
-    ],
+    "port_hints": ["B6", "pin24", "24"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -902,11 +650,7 @@
     "source_port_id": "source_port_68",
     "name": "A8",
     "pin_number": 25,
-    "port_hints": [
-      "A8",
-      "pin25",
-      "25"
-    ],
+    "port_hints": ["A8", "pin25", "25"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -915,11 +659,7 @@
     "source_port_id": "source_port_69",
     "name": "B5",
     "pin_number": 26,
-    "port_hints": [
-      "B5",
-      "pin26",
-      "26"
-    ],
+    "port_hints": ["B5", "pin26", "26"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -928,11 +668,7 @@
     "source_port_id": "source_port_70",
     "name": "B4A9",
     "pin_number": 27,
-    "port_hints": [
-      "B4A9",
-      "pin27",
-      "27"
-    ],
+    "port_hints": ["B4A9", "pin27", "27"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -941,11 +677,7 @@
     "source_port_id": "source_port_71",
     "name": "B1A12",
     "pin_number": 28,
-    "port_hints": [
-      "B1A12",
-      "pin28",
-      "28"
-    ],
+    "port_hints": ["B1A12", "pin28", "28"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -954,10 +686,7 @@
     "source_port_id": "source_port_72",
     "name": "pin1",
     "pin_number": 1,
-    "port_hints": [
-      "pin1",
-      "1"
-    ],
+    "port_hints": ["pin1", "1"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -966,10 +695,7 @@
     "source_port_id": "source_port_73",
     "name": "pin2",
     "pin_number": 2,
-    "port_hints": [
-      "pin2",
-      "2"
-    ],
+    "port_hints": ["pin2", "2"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -978,10 +704,7 @@
     "source_port_id": "source_port_74",
     "name": "pin3",
     "pin_number": 3,
-    "port_hints": [
-      "pin3",
-      "3"
-    ],
+    "port_hints": ["pin3", "3"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -990,10 +713,7 @@
     "source_port_id": "source_port_75",
     "name": "pin4",
     "pin_number": 4,
-    "port_hints": [
-      "pin4",
-      "4"
-    ],
+    "port_hints": ["pin4", "4"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1002,10 +722,7 @@
     "source_port_id": "source_port_76",
     "name": "pin5",
     "pin_number": 5,
-    "port_hints": [
-      "pin5",
-      "5"
-    ],
+    "port_hints": ["pin5", "5"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1014,10 +731,7 @@
     "source_port_id": "source_port_77",
     "name": "pin6",
     "pin_number": 6,
-    "port_hints": [
-      "pin6",
-      "6"
-    ],
+    "port_hints": ["pin6", "6"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1026,10 +740,7 @@
     "source_port_id": "source_port_78",
     "name": "pin7",
     "pin_number": 7,
-    "port_hints": [
-      "pin7",
-      "7"
-    ],
+    "port_hints": ["pin7", "7"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1038,10 +749,7 @@
     "source_port_id": "source_port_79",
     "name": "pin8",
     "pin_number": 8,
-    "port_hints": [
-      "pin8",
-      "8"
-    ],
+    "port_hints": ["pin8", "8"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1050,10 +758,7 @@
     "source_port_id": "source_port_80",
     "name": "pin9",
     "pin_number": 9,
-    "port_hints": [
-      "pin9",
-      "9"
-    ],
+    "port_hints": ["pin9", "9"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1062,10 +767,7 @@
     "source_port_id": "source_port_81",
     "name": "pin10",
     "pin_number": 10,
-    "port_hints": [
-      "pin10",
-      "10"
-    ],
+    "port_hints": ["pin10", "10"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1074,10 +776,7 @@
     "source_port_id": "source_port_82",
     "name": "pin11",
     "pin_number": 11,
-    "port_hints": [
-      "pin11",
-      "11"
-    ],
+    "port_hints": ["pin11", "11"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1086,10 +785,7 @@
     "source_port_id": "source_port_83",
     "name": "pin12",
     "pin_number": 12,
-    "port_hints": [
-      "pin12",
-      "12"
-    ],
+    "port_hints": ["pin12", "12"],
     "source_component_id": "source_component_2",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1100,9 +796,7 @@
     "name": "J3",
     "manufacturer_part_number": "TYPE_C_16PIN_2MD_073_",
     "supplier_part_numbers": {
-      "jlcpcb": [
-        "C2765186"
-      ]
+      "jlcpcb": ["C2765186"]
     },
     "source_group_id": "source_group_0"
   },
@@ -1111,11 +805,7 @@
     "source_port_id": "source_port_84",
     "name": "EH1",
     "pin_number": 13,
-    "port_hints": [
-      "EH1",
-      "pin13",
-      "13"
-    ],
+    "port_hints": ["EH1", "pin13", "13"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1124,11 +814,7 @@
     "source_port_id": "source_port_85",
     "name": "EH2",
     "pin_number": 14,
-    "port_hints": [
-      "EH2",
-      "pin14",
-      "14"
-    ],
+    "port_hints": ["EH2", "pin14", "14"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1137,11 +823,7 @@
     "source_port_id": "source_port_86",
     "name": "pin13_alt1",
     "pin_number": 15,
-    "port_hints": [
-      "pin13_alt1",
-      "pin15",
-      "15"
-    ],
+    "port_hints": ["pin13_alt1", "pin15", "15"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1150,11 +832,7 @@
     "source_port_id": "source_port_87",
     "name": "pin14_alt1",
     "pin_number": 16,
-    "port_hints": [
-      "pin14_alt1",
-      "pin16",
-      "16"
-    ],
+    "port_hints": ["pin14_alt1", "pin16", "16"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1163,11 +841,7 @@
     "source_port_id": "source_port_88",
     "name": "A1B12",
     "pin_number": 17,
-    "port_hints": [
-      "A1B12",
-      "pin17",
-      "17"
-    ],
+    "port_hints": ["A1B12", "pin17", "17"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1176,11 +850,7 @@
     "source_port_id": "source_port_89",
     "name": "A4B9",
     "pin_number": 18,
-    "port_hints": [
-      "A4B9",
-      "pin18",
-      "18"
-    ],
+    "port_hints": ["A4B9", "pin18", "18"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1189,11 +859,7 @@
     "source_port_id": "source_port_90",
     "name": "B8",
     "pin_number": 19,
-    "port_hints": [
-      "B8",
-      "pin19",
-      "19"
-    ],
+    "port_hints": ["B8", "pin19", "19"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1202,11 +868,7 @@
     "source_port_id": "source_port_91",
     "name": "A5",
     "pin_number": 20,
-    "port_hints": [
-      "A5",
-      "pin20",
-      "20"
-    ],
+    "port_hints": ["A5", "pin20", "20"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1215,11 +877,7 @@
     "source_port_id": "source_port_92",
     "name": "B7",
     "pin_number": 21,
-    "port_hints": [
-      "B7",
-      "pin21",
-      "21"
-    ],
+    "port_hints": ["B7", "pin21", "21"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1228,11 +886,7 @@
     "source_port_id": "source_port_93",
     "name": "A6",
     "pin_number": 22,
-    "port_hints": [
-      "A6",
-      "pin22",
-      "22"
-    ],
+    "port_hints": ["A6", "pin22", "22"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1241,11 +895,7 @@
     "source_port_id": "source_port_94",
     "name": "A7",
     "pin_number": 23,
-    "port_hints": [
-      "A7",
-      "pin23",
-      "23"
-    ],
+    "port_hints": ["A7", "pin23", "23"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1254,11 +904,7 @@
     "source_port_id": "source_port_95",
     "name": "B6",
     "pin_number": 24,
-    "port_hints": [
-      "B6",
-      "pin24",
-      "24"
-    ],
+    "port_hints": ["B6", "pin24", "24"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1267,11 +913,7 @@
     "source_port_id": "source_port_96",
     "name": "A8",
     "pin_number": 25,
-    "port_hints": [
-      "A8",
-      "pin25",
-      "25"
-    ],
+    "port_hints": ["A8", "pin25", "25"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1280,11 +922,7 @@
     "source_port_id": "source_port_97",
     "name": "B5",
     "pin_number": 26,
-    "port_hints": [
-      "B5",
-      "pin26",
-      "26"
-    ],
+    "port_hints": ["B5", "pin26", "26"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1293,11 +931,7 @@
     "source_port_id": "source_port_98",
     "name": "B4A9",
     "pin_number": 27,
-    "port_hints": [
-      "B4A9",
-      "pin27",
-      "27"
-    ],
+    "port_hints": ["B4A9", "pin27", "27"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1306,11 +940,7 @@
     "source_port_id": "source_port_99",
     "name": "B1A12",
     "pin_number": 28,
-    "port_hints": [
-      "B1A12",
-      "pin28",
-      "28"
-    ],
+    "port_hints": ["B1A12", "pin28", "28"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1319,10 +949,7 @@
     "source_port_id": "source_port_100",
     "name": "pin1",
     "pin_number": 1,
-    "port_hints": [
-      "pin1",
-      "1"
-    ],
+    "port_hints": ["pin1", "1"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1331,10 +958,7 @@
     "source_port_id": "source_port_101",
     "name": "pin2",
     "pin_number": 2,
-    "port_hints": [
-      "pin2",
-      "2"
-    ],
+    "port_hints": ["pin2", "2"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1343,10 +967,7 @@
     "source_port_id": "source_port_102",
     "name": "pin3",
     "pin_number": 3,
-    "port_hints": [
-      "pin3",
-      "3"
-    ],
+    "port_hints": ["pin3", "3"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1355,10 +976,7 @@
     "source_port_id": "source_port_103",
     "name": "pin4",
     "pin_number": 4,
-    "port_hints": [
-      "pin4",
-      "4"
-    ],
+    "port_hints": ["pin4", "4"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1367,10 +985,7 @@
     "source_port_id": "source_port_104",
     "name": "pin5",
     "pin_number": 5,
-    "port_hints": [
-      "pin5",
-      "5"
-    ],
+    "port_hints": ["pin5", "5"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1379,10 +994,7 @@
     "source_port_id": "source_port_105",
     "name": "pin6",
     "pin_number": 6,
-    "port_hints": [
-      "pin6",
-      "6"
-    ],
+    "port_hints": ["pin6", "6"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1391,10 +1003,7 @@
     "source_port_id": "source_port_106",
     "name": "pin7",
     "pin_number": 7,
-    "port_hints": [
-      "pin7",
-      "7"
-    ],
+    "port_hints": ["pin7", "7"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1403,10 +1012,7 @@
     "source_port_id": "source_port_107",
     "name": "pin8",
     "pin_number": 8,
-    "port_hints": [
-      "pin8",
-      "8"
-    ],
+    "port_hints": ["pin8", "8"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1415,10 +1021,7 @@
     "source_port_id": "source_port_108",
     "name": "pin9",
     "pin_number": 9,
-    "port_hints": [
-      "pin9",
-      "9"
-    ],
+    "port_hints": ["pin9", "9"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1427,10 +1030,7 @@
     "source_port_id": "source_port_109",
     "name": "pin10",
     "pin_number": 10,
-    "port_hints": [
-      "pin10",
-      "10"
-    ],
+    "port_hints": ["pin10", "10"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1439,10 +1039,7 @@
     "source_port_id": "source_port_110",
     "name": "pin11",
     "pin_number": 11,
-    "port_hints": [
-      "pin11",
-      "11"
-    ],
+    "port_hints": ["pin11", "11"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1451,10 +1048,7 @@
     "source_port_id": "source_port_111",
     "name": "pin12",
     "pin_number": 12,
-    "port_hints": [
-      "pin12",
-      "12"
-    ],
+    "port_hints": ["pin12", "12"],
     "source_component_id": "source_component_3",
     "subcircuit_id": "subcircuit_source_group_0"
   },
@@ -1465,9 +1059,7 @@
     "name": "J4",
     "manufacturer_part_number": "TYPE_C_16PIN_2MD_073_",
     "supplier_part_numbers": {
-      "jlcpcb": [
-        "C2765186"
-      ]
+      "jlcpcb": ["C2765186"]
     },
     "source_group_id": "source_group_0"
   },
@@ -2918,16 +2510,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole1",
-      "pin13"
-    ],
+    "port_hints": ["unnamed_platedhole1", "pin13"],
     "x": -8.42488245,
     "y": 4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 270
@@ -2964,16 +2550,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole2",
-      "pin14"
-    ],
+    "port_hints": ["unnamed_platedhole2", "pin14"],
     "x": -8.42488245,
     "y": -4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 270
@@ -3010,16 +2590,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole3",
-      "pin15"
-    ],
+    "port_hints": ["unnamed_platedhole3", "pin15"],
     "x": -12.62502645,
     "y": 4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 270
@@ -3056,16 +2630,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole4",
-      "pin16"
-    ],
+    "port_hints": ["unnamed_platedhole4", "pin16"],
     "x": -12.62502645,
     "y": -4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 270
@@ -3101,9 +2669,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin17"
-    ],
+    "port_hints": ["pin17"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": 3.200019,
@@ -3131,9 +2697,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin18"
-    ],
+    "port_hints": ["pin18"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": 2.399919,
@@ -3161,9 +2725,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin19"
-    ],
+    "port_hints": ["pin19"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": 1.7499330000000002,
@@ -3191,9 +2753,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin20"
-    ],
+    "port_hints": ["pin20"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": 1.2498070000000001,
@@ -3221,9 +2781,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin21"
-    ],
+    "port_hints": ["pin21"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": 0.7499350000000001,
@@ -3251,9 +2809,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin22"
-    ],
+    "port_hints": ["pin22"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": 0.2500630000000001,
@@ -3281,9 +2837,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin23"
-    ],
+    "port_hints": ["pin23"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": -0.25006299999999987,
@@ -3311,9 +2865,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin24"
-    ],
+    "port_hints": ["pin24"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": -0.7499349999999999,
@@ -3341,9 +2893,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin25"
-    ],
+    "port_hints": ["pin25"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": -1.2500609999999999,
@@ -3371,9 +2921,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin26"
-    ],
+    "port_hints": ["pin26"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": -1.7501869999999997,
@@ -3401,9 +2949,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin27"
-    ],
+    "port_hints": ["pin27"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": -2.400173,
@@ -3431,9 +2977,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin28"
-    ],
+    "port_hints": ["pin28"],
     "is_covered_with_solder_mask": false,
     "x": -7.87497245,
     "y": -3.200019,
@@ -3619,16 +3163,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole5",
-      "pin13"
-    ],
+    "port_hints": ["unnamed_platedhole5", "pin13"],
     "x": 8.42488245,
     "y": -4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 90
@@ -3665,16 +3203,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole6",
-      "pin14"
-    ],
+    "port_hints": ["unnamed_platedhole6", "pin14"],
     "x": 8.42488245,
     "y": 4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 90
@@ -3711,16 +3243,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole7",
-      "pin15"
-    ],
+    "port_hints": ["unnamed_platedhole7", "pin15"],
     "x": 12.62502645,
     "y": -4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 90
@@ -3757,16 +3283,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole8",
-      "pin16"
-    ],
+    "port_hints": ["unnamed_platedhole8", "pin16"],
     "x": 12.62502645,
     "y": 4.324985,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 90
@@ -3802,9 +3322,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin17"
-    ],
+    "port_hints": ["pin17"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": -3.200019,
@@ -3832,9 +3350,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin18"
-    ],
+    "port_hints": ["pin18"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": -2.399919,
@@ -3862,9 +3378,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin19"
-    ],
+    "port_hints": ["pin19"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": -1.7499329999999997,
@@ -3892,9 +3406,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin20"
-    ],
+    "port_hints": ["pin20"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": -1.2498069999999997,
@@ -3922,9 +3434,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin21"
-    ],
+    "port_hints": ["pin21"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": -0.7499349999999999,
@@ -3952,9 +3462,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin22"
-    ],
+    "port_hints": ["pin22"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": -0.25006299999999987,
@@ -3982,9 +3490,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin23"
-    ],
+    "port_hints": ["pin23"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": 0.2500630000000001,
@@ -4012,9 +3518,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin24"
-    ],
+    "port_hints": ["pin24"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": 0.7499350000000001,
@@ -4042,9 +3546,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin25"
-    ],
+    "port_hints": ["pin25"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": 1.2500610000000003,
@@ -4072,9 +3574,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.2999994,
-    "port_hints": [
-      "pin26"
-    ],
+    "port_hints": ["pin26"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": 1.7501870000000002,
@@ -4102,9 +3602,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin27"
-    ],
+    "port_hints": ["pin27"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": 2.400173,
@@ -4132,9 +3630,7 @@
     "shape": "rect",
     "width": 1.0999978,
     "height": 0.5500116,
-    "port_hints": [
-      "pin28"
-    ],
+    "port_hints": ["pin28"],
     "is_covered_with_solder_mask": false,
     "x": 7.87497245,
     "y": 3.200019,
@@ -4320,16 +3816,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole9",
-      "pin13"
-    ],
+    "port_hints": ["unnamed_platedhole9", "pin13"],
     "x": -4.324985,
     "y": -8.42488245,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 0
@@ -4366,16 +3856,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole10",
-      "pin14"
-    ],
+    "port_hints": ["unnamed_platedhole10", "pin14"],
     "x": 4.324985,
     "y": -8.42488245,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 0
@@ -4412,16 +3896,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole11",
-      "pin15"
-    ],
+    "port_hints": ["unnamed_platedhole11", "pin15"],
     "x": -4.324985,
     "y": -12.62502645,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 0
@@ -4458,16 +3936,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole12",
-      "pin16"
-    ],
+    "port_hints": ["unnamed_platedhole12", "pin16"],
     "x": 4.324985,
     "y": -12.62502645,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 0
@@ -4503,9 +3975,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin17"
-    ],
+    "port_hints": ["pin17"],
     "is_covered_with_solder_mask": false,
     "x": -3.200019,
     "y": -7.87497245,
@@ -4533,9 +4003,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin18"
-    ],
+    "port_hints": ["pin18"],
     "is_covered_with_solder_mask": false,
     "x": -2.399919,
     "y": -7.87497245,
@@ -4563,9 +4031,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin19"
-    ],
+    "port_hints": ["pin19"],
     "is_covered_with_solder_mask": false,
     "x": -1.749933,
     "y": -7.87497245,
@@ -4593,9 +4059,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin20"
-    ],
+    "port_hints": ["pin20"],
     "is_covered_with_solder_mask": false,
     "x": -1.249807,
     "y": -7.87497245,
@@ -4623,9 +4087,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin21"
-    ],
+    "port_hints": ["pin21"],
     "is_covered_with_solder_mask": false,
     "x": -0.749935,
     "y": -7.87497245,
@@ -4653,9 +4115,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin22"
-    ],
+    "port_hints": ["pin22"],
     "is_covered_with_solder_mask": false,
     "x": -0.250063,
     "y": -7.87497245,
@@ -4683,9 +4143,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin23"
-    ],
+    "port_hints": ["pin23"],
     "is_covered_with_solder_mask": false,
     "x": 0.250063,
     "y": -7.87497245,
@@ -4713,9 +4171,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin24"
-    ],
+    "port_hints": ["pin24"],
     "is_covered_with_solder_mask": false,
     "x": 0.749935,
     "y": -7.87497245,
@@ -4743,9 +4199,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin25"
-    ],
+    "port_hints": ["pin25"],
     "is_covered_with_solder_mask": false,
     "x": 1.250061,
     "y": -7.87497245,
@@ -4773,9 +4227,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin26"
-    ],
+    "port_hints": ["pin26"],
     "is_covered_with_solder_mask": false,
     "x": 1.750187,
     "y": -7.87497245,
@@ -4803,9 +4255,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin27"
-    ],
+    "port_hints": ["pin27"],
     "is_covered_with_solder_mask": false,
     "x": 2.400173,
     "y": -7.87497245,
@@ -4833,9 +4283,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin28"
-    ],
+    "port_hints": ["pin28"],
     "is_covered_with_solder_mask": false,
     "x": 3.200019,
     "y": -7.87497245,
@@ -5021,16 +4469,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole13",
-      "pin13"
-    ],
+    "port_hints": ["unnamed_platedhole13", "pin13"],
     "x": 4.324985,
     "y": 8.42488245,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 180
@@ -5067,16 +4509,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.499997,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole14",
-      "pin14"
-    ],
+    "port_hints": ["unnamed_platedhole14", "pin14"],
     "x": -4.324985,
     "y": 8.42488245,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 180
@@ -5113,16 +4549,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole15",
-      "pin15"
-    ],
+    "port_hints": ["unnamed_platedhole15", "pin15"],
     "x": 4.324985,
     "y": 12.62502645,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 180
@@ -5159,16 +4589,10 @@
     "hole_width": 0.5999988,
     "hole_height": 1.1999976,
     "shape": "pill",
-    "port_hints": [
-      "unnamed_platedhole16",
-      "pin16"
-    ],
+    "port_hints": ["unnamed_platedhole16", "pin16"],
     "x": -4.324985,
     "y": 12.62502645,
-    "layers": [
-      "top",
-      "bottom"
-    ],
+    "layers": ["top", "bottom"],
     "is_covered_with_solder_mask": false,
     "subcircuit_id": "subcircuit_source_group_0",
     "ccw_rotation": 180
@@ -5204,9 +4628,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin17"
-    ],
+    "port_hints": ["pin17"],
     "is_covered_with_solder_mask": false,
     "x": 3.2000190000000006,
     "y": 7.8749724500000005,
@@ -5234,9 +4656,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin18"
-    ],
+    "port_hints": ["pin18"],
     "is_covered_with_solder_mask": false,
     "x": 2.3999190000000006,
     "y": 7.8749724500000005,
@@ -5264,9 +4684,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin19"
-    ],
+    "port_hints": ["pin19"],
     "is_covered_with_solder_mask": false,
     "x": 1.7499330000000002,
     "y": 7.87497245,
@@ -5294,9 +4712,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin20"
-    ],
+    "port_hints": ["pin20"],
     "is_covered_with_solder_mask": false,
     "x": 1.2498070000000001,
     "y": 7.87497245,
@@ -5324,9 +4740,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin21"
-    ],
+    "port_hints": ["pin21"],
     "is_covered_with_solder_mask": false,
     "x": 0.7499350000000002,
     "y": 7.87497245,
@@ -5354,9 +4768,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin22"
-    ],
+    "port_hints": ["pin22"],
     "is_covered_with_solder_mask": false,
     "x": 0.25006300000000026,
     "y": 7.87497245,
@@ -5384,9 +4796,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin23"
-    ],
+    "port_hints": ["pin23"],
     "is_covered_with_solder_mask": false,
     "x": -0.2500629999999997,
     "y": 7.87497245,
@@ -5414,9 +4824,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin24"
-    ],
+    "port_hints": ["pin24"],
     "is_covered_with_solder_mask": false,
     "x": -0.7499349999999998,
     "y": 7.87497245,
@@ -5444,9 +4852,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin25"
-    ],
+    "port_hints": ["pin25"],
     "is_covered_with_solder_mask": false,
     "x": -1.2500609999999999,
     "y": 7.87497245,
@@ -5474,9 +4880,7 @@
     "shape": "rect",
     "width": 0.2999994,
     "height": 1.0999978,
-    "port_hints": [
-      "pin26"
-    ],
+    "port_hints": ["pin26"],
     "is_covered_with_solder_mask": false,
     "x": -1.7501869999999997,
     "y": 7.87497245,
@@ -5504,9 +4908,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin27"
-    ],
+    "port_hints": ["pin27"],
     "is_covered_with_solder_mask": false,
     "x": -2.4001729999999997,
     "y": 7.87497245,
@@ -5534,9 +4936,7 @@
     "shape": "rect",
     "width": 0.5500116,
     "height": 1.0999978,
-    "port_hints": [
-      "pin28"
-    ],
+    "port_hints": ["pin28"],
     "is_covered_with_solder_mask": false,
     "x": -3.2000189999999997,
     "y": 7.87497245,
@@ -5694,12 +5094,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_0",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -8.42488245,
     "y": 4.324985,
@@ -5709,12 +5104,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_1",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -8.42488245,
     "y": -4.324985,
@@ -5724,12 +5114,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_2",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -12.62502645,
     "y": 4.324985,
@@ -5739,12 +5124,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_3",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -12.62502645,
     "y": -4.324985,
@@ -5754,9 +5134,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_4",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": 3.200019,
@@ -5766,9 +5144,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_5",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": 2.399919,
@@ -5778,9 +5154,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_6",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": 1.7499330000000002,
@@ -5790,9 +5164,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_7",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": 1.2498070000000001,
@@ -5802,9 +5174,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_8",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": 0.7499350000000001,
@@ -5814,9 +5184,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_9",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": 0.2500630000000001,
@@ -5826,9 +5194,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_10",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": -0.25006299999999987,
@@ -5838,9 +5204,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_11",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": -0.7499349999999999,
@@ -5850,9 +5214,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_12",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": -1.2500609999999999,
@@ -5862,9 +5224,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_13",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": -1.7501869999999997,
@@ -5874,9 +5234,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_14",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": -2.400173,
@@ -5886,9 +5244,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_15",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -7.87497245,
     "y": -3.200019,
@@ -5898,12 +5254,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_16",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 8.42488245,
     "y": -4.324985,
@@ -5913,12 +5264,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_17",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 8.42488245,
     "y": 4.324985,
@@ -5928,12 +5274,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_18",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 12.62502645,
     "y": -4.324985,
@@ -5943,12 +5284,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_19",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 12.62502645,
     "y": 4.324985,
@@ -5958,9 +5294,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_20",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": -3.200019,
@@ -5970,9 +5304,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_21",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": -2.399919,
@@ -5982,9 +5314,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_22",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": -1.7499329999999997,
@@ -5994,9 +5324,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_23",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": -1.2498069999999997,
@@ -6006,9 +5334,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_24",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": -0.7499349999999999,
@@ -6018,9 +5344,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_25",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": -0.25006299999999987,
@@ -6030,9 +5354,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_26",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": 0.2500630000000001,
@@ -6042,9 +5364,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_27",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": 0.7499350000000001,
@@ -6054,9 +5374,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_28",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": 1.2500610000000003,
@@ -6066,9 +5384,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_29",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": 1.7501870000000002,
@@ -6078,9 +5394,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_30",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": 2.400173,
@@ -6090,9 +5404,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_31",
     "pcb_component_id": "pcb_component_1",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 7.87497245,
     "y": 3.200019,
@@ -6102,12 +5414,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_32",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -4.324985,
     "y": -8.42488245,
@@ -6117,12 +5424,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_33",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 4.324985,
     "y": -8.42488245,
@@ -6132,12 +5434,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_34",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -4.324985,
     "y": -12.62502645,
@@ -6147,12 +5444,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_35",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 4.324985,
     "y": -12.62502645,
@@ -6162,9 +5454,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_36",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -3.200019,
     "y": -7.87497245,
@@ -6174,9 +5464,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_37",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -2.399919,
     "y": -7.87497245,
@@ -6186,9 +5474,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_38",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -1.749933,
     "y": -7.87497245,
@@ -6198,9 +5484,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_39",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -1.249807,
     "y": -7.87497245,
@@ -6210,9 +5494,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_40",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -0.749935,
     "y": -7.87497245,
@@ -6222,9 +5504,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_41",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -0.250063,
     "y": -7.87497245,
@@ -6234,9 +5514,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_42",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 0.250063,
     "y": -7.87497245,
@@ -6246,9 +5524,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_43",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 0.749935,
     "y": -7.87497245,
@@ -6258,9 +5534,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_44",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 1.250061,
     "y": -7.87497245,
@@ -6270,9 +5544,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_45",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 1.750187,
     "y": -7.87497245,
@@ -6282,9 +5554,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_46",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 2.400173,
     "y": -7.87497245,
@@ -6294,9 +5564,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_47",
     "pcb_component_id": "pcb_component_2",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 3.200019,
     "y": -7.87497245,
@@ -6306,12 +5574,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_48",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 4.324985,
     "y": 8.42488245,
@@ -6321,12 +5584,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_49",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -4.324985,
     "y": 8.42488245,
@@ -6336,12 +5594,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_50",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 4.324985,
     "y": 12.62502645,
@@ -6351,12 +5604,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_51",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top",
-      "inner1",
-      "inner2",
-      "bottom"
-    ],
+    "layers": ["top", "inner1", "inner2", "bottom"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -4.324985,
     "y": 12.62502645,
@@ -6366,9 +5614,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_52",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 3.2000190000000006,
     "y": 7.8749724500000005,
@@ -6378,9 +5624,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_53",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 2.3999190000000006,
     "y": 7.8749724500000005,
@@ -6390,9 +5634,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_54",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 1.7499330000000002,
     "y": 7.87497245,
@@ -6402,9 +5644,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_55",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 1.2498070000000001,
     "y": 7.87497245,
@@ -6414,9 +5654,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_56",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 0.7499350000000002,
     "y": 7.87497245,
@@ -6426,9 +5664,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_57",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 0.25006300000000026,
     "y": 7.87497245,
@@ -6438,9 +5674,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_58",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -0.2500629999999997,
     "y": 7.87497245,
@@ -6450,9 +5684,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_59",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -0.7499349999999998,
     "y": 7.87497245,
@@ -6462,9 +5694,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_60",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -1.2500609999999999,
     "y": 7.87497245,
@@ -6474,9 +5704,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_61",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -1.7501869999999997,
     "y": 7.87497245,
@@ -6486,9 +5714,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_62",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -2.4001729999999997,
     "y": 7.87497245,
@@ -6498,9 +5724,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_63",
     "pcb_component_id": "pcb_component_3",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": -3.2000189999999997,
     "y": 7.87497245,

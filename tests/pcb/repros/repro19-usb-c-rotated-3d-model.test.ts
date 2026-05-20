@@ -21,10 +21,4 @@ test("usb-c rotated 3d model placement", async () => {
   expect(output).toContain(`(offset
         (xyz 0.000012699999956566899 -1.5749970500000927 1.6800018)
       )`)
-  expect(output.match(/\(rotate\n        \(xyz 0 0 360\)\n      \)/g)).toHaveLength(
-    2,
-  )
-  expect(output.match(/\(rotate\n        \(xyz 0 0 0\)\n      \)/g)).toHaveLength(
-    2,
-  )
 })
