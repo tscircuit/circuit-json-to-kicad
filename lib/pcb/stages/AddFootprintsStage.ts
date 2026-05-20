@@ -335,7 +335,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         component.center,
         {
           boardLayerZOffset,
-          componentRotationDegrees: component.rotation || 0,
+          footprintRotationDegrees: component.rotation || 0,
         },
       )
       const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
