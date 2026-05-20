@@ -4,7 +4,7 @@ import { FootprintModel } from "kicadts"
 export function create3DModelsFromCadComponent(
   cadComponent: CadComponent,
   componentCenter: { x: number; y: number },
-  options?: { boardLayerZOffset?: number; footprintRotationDegrees?: number },
+  options?: { boardLayerZOffset?: number; footprintRotation?: number },
 ): FootprintModel[] {
   const models: FootprintModel[] = []
 
@@ -39,12 +39,12 @@ export function create3DModelsFromCadComponent(
   }
 
   if (cadComponent.rotation) {
-    const footprintRotationDegrees = options?.footprintRotationDegrees ?? 0
+    const footprintRotation = options?.footprintRotation ?? 0
 
     model.rotate = {
       x: cadComponent.rotation.x || 0,
       y: cadComponent.rotation.y || 0,
-      z: (cadComponent.rotation.z || 0) - footprintRotationDegrees,
+      z: (cadComponent.rotation.z || 0) - footprintRotation,
     }
   }
 
