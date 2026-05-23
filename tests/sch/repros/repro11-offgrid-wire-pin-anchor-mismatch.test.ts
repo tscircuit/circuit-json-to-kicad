@@ -109,10 +109,6 @@ test("repro11 off-grid wire endpoints miss exported KiCad pin anchors", async ()
   converter.runUntilFinished()
 
   const output = converter.getOutputString()
-  await Bun.write(
-    "./debug-output/repro11-offgrid-wire-pin-anchor-mismatch.kicad_sch",
-    output,
-  )
 
   const kicadSch = KicadSch.parse(output)[0] as KicadSch
   const wirePoints = kicadSch.wires[0]?.points?.points as
