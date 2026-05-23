@@ -114,7 +114,10 @@ test("repro11 off-grid generic chip traces snap to KiCad pin anchors", () => {
   expect(wirePoints).toBeDefined()
 
   const symbolsByRef = new Map(
-    kicadSch.symbols.map((symbol: any) => [symbol.properties?.[0]?.value, symbol]),
+    kicadSch.symbols.map((symbol: any) => [
+      symbol.properties?.[0]?.value,
+      symbol,
+    ]),
   )
   const u1 = symbolsByRef.get("U1")
   const u2 = symbolsByRef.get("U2")
