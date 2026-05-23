@@ -3,6 +3,8 @@ import { KicadSch } from "kicadts"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test("repro11 off-grid wire endpoints miss exported KiCad pin anchors", async () => {
   const circuit = new Circuit()
@@ -14,50 +16,9 @@ test("repro11 off-grid wire endpoints miss exported KiCad pin anchors", async ()
         footprint="soic2"
         schX={0.13}
         schY={0.17}
-        symbol={
-          <symbol name="OffGridChip" width={2} height={1}>
-            <port
-              name="pin1"
-              pinNumber={1}
-              direction="left"
-              schX={-0.9}
-              schY={0}
-            />
-            <port
-              name="pin2"
-              pinNumber={2}
-              direction="right"
-              schX={0.9}
-              schY={0}
-            />
-          </symbol>
-        }
         connections={{ pin2: "U2.pin1" }}
       />
-      <chip
-        name="U2"
-        footprint="soic2"
-        schX={4.31}
-        schY={0.22}
-        symbol={
-          <symbol name="OffGridChip" width={2} height={1}>
-            <port
-              name="pin1"
-              pinNumber={1}
-              direction="left"
-              schX={-0.9}
-              schY={0}
-            />
-            <port
-              name="pin2"
-              pinNumber={2}
-              direction="right"
-              schX={0.9}
-              schY={0}
-            />
-          </symbol>
-        }
-      />
+      <chip name="U2" footprint="soic2" schX={4.31} schY={0.22} />
     </board>,
   )
 
@@ -92,9 +53,9 @@ test("repro11 off-grid wire endpoints miss exported KiCad pin anchors", async ()
   const expectedStart = { x: u1.at.x + 15, y: u1.at.y }
   const expectedEnd = { x: u2.at.x - 15, y: u2.at.y }
 
-  expect(wireStart.x - expectedStart.x).toBeCloseTo(-1.5)
+  expect(wireStart.x - expectedStart.x).toBeCloseTo(-6)
   expect(wireStart.y - expectedStart.y).toBeCloseTo(0)
-  expect(wireEnd.x - expectedEnd.x).toBeCloseTo(1.5)
+  expect(wireEnd.x - expectedEnd.x).toBeCloseTo(6)
   expect(wireEnd.y - expectedEnd.y).toBeCloseTo(0)
 
   const kicadSnapshot = await takeKicadSnapshot({
@@ -104,6 +65,12 @@ test("repro11 off-grid wire endpoints miss exported KiCad pin anchors", async ()
 
   expect(kicadSnapshot.exitCode).toBe(0)
   expect(
-    kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson,
+        outputType: "schematic",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
   ).toMatchPngSnapshot(import.meta.path)
 }, 15_000)
