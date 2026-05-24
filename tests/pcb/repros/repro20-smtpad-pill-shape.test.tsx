@@ -25,7 +25,6 @@ const Repro20SmtPadPillShape = () => (
             height="1.8mm"
             radius="0.4mm"
             pcbX="1mm"
-            pcbRotation={90}
             portHints={["pin2"]}
           />
         </footprint>
