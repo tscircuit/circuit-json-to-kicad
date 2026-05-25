@@ -2,6 +2,9 @@ import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 const Repro20SmtPadPillShape = () => (
   <board width="8mm" height="8mm" routingDisabled>
@@ -49,4 +52,20 @@ test("pcb repro20 pill-shaped smtpad", async () => {
   expect(() => KicadPcb.parse(outputString)).not.toThrow()
   expect(outputString).toContain(`(pad "1" smd roundrect`)
   expect(outputString).toContain(`(roundrect_rratio 0.5)`)
+
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: outputString,
+    kicadFileType: "pcb",
+  })
+
+  expect(kicadSnapshot.exitCode).toBe(0)
+  expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson,
+        outputType: "pcb",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
 })
