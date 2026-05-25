@@ -127,6 +127,15 @@ export function createSmdPadFromCircuitJson({
     }
     padSize = [pcbPad.width, pcbPad.height]
     rotation = pcbPad.ccw_rotation
+  } else if (pcbPad.shape === "pill") {
+    padShape = "roundrect"
+    padSize = [pcbPad.width, pcbPad.height]
+    roundrect_rratio = pcbPad.radius / Math.min(pcbPad.width, pcbPad.height)
+  } else if (pcbPad.shape === "rotated_pill") {
+    padShape = "roundrect"
+    padSize = [pcbPad.width, pcbPad.height]
+    roundrect_rratio = pcbPad.radius / Math.min(pcbPad.width, pcbPad.height)
+    rotation = pcbPad.ccw_rotation
   } else if (pcbPad.shape === "rect") {
     const cornerRadius = pcbPad.corner_radius ?? pcbPad.rect_border_radius
     if (cornerRadius) {
@@ -152,6 +161,7 @@ export function createSmdPadFromCircuitJson({
       `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
     ],
     solderMaskMargin: pcbPad.soldermask_margin,
+    roundrectRatio: roundrect_rratio,
     uuid: generateDeterministicUuid(padData),
   })
 

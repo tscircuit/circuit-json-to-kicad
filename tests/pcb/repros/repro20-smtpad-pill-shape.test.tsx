@@ -35,7 +35,6 @@ const Repro20SmtPadPillShape = () => (
 
 export default Repro20SmtPadPillShape
 
-// will be skipped after approval to make the checks green
 test("pcb repro20 pill-shaped smtpad", async () => {
   const circuit = new Circuit()
   circuit.add(<Repro20SmtPadPillShape />)
@@ -46,15 +45,8 @@ test("pcb repro20 pill-shaped smtpad", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
-  let parseError: unknown
-  try {
-    KicadPcb.parse(outputString)
-  } catch (error) {
-    parseError = error
-  }
 
-  expect(parseError).toBeInstanceOf(Error)
-  expect((parseError as Error).message).toMatchInlineSnapshot(
-    `"pad header tokens must be strings"`,
-  )
+  expect(() => KicadPcb.parse(outputString)).not.toThrow()
+  expect(outputString).toContain(`(pad "1" smd roundrect`)
+  expect(outputString).toContain(`(roundrect_rratio 0.5)`)
 })
