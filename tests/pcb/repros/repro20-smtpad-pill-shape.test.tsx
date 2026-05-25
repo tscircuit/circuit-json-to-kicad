@@ -1,4 +1,4 @@
-import { test } from "bun:test"
+import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
@@ -46,5 +46,15 @@ test("pcb repro20 pill-shaped smtpad", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
-  KicadPcb.parse(outputString)
+  let parseError: unknown
+  try {
+    KicadPcb.parse(outputString)
+  } catch (error) {
+    parseError = error
+  }
+
+  expect(parseError).toBeInstanceOf(Error)
+  expect((parseError as Error).message).toMatchInlineSnapshot(
+    `"pad header tokens must be strings"`,
+  )
 })
