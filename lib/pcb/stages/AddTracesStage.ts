@@ -31,16 +31,26 @@ type PcbTraceRoutePoint =
   | PcbTraceRoutePointWithPosition
   | PcbTraceThroughPadRoutePoint
 
+type PcbTraceWithRoute = {
+  pcb_trace_id?: string
+  route?: PcbTraceRoutePoint[]
+  width?: number
+  layer?: string
+  subcircuit_connectivity_map_key?: string
+  source_trace_id?: string
+  connection_name?: string
+}
+
 /**
  * Adds traces (segments/tracks) to the PCB from circuit JSON
  */
 export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
   private tracesProcessed = 0
-  private pcbTraces: any[] = []
+  private pcbTraces: PcbTraceWithRoute[] = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
-    this.pcbTraces = this.ctx.db.pcb_trace.list()
+    this.pcbTraces = this.ctx.db.pcb_trace.list() as PcbTraceWithRoute[]
   }
 
   private getRoutePointPosition(
@@ -90,8 +100,8 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Create segments for each pair of points in the route
     for (let i = 0; i < trace.route.length - 1; i++) {
-      const startPoint = trace.route[i] as PcbTraceRoutePoint
-      const endPoint = trace.route[i + 1] as PcbTraceRoutePoint
+      const startPoint = trace.route[i]
+      const endPoint = trace.route[i + 1]
       const startPosition = this.getRoutePointPosition(startPoint, "start")
       const endPosition = this.getRoutePointPosition(endPoint, "end")
 
