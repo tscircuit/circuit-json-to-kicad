@@ -7,6 +7,7 @@ import {
   TextEffectsJustify,
 } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
+import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 /**
  * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_fabrication_note_text
@@ -86,6 +87,9 @@ export function createFabricationNoteTextFromCircuitJson({
     text: textElement.text,
     layer: kicadLayer,
     effects: textEffects,
+    uuid: generateDeterministicUuid(
+      textElement.pcb_fabrication_note_text_id ?? textElement.text,
+    ),
   })
   grText.position = position
 
