@@ -13,7 +13,7 @@ import { getKicadLayer } from "../utils/layerMapping"
 type RoutePointPosition = { x: number; y: number }
 
 type PcbTraceRoutePointWithPosition = {
-  route_type?: string
+  route_type: "wire" | "via"
   x: number
   y: number
   layer?: string
@@ -24,6 +24,8 @@ type PcbTraceThroughPadRoutePoint = {
   route_type: "through_pad"
   start: RoutePointPosition
   end: RoutePointPosition
+  start_layer?: string
+  end_layer?: string
   width?: number
 }
 
@@ -31,14 +33,23 @@ type PcbTraceRoutePoint =
   | PcbTraceRoutePointWithPosition
   | PcbTraceThroughPadRoutePoint
 
-type PcbTraceWithRoute = {
-  pcb_trace_id?: string
-  route?: PcbTraceRoutePoint[]
-  width?: number
-  layer?: string
-  subcircuit_connectivity_map_key?: string
-  source_trace_id?: string
-  connection_name?: string
+function getRoutePointLayer(
+  point: PcbTraceRoutePoint,
+  pointRoleInSegment: "start" | "end",
+): string | undefined {
+  if ("layer" in point) {
+    return point.layer
+  }
+
+  if (point.route_type === "through_pad") {
+    if (pointRoleInSegment === "start") {
+      return point.end_layer
+    }
+
+    return point.start_layer
+  }
+
+  return undefined
 }
 
 /**
@@ -46,11 +57,11 @@ type PcbTraceWithRoute = {
  */
 export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
   private tracesProcessed = 0
-  private pcbTraces: PcbTraceWithRoute[] = []
+  private pcbTraces: any[] = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
-    this.pcbTraces = this.ctx.db.pcb_trace.list() as PcbTraceWithRoute[]
+    this.pcbTraces = this.ctx.db.pcb_trace.list()
   }
 
   private getRoutePointPosition(
@@ -91,17 +102,21 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
     const trace = this.pcbTraces[this.tracesProcessed]
 
     // Skip traces without route information
-    if (!trace.route || trace.route.length < 2) {
+    const route = trace.route as PcbTraceRoutePoint[] | undefined
+    if (!route || route.length < 2) {
       this.tracesProcessed++
       return
     }
 
-    let lastKnownLayer: string | undefined = trace.route[0]?.layer
+    let lastKnownLayer: string | undefined = getRoutePointLayer(
+      route[0]!,
+      "start",
+    )
 
     // Create segments for each pair of points in the route
-    for (let i = 0; i < trace.route.length - 1; i++) {
-      const startPoint = trace.route[i]
-      const endPoint = trace.route[i + 1]
+    for (let i = 0; i < route.length - 1; i++) {
+      const startPoint = route[i]!
+      const endPoint = route[i + 1]!
       const startPosition = this.getRoutePointPosition(startPoint, "start")
       const endPosition = this.getRoutePointPosition(endPoint, "end")
 
@@ -161,7 +176,9 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
 
       const segmentLayerSource =
-        startPoint.layer ?? endPoint.layer ?? lastKnownLayer
+        getRoutePointLayer(startPoint, "start") ??
+        getRoutePointLayer(endPoint, "end") ??
+        lastKnownLayer
 
       // Map circuit JSON layer names to KiCad layer names
       const kicadLayer = getKicadLayer(segmentLayerSource)
@@ -182,11 +199,14 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       segments.push(segment)
       kicadPcb.segments = segments
 
-      if (startPoint.layer) {
-        lastKnownLayer = startPoint.layer
+      const startLayer = getRoutePointLayer(startPoint, "start")
+      const endLayer = getRoutePointLayer(endPoint, "end")
+
+      if (startLayer) {
+        lastKnownLayer = startLayer
       }
-      if (endPoint.layer) {
-        lastKnownLayer = endPoint.layer
+      if (endLayer) {
+        lastKnownLayer = endLayer
       }
     }
 

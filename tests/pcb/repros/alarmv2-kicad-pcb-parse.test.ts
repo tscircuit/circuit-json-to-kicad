@@ -3,14 +3,15 @@ import circuitJson from "tests/assets/alarmv2.json"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { parseKicadPcb } from "kicadts"
 
-test("alarmv2 circuit json converts to parseable KiCad PCB", async () => {
-  const hasThroughPadRoutePoint = circuitJson.some(
-    (element) =>
-      element.type === "pcb_trace" &&
-      element.route?.some((point) => point.route_type === "through_pad"),
-  )
+type RoutePoint = { route_type?: string }
 
-  expect(hasThroughPadRoutePoint).toBe(true)
+test("alarmv2 circuit json converts to parseable KiCad PCB", async () => {
+  const throughPadRoutePoints = circuitJson
+    .filter((element: any) => element.type === "pcb_trace")
+    .flatMap((trace: any): RoutePoint[] => trace.route ?? [])
+    .filter((point) => point.route_type === "through_pad")
+
+  expect(throughPadRoutePoints.length).toBeGreaterThan(0)
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
 
