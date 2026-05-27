@@ -19,11 +19,6 @@ test("alarmv2 circuit json converts to parseable KiCad PCB", async () => {
     .split("\n")
     .filter((line) => line.includes("NaN") || line.includes("undefined"))
 
-  expect(invalidCoordinateLines).toEqual([
-    "    (end NaN NaN)",
-    "    (start NaN NaN)",
-  ])
-  expect(() => parseKicadPcb(kicadPcbContent)).toThrow(
-    "end expects two numeric arguments",
-  )
+  expect(invalidCoordinateLines).toEqual([])
+  expect(() => parseKicadPcb(kicadPcbContent)).not.toThrow()
 })

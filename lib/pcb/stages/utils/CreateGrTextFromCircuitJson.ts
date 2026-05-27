@@ -7,6 +7,7 @@ import {
   At,
 } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
+import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 /**
  * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_silkscreen_text
@@ -89,6 +90,9 @@ export function createGrTextFromCircuitJson({
     text: textElement.text,
     layer: kicadLayer,
     effects: textEffects,
+    uuid: generateDeterministicUuid(
+      textElement.pcb_silkscreen_text_id ?? textElement.text,
+    ),
   })
   grText.position = position
 

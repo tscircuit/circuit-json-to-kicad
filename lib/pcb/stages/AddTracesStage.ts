@@ -1,4 +1,10 @@
-import type { CircuitJson } from "circuit-json"
+import type {
+  CircuitJson,
+  Distance,
+  LayerRef,
+  PcbTraceRoutePoint,
+  Point,
+} from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Segment, SegmentNet } from "kicadts"
 import {
@@ -10,6 +16,48 @@ import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { getKicadLayer } from "../utils/layerMapping"
 
+type PcbTraceRoutePointThroughPad = {
+  route_type: "through_pad"
+  start: Point
+  end: Point
+  start_layer?: LayerRef
+  end_layer?: LayerRef
+  width?: Distance
+}
+
+type PcbTraceRoutePointWithThroughPad =
+  | PcbTraceRoutePoint
+  | PcbTraceRoutePointThroughPad
+
+function getRoutePointLayer(
+  point: PcbTraceRoutePointWithThroughPad,
+  pointRoleInSegment: "start" | "end",
+): string | undefined {
+  if ("layer" in point) {
+    return point.layer
+  }
+
+  if (point.route_type === "through_pad") {
+    if (pointRoleInSegment === "start") {
+      return point.end_layer
+    }
+
+    return point.start_layer
+  }
+
+  return undefined
+}
+
+function getRoutePointWidth(
+  point: PcbTraceRoutePointWithThroughPad,
+): number | undefined {
+  if ("width" in point) {
+    return point.width
+  }
+
+  return undefined
+}
+
 /**
  * Adds traces (segments/tracks) to the PCB from circuit JSON
  */
@@ -20,6 +68,25 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
     this.pcbTraces = this.ctx.db.pcb_trace.list()
+  }
+
+  private getRoutePointPosition(
+    point: PcbTraceRoutePointWithThroughPad,
+    pointRoleInSegment: "start" | "end",
+  ): Point | null {
+    if ("x" in point && "y" in point) {
+      return { x: point.x, y: point.y }
+    }
+
+    if (point.route_type !== "through_pad") {
+      return null
+    }
+
+    if (pointRoleInSegment === "start") {
+      return { x: point.end.x, y: point.end.y }
+    }
+
+    return { x: point.start.x, y: point.start.y }
   }
 
   override _step(): void {
@@ -41,27 +108,40 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
     const trace = this.pcbTraces[this.tracesProcessed]
 
     // Skip traces without route information
-    if (!trace.route || trace.route.length < 2) {
+    const route = trace.route as PcbTraceRoutePointWithThroughPad[] | undefined
+    if (!route || route.length < 2) {
       this.tracesProcessed++
       return
     }
 
-    let lastKnownLayer: string | undefined = trace.route[0]?.layer
+    let lastKnownLayer: string | undefined = getRoutePointLayer(
+      route[0]!,
+      "start",
+    )
 
     // Create segments for each pair of points in the route
-    for (let i = 0; i < trace.route.length - 1; i++) {
-      const startPoint = trace.route[i]
-      const endPoint = trace.route[i + 1]
+    for (let i = 0; i < route.length - 1; i++) {
+      const startPoint = route[i]!
+      const endPoint = route[i + 1]!
+      const startPosition = this.getRoutePointPosition(startPoint, "start")
+      const endPosition = this.getRoutePointPosition(endPoint, "end")
+
+      if (!startPosition || !endPosition) {
+        throw new Error(
+          `Unable to convert pcb_trace route segment ${trace.pcb_trace_id ?? this.tracesProcessed}:${i} to KiCad segment`,
+        )
+      }
 
       // Transform points to KiCad coordinates
-      const transformedStart = applyToPoint(c2kMatPcb, {
-        x: startPoint.x,
-        y: startPoint.y,
-      })
-      const transformedEnd = applyToPoint(c2kMatPcb, {
-        x: endPoint.x,
-        y: endPoint.y,
-      })
+      const transformedStart = applyToPoint(c2kMatPcb, startPosition)
+      const transformedEnd = applyToPoint(c2kMatPcb, endPosition)
+
+      if (
+        transformedStart.x === transformedEnd.x &&
+        transformedStart.y === transformedEnd.y
+      ) {
+        continue
+      }
 
       let netInfo: PcbNetInfo | undefined
       if (pcbNetMap) {
@@ -102,7 +182,9 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
 
       const segmentLayerSource =
-        startPoint.layer ?? endPoint.layer ?? lastKnownLayer
+        getRoutePointLayer(startPoint, "start") ??
+        getRoutePointLayer(endPoint, "end") ??
+        lastKnownLayer
 
       // Map circuit JSON layer names to KiCad layer names
       const kicadLayer = getKicadLayer(segmentLayerSource)
@@ -113,7 +195,11 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         start: { x: transformedStart.x, y: transformedStart.y },
         end: { x: transformedEnd.x, y: transformedEnd.y },
         layer: kicadLayer,
-        width: startPoint.width ?? endPoint.width ?? trace.width ?? 0.25,
+        width:
+          getRoutePointWidth(startPoint) ??
+          getRoutePointWidth(endPoint) ??
+          trace.width ??
+          0.25,
         net: new SegmentNet(netInfo?.id ?? 0),
         uuid: generateDeterministicUuid(segmentData),
       })
@@ -123,11 +209,14 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
       segments.push(segment)
       kicadPcb.segments = segments
 
-      if (startPoint.layer) {
-        lastKnownLayer = startPoint.layer
+      const startLayer = getRoutePointLayer(startPoint, "start")
+      const endLayer = getRoutePointLayer(endPoint, "end")
+
+      if (startLayer) {
+        lastKnownLayer = startLayer
       }
-      if (endPoint.layer) {
-        lastKnownLayer = endPoint.layer
+      if (endLayer) {
+        lastKnownLayer = endLayer
       }
     }
 
