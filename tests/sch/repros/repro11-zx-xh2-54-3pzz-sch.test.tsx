@@ -1,4 +1,4 @@
-import { test } from "bun:test"
+import { expect, test } from "bun:test"
 import type { ChipProps } from "@tscircuit/props"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
@@ -168,6 +168,9 @@ test("repro11 ZX_XH2_54_3PZZ schematic snapshot", async () => {
     kicadFileContent: output,
     kicadFileType: "sch",
   })
+
+  expect(output).toContain('(property "Reference" "J_TEMP"')
+  expect(output).not.toContain('(property "Reference" "U?"')
 
   await Bun.write(
     "./debug-output/repro11-zx-xh2-54-3pzz-sch.stacked.png",
