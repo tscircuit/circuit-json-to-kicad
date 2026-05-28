@@ -127,8 +127,9 @@ export function getReferenceDesignator(
   sourceComponent?: SourceComponentBase | null,
 ): string {
   const name = sourceComponent?.name
-  if (isReferenceDesignator(name)) {
-    return name!.trim()
+  const trimmedName = name?.trim()
+  if (trimmedName) {
+    return trimmedName
   }
 
   const prefix = getReferencePrefixForComponent(sourceComponent)
