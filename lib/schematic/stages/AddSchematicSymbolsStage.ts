@@ -565,7 +565,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     if (sourceComp.ftype === "simple_led") {
       return {
         reference,
-        value: sourceComp.manufacturer_part_number || "",
+        value: sourceComp.color || sourceComp.manufacturer_part_number || "",
         description: "LED",
       }
     }
