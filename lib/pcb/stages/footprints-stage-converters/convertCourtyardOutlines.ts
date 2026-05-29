@@ -10,10 +10,17 @@ import {
 import { generateDeterministicUuid } from "../utils/generateDeterministicUuid"
 
 export function convertCourtyardOutlines(
-  courtyardOutlines: PcbCourtyardOutline[],
-  componentCenter: { x: number; y: number },
-  componentRotation = 0,
+  params: {
+    courtyardOutlines: PcbCourtyardOutline[]
+    componentCenter: { x: number; y: number }
+    componentRotation?: number
+  },
 ): FpPoly[] {
+  const {
+    courtyardOutlines,
+    componentCenter,
+    componentRotation = 0,
+  } = params
   const fpPolys: FpPoly[] = []
 
   const cj2kicadMatrix = compose(

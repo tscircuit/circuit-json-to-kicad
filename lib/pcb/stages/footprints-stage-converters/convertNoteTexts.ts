@@ -3,10 +3,13 @@ import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 
 export function convertNoteTexts(
-  noteTexts: PcbNoteText[],
-  componentCenter: { x: number; y: number },
-  componentRotation: number,
+  params: {
+    noteTexts: PcbNoteText[]
+    componentCenter: { x: number; y: number }
+    componentRotation: number
+  },
 ): FpText[] {
+  const { noteTexts, componentCenter, componentRotation } = params
   const fpTexts: FpText[] = []
 
   for (const textElement of noteTexts) {

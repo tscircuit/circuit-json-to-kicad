@@ -3,11 +3,19 @@ import { FpText } from "kicadts"
 import { createFpTextFromCircuitJson } from "../utils/CreateFpTextFromCircuitJson"
 
 export function convertSilkscreenTexts(
-  silkscreenTexts: PcbSilkscreenText[],
-  componentCenter: { x: number; y: number },
-  componentRotation: number,
-  sourceComponentName?: string,
+  params: {
+    silkscreenTexts: PcbSilkscreenText[]
+    componentCenter: { x: number; y: number }
+    componentRotation: number
+    sourceComponentName?: string
+  },
 ): FpText[] {
+  const {
+    silkscreenTexts,
+    componentCenter,
+    componentRotation,
+    sourceComponentName,
+  } = params
   const fpTexts: FpText[] = []
 
   for (const textElement of silkscreenTexts) {
