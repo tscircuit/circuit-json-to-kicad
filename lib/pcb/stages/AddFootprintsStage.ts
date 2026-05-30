@@ -140,12 +140,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpTexts.push(
-      ...convertSilkscreenTexts(
-        pcbSilkscreenTexts,
-        component.center,
-        component.rotation || 0,
-        sourceComponent?.name,
-      ),
+      ...convertSilkscreenTexts({
+        silkscreenTexts: pcbSilkscreenTexts,
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+        sourceComponentName: sourceComponent?.name,
+      }),
     )
 
     const pcbNoteTexts =
@@ -156,11 +156,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpTexts.push(
-      ...convertNoteTexts(
-        pcbNoteTexts,
-        component.center,
-        component.rotation || 0,
-      ),
+      ...convertNoteTexts({
+        noteTexts: pcbNoteTexts,
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
     )
 
     footprint.fpTexts = fpTexts
@@ -235,11 +235,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
             hole.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    const npthPads = convertNpthHoles(
+    const npthPads = convertNpthHoles({
       pcbHoles,
-      component.center,
-      component.rotation || 0,
-    )
+      componentCenter: component.center,
+      componentRotation: component.rotation || 0,
+    })
     fpPads.push(...npthPads)
 
     footprint.fpPads = fpPads
@@ -309,11 +309,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
             outline.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    const fpPolys = convertCourtyardOutlines(
-      pcbCourtyardOutlines,
-      component.center,
-      component.rotation || 0,
-    )
+    const fpPolys = convertCourtyardOutlines({
+      courtyardOutlines: pcbCourtyardOutlines,
+      componentCenter: component.center,
+      componentRotation: component.rotation || 0,
+    })
 
     if (fpPolys.length > 0) {
       footprint.fpPolys = fpPolys

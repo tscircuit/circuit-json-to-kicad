@@ -94,11 +94,11 @@ export class AddStandalonePcbElements extends ConverterStage<
       })
 
       const ccwRotationDegrees = 0
-      const npthPads = convertNpthHoles(
-        [hole],
-        { x: hole.x, y: hole.y }, // Use hole center for negative offset
-        ccwRotationDegrees,
-      )
+      const npthPads = convertNpthHoles({
+        pcbHoles: [hole],
+        componentCenter: { x: hole.x, y: hole.y }, // Use hole center for negative offset
+        componentRotation: ccwRotationDegrees,
+      })
 
       if (npthPads.length > 0) {
         footprint.fpPads = npthPads
