@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
-import { takeKicadSnapshot } from "../../../fixtures/take-kicad-snapshot"
-import { takeCircuitJsonSnapshot } from "../../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../../fixtures/stackCircuitJsonKicadPngs"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 const Repro21RectCutoutPcb = () => (
   <board width="30mm" height="20mm">
