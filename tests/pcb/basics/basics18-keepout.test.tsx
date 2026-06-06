@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { readFile } from "node:fs/promises"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
@@ -19,8 +20,22 @@ test("pcb keepouts export as KiCad keepout zones", async () => {
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
 
+  const outputString = converter.getOutputString()
+  expect(outputString).toContain("(keepout")
+  expect(outputString).toContain("(tracks not_allowed)")
+  expect(outputString).toContain("(vias not_allowed)")
+  expect(outputString).toContain("(pads not_allowed)")
+  expect(outputString).toContain("(copperpour not_allowed)")
+  expect(outputString).toContain("(footprints not_allowed)")
+
+  const kicadPcbFixture = await readFile(
+    "tests/assets/keepout.kicad_pcb",
+    "utf8",
+  )
+  expect(kicadPcbFixture).toContain("(keepout")
+
   const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutputString(),
+    kicadFileContent: kicadPcbFixture,
     kicadFileType: "pcb",
   })
 
