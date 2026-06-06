@@ -16,122 +16,6 @@ const KICAD_10_DRILL_FILL_STYLE =
   "fill:#000000; fill-opacity:1.0000; stroke:none;"
 const KICAD_10_OVAL_HOLE_STROKE_REGEX =
   /(<g style="fill:none;\s*stroke:)#000000(; stroke-width:[^"]*stroke-linecap:round; stroke-linejoin:round;">)/g
-const KEEP_OUT_OVERLAY_MARGIN = 0.05
-
-interface Point {
-  x: number
-  y: number
-}
-
-const findSexprBlocks = (source: string, token: string): string[] => {
-  const blocks: string[] = []
-  let searchIndex = 0
-  const tokenStart = `(${token}`
-
-  while (searchIndex < source.length) {
-    const start = source.indexOf(tokenStart, searchIndex)
-    if (start === -1) break
-
-    let depth = 0
-    let inString = false
-    let escaped = false
-
-    for (let index = start; index < source.length; index++) {
-      const char = source[index]
-
-      if (inString) {
-        if (escaped) {
-          escaped = false
-        } else if (char === "\\") {
-          escaped = true
-        } else if (char === '"') {
-          inString = false
-        }
-        continue
-      }
-
-      if (char === '"') {
-        inString = true
-      } else if (char === "(") {
-        depth++
-      } else if (char === ")") {
-        depth--
-        if (depth === 0) {
-          blocks.push(source.slice(start, index + 1))
-          searchIndex = index + 1
-          break
-        }
-      }
-    }
-
-    if (searchIndex <= start) break
-  }
-
-  return blocks
-}
-
-const parsePointMatches = (source: string, regex: RegExp): Point[] =>
-  [...source.matchAll(regex)].map((match) => ({
-    x: Number(match[1]),
-    y: Number(match[2]),
-  }))
-
-const getKeepoutZonePolygons = (kicadPcbContent: string): Point[][] =>
-  findSexprBlocks(kicadPcbContent, "zone")
-    .filter((zoneBlock) => zoneBlock.includes("(keepout"))
-    .map((zoneBlock) =>
-      parsePointMatches(
-        zoneBlock,
-        /\(xy\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\)/g,
-      ),
-    )
-    .filter((points) => points.length >= 3)
-
-const getEdgeCutPoints = (kicadPcbContent: string): Point[] =>
-  findSexprBlocks(kicadPcbContent, "gr_line")
-    .filter((block) => block.includes("Edge.Cuts"))
-    .flatMap((block) =>
-      parsePointMatches(
-        block,
-        /\((?:start|end)\s+(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\)/g,
-      ),
-    )
-
-export const addPcbKeepoutOverlaysToSvg = (
-  svg: string,
-  kicadPcbContent?: string,
-): string => {
-  if (!kicadPcbContent) return svg
-
-  const keepoutPolygons = getKeepoutZonePolygons(kicadPcbContent)
-  if (keepoutPolygons.length === 0) return svg
-
-  const bboxPoints = [
-    ...getEdgeCutPoints(kicadPcbContent),
-    ...keepoutPolygons.flat(),
-  ]
-  if (bboxPoints.length === 0) return svg
-
-  const minX = Math.min(...bboxPoints.map((point) => point.x))
-  const minY = Math.min(...bboxPoints.map((point) => point.y))
-  const toSvgPoint = (point: Point) =>
-    `${point.x - minX + KEEP_OUT_OVERLAY_MARGIN},${point.y - minY + KEEP_OUT_OVERLAY_MARGIN}`
-
-  const overlay = `
-<defs>
-  <pattern id="cj2k-keepout-hatch" patternUnits="userSpaceOnUse" width="0.6" height="0.6">
-    <path d="M-0.15 0.6 L0.6 -0.15 M0 0.75 L0.75 0" style="stroke:#ff5d5d; stroke-width:0.08" />
-  </pattern>
-</defs>
-<g data-cj2k-keepout-overlays="true" style="fill:url(#cj2k-keepout-hatch); fill-opacity:1; stroke:#ff5d5d; stroke-width:0.05; stroke-opacity:1">
-${keepoutPolygons
-  .map((points) => `  <polygon points="${points.map(toSvgPoint).join(" ")}" />`)
-  .join("\n")}
-</g>
-`
-
-  return svg.replace("</svg>", `${overlay}</svg>`)
-}
 
 /**
  * KiCad 10 renders circular drill holes as filled black circles and pill/oval
@@ -142,15 +26,14 @@ ${keepoutPolygons
 export function normalizePcbSvgForSnapshot(
   svg: string,
   pcbDrillHoleColor?: string,
-  kicadPcbContent?: string,
 ): string {
-  const svgWithKeepouts = addPcbKeepoutOverlaysToSvg(svg, kicadPcbContent)
-
-  if (!pcbDrillHoleColor) return svgWithKeepouts
+  if (!pcbDrillHoleColor) {
+    return svg
+  }
 
   const drillFillStyle = `fill:${pcbDrillHoleColor}; fill-opacity:1.0000; stroke:none;`
 
-  return svgWithKeepouts
+  return svg
     .replaceAll(KICAD_10_DRILL_FILL_STYLE, drillFillStyle)
     .replace(KICAD_10_OVAL_HOLE_STROKE_REGEX, `$1${pcbDrillHoleColor}$2`)
 }
@@ -249,11 +132,6 @@ export const takeKicadSnapshot = async (params: {
     }
 
     // Convert each SVG to PNG using sharp
-    const resolvedKicadFileContent =
-      kicadFileType === "pcb"
-        ? (kicadFileContent ?? (await readFile(inputFilePath, "utf8")))
-        : undefined
-
     for (const svgFilePath of svgFilePaths) {
       const rawSvgBuffer = await readFile(svgFilePath)
       const normalizedSvgBuffer =
@@ -262,7 +140,6 @@ export const takeKicadSnapshot = async (params: {
               normalizePcbSvgForSnapshot(
                 rawSvgBuffer.toString("utf8"),
                 pcbDrillHoleColor,
-                resolvedKicadFileContent,
               ),
             )
           : rawSvgBuffer
