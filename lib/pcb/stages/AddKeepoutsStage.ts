@@ -98,13 +98,13 @@ const getKeepoutLayers = (keepout: PCBKeepout): string[] =>
   keepout.layers.length > 0 ? keepout.layers.map(getKicadLayer) : ["F.Cu"]
 
 const createZoneKeepout = (): ZoneKeepout => {
-  const keepout = new ZoneKeepout()
-  keepout.tracks = "not_allowed"
-  keepout.vias = "not_allowed"
-  keepout.pads = "not_allowed"
-  keepout.copperpour = "not_allowed"
-  keepout.footprints = "not_allowed"
-  return keepout
+  return new ZoneKeepout({
+    tracks: "not_allowed",
+    vias: "not_allowed",
+    pads: "not_allowed",
+    copperpour: "not_allowed",
+    footprints: "not_allowed",
+  })
 }
 
 export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
