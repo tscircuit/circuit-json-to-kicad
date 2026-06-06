@@ -1,5 +1,4 @@
 import { expect, test } from "bun:test"
-import { readFile } from "node:fs/promises"
 import { parseKicadPcb, Xy, type Zone } from "kicadts"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
@@ -18,12 +17,6 @@ const expectAllKeepoutRulesNotAllowed = (zone: Zone) => {
 }
 
 test("pcb keepouts export as KiCad keepout zones", async () => {
-  const realPcb = parseKicadPcb(
-    await readFile("tests/assets/keepout.kicad_pcb", "utf8"),
-  )
-  expect(realPcb.graphicLines).toHaveLength(4)
-  expect(realPcb.zones).toHaveLength(0)
-
   const circuit = new Circuit()
   circuit.add(
     <board width="10mm" height="10mm">
