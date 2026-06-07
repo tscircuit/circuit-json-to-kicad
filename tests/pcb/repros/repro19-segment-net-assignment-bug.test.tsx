@@ -33,17 +33,21 @@ test("repro19: trace segments lose net assignment when pcb_trace.source_trace_id
   expect(sourceNet).toBeDefined()
   const sourceNetId = sourceNet.source_net_id
 
-  // Find the pcb_trace and modify it to simulate the bug
+  // Find the pcb_trace and modify it to replicate the target input scenario
   const pcbTrace = circuitJson.find((el) => el.type === "pcb_trace")
   expect(pcbTrace).toBeDefined()
 
   /**
-   * Note: The standard tscircuit React renderer generates fully valid Circuit JSON
-   * with `connection_name` and `source_trace_id` pointing to a `source_trace`.
-   * However, in real-world imports or autorouter exports (e.g. from `capacity-autorouter`),
-   * the generated `pcb_trace` elements might have `source_trace_id` set to a `source_net` ID
-   * and omit `connection_name`. We programmatically structure the `pcb_trace` this way
-   * to test that the converter correctly handles this valid Circuit JSON variant.
+   * Note: The standard tscircuit React renderer generates Circuit JSON where
+   * `pcb_trace` elements have a `connection_name` and a `source_trace_id` pointing
+   * to a `source_trace`.
+   *
+   * However, in some contexts (e.g. autorouter outputs from `capacity-autorouter`),
+   * `pcb_trace` elements have a `source_trace_id` pointing directly to a `source_net` ID
+   * and omit `connection_name`.
+   *
+   * We modify the rendered output here to match this specific input variant so that we
+   * can test the converter's handling of it.
    */
   // 1. Delete connection_name
   delete pcbTrace.connection_name
@@ -63,9 +67,10 @@ test("repro19: trace segments lose net assignment when pcb_trace.source_trace_id
   const firstMatch = segmentMatches[0]
   expect(firstMatch).toBeDefined()
   if (firstMatch) {
-    // Under the bug, the segment is incorrectly assigned to net 0 because
-    // AddTracesStage fails to resolve connectivity from source_trace_id if it's a net ID.
-    // We expect "0" here to document the bug and make the test pass for green-build/merge.
+    // Currently, without the fix, the segment gets assigned to net 0 (Default)
+    // because AddTracesStage fails to resolve the net when source_trace_id is a
+    // source_net ID and connection_name is absent.
+    // We expect "0" here to document the behavior before the fix is applied.
     expect(firstMatch[1]).toBe("0")
   }
 
