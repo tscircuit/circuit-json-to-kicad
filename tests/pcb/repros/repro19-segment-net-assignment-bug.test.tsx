@@ -11,6 +11,9 @@
 import { test, expect } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test("repro19: trace segments lose net assignment when pcb_trace.source_trace_id is a source_net ID and connection_name is absent", async () => {
   const circuit = new Circuit()
@@ -34,7 +37,14 @@ test("repro19: trace segments lose net assignment when pcb_trace.source_trace_id
   const pcbTrace = circuitJson.find((el) => el.type === "pcb_trace")
   expect(pcbTrace).toBeDefined()
 
-  // Simulate the bug:
+  /**
+   * Note: The standard tscircuit React renderer generates fully valid Circuit JSON
+   * with `connection_name` and `source_trace_id` pointing to a `source_trace`.
+   * However, in real-world imports or autorouter exports (e.g. from `capacity-autorouter`),
+   * the generated `pcb_trace` elements might have `source_trace_id` set to a `source_net` ID
+   * and omit `connection_name`. We programmatically structure the `pcb_trace` this way
+   * to test that the converter correctly handles this valid Circuit JSON variant.
+   */
   // 1. Delete connection_name
   delete pcbTrace.connection_name
   // 2. Set source_trace_id to the source_net's ID
@@ -58,4 +68,20 @@ test("repro19: trace segments lose net assignment when pcb_trace.source_trace_id
     // We expect "0" here to document the bug and make the test pass for green-build/merge.
     expect(firstMatch[1]).toBe("0")
   }
+
+  // Generate and compare snapshot for visual confirmation
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: output,
+    kicadFileType: "pcb",
+  })
+
+  expect(
+    await stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson: circuitJson,
+        outputType: "pcb",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
 })
