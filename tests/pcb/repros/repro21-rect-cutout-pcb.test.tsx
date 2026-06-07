@@ -25,13 +25,45 @@ const Repro21RectCutoutPcb = () => (
 
 export default Repro21RectCutoutPcb
 
-test("pcb repro21 cutout shapes are emitted on Edge.Cuts", async () => {
+const createRepro21CircuitJson = async () => {
   const circuit = new Circuit()
   circuit.add(<Repro21RectCutoutPcb />)
 
   await circuit.renderUntilSettled()
 
-  const circuitJson = circuit.getCircuitJson()
+  const circuitJson = circuit.getCircuitJson() as any[]
+  const pcbBoard = circuitJson.find((element) => element.type === "pcb_board")
+
+  return [...circuitJson]
+}
+
+test("pcb repro21 cutout shapes are emitted on Edge.Cuts", async () => {
+  const circuitJson = await createRepro21CircuitJson()
+
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  converter.runUntilFinished()
+
+  const output = converter.getOutput()
+  const outputString = converter.getOutputString()
+
+  expect(outputString.match(/\(gr_circle\b/g)?.length ?? 0).toBe(1)
+  expect(outputString.match(/\(gr_poly\b/g)?.length ?? 0).toBe(2)
+  expect(outputString.match(/\(gr_line\b/g)?.length ?? 0).toBe(4)
+  expect(
+    output.graphicCircles.every(
+      (circle) => circle.layer?.names[0] === "Edge.Cuts",
+    ),
+  ).toBe(true)
+  expect(
+    output.graphicPolys.every((poly) => poly.layer?.names[0] === "Edge.Cuts"),
+  ).toBe(true)
+  expect(
+    output.graphicLines.every((line) => line.layer?.names[0] === "Edge.Cuts"),
+  ).toBe(true)
+})
+
+test("pcb repro21 cutout shapes match snapshot", async () => {
+  const circuitJson = await createRepro21CircuitJson()
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()

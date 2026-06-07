@@ -1,9 +1,14 @@
-import type { CircuitJson, PcbSilkscreenPath } from "circuit-json"
+import type {
+  CircuitJson,
+  PcbCutout,
+  PcbCutoutRect,
+  PcbSilkscreenPath,
+} from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { GrLine } from "kicadts"
+import { GrCircle, GrLine, GrPoly } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 
 const pointsAreEqual = (
@@ -30,6 +35,56 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
   }
 
   return dedupedCorners
+}
+
+const EDGE_CUTS_WIDTH = 0.1
+
+const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
+  const graphicLines = kicadPcb.graphicLines
+  graphicLines.push(grLine)
+  kicadPcb.graphicLines = graphicLines
+}
+
+const appendGraphicCircle = (kicadPcb: KicadPcb, grCircle: GrCircle) => {
+  const graphicCircles = kicadPcb.graphicCircles
+  graphicCircles.push(grCircle)
+  kicadPcb.graphicCircles = graphicCircles
+}
+
+const appendGraphicPoly = (kicadPcb: KicadPcb, grPoly: GrPoly) => {
+  const graphicPolys = kicadPcb.graphicPolys
+  graphicPolys.push(grPoly)
+  kicadPcb.graphicPolys = graphicPolys
+}
+
+const rotatePointAroundOrigin = (
+  point: { x: number; y: number },
+  rotationDegrees = 0,
+) => {
+  if (!rotationDegrees) return point
+
+  return applyToPoint(rotate((rotationDegrees * Math.PI) / 180), point)
+}
+
+const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
+  const halfWidth = cutout.width / 2
+  const halfHeight = cutout.height / 2
+
+  const localCorners = [
+    { x: -halfWidth, y: -halfHeight },
+    { x: halfWidth, y: -halfHeight },
+    { x: halfWidth, y: halfHeight },
+    { x: -halfWidth, y: halfHeight },
+  ]
+
+  return localCorners.map((point) => {
+    const rotatedPoint = rotatePointAroundOrigin(point, cutout.rotation)
+
+    return {
+      x: rotatedPoint.x + cutout.center.x,
+      y: rotatedPoint.y + cutout.center.y,
+    }
+  })
 }
 
 /**
@@ -88,10 +143,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           width: path.stroke_width || 0.15,
         })
 
-        // Add the graphics line to the PCB
-        const graphicLines = kicadPcb.graphicLines
-        graphicLines.push(grLine)
-        kicadPcb.graphicLines = graphicLines
+        appendGraphicLine(kicadPcb, grLine)
       }
     }
 
@@ -182,12 +234,82 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           start: { x: start.x, y: start.y },
           end: { x: end.x, y: end.y },
           layer: "Edge.Cuts",
-          width: 0.1,
+          width: EDGE_CUTS_WIDTH,
         })
 
-        const graphicLines = kicadPcb.graphicLines
-        graphicLines.push(edgeLine)
-        kicadPcb.graphicLines = graphicLines
+        appendGraphicLine(kicadPcb, edgeLine)
+      }
+    }
+
+    const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
+
+    // Board cutouts become Edge.Cuts graphics in KiCad so they participate in
+    // milling/outline geometry instead of being dropped.
+    for (const cutout of pcbCutouts) {
+      if (cutout.shape === "circle") {
+        const transformedCenter = applyToPoint(c2kMatPcb, cutout.center)
+        const transformedEnd = applyToPoint(c2kMatPcb, {
+          x: cutout.center.x + cutout.radius,
+          y: cutout.center.y,
+        })
+
+        appendGraphicCircle(
+          kicadPcb,
+          new GrCircle({
+            center: transformedCenter,
+            end: transformedEnd,
+            layer: "Edge.Cuts",
+            width: EDGE_CUTS_WIDTH,
+          }),
+        )
+      } else if (cutout.shape === "polygon") {
+        const corners = normalizeOutlineCorners(cutout.points)
+        if (corners.length < 3) continue
+
+        appendGraphicPoly(
+          kicadPcb,
+          new GrPoly({
+            points: corners.map((point) => applyToPoint(c2kMatPcb, point)),
+            layer: "Edge.Cuts",
+            width: EDGE_CUTS_WIDTH,
+            fill: false,
+          }),
+        )
+      } else if (cutout.shape === "rect") {
+        const corners = normalizeOutlineCorners(getRectCutoutCorners(cutout))
+        if (corners.length < 3) continue
+
+        appendGraphicPoly(
+          kicadPcb,
+          new GrPoly({
+            points: corners.map((point) => applyToPoint(c2kMatPcb, point)),
+            layer: "Edge.Cuts",
+            width: EDGE_CUTS_WIDTH,
+            fill: false,
+          }),
+        )
+      } else if (cutout.shape === "path") {
+        if (!cutout.route || cutout.route.length < 2) continue
+
+        for (let i = 0; i < cutout.route.length - 1; i++) {
+          const startPoint = cutout.route[i]
+          const endPoint = cutout.route[i + 1]
+
+          if (!startPoint || !endPoint) continue
+
+          const transformedStart = applyToPoint(c2kMatPcb, startPoint)
+          const transformedEnd = applyToPoint(c2kMatPcb, endPoint)
+
+          appendGraphicLine(
+            kicadPcb,
+            new GrLine({
+              start: transformedStart,
+              end: transformedEnd,
+              layer: "Edge.Cuts",
+              width: EDGE_CUTS_WIDTH,
+            }),
+          )
+        }
       }
     }
 
