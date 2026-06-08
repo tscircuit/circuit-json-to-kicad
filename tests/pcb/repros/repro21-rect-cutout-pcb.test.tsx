@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit"
+import { Circuit, type AnyCircuitElement } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
@@ -31,7 +31,7 @@ const createRepro21CircuitJson = async () => {
 
   await circuit.renderUntilSettled()
 
-  const circuitJson = circuit.getCircuitJson() as any[]
+  const circuitJson = circuit.getCircuitJson() as AnyCircuitElement[]
   const pcbBoard = circuitJson.find((element) => element.type === "pcb_board")
 
   return [...circuitJson]
