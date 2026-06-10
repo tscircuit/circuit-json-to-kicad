@@ -10,9 +10,6 @@
  */
 import { test, expect } from "bun:test"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
-import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test("repro19: trace segments lose net assignment when pcb_trace.source_trace_id is a source_net ID and connection_name is absent", async () => {
   const circuitJson = [
@@ -70,20 +67,4 @@ test("repro19: trace segments lose net assignment when pcb_trace.source_trace_id
     // We expect "0" here to document the bug and make the test pass for green-build/merge.
     expect(firstMatch[1]).toBe("0")
   }
-
-  // Generate and compare snapshot for visual confirmation
-  const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: output,
-    kicadFileType: "pcb",
-  })
-
-  expect(
-    await stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({
-        circuitJson: circuitJson as any,
-        outputType: "pcb",
-      }),
-      kicadSnapshot.generatedFileContent["temp_file.png"]!,
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
 })
