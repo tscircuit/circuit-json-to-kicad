@@ -57,7 +57,7 @@ const getCopperPourNetInfo = (
   return ctx.pcbNetMap?.get(connectivityKey)
 }
 
-const transformPoints = (
+const convertPointsToKicadXy = (
   points: readonly { x: number; y: number }[] | undefined,
   c2kMatPcb: Matrix,
 ): Xy[] => {
@@ -87,7 +87,7 @@ const rotateRingToStartAtTopRight = (points: Xy[]): Xy[] => {
   return [...points.slice(startIndex), ...points.slice(0, startIndex)]
 }
 
-const removeDuplicateAdjacentAndClosingPoints = (points: Xy[]): Xy[] => {
+const removeConsecutiveDuplicatePoints = (points: Xy[]): Xy[] => {
   const dedupedPoints: Xy[] = []
 
   for (const point of points) {
@@ -97,6 +97,12 @@ const removeDuplicateAdjacentAndClosingPoints = (points: Xy[]): Xy[] => {
     }
     dedupedPoints.push(point)
   }
+
+  return dedupedPoints
+}
+
+const removeRepeatedClosingPoint = (points: Xy[]): Xy[] => {
+  const dedupedPoints = [...points]
 
   const firstPoint = dedupedPoints[0]
   const lastPoint = dedupedPoints[dedupedPoints.length - 1]
@@ -132,30 +138,40 @@ const getRectRingPoints = (
     { x: -halfWidth, y: halfHeight },
   ].map((corner) => applyToPoint(cornerTransform, corner))
 
-  return transformPoints(corners, c2kMatPcb)
+  return convertPointsToKicadXy(corners, c2kMatPcb)
 }
 
 const getPolygonRingPoints = (
   pour: PcbCopperPourPolygon,
   c2kMatPcb: Matrix,
 ): Xy[] =>
-  removeDuplicateAdjacentAndClosingPoints(
-    rotateRingToStartAtTopRight(transformPoints(pour.points, c2kMatPcb)),
+  removeRepeatedClosingPoint(
+    removeConsecutiveDuplicatePoints(
+      rotateRingToStartAtTopRight(
+        convertPointsToKicadXy(pour.points, c2kMatPcb),
+      ),
+    ),
   )
 
 const getBrepZoneRings = (
   pour: PcbCopperPourBRep,
   c2kMatPcb: Matrix,
 ): [outerRing: Xy[], innerRings: Xy[][]] => [
-  removeDuplicateAdjacentAndClosingPoints(
-    rotateRingToStartAtTopRight(
-      transformPoints(pour.brep_shape.outer_ring.vertices, c2kMatPcb),
+  removeRepeatedClosingPoint(
+    removeConsecutiveDuplicatePoints(
+      rotateRingToStartAtTopRight(
+        convertPointsToKicadXy(pour.brep_shape.outer_ring.vertices, c2kMatPcb),
+      ),
     ),
   ),
   pour.brep_shape.inner_rings
     .map((ring) =>
-      removeDuplicateAdjacentAndClosingPoints(
-        rotateRingToStartAtTopRight(transformPoints(ring.vertices, c2kMatPcb)),
+      removeRepeatedClosingPoint(
+        removeConsecutiveDuplicatePoints(
+          rotateRingToStartAtTopRight(
+            convertPointsToKicadXy(ring.vertices, c2kMatPcb),
+          ),
+        ),
       ),
     )
     .filter((ringPoints) => ringPoints.length >= 3),
@@ -168,8 +184,10 @@ const getCopperPourZoneRings = (
   switch (pour.shape) {
     case "rect":
       return [
-        removeDuplicateAdjacentAndClosingPoints(
-          rotateRingToStartAtTopRight(getRectRingPoints(pour, c2kMatPcb)),
+        removeRepeatedClosingPoint(
+          removeConsecutiveDuplicatePoints(
+            rotateRingToStartAtTopRight(getRectRingPoints(pour, c2kMatPcb)),
+          ),
         ),
         [],
       ]
