@@ -11,10 +11,18 @@ test("pcb repro24 autorouting dataset snapshot", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
+  const parsedPcb = parseKicadPcb(outputString)
+
+  expect(outputString).toContain("(filled_polygon")
+  expect(parsedPcb.zones.length).toBeGreaterThan(0)
+  expect(parsedPcb.zones.every((zone) => zone.filledPolygons.length > 0)).toBe(
+    true,
+  )
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
+    pcbCopperPourOpacity: 0.4,
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)

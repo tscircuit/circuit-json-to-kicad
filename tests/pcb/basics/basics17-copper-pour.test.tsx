@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import { readFile } from "node:fs/promises"
+import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -40,10 +41,14 @@ test("pcb basics17 copper pour", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
+  const parsedPcb = parseKicadPcb(outputString)
 
   expect(outputString).toContain("(zone")
   expect(outputString).toContain("(layer F.Cu)")
   expect(outputString).toContain("(polygon")
+  expect(outputString).toContain("(filled_polygon")
+  expect(outputString).toContain("(island_removal_mode 0)")
+  expect(parsedPcb.zones[0]?.filledPolygons.length ?? 0).toBeGreaterThan(0)
 
   const zoneBlock = getZoneBlock(outputString)
   expect(zoneBlock).toContain("(net 1)")
