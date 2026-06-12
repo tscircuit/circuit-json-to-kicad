@@ -2,89 +2,20 @@ import { $ } from "bun"
 import { tmpdir } from "node:os"
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { parseKicadPcb } from "kicadts"
 import sharp from "sharp"
+
+type FilePath = string
+type FileContent = Buffer
 
 export interface KicadOutput {
   exitCode: number
-  generatedFileContent: Record<string, Buffer>
+  generatedFileContent: Record<FilePath, FileContent>
 }
 
 const KICAD_10_DRILL_FILL_STYLE =
   "fill:#000000; fill-opacity:1.0000; stroke:none;"
 const KICAD_10_OVAL_HOLE_STROKE_REGEX =
   /(<g style="fill:none;\s*stroke:)#000000(; stroke-width:[^"]*stroke-linecap:round; stroke-linejoin:round;">)/g
-const PCB_SNAPSHOT_COPPER_LAYER_EXPORT_ORDER = [
-  "B.Cu",
-  "In1.Cu",
-  "In2.Cu",
-  "F.Cu",
-]
-const KICAD_FILLED_PATH_STYLE_REGEX =
-  /fill:[^"]+fill-opacity:1\.0000; stroke:none;fill-rule:evenodd;/g
-
-const getZoneFilledPolygonCountsByLayer = (
-  kicadPcbContent: string,
-): Map<string, number> => {
-  const zoneFilledPolygonCountsByLayer = new Map<string, number>()
-
-  try {
-    const pcb = parseKicadPcb(kicadPcbContent)
-
-    for (const zone of pcb.zones) {
-      const layerName = zone.layer?.names[0]
-      if (!layerName || zone.filledPolygons.length === 0) continue
-
-      zoneFilledPolygonCountsByLayer.set(
-        layerName,
-        (zoneFilledPolygonCountsByLayer.get(layerName) ?? 0) +
-          zone.filledPolygons.length,
-      )
-    }
-  } catch {
-    // Snapshot styling is best-effort only.
-  }
-
-  return zoneFilledPolygonCountsByLayer
-}
-
-const updateLastFilledPathStyles = (
-  svg: string,
-  filledPathStyle: string,
-  count: number,
-  opacity: number,
-): string => {
-  if (count <= 0) return svg
-
-  const pathPrefix = `<path style="${filledPathStyle}"`
-  const matchIndices: number[] = []
-  let searchStart = 0
-
-  while (true) {
-    const matchIndex = svg.indexOf(pathPrefix, searchStart)
-    if (matchIndex === -1) break
-    matchIndices.push(matchIndex)
-    searchStart = matchIndex + pathPrefix.length
-  }
-
-  if (matchIndices.length === 0) return svg
-
-  const adjustedOpacity = Math.max(0, Math.min(1, opacity)).toFixed(4)
-  const updatedStyle = filledPathStyle.replace(
-    "fill-opacity:1.0000;",
-    `fill-opacity:${adjustedOpacity};`,
-  )
-
-  let normalizedSvg = svg
-  for (const matchIndex of matchIndices.slice(-count).reverse()) {
-    normalizedSvg =
-      normalizedSvg.slice(0, matchIndex) +
-      `<path style="${updatedStyle}"` +
-      normalizedSvg.slice(matchIndex + pathPrefix.length)
-  }
-
-  return normalizedSvg
-}
 
 /**
  * KiCad 10 renders circular drill holes as filled black circles and pill/oval
@@ -94,58 +25,17 @@ const updateLastFilledPathStyles = (
  */
 export function normalizePcbSvgForSnapshot(
   svg: string,
-  {
-    pcbDrillHoleColor,
-    pcbCopperPourOpacity,
-    zoneFilledPolygonCountsByLayer,
-  }: {
-    pcbDrillHoleColor?: string
-    pcbCopperPourOpacity?: number
-    zoneFilledPolygonCountsByLayer?: Map<string, number>
-  } = {},
+  pcbDrillHoleColor?: string,
 ): string {
-  let normalizedSvg = svg
-
-  if (pcbDrillHoleColor) {
-    const drillFillStyle = `fill:${pcbDrillHoleColor}; fill-opacity:1.0000; stroke:none;`
-
-    normalizedSvg = normalizedSvg
-      .replaceAll(KICAD_10_DRILL_FILL_STYLE, drillFillStyle)
-      .replace(KICAD_10_OVAL_HOLE_STROKE_REGEX, `$1${pcbDrillHoleColor}$2`)
+  if (!pcbDrillHoleColor) {
+    return svg
   }
 
-  if (
-    pcbCopperPourOpacity === undefined ||
-    !zoneFilledPolygonCountsByLayer ||
-    zoneFilledPolygonCountsByLayer.size === 0
-  ) {
-    return normalizedSvg
-  }
+  const drillFillStyle = `fill:${pcbDrillHoleColor}; fill-opacity:1.0000; stroke:none;`
 
-  const distinctFilledPathStylesInOrder = Array.from(
-    new Set(normalizedSvg.match(KICAD_FILLED_PATH_STYLE_REGEX) ?? []),
-  )
-
-  let styleIndex = 0
-  for (const layerName of PCB_SNAPSHOT_COPPER_LAYER_EXPORT_ORDER) {
-    const filledPolygonCount =
-      zoneFilledPolygonCountsByLayer.get(layerName) ?? 0
-    if (filledPolygonCount === 0) continue
-
-    const filledPathStyle = distinctFilledPathStylesInOrder[styleIndex]
-    styleIndex += 1
-
-    if (!filledPathStyle) continue
-
-    normalizedSvg = updateLastFilledPathStyles(
-      normalizedSvg,
-      filledPathStyle,
-      filledPolygonCount,
-      pcbCopperPourOpacity,
-    )
-  }
-
-  return normalizedSvg
+  return svg
+    .replaceAll(KICAD_10_DRILL_FILL_STYLE, drillFillStyle)
+    .replace(KICAD_10_OVAL_HOLE_STROKE_REGEX, `$1${pcbDrillHoleColor}$2`)
 }
 
 /**
@@ -159,59 +49,42 @@ export const takeKicadSnapshot = async (params: {
   kicadFileContent?: string
   kicadFileType: "sch" | "pcb" | "3d"
   pcbDrillHoleColor?: string
-  pcbCopperPourOpacity?: number
 }): Promise<KicadOutput> => {
-  const {
-    kicadFilePath,
-    kicadFileContent,
-    kicadFileType,
-    pcbDrillHoleColor,
-    pcbCopperPourOpacity,
-  } = params
+  const { kicadFilePath, kicadFileContent, kicadFileType, pcbDrillHoleColor } =
+    params
 
   // Check to make sure kicad-cli is installed
   const kicadCliVersion = await $`kicad-cli --version`
 
   if (!kicadCliVersion.stdout.toString().trim().startsWith("10.")) {
-    throw new Error("kicad-cli version 10.x is required")
+    throw new Error("kicad-cli version 9.0.0 or higher is required")
   }
 
   // Create a temporary directory for working with files
   const tempDir = await mkdtemp(join(tmpdir(), "kicad-snapshot-"))
+  let inputFilePath: string
 
   try {
-    if (!kicadFilePath && !kicadFileContent) {
+    // Determine input file path
+    if (kicadFilePath) {
+      inputFilePath = kicadFilePath
+    } else if (kicadFileContent) {
+      const ext = kicadFileType === "sch" ? "sch" : "pcb"
+      inputFilePath = join(tempDir, `temp_file.kicad_${ext}`)
+      await writeFile(inputFilePath, kicadFileContent)
+    } else {
       throw new Error(
         "Either kicadFilePath or kicadFileContent must be provided",
       )
     }
 
-    const inputFileExt = kicadFileType === "sch" ? "sch" : "pcb"
-    const inputFilePath =
-      kicadFilePath ?? join(tempDir, `temp_file.kicad_${inputFileExt}`)
-
-    if (!kicadFilePath) {
-      await writeFile(inputFilePath, kicadFileContent!)
-    }
-
-    const isPcbSnapshot = kicadFileType === "pcb"
-
-    const kicadPcbContentForStyling = isPcbSnapshot
-      ? (kicadFileContent ?? (await readFile(inputFilePath, "utf8")))
-      : undefined
-    const zoneFilledPolygonCountsByLayer = kicadPcbContentForStyling
-      ? getZoneFilledPolygonCountsByLayer(kicadPcbContentForStyling)
-      : undefined
-
     // Create output directory
     const outputDir = join(tempDir, "output")
-    await $`mkdir -p ${outputDir}`
+    const generatedFileContent: Record<FilePath, FileContent> = {}
 
-    const generatedFileContent: Record<string, Buffer> = {}
-
-    // Handle 3D rendering separately (outputs PNG directly)
     if (kicadFileType === "3d") {
       const outputPng = join(outputDir, "temp_file.png")
+      await $`mkdir -p ${outputDir}`
       const exportResult =
         await $`kicad-cli pcb render ${inputFilePath} -o ${outputPng} --width 800 --height 600 --rotate 45,0,45 --perspective --quality basic`
 
@@ -258,19 +131,19 @@ export const takeKicadSnapshot = async (params: {
     // Convert each SVG to PNG using sharp
     for (const svgFilePath of svgFilePaths) {
       const rawSvgBuffer = await readFile(svgFilePath)
-      const normalizedSvgBuffer = isPcbSnapshot
-        ? Buffer.from(
-            normalizePcbSvgForSnapshot(rawSvgBuffer.toString("utf8"), {
-              pcbDrillHoleColor,
-              pcbCopperPourOpacity,
-              zoneFilledPolygonCountsByLayer,
-            }),
-          )
-        : rawSvgBuffer
+      const normalizedSvgBuffer =
+        kicadFileType === "pcb"
+          ? Buffer.from(
+              normalizePcbSvgForSnapshot(
+                rawSvgBuffer.toString("utf8"),
+                pcbDrillHoleColor,
+              ),
+            )
+          : rawSvgBuffer
       let pngProcessor = sharp(normalizedSvgBuffer, { density: 100 })
 
       // For PCB files, scale 3x and add black background
-      if (isPcbSnapshot) {
+      if (kicadFileType === "pcb") {
         const metadata = await pngProcessor.metadata()
         const width = (metadata.width || 0) * 3
         const height = (metadata.height || 0) * 3

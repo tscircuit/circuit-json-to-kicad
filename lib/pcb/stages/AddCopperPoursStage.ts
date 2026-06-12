@@ -67,7 +67,7 @@ const transformPoints = (
   })
 }
 
-const rotatePointsToTopRight = (points: Xy[]): Xy[] => {
+const rotateRingToStartAtTopRight = (points: Xy[]): Xy[] => {
   if (points.length < 2) return points
 
   let startIndex = 0
@@ -87,34 +87,30 @@ const rotatePointsToTopRight = (points: Xy[]): Xy[] => {
   return [...points.slice(startIndex), ...points.slice(0, startIndex)]
 }
 
-const sanitizeRingPoints = (points: Xy[]): Xy[] => {
-  const sanitized: Xy[] = []
+const removeDuplicateAdjacentAndClosingPoints = (points: Xy[]): Xy[] => {
+  const dedupedPoints: Xy[] = []
 
   for (const point of points) {
-    const lastPoint = sanitized[sanitized.length - 1]
+    const lastPoint = dedupedPoints[dedupedPoints.length - 1]
     if (lastPoint?.x === point.x && lastPoint.y === point.y) {
       continue
     }
-    sanitized.push(point)
+    dedupedPoints.push(point)
   }
 
-  const firstPoint = sanitized[0]
-  const lastPoint = sanitized[sanitized.length - 1]
+  const firstPoint = dedupedPoints[0]
+  const lastPoint = dedupedPoints[dedupedPoints.length - 1]
   if (
     firstPoint &&
     lastPoint &&
-    sanitized.length > 1 &&
+    dedupedPoints.length > 1 &&
     firstPoint.x === lastPoint.x &&
     firstPoint.y === lastPoint.y
   ) {
-    sanitized.pop()
+    dedupedPoints.pop()
   }
 
-  return sanitized
-}
-
-const normalizeRing = (points: Xy[]): Xy[] => {
-  return sanitizeRingPoints(rotatePointsToTopRight(points))
+  return dedupedPoints
 }
 
 const getRectRingPoints = (
@@ -142,17 +138,26 @@ const getRectRingPoints = (
 const getPolygonRingPoints = (
   pour: PcbCopperPourPolygon,
   c2kMatPcb: Matrix,
-): Xy[] => normalizeRing(transformPoints(pour.points, c2kMatPcb))
+): Xy[] =>
+  removeDuplicateAdjacentAndClosingPoints(
+    rotateRingToStartAtTopRight(transformPoints(pour.points, c2kMatPcb)),
+  )
 
 const getBrepZoneRings = (
   pour: PcbCopperPourBRep,
   c2kMatPcb: Matrix,
 ): [outerRing: Xy[], innerRings: Xy[][]] => [
-  normalizeRing(
-    transformPoints(pour.brep_shape.outer_ring.vertices, c2kMatPcb),
+  removeDuplicateAdjacentAndClosingPoints(
+    rotateRingToStartAtTopRight(
+      transformPoints(pour.brep_shape.outer_ring.vertices, c2kMatPcb),
+    ),
   ),
   pour.brep_shape.inner_rings
-    .map((ring) => normalizeRing(transformPoints(ring.vertices, c2kMatPcb)))
+    .map((ring) =>
+      removeDuplicateAdjacentAndClosingPoints(
+        rotateRingToStartAtTopRight(transformPoints(ring.vertices, c2kMatPcb)),
+      ),
+    )
     .filter((ringPoints) => ringPoints.length >= 3),
 ]
 
@@ -162,7 +167,12 @@ const getCopperPourZoneRings = (
 ): [outerRing: Xy[], innerRings: Xy[][]] => {
   switch (pour.shape) {
     case "rect":
-      return [normalizeRing(getRectRingPoints(pour, c2kMatPcb)), []]
+      return [
+        removeDuplicateAdjacentAndClosingPoints(
+          rotateRingToStartAtTopRight(getRectRingPoints(pour, c2kMatPcb)),
+        ),
+        [],
+      ]
 
     case "polygon":
       return [getPolygonRingPoints(pour, c2kMatPcb), []]

@@ -21,48 +21,13 @@ L15.0000 6.0000" />
 </svg>
 `
 
-  const normalizedSvg = normalizePcbSvgForSnapshot(inputSvg, {
-    pcbDrillHoleColor: "pink",
-  })
+  const normalizedSvg = normalizePcbSvgForSnapshot(inputSvg, "pink")
 
   expect(normalizedSvg).toContain(
     'style="fill:pink; fill-opacity:1.0000; stroke:none;"',
   )
   expect(normalizedSvg).toContain("stroke:pink; stroke-width:2.0000;")
   expect(normalizedSvg).toContain('<circle cx="5.0000" cy="45.0000"')
-})
-
-test("normalizePcbSvgForSnapshot fades only the last zone-filled paths", () => {
-  const inputSvg = `
-<svg>
-  <path style="fill:#4D7FC4; fill-opacity:1.0000; stroke:none;fill-rule:evenodd;" d="M 0,0 Z" />
-  <path style="fill:#4D7FC4; fill-opacity:1.0000; stroke:none;fill-rule:evenodd;" d="M 1,0 Z" />
-  <path style="fill:#C83434; fill-opacity:1.0000; stroke:none;fill-rule:evenodd;" d="M 2,0 Z" />
-  <path style="fill:#C83434; fill-opacity:1.0000; stroke:none;fill-rule:evenodd;" d="M 3,0 Z" />
-  <path style="fill:#C83434; fill-opacity:1.0000; stroke:none;fill-rule:evenodd;" d="M 4,0 Z" />
-</svg>
-`
-
-  const normalizedSvg = normalizePcbSvgForSnapshot(inputSvg, {
-    pcbCopperPourOpacity: 0.4,
-    zoneFilledPolygonCountsByLayer: new Map([
-      ["B.Cu", 1],
-      ["F.Cu", 2],
-    ]),
-  })
-
-  expect(
-    normalizedSvg.match(/fill:#4D7FC4; fill-opacity:0\.4000;/g)?.length ?? 0,
-  ).toBe(1)
-  expect(
-    normalizedSvg.match(/fill:#4D7FC4; fill-opacity:1\.0000;/g)?.length ?? 0,
-  ).toBe(1)
-  expect(
-    normalizedSvg.match(/fill:#C83434; fill-opacity:0\.4000;/g)?.length ?? 0,
-  ).toBe(2)
-  expect(
-    normalizedSvg.match(/fill:#C83434; fill-opacity:1\.0000;/g)?.length ?? 0,
-  ).toBe(1)
 })
 
 test("takeKicadSnapshot - schematic export", async () => {

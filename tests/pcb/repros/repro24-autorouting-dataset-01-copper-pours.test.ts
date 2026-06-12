@@ -22,7 +22,6 @@ test("pcb repro24 autorouting dataset snapshot", async () => {
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
     kicadFileType: "pcb",
-    pcbCopperPourOpacity: 0.4,
   })
 
   expect(kicadSnapshot.exitCode).toBe(0)
