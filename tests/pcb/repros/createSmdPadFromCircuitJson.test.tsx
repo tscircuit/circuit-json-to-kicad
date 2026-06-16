@@ -43,7 +43,7 @@ test(
     expect(kicadPcb.footprints.length).toBe(2)
 
     for (const libraryLink of [
-      "tscircuit:resistor_0402",
+      "tscircuit:resistor_res0402",
       "tscircuit:capacitor_0402",
     ]) {
       const footprint = kicadPcb.footprints.find(

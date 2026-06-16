@@ -57,7 +57,7 @@ test("resolved model file paths match generated KiCad PCB model paths", async ()
   })
 
   expect(outputPaths).toEqual([
-    "3dmodels/tscircuit_builtin.3dshapes/0402.step",
+    "3dmodels/tscircuit_builtin.3dshapes/res0402.step",
     "3dmodels/my_project.3dshapes/custom-switch.step",
   ])
 

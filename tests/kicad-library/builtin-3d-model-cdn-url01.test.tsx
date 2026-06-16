@@ -34,9 +34,9 @@ test("builtin footprints get 3D model CDN URLs and use tscircuit_builtin.3dshape
   // CDN source paths for downloading
   expect(output.model3dSourcePaths.sort()).toMatchInlineSnapshot(`
 [
-  "https://modelcdn.tscircuit.com/jscad_models/0402.step",
   "https://modelcdn.tscircuit.com/jscad_models/0603.step",
   "https://modelcdn.tscircuit.com/jscad_models/0805.step",
+  "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
 ]
 `)
 
@@ -52,7 +52,7 @@ test("builtin footprints get 3D model CDN URLs and use tscircuit_builtin.3dshape
 [
   "footprints/tscircuit_builtin.pretty/capacitor_0603.kicad_mod",
   "footprints/tscircuit_builtin.pretty/diode_0805.kicad_mod",
-  "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+  "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
 ]
 `)
 
@@ -67,7 +67,7 @@ test("builtin footprints get 3D model CDN URLs and use tscircuit_builtin.3dshape
 [
   "capacitor_0603.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/0603.step",
   "diode_0805.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/0805.step",
-  "resistor_0402.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/0402.step",
+  "resistor_res0402.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/res0402.step",
 ]
 `)
 })

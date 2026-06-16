@@ -51,9 +51,10 @@ test("kicad-library includes stepUrl user model in model3dSourcePaths", async ()
 
   await converter.run()
   const output = converter.getOutput()
-  expect(output.model3dSourcePaths).toMatchInlineSnapshot(`
+  expect(output.model3dSourcePaths.sort()).toMatchInlineSnapshot(`
     [
       "https://modelcdn.tscircuit.com/jscad_models/0402.step",
+      "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/soic8.step",
     ]
   `)
@@ -64,11 +65,11 @@ test("kicad-library includes stepUrl user model in model3dSourcePaths", async ()
     k.endsWith(".kicad_mod"),
   )
   expect(kicadModKeys.length).toBeGreaterThan(0)
-  expect(kicadModKeys).toMatchInlineSnapshot(`
+  expect(kicadModKeys.sort()).toMatchInlineSnapshot(`
     [
       "footprints/test_lib.pretty/TestCircuit.kicad_mod",
-      "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
       "footprints/tscircuit_builtin.pretty/capacitor_0402.kicad_mod",
+      "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
     ]
   `)
   // Remote stepUrl → tscircuit_builtin.3dshapes (not {fpLibraryName}.3dshapes)

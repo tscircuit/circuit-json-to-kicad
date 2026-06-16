@@ -108,7 +108,7 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   expect(outputKeys).toMatchInlineSnapshot(`
     [
       "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod",
-      "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+      "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
       "fp-lib-table",
       "sym-lib-table",
       "symbols/my-keyboard-library.kicad_sym",
