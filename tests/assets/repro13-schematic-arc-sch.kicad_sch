@@ -1,0 +1,16 @@
+(kicad_sch
+  (version 20250114)
+  (generator circuit-json-to-kicad)
+  (generator_version 0.0.1)
+  (uuid 743cb128-797f-4ccd-969e-275917248699)
+  (paper
+    A4
+  )
+  (lib_symbols)
+  (sheet_instances
+    (path "/"
+      (page "1")
+    )
+  )
+  (embedded_fonts no)
+)
