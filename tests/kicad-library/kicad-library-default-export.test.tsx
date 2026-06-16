@@ -81,7 +81,7 @@ test("KicadLibraryConverter handles default export from entrypoint", async () =>
   expect(outputKeys).toMatchInlineSnapshot(`
 [
   "footprints/my-circuit.pretty/my-circuit.kicad_mod",
-  "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+  "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
   "fp-lib-table",
   "sym-lib-table",
   "symbols/my-circuit.kicad_sym",

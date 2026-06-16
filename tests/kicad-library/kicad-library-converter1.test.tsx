@@ -91,7 +91,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
   "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod",
   "footprints/tscircuit_builtin.pretty/capacitor_0805.kicad_mod",
   "footprints/tscircuit_builtin.pretty/diode_0603.kicad_mod",
-  "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+  "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
   "fp-lib-table",
   "sym-lib-table",
   "symbols/my-keyboard-library.kicad_sym",

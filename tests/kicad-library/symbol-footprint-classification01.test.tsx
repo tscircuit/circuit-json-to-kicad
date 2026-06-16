@@ -96,7 +96,7 @@ test("symbol-footprint classification: correct symbol assigned to user library w
     "footprints/test-lib.pretty/MixedBoard.kicad_mod",
   )
   expect(outputKeys).toContain(
-    "footprints/tscircuit_builtin.pretty/resistor_0402.kicad_mod",
+    "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
   )
   expect(outputKeys).toContain(
     "footprints/tscircuit_builtin.pretty/capacitor_0603.kicad_mod",
@@ -132,7 +132,7 @@ test("symbol-footprint classification: correct symbol assigned to user library w
   expect(builtinSymbolContent).toBeDefined()
 
   expect(builtinSymbolContent).toContain(
-    '"Footprint" "tscircuit_builtin:resistor_0402"',
+    '"Footprint" "tscircuit_builtin:resistor_res0402"',
   )
   expect(builtinSymbolContent).toContain(
     '"Footprint" "tscircuit_builtin:capacitor_0603"',

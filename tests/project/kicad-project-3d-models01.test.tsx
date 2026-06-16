@@ -45,7 +45,7 @@ test("pcb converter embeds KIPRJMOD 3D model paths for builtin and user footprin
 
   // Builtin footprints → tscircuit_builtin.3dshapes
   expect(pcbContent).toContain(
-    "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/0402.step",
+    "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/res0402.step",
   )
   expect(pcbContent).toContain(
     "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/0603.step",
@@ -59,7 +59,7 @@ test("pcb converter embeds KIPRJMOD 3D model paths for builtin and user footprin
   // get3dModelURL() returns all source URLs for the CLI to download
   const sourcePaths = converter.getModel3dSourcePaths().sort()
   expect(sourcePaths).toContain(
-    "https://modelcdn.tscircuit.com/jscad_models/0402.step",
+    "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
   )
   expect(sourcePaths).toContain(
     "https://modelcdn.tscircuit.com/jscad_models/0603.step",
