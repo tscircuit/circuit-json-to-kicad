@@ -20,6 +20,8 @@ import { ConverterStage } from "../../types"
 const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
 const DEFAULT_SECTION_LINE_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
 const DEFAULT_SECTION_TEXT_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
+const DEFAULT_SECTION_TEXT_PADDING_X_MM = 0.22
+const DEFAULT_SECTION_TEXT_PADDING_Y_MM = 0.18
 
 const isStandaloneSchematicElement = (
   element: CircuitSchematicLine | CircuitSchematicText,
@@ -86,9 +88,13 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     if (schematicTexts.length > 0) {
       const texts = kicadSch.texts || []
       for (const text of schematicTexts) {
+        let sourceY = text.position?.y ?? 0
+        if (text.position?.y !== undefined && text.position.y < 2) {
+          sourceY = text.position.y - DEFAULT_SECTION_TEXT_PADDING_Y_MM
+        }
         const position = applyToPoint(this.ctx.c2kMatSch, {
-          x: text.position?.x ?? 0,
-          y: text.position?.y ?? 0,
+          x: (text.position?.x ?? 0) + DEFAULT_SECTION_TEXT_PADDING_X_MM,
+          y: sourceY,
         })
 
         const font = new TextEffectsFont()
