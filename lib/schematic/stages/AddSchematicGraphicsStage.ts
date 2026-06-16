@@ -14,7 +14,7 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 
 const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
-const DEFAULT_SECTION_LINE_COLOR = [0, 0, 0, 1] as const
+const DEFAULT_SECTION_LINE_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
 const DEFAULT_SECTION_TEXT_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
 
 type SchematicLineRecord = {
@@ -87,12 +87,7 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         const stroke = new Stroke()
         stroke.width = 0
         stroke.type = "default"
-        stroke.color = {
-          r: DEFAULT_SECTION_LINE_COLOR[0],
-          g: DEFAULT_SECTION_LINE_COLOR[1],
-          b: DEFAULT_SECTION_LINE_COLOR[2],
-          a: DEFAULT_SECTION_LINE_COLOR[3],
-        }
+        stroke.color = DEFAULT_SECTION_LINE_COLOR
         polyline.stroke = stroke
         polyline.uuid = new Uuid(crypto.randomUUID())
 
