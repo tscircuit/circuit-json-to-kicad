@@ -1,16 +1,17 @@
-import type { CircuitJson } from "circuit-json"
-import { ConverterStage, type ConverterContext } from "../types"
-import { KicadSch } from "kicadts"
 import { cju } from "@tscircuit/circuit-json-util"
-import { compose, translate, scale } from "transformation-matrix"
-import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
-import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
-import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
-import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
-import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
-import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
+import type { CircuitJson } from "circuit-json"
+import { KicadSch } from "kicadts"
+import { compose, scale, translate } from "transformation-matrix"
+import type { ConverterContext, ConverterStage } from "../types"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
 import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
+import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
+import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
+import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
+import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
+import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
+import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
+import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
 
@@ -70,6 +71,7 @@ export class CircuitJsonToKicadSchConverter {
       new AddSchematicSymbolsStage(circuitJson, this.ctx),
       new AddSchematicNetLabelsStage(circuitJson, this.ctx),
       new AddSchematicTracesStage(circuitJson, this.ctx),
+      new AddSchematicGraphicsStage(circuitJson, this.ctx),
       new AddSheetInstancesStage(circuitJson, this.ctx),
     ]
   }
