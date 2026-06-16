@@ -86,13 +86,9 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     if (schematicTexts.length > 0) {
       const texts = kicadSch.texts || []
       for (const text of schematicTexts) {
-        let sourceY = text.position?.y ?? 0
-        if (text.position?.y !== undefined && text.position.y < 2) {
-          sourceY = text.position.y - 0.18
-        }
         const position = applyToPoint(this.ctx.c2kMatSch, {
-          x: (text.position?.x ?? 0) + 0.22,
-          y: sourceY,
+          x: text.position?.x ?? 0,
+          y: text.position?.y ?? 0,
         })
 
         const font = new TextEffectsFont()
