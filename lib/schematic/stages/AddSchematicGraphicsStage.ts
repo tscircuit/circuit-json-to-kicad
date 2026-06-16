@@ -1,4 +1,8 @@
-import type { CircuitJson } from "circuit-json"
+import type {
+  CircuitJson,
+  SchematicLine as CircuitSchematicLine,
+  SchematicText as CircuitSchematicText,
+} from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
   Polyline,
@@ -17,26 +21,9 @@ const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
 const DEFAULT_SECTION_LINE_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
 const DEFAULT_SECTION_TEXT_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
 
-type SchematicLineRecord = {
-  schematic_component_id?: string | null
-  x1: number
-  y1: number
-  x2: number
-  y2: number
-}
-
-type SchematicTextRecord = {
-  schematic_component_id?: string | null
-  position?: { x: number; y: number }
-  rotation?: number
-  text?: string
-}
-
-const isStandaloneSchematicLine = (line: SchematicLineRecord): boolean =>
-  !line.schematic_component_id
-
-const isStandaloneSchematicText = (text: SchematicTextRecord): boolean =>
-  !text.schematic_component_id
+const isStandaloneSchematicElement = (
+  element: CircuitSchematicLine | CircuitSchematicText,
+): boolean => !element.schematic_component_id
 
 export class AddSchematicGraphicsStage extends ConverterStage<
   CircuitJson,
@@ -55,10 +42,10 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     }
 
     const schematicLines = (db.schematic_line?.list() || []).filter(
-      isStandaloneSchematicLine,
+      isStandaloneSchematicElement,
     )
     const schematicTexts = (db.schematic_text?.list() || []).filter(
-      isStandaloneSchematicText,
+      isStandaloneSchematicElement,
     )
 
     if (schematicLines.length === 0 && schematicTexts.length === 0) {
@@ -99,10 +86,10 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     if (schematicTexts.length > 0) {
       const texts = kicadSch.texts || []
       for (const text of schematicTexts) {
-        const sourceY =
-          text.position?.y !== undefined && text.position.y < 2
-            ? text.position.y - 0.18
-            : (text.position?.y ?? 0)
+        let sourceY = text.position?.y ?? 0
+        if (text.position?.y !== undefined && text.position.y < 2) {
+          sourceY = text.position.y - 0.18
+        }
         const position = applyToPoint(this.ctx.c2kMatSch, {
           x: (text.position?.x ?? 0) + 0.22,
           y: sourceY,
