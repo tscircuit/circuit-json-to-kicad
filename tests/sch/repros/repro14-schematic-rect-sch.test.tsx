@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { takeKicadSnapshot } from "../../../fixtures/take-kicad-snapshot"
-import { takeCircuitJsonSnapshot } from "../../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../../fixtures/stackCircuitJsonKicadPngs"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
 test("repro14 schematic rect schematic", async () => {
   const circuit = new Circuit()
