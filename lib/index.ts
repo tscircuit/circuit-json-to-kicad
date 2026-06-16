@@ -1,6 +1,7 @@
 export * from "./schematic/CircuitJsonToKicadSchConverter"
 export * from "./pcb/CircuitJsonToKicadPcbConverter"
 export * from "./project/CircuitJsonToKicadProConverter"
+export * from "./footprint/CircuitJsonToKicadModConverter"
 export * from "./utils/resolveAndLoadKicad3dModelFiles"
 export * from "./kicad-library/CircuitJsonToKicadLibraryConverter"
 export * from "./kicad-library/KicadLibraryConverter"

@@ -85,6 +85,10 @@ export class CircuitJsonToKicadLibraryConverter {
     return this.getOutput().footprints
   }
 
+  getKicadModString(footprintName?: string): string {
+    return this.resolveFootprintEntry(footprintName).kicadModString
+  }
+
   getFpLibTableString(): string {
     return this.getOutput().fpLibTableString
   }
@@ -95,5 +99,42 @@ export class CircuitJsonToKicadLibraryConverter {
 
   getModel3dSourcePaths(): string[] {
     return this.getOutput().model3dSourcePaths
+  }
+
+  private resolveFootprintEntry(footprintName?: string): FootprintEntry {
+    const footprints = this.getFootprints()
+
+    if (footprintName) {
+      const matchingFootprint = footprints.find(
+        (footprint) => footprint.footprintName === footprintName,
+      )
+
+      if (matchingFootprint) {
+        return matchingFootprint
+      }
+
+      throw new Error(
+        `Footprint "${footprintName}" not found. Available footprints: ${footprints
+          .map((footprint) => footprint.footprintName)
+          .join(", ")}`,
+      )
+    }
+
+    if (footprints.length === 1) {
+      return footprints[0]!
+    }
+
+    const customFootprints = footprints.filter(
+      (footprint) => !footprint.isBuiltin,
+    )
+    if (customFootprints.length === 1) {
+      return customFootprints[0]!
+    }
+
+    throw new Error(
+      `Multiple footprints were generated. Pass a footprintName to getKicadModString(). Available footprints: ${footprints
+        .map((footprint) => footprint.footprintName)
+        .join(", ")}`,
+    )
   }
 }
