@@ -105,7 +105,7 @@ test("repro13 schematic sections snapshot", async () => {
   const output = converter.getOutputString()
 
   await Bun.write(
-    "./debug-output/repro13-schematic-sections-sch.kicad_sch",
+    "./tests/assets/repro13-schematic-sections-sch.kicad_sch",
     output,
   )
 
