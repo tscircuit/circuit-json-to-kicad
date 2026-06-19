@@ -1,8 +1,8 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import { Wire, Pts, Xy, Stroke, Junction, Uuid } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
+import { applyToPointRounded } from "./utils/roundKicadCoord"
 
 const DEFAULT_LINE_WIDTH_MM = 0.254
 
@@ -66,11 +66,11 @@ export class AddSchematicTracesStage extends ConverterStage<
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
-    const from = applyToPoint(this.ctx.c2kMatSch, {
+    const from = applyToPointRounded(this.ctx.c2kMatSch, {
       x: edge.from.x,
       y: edge.from.y,
     })
-    const to = applyToPoint(this.ctx.c2kMatSch, {
+    const to = applyToPointRounded(this.ctx.c2kMatSch, {
       x: edge.to.x,
       y: edge.to.y,
     })
@@ -107,7 +107,7 @@ export class AddSchematicTracesStage extends ConverterStage<
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
-    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+    const { x, y } = applyToPointRounded(this.ctx.c2kMatSch, {
       x: junction.x,
       y: junction.y,
     })
