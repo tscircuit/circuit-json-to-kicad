@@ -1,3 +1,4 @@
+import { getBoundsFromPoints, normalizeDegrees } from "@tscircuit/math-utils"
 import type { SchematicArc } from "circuit-json"
 
 type Point = {
@@ -13,9 +14,6 @@ type Bounds = {
 }
 
 const CARDINAL_ANGLES_DEGREES = [0, 90, 180, 270] as const
-
-const normalizeDegrees = (degrees: number): number =>
-  ((degrees % 360) + 360) % 360
 
 export const getSchematicArcSignedSweepDegrees = (
   arc: Pick<
@@ -124,18 +122,5 @@ export const getSchematicArcBounds = (
     }
   }
 
-  return points.reduce<Bounds>(
-    (bounds, point) => ({
-      minX: Math.min(bounds.minX, point.x),
-      minY: Math.min(bounds.minY, point.y),
-      maxX: Math.max(bounds.maxX, point.x),
-      maxY: Math.max(bounds.maxY, point.y),
-    }),
-    {
-      minX: Infinity,
-      minY: Infinity,
-      maxX: -Infinity,
-      maxY: -Infinity,
-    },
-  )
+  return getBoundsFromPoints(points)!
 }
