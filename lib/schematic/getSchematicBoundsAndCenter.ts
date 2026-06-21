@@ -1,8 +1,10 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
+import { getSchematicArcBounds } from "./schematicArcGeometry"
 
 export function getSchematicBoundsAndCenter(db: CircuitJsonUtilObjects) {
   const schematicComponents = db.schematic_component.list()
   const schematicTraces = db.schematic_trace.list()
+  const schematicArcs = db.schematic_arc?.list() || []
 
   let minX = Infinity
   let minY = Infinity
@@ -25,6 +27,14 @@ export function getSchematicBoundsAndCenter(db: CircuitJsonUtilObjects) {
       maxX = Math.max(maxX, edge.from.x, edge.to.x)
       maxY = Math.max(maxY, edge.from.y, edge.to.y)
     }
+  }
+
+  for (const arc of schematicArcs) {
+    const bounds = getSchematicArcBounds(arc)
+    minX = Math.min(minX, bounds.minX)
+    minY = Math.min(minY, bounds.minY)
+    maxX = Math.max(maxX, bounds.maxX)
+    maxY = Math.max(maxY, bounds.maxY)
   }
 
   if (minX === Infinity) {
