@@ -14,7 +14,7 @@ import {
   Uuid,
   Xy,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPointRounded } from "./utils/roundKicadCoord"
 import { ConverterStage } from "../../types"
 
 const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
@@ -58,11 +58,11 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     if (schematicLines.length > 0) {
       const polylines = kicadSch.polylines || []
       for (const line of schematicLines) {
-        const start = applyToPoint(this.ctx.c2kMatSch, {
+        const start = applyToPointRounded(this.ctx.c2kMatSch, {
           x: line.x1,
           y: line.y1,
         })
-        const end = applyToPoint(this.ctx.c2kMatSch, {
+        const end = applyToPointRounded(this.ctx.c2kMatSch, {
           x: line.x2,
           y: line.y2,
         })
@@ -92,7 +92,7 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         if (text.position?.y !== undefined && text.position.y < 2) {
           sourceY = text.position.y - DEFAULT_SECTION_TEXT_PADDING_Y_MM
         }
-        const position = applyToPoint(this.ctx.c2kMatSch, {
+        const position = applyToPointRounded(this.ctx.c2kMatSch, {
           x: (text.position?.x ?? 0) + DEFAULT_SECTION_TEXT_PADDING_X_MM,
           y: sourceY,
         })
