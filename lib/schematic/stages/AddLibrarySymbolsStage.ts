@@ -1,8 +1,7 @@
 import type {
   CircuitJson,
-  SchematicNetLabel,
   SchematicComponent,
-  SchematicPort,
+  SchematicNetLabel,
   SourceComponentBase,
 } from "circuit-json"
 import type { KicadSch } from "kicadts"
@@ -13,13 +12,13 @@ import {
   SymbolPinNames,
   SymbolPinNumbers,
 } from "kicadts"
-import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../getLibraryId"
+import { ConverterStage } from "../../types"
 import {
   getKicadCompatibleComponentName,
   getReferencePrefixForComponent,
 } from "../../utils/getKicadCompatibleComponentName"
+import { getLibraryId } from "../getLibraryId"
 import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converters/buildSymbolDataFromSchematicPrimitives"
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
@@ -183,7 +182,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
           texts: [],
         }
 
-        const libId = getLibraryId(sourceComp, schematicComponent, cadComponent)
+        const libId = getLibraryId(
+          sourceComp,
+          schematicComponent,
+          cadComponent,
+          undefined,
+          this.getSchematicPortCount(schematicComponent),
+        )
         const footprintName = getKicadCompatibleComponentName(
           sourceComp,
           cadComponent,
@@ -220,7 +225,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolData = this.getSymbolData(symbolName, schematicComponent)
     if (!symbolData) return null
 
-    const libId = getLibraryId(sourceComp, schematicComponent, cadComponent)
+    const libId = getLibraryId(
+      sourceComp,
+      schematicComponent,
+      cadComponent,
+      undefined,
+      this.getSchematicPortCount(schematicComponent),
+    )
     const isChip =
       sourceComp.ftype === "simple_chip" ||
       sourceComp.ftype === "simple_pin_header" ||
@@ -262,8 +273,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     cadComponent: any,
     schematicSymbolId: string,
   ): SchematicSymbol | null {
-    const { db } = this.ctx
-
     // Look up the schematic_symbol element
     // Since this is a new type, access it via the raw circuitJson
     const schematicSymbol = this.ctx.circuitJson.find(
@@ -495,6 +504,18 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (sourceComp?.ftype === "simple_chip") return "*"
     if (sourceComp?.ftype === "simple_connector") return "*"
     return "*"
+  }
+
+  private getSchematicPortCount(
+    schematicComponent: SchematicComponent,
+  ): number {
+    return this.ctx.db.schematic_port
+      .list()
+      .filter(
+        (port: any) =>
+          port.schematic_component_id ===
+          schematicComponent.schematic_component_id,
+      ).length
   }
 
   private hasComponentLevelSymbolPrimitives(
