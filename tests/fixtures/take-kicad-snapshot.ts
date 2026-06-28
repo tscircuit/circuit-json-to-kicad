@@ -2,7 +2,7 @@ import { $ } from "bun"
 import { tmpdir } from "node:os"
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { join } from "node:path"
-import { parseKicadPcb } from "kicadts"
+import { At, parseKicadMod, parseKicadPcb } from "kicadts"
 import sharp from "sharp"
 
 type FilePath = string
@@ -25,6 +25,44 @@ const PCB_SNAPSHOT_COPPER_LAYER_EXPORT_ORDER = [
 ]
 const KICAD_FILLED_PATH_STYLE_REGEX =
   /fill:[^"]+fill-opacity:1\.0000; stroke:none;fill-rule:evenodd;/g
+const MINIMAL_PCB_TEMPLATE = `(kicad_pcb
+  (version 20241229)
+  (generator circuit-json-to-kicad)
+  (generator_version 0.0.1)
+  (general
+    (thickness 1.6)
+  )
+  (paper
+    A4
+  )
+  (layers
+    (0 "F.Cu" signal)
+    (31 "B.Cu" signal)
+    (32 "B.Adhes" user)
+    (33 "F.Adhes" user)
+    (34 "B.Paste" user)
+    (35 "F.Paste" user)
+    (36 "B.SilkS" user)
+    (37 "F.SilkS" user)
+    (38 "B.Mask" user)
+    (39 "F.Mask" user)
+    (40 "Dwgs.User" user)
+    (41 "Cmts.User" user)
+    (42 "Eco1.User" user)
+    (43 "Eco2.User" user)
+    (44 "Edge.Cuts" user)
+    (45 "Margin" user)
+    (46 "B.CrtYd" user)
+    (47 "F.CrtYd" user)
+    (48 "B.Fab" user)
+    (49 "F.Fab" user)
+  )
+  (setup
+    (pad_to_mask_clearance 0)
+  )
+  (net 0 "")
+)
+`
 
 const getZoneFilledPolygonCountsByLayer = (
   kicadPcbContent: string,
@@ -151,6 +189,21 @@ export function normalizePcbSvgForSnapshot(
   return normalizedSvg
 }
 
+function wrapKicadModInTemporaryPcb(kicadModContent: string): string {
+  const footprint = parseKicadMod(kicadModContent)
+  footprint.version = undefined
+  footprint.generator = undefined
+  footprint.generatorVersion = undefined
+  footprint.position = At.from([100, 100, 0])
+  footprint.placed = true
+  footprint.libraryLink = `snapshot:${footprint.libraryLink ?? "footprint"}`
+
+  const pcb = parseKicadPcb(MINIMAL_PCB_TEMPLATE)
+  pcb.footprints = [footprint]
+
+  return pcb.getString()
+}
+
 /**
  * Executes kicad-cli commands e.g.
  * - kicad-cli sch export svg ./flat_hierarchy.kicad_sch -o out/svg --theme "Modern" --no-background-color
@@ -160,7 +213,7 @@ export function normalizePcbSvgForSnapshot(
 export const takeKicadSnapshot = async (params: {
   kicadFilePath?: string
   kicadFileContent?: string
-  kicadFileType: "sch" | "pcb" | "3d"
+  kicadFileType: "sch" | "pcb" | "3d" | "mod"
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
 }): Promise<KicadOutput> => {
@@ -176,7 +229,7 @@ export const takeKicadSnapshot = async (params: {
   const kicadCliVersion = await $`kicad-cli --version`
 
   if (!kicadCliVersion.stdout.toString().trim().startsWith("10.")) {
-    throw new Error("kicad-cli version 9.0.0 or higher is required")
+    throw new Error("kicad-cli version 10.0.0 or higher is required")
   }
 
   // Create a temporary directory for working with files
@@ -188,7 +241,12 @@ export const takeKicadSnapshot = async (params: {
     if (kicadFilePath) {
       inputFilePath = kicadFilePath
     } else if (kicadFileContent) {
-      const ext = kicadFileType === "sch" ? "sch" : "pcb"
+      const ext =
+        kicadFileType === "sch"
+          ? "sch"
+          : kicadFileType === "mod"
+            ? "mod"
+            : "pcb"
       inputFilePath = join(tempDir, `temp_file.kicad_${ext}`)
       await writeFile(inputFilePath, kicadFileContent)
     } else {
@@ -197,9 +255,19 @@ export const takeKicadSnapshot = async (params: {
       )
     }
 
-    const isPcbSnapshot = kicadFileType === "pcb"
+    if (kicadFileType === "mod") {
+      const kicadModContent =
+        kicadFileContent ?? (await readFile(inputFilePath, "utf8"))
+      inputFilePath = join(tempDir, "temp_file.kicad_pcb")
+      await writeFile(
+        inputFilePath,
+        wrapKicadModInTemporaryPcb(kicadModContent),
+      )
+    }
+
+    const isPcbSnapshot = kicadFileType === "pcb" || kicadFileType === "mod"
     const kicadPcbContentForStyling = isPcbSnapshot
-      ? (kicadFileContent ?? (await readFile(inputFilePath, "utf8")))
+      ? await readFile(inputFilePath, "utf8")
       : undefined
     const zoneFilledPolygonCountsByLayer = kicadPcbContentForStyling
       ? getZoneFilledPolygonCountsByLayer(kicadPcbContentForStyling)
@@ -230,7 +298,7 @@ export const takeKicadSnapshot = async (params: {
       }
     }
 
-    // Export to SVG for sch/pcb
+    // Export to SVG for sch/pcb/mod
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
