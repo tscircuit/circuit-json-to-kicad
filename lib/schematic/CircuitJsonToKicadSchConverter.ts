@@ -145,7 +145,7 @@ export class CircuitJsonToKicadSchConverter {
     return this.ctx.kicadSch!.getString()
   }
 
-  getOutputFiles(rootFilename = "circuit.kicad_sch"): Record<string, string> {
+  getOutputFiles(rootFilename: string): Record<string, string> {
     const schematicSheetFiles = getSchematicSheetFiles(this.circuitJson)
     if (schematicSheetFiles.length === 0) {
       return { [rootFilename]: this.getOutputString() }

@@ -129,17 +129,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       uuid: generateDeterministicUuid(footprintData),
     })
 
-    if (sourceComponent?.source_component_id) {
-      const schematicFilename =
-        this.ctx.pcbSchematicFilenameBySourceComponentId?.get(
-          sourceComponent.source_component_id,
-        )
-      if (schematicFilename) {
-        footprint.sheetname = "/"
-        footprint.sheetfile = schematicFilename
-      }
-    }
-
     // Convert texts
     const fpTexts = footprint.fpTexts
 

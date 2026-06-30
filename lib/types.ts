@@ -80,8 +80,6 @@ export interface ConverterContext {
   // PCB 3D model options
   /** Project name used as the .3dshapes folder for user-provided 3D models */
   projectName?: string
-  /** KiCad schematic filename keyed by source_component_id for PCB footprint links */
-  pcbSchematicFilenameBySourceComponentId?: Map<string, string>
   /** CDN URLs of 3D models needed for this PCB (collected during footprint stage) */
   pcbModel3dSourcePaths?: string[]
 

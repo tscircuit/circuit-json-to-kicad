@@ -2,10 +2,7 @@ import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "../pcb/CircuitJsonToKicadPcbConverter"
 import { CircuitJsonToKicadSchConverter } from "../schematic/CircuitJsonToKicadSchConverter"
-import {
-  getSchematicSheetFiles,
-  getSchematicFilenameBySourceComponentId,
-} from "../schematic/schematicSheetFiles"
+import { getSchematicSheetFiles } from "../schematic/schematicSheetFiles"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
@@ -275,21 +272,25 @@ export class CircuitJsonToKicadProConverter {
     return `${JSON.stringify(this.project, null, 2)}\n`
   }
 
-  getOutputFiles(
-    options: { includeBuiltin3dModels?: boolean } = {},
-  ): Record<string, string> {
+  getSchematicOutputFiles(): Record<string, string> {
     const schConverter = new CircuitJsonToKicadSchConverter(
       this.ctx.circuitJson,
     )
     schConverter.runUntilFinished()
+
+    return schConverter.getOutputFiles(this.schematicFilename)
+  }
+
+  getOutputFiles(
+    options: { includeBuiltin3dModels?: boolean } = {},
+  ): Record<string, string> {
+    const schematicFiles = this.getSchematicOutputFiles()
 
     const pcbConverter = new CircuitJsonToKicadPcbConverter(
       this.ctx.circuitJson,
       {
         includeBuiltin3dModels: options.includeBuiltin3dModels,
         projectName: this.projectName,
-        schematicFilenameBySourceComponentId:
-          getSchematicFilenameBySourceComponentId(this.ctx.circuitJson),
       },
     )
     pcbConverter.runUntilFinished()
@@ -297,7 +298,7 @@ export class CircuitJsonToKicadProConverter {
 
     return {
       [`${this.projectName}.kicad_pro`]: this.getOutputString(),
-      ...schConverter.getOutputFiles(this.schematicFilename),
+      ...schematicFiles,
       [this.pcbFilename]: pcbConverter.getOutputString(),
     }
   }

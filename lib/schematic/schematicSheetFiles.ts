@@ -96,32 +96,3 @@ export const getCircuitJsonForSchematicSheet = (
     return !String(element.type).startsWith("schematic_")
   }) as CircuitJson
 }
-
-export const getSchematicFilenameBySourceComponentId = (
-  circuitJson: CircuitJson,
-): Map<string, string> => {
-  const filenameBySheetId = new Map(
-    getSchematicSheetFiles(circuitJson).map((sheet) => [
-      sheet.schematicSheetId,
-      sheet.filename,
-    ]),
-  )
-  const filenameBySourceComponentId = new Map<string, string>()
-
-  for (const element of circuitJson as any[]) {
-    if (
-      element.type !== "schematic_component" ||
-      !element.source_component_id ||
-      !element.schematic_sheet_id
-    ) {
-      continue
-    }
-
-    const filename = filenameBySheetId.get(element.schematic_sheet_id)
-    if (filename) {
-      filenameBySourceComponentId.set(element.source_component_id, filename)
-    }
-  }
-
-  return filenameBySourceComponentId
-}

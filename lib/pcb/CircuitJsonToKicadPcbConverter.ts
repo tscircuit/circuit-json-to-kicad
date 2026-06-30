@@ -24,7 +24,6 @@ interface CircuitJsonToKicadPcbOptions {
    * e.g. "index" → "3dmodels/index.3dshapes/{filename}"
    */
   projectName?: string
-  schematicFilenameBySourceComponentId?: Map<string, string>
 }
 
 export class CircuitJsonToKicadPcbConverter {
@@ -61,8 +60,6 @@ export class CircuitJsonToKicadPcbConverter {
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
       projectName: options?.projectName,
-      pcbSchematicFilenameBySourceComponentId:
-        options?.schematicFilenameBySourceComponentId,
       pcbModel3dSourcePaths: [],
     }
 

@@ -135,16 +135,26 @@ test("repro14 schematic sheet snapshot", async () => {
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
 
-  const kicadOutputFiles = converter.getOutputFiles()
+  const kicadOutputFiles = converter.getOutputFiles(
+    "repro14-schematic-sheet-sch.kicad_sch",
+  )
   expect(Object.keys(kicadOutputFiles).sort()).toEqual([
     "Sheet_1.kicad_sch",
     "Sheet_2.kicad_sch",
-    "circuit.kicad_sch",
+    "repro14-schematic-sheet-sch.kicad_sch",
   ])
-  expect(kicadOutputFiles["circuit.kicad_sch"]).toContain("Sheet_1.kicad_sch")
-  expect(kicadOutputFiles["circuit.kicad_sch"]).toContain("Sheet_2.kicad_sch")
-  expect(kicadOutputFiles["circuit.kicad_sch"]).not.toContain("R1")
-  expect(kicadOutputFiles["circuit.kicad_sch"]).not.toContain("R2")
+  expect(kicadOutputFiles["repro14-schematic-sheet-sch.kicad_sch"]).toContain(
+    "Sheet_1.kicad_sch",
+  )
+  expect(kicadOutputFiles["repro14-schematic-sheet-sch.kicad_sch"]).toContain(
+    "Sheet_2.kicad_sch",
+  )
+  expect(
+    kicadOutputFiles["repro14-schematic-sheet-sch.kicad_sch"],
+  ).not.toContain("R1")
+  expect(
+    kicadOutputFiles["repro14-schematic-sheet-sch.kicad_sch"],
+  ).not.toContain("R2")
   expect(kicadOutputFiles["Sheet_1.kicad_sch"]).toContain("R1")
   expect(kicadOutputFiles["Sheet_1.kicad_sch"]).toContain("C1")
   expect(kicadOutputFiles["Sheet_1.kicad_sch"]).not.toContain("R2")
@@ -164,6 +174,12 @@ test("repro14 schematic sheet snapshot", async () => {
   expect(kicadProjectOutput).toContain('"Sheet 2"')
   expect(kicadProjectOutput).toContain('"circuit.kicad_sch"')
 
+  expect(Object.keys(proConverter.getSchematicOutputFiles()).sort()).toEqual([
+    "Sheet_1.kicad_sch",
+    "Sheet_2.kicad_sch",
+    "circuit.kicad_sch",
+  ])
+
   const projectOutputFiles = proConverter.getOutputFiles()
   expect(Object.keys(projectOutputFiles).sort()).toEqual([
     "Sheet_1.kicad_sch",
@@ -172,15 +188,6 @@ test("repro14 schematic sheet snapshot", async () => {
     "circuit.kicad_pro",
     "circuit.kicad_sch",
   ])
-  expect(projectOutputFiles["circuit.kicad_pcb"]).toContain(
-    'sheetfile "Sheet_1.kicad_sch"',
-  )
-  expect(projectOutputFiles["circuit.kicad_pcb"]).toContain(
-    'sheetfile "Sheet_2.kicad_sch"',
-  )
-  expect(projectOutputFiles["circuit.kicad_pcb"]).not.toContain(
-    'sheetfile "circuit.kicad_sch"',
-  )
   for (const [filename, fileContent] of Object.entries(projectOutputFiles)) {
     await Bun.write(join(outputDir, filename), fileContent)
   }
