@@ -1,10 +1,6 @@
 import { test } from "bun:test"
 import { Circuit } from "tscircuit"
-import {
-  CircuitJsonToKicadProConverter,
-  CircuitJsonToKicadSchConverter,
-  CircuitJsonToKicadPcbConverter,
-} from "lib"
+import { CircuitJsonToKicadProConverter } from "lib"
 import { writeFileSync, mkdirSync } from "fs"
 import { join } from "path"
 
@@ -42,19 +38,12 @@ test("exports full KiCad project with .kicad_pro, .kicad_sch, and .kicad_pcb fil
   })
   proConverter.runUntilFinished()
   const proContent = proConverter.getOutputString()
-  writeFileSync(join(OUTPUT_DIR, `${PROJECT_NAME}.kicad_pro`), proContent)
-
-  // Generate .kicad_sch file
-  const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
-  schConverter.runUntilFinished()
-  const schContent = schConverter.getOutputString()
-  writeFileSync(join(OUTPUT_DIR, `${PROJECT_NAME}.kicad_sch`), schContent)
-
-  // Generate .kicad_pcb file
-  const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)
-  pcbConverter.runUntilFinished()
-  const pcbContent = pcbConverter.getOutputString()
-  writeFileSync(join(OUTPUT_DIR, `${PROJECT_NAME}.kicad_pcb`), pcbContent)
+  const projectFiles = proConverter.getOutputFiles()
+  const schContent = projectFiles[`${PROJECT_NAME}.kicad_sch`]!
+  const pcbContent = projectFiles[`${PROJECT_NAME}.kicad_pcb`]!
+  for (const [filename, content] of Object.entries(projectFiles)) {
+    writeFileSync(join(OUTPUT_DIR, filename), content)
+  }
 
   Bun.write("./debug-output/kicad.kicad_pro", proContent)
   Bun.write("./debug-output/kicad.kicad_sch", schContent)

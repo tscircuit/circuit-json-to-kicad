@@ -1,5 +1,11 @@
 import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
+import { CircuitJsonToKicadPcbConverter } from "../pcb/CircuitJsonToKicadPcbConverter"
+import { CircuitJsonToKicadSchConverter } from "../schematic/CircuitJsonToKicadSchConverter"
+import {
+  getSchematicSheetFiles,
+  getSchematicFilenameBySourceComponentId,
+} from "../schematic/schematicSheetFiles"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
@@ -116,6 +122,10 @@ export class CircuitJsonToKicadProConverter {
   }
 
   private project: KicadProProject
+  private projectName: string
+  private schematicFilename: string
+  private pcbFilename: string
+  private model3dSourcePaths: string[] = []
 
   private createBaseNetClass(params: {
     name: string
@@ -147,6 +157,11 @@ export class CircuitJsonToKicadProConverter {
       options.schematicFilename ?? `${projectName}.kicad_sch`
     const pcbFilename = options.pcbFilename ?? `${projectName}.kicad_pcb`
     const timestamp = new Date().toISOString()
+    const schematicSheetFiles = getSchematicSheetFiles(circuitJson)
+
+    this.projectName = projectName
+    this.schematicFilename = schematicFilename
+    this.pcbFilename = pcbFilename
 
     this.ctx = {
       db: cju(circuitJson),
@@ -235,7 +250,16 @@ export class CircuitJsonToKicadProConverter {
         },
         last_opened_board: pcbFilename,
       },
-      sheets: [[Math.random().toString(36).substring(2, 15), "Root"]],
+      sheets:
+        schematicSheetFiles.length > 0
+          ? [
+              [Math.random().toString(36).substring(2, 15), "Root"],
+              ...schematicSheetFiles.map((sheet) => [
+                Math.random().toString(36).substring(2, 15),
+                sheet.displayName,
+              ] as [string, string]),
+            ]
+          : [[Math.random().toString(36).substring(2, 15), "Root"]],
     }
   }
 
@@ -249,5 +273,36 @@ export class CircuitJsonToKicadProConverter {
 
   getOutputString(): string {
     return `${JSON.stringify(this.project, null, 2)}\n`
+  }
+
+  getOutputFiles(
+    options: { includeBuiltin3dModels?: boolean } = {},
+  ): Record<string, string> {
+    const schConverter = new CircuitJsonToKicadSchConverter(
+      this.ctx.circuitJson,
+    )
+    schConverter.runUntilFinished()
+
+    const pcbConverter = new CircuitJsonToKicadPcbConverter(
+      this.ctx.circuitJson,
+      {
+        includeBuiltin3dModels: options.includeBuiltin3dModels,
+        projectName: this.projectName,
+        schematicFilenameBySourceComponentId:
+          getSchematicFilenameBySourceComponentId(this.ctx.circuitJson),
+      },
+    )
+    pcbConverter.runUntilFinished()
+    this.model3dSourcePaths = pcbConverter.getModel3dSourcePaths()
+
+    return {
+      [`${this.projectName}.kicad_pro`]: this.getOutputString(),
+      ...schConverter.getOutputFiles(this.schematicFilename),
+      [this.pcbFilename]: pcbConverter.getOutputString(),
+    }
+  }
+
+  getModel3dSourcePaths(): string[] {
+    return this.model3dSourcePaths
   }
 }

@@ -342,7 +342,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Add instances section
       const instances = new SymbolInstances()
       const project = new SymbolInstancesProject("")
-      const path = new SymbolInstancePath(`/${kicadSch?.uuid?.value || ""}`)
+      const path = new SymbolInstancePath(
+        this.ctx.schematicInstancePath ?? `/${kicadSch?.uuid?.value || ""}`,
+      )
       path.reference = reference
       path.unit = 1
       project.paths.push(path)
