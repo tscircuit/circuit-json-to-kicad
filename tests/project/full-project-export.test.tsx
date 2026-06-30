@@ -47,8 +47,13 @@ test("exports full KiCad project with .kicad_pro, .kicad_sch, and .kicad_pcb fil
   // Generate .kicad_sch file
   const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
   schConverter.runUntilFinished()
-  const schContent = schConverter.getOutputString()
-  writeFileSync(join(OUTPUT_DIR, `${PROJECT_NAME}.kicad_sch`), schContent)
+  const schematicFiles = schConverter.getOutputFiles({
+    schematicFilename: `${PROJECT_NAME}.kicad_sch`,
+  })
+  const schContent = schematicFiles[0]!.content
+  for (const { filename, content } of schematicFiles) {
+    writeFileSync(join(OUTPUT_DIR, filename), content)
+  }
 
   // Generate .kicad_pcb file
   const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)
