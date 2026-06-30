@@ -15,6 +15,15 @@ import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
 
+export interface KicadSchFile {
+  filename: string
+  content: string
+}
+
+export interface KicadSchFileOutputOptions {
+  schematicFilename: string
+}
+
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
 
@@ -102,5 +111,21 @@ export class CircuitJsonToKicadSchConverter {
    */
   getOutputString(): string {
     return this.ctx.kicadSch!.getString()
+  }
+
+  /**
+   * Returns every KiCad schematic file produced by this converter.
+   *
+   * Today this is a single root schematic file. This API is intentionally a
+   * file list so hierarchical schematic sheets can add child .kicad_sch files
+   * without changing callers.
+   */
+  getOutputFiles(options: KicadSchFileOutputOptions): KicadSchFile[] {
+    return [
+      {
+        filename: options.schematicFilename,
+        content: this.getOutputString(),
+      },
+    ]
   }
 }

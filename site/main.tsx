@@ -118,7 +118,11 @@ convertBtn.addEventListener("click", async () => {
     proConverter.runUntilFinished()
 
     const zip = new JSZip()
-    zip.file(schematicFileName, schConverter.getOutputString())
+    for (const { filename, content } of schConverter.getOutputFiles({
+      schematicFilename: schematicFileName,
+    })) {
+      zip.file(filename, content)
+    }
     zip.file(boardFileName, pcbConverter.getOutputString())
     zip.file(projectFileName, proConverter.getOutputString())
 
