@@ -5,6 +5,7 @@ import { join } from "node:path"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { CircuitJsonToKicadProConverter } from "lib/project/CircuitJsonToKicadProConverter"
+import { resolveKicadSchematicFiles } from "lib"
 import sharp from "sharp"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -174,7 +175,16 @@ test("repro14 schematic sheet snapshot", async () => {
   expect(kicadProjectOutput).toContain('"Sheet 2"')
   expect(kicadProjectOutput).toContain('"circuit.kicad_sch"')
 
-  expect(Object.keys(proConverter.getSchematicOutputFiles()).sort()).toEqual([
+  const resolvedSchematicFiles: Record<string, string> = {}
+  await resolveKicadSchematicFiles({
+    circuitJson,
+    schematicFilename: "circuit.kicad_sch",
+    onSchematicFile: ({ outputPath, content }) => {
+      resolvedSchematicFiles[outputPath] = content
+    },
+  })
+
+  expect(Object.keys(resolvedSchematicFiles).sort()).toEqual([
     "Sheet_1.kicad_sch",
     "Sheet_2.kicad_sch",
     "circuit.kicad_sch",

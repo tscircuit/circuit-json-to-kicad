@@ -1,6 +1,7 @@
 import JSZip from "jszip"
 import { CircuitJsonToKicadProConverter } from "../lib/project/CircuitJsonToKicadProConverter"
 import { resolveAndLoadKicad3dModelFiles } from "../lib/utils/resolveAndLoadKicad3dModelFiles"
+import { resolveKicadSchematicFiles } from "../lib/utils/resolveKicadSchematicFiles"
 
 // Get DOM elements
 const uploadArea = document.getElementById("uploadArea")!
@@ -104,8 +105,17 @@ convertBtn.addEventListener("click", async () => {
     for (const [filename, content] of Object.entries(
       proConverter.getOutputFiles({ includeBuiltin3dModels: true }),
     )) {
+      if (filename.endsWith(".kicad_sch")) continue
       zip.file(filename, content)
     }
+
+    await resolveKicadSchematicFiles({
+      circuitJson,
+      schematicFilename: `${baseName}.kicad_sch`,
+      onSchematicFile: ({ outputPath, content }) => {
+        zip.file(outputPath, content)
+      },
+    })
 
     await resolveAndLoadKicad3dModelFiles({
       projectName: baseName,
