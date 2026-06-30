@@ -2,7 +2,6 @@ import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "../pcb/CircuitJsonToKicadPcbConverter"
 import { CircuitJsonToKicadSchConverter } from "../schematic/CircuitJsonToKicadSchConverter"
-import { getSchematicSheetFiles } from "../schematic/schematicSheetFiles"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
@@ -154,7 +153,6 @@ export class CircuitJsonToKicadProConverter {
       options.schematicFilename ?? `${projectName}.kicad_sch`
     const pcbFilename = options.pcbFilename ?? `${projectName}.kicad_pcb`
     const timestamp = new Date().toISOString()
-    const schematicSheetFiles = getSchematicSheetFiles(circuitJson)
 
     this.projectName = projectName
     this.schematicFilename = schematicFilename
@@ -247,16 +245,7 @@ export class CircuitJsonToKicadProConverter {
         },
         last_opened_board: pcbFilename,
       },
-      sheets:
-        schematicSheetFiles.length > 0
-          ? [
-              [Math.random().toString(36).substring(2, 15), "Root"],
-              ...schematicSheetFiles.map((sheet) => [
-                Math.random().toString(36).substring(2, 15),
-                sheet.displayName,
-              ] as [string, string]),
-            ]
-          : [[Math.random().toString(36).substring(2, 15), "Root"]],
+      sheets: [[Math.random().toString(36).substring(2, 15), "Root"]],
     }
   }
 
@@ -272,19 +261,13 @@ export class CircuitJsonToKicadProConverter {
     return `${JSON.stringify(this.project, null, 2)}\n`
   }
 
-  getSchematicOutputFiles(): Record<string, string> {
+  getOutputFiles(
+    options: { includeBuiltin3dModels?: boolean } = {},
+  ): Record<string, string> {
     const schConverter = new CircuitJsonToKicadSchConverter(
       this.ctx.circuitJson,
     )
     schConverter.runUntilFinished()
-
-    return schConverter.getOutputFiles(this.schematicFilename)
-  }
-
-  getOutputFiles(
-    options: { includeBuiltin3dModels?: boolean } = {},
-  ): Record<string, string> {
-    const schematicFiles = this.getSchematicOutputFiles()
 
     const pcbConverter = new CircuitJsonToKicadPcbConverter(
       this.ctx.circuitJson,
@@ -298,7 +281,7 @@ export class CircuitJsonToKicadProConverter {
 
     return {
       [`${this.projectName}.kicad_pro`]: this.getOutputString(),
-      ...schematicFiles,
+      [this.schematicFilename]: schConverter.getOutputString(),
       [this.pcbFilename]: pcbConverter.getOutputString(),
     }
   }

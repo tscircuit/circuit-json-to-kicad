@@ -171,8 +171,6 @@ test("repro14 schematic sheet snapshot", async () => {
   })
   proConverter.runUntilFinished()
   const kicadProjectOutput = proConverter.getOutputString()
-  expect(kicadProjectOutput).toContain('"Sheet 1"')
-  expect(kicadProjectOutput).toContain('"Sheet 2"')
   expect(kicadProjectOutput).toContain('"circuit.kicad_sch"')
 
   const resolvedSchematicFiles: Record<string, string> = {}
@@ -192,13 +190,15 @@ test("repro14 schematic sheet snapshot", async () => {
 
   const projectOutputFiles = proConverter.getOutputFiles()
   expect(Object.keys(projectOutputFiles).sort()).toEqual([
-    "Sheet_1.kicad_sch",
-    "Sheet_2.kicad_sch",
     "circuit.kicad_pcb",
     "circuit.kicad_pro",
     "circuit.kicad_sch",
   ])
-  for (const [filename, fileContent] of Object.entries(projectOutputFiles)) {
+  const outputFiles = {
+    ...projectOutputFiles,
+    ...resolvedSchematicFiles,
+  }
+  for (const [filename, fileContent] of Object.entries(outputFiles)) {
     await Bun.write(join(outputDir, filename), fileContent)
   }
 
