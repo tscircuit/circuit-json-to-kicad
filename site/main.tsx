@@ -1,8 +1,7 @@
 import JSZip from "jszip"
-import { CircuitJsonToKicadSchConverter } from "../lib/schematic/CircuitJsonToKicadSchConverter"
-import { CircuitJsonToKicadPcbConverter } from "../lib/pcb/CircuitJsonToKicadPcbConverter"
 import { CircuitJsonToKicadProConverter } from "../lib/project/CircuitJsonToKicadProConverter"
 import { resolveAndLoadKicad3dModelFiles } from "../lib/utils/resolveAndLoadKicad3dModelFiles"
+import { resolveKicadSchematicFiles } from "../lib/utils/resolveKicadSchematicFiles"
 
 // Get DOM elements
 const uploadArea = document.getElementById("uploadArea")!
@@ -97,34 +96,30 @@ convertBtn.addEventListener("click", async () => {
     // Get base filename without extension
     const baseName = currentFile!.name.replace(/\.json$/i, "")
 
-    const schematicFileName = `${baseName}.kicad_sch`
-    const boardFileName = `${baseName}.kicad_pcb`
-    const projectFileName = `${baseName}.kicad_pro`
-
-    const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
-    schConverter.runUntilFinished()
-
-    const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson, {
-      includeBuiltin3dModels: true,
-      projectName: baseName,
-    })
-    pcbConverter.runUntilFinished()
-
     const proConverter = new CircuitJsonToKicadProConverter(circuitJson, {
       projectName: baseName,
-      schematicFilename: schematicFileName,
-      pcbFilename: boardFileName,
     })
     proConverter.runUntilFinished()
 
     const zip = new JSZip()
-    zip.file(schematicFileName, schConverter.getOutputString())
-    zip.file(boardFileName, pcbConverter.getOutputString())
-    zip.file(projectFileName, proConverter.getOutputString())
+    for (const [filename, content] of Object.entries(
+      proConverter.getOutputFiles({ includeBuiltin3dModels: true }),
+    )) {
+      if (filename.endsWith(".kicad_sch")) continue
+      zip.file(filename, content)
+    }
+
+    await resolveKicadSchematicFiles({
+      circuitJson,
+      schematicFilename: `${baseName}.kicad_sch`,
+      onSchematicFile: ({ outputPath, content }) => {
+        zip.file(outputPath, content)
+      },
+    })
 
     await resolveAndLoadKicad3dModelFiles({
       projectName: baseName,
-      model3dSourcePaths: pcbConverter.getModel3dSourcePaths(),
+      model3dSourcePaths: proConverter.getModel3dSourcePaths(),
       fetch,
       onModelFile: ({ outputPath, content }) => {
         zip.file(outputPath, content)

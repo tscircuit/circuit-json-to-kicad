@@ -63,6 +63,11 @@ export interface ConverterContext {
   /** Selected paper size for schematic */
   schematicPaperSize?: PaperDimensions
 
+  /** KiCad hierarchy metadata for schematic child sheets */
+  schematicUuid?: string
+  schematicInstancePath?: string
+  schematicPageNumber?: string
+
   // Optional data that can be shared between stages
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>
   wireConnections?: Map<SchematicTraceId, SchematicPortId[]>

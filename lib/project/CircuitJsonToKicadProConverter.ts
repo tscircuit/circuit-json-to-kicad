@@ -1,5 +1,7 @@
 import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
+import { CircuitJsonToKicadPcbConverter } from "../pcb/CircuitJsonToKicadPcbConverter"
+import { CircuitJsonToKicadSchConverter } from "../schematic/CircuitJsonToKicadSchConverter"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
@@ -116,6 +118,10 @@ export class CircuitJsonToKicadProConverter {
   }
 
   private project: KicadProProject
+  private projectName: string
+  private schematicFilename: string
+  private pcbFilename: string
+  private model3dSourcePaths: string[] = []
 
   private createBaseNetClass(params: {
     name: string
@@ -147,6 +153,10 @@ export class CircuitJsonToKicadProConverter {
       options.schematicFilename ?? `${projectName}.kicad_sch`
     const pcbFilename = options.pcbFilename ?? `${projectName}.kicad_pcb`
     const timestamp = new Date().toISOString()
+
+    this.projectName = projectName
+    this.schematicFilename = schematicFilename
+    this.pcbFilename = pcbFilename
 
     this.ctx = {
       db: cju(circuitJson),
@@ -249,5 +259,34 @@ export class CircuitJsonToKicadProConverter {
 
   getOutputString(): string {
     return `${JSON.stringify(this.project, null, 2)}\n`
+  }
+
+  getOutputFiles(
+    options: { includeBuiltin3dModels?: boolean } = {},
+  ): Record<string, string> {
+    const schConverter = new CircuitJsonToKicadSchConverter(
+      this.ctx.circuitJson,
+    )
+    schConverter.runUntilFinished()
+
+    const pcbConverter = new CircuitJsonToKicadPcbConverter(
+      this.ctx.circuitJson,
+      {
+        includeBuiltin3dModels: options.includeBuiltin3dModels,
+        projectName: this.projectName,
+      },
+    )
+    pcbConverter.runUntilFinished()
+    this.model3dSourcePaths = pcbConverter.getModel3dSourcePaths()
+
+    return {
+      [`${this.projectName}.kicad_pro`]: this.getOutputString(),
+      [this.schematicFilename]: schConverter.getOutputString(),
+      [this.pcbFilename]: pcbConverter.getOutputString(),
+    }
+  }
+
+  getModel3dSourcePaths(): string[] {
+    return this.model3dSourcePaths
   }
 }
