@@ -8,7 +8,11 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
-import { getKicadLayer, getViaLayers } from "../utils/layerMapping"
+import {
+  expandCircuitJsonViaSpan,
+  getKicadLayer,
+  getViaLayers,
+} from "../utils/layerMapping"
 
 type ViaLike = {
   x: number
@@ -73,27 +77,35 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getViaDedupeKey(via: ViaLike): string {
-    const layers = this.getRawViaLayers(via).sort().join(",")
+    const layers = this.getRawViaSpanLayers(via).map(getKicadLayer).join(",")
     return `${via.pcb_trace_id ?? ""}:${via.x}:${via.y}:${layers}`
   }
 
-  private getRawViaLayers(via: ViaLike): string[] {
-    if (via.layers?.length) {
-      return [...via.layers]
+  private getRawViaSpanLayers(via: ViaLike): string[] {
+    if (via.from_layer && via.to_layer) {
+      return expandCircuitJsonViaSpan(
+        [via.from_layer, via.to_layer],
+        this.ctx.numLayers ?? 2,
+      )
     }
 
-    return [via.from_layer, via.to_layer].filter((layer): layer is string =>
-      Boolean(layer),
-    )
+    if (via.layers && via.layers.length >= 2) {
+      return expandCircuitJsonViaSpan(via.layers, this.ctx.numLayers ?? 2)
+    }
+
+    return []
   }
 
   private getKicadViaLayers(via: ViaLike): string[] {
-    const rawLayers = this.getRawViaLayers(via)
-    if (rawLayers.length > 0) {
-      return rawLayers.map((layer) => getKicadLayer(layer))
+    const rawLayers = this.getRawViaSpanLayers(via)
+    if (rawLayers.length >= 2) {
+      const kicadLayers = rawLayers.map(getKicadLayer)
+      // KiCad stores via layers as endpoint layers, while rawLayers keeps the full board span.
+      return [kicadLayers[0]!, kicadLayers[kicadLayers.length - 1]!]
     }
 
-    return getViaLayers(this.ctx.numLayers ?? 2)
+    const boardLayers = getViaLayers(this.ctx.numLayers ?? 2)
+    return [boardLayers[0]!, boardLayers[boardLayers.length - 1]!]
   }
 
   override _step(): void {

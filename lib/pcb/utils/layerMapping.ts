@@ -50,6 +50,52 @@ export function getKicadCopperLayerIndex(
   return 0
 }
 
+export function getCircuitJsonBoardLayers(numLayers: number): string[] {
+  const layers = ["top"]
+  for (let i = 1; i < numLayers - 1; i++) {
+    layers.push(`inner${i}`)
+  }
+  layers.push("bottom")
+  return layers
+}
+
+/**
+ * Returns the physical stackup index for either circuit-json or KiCad copper
+ * layer names. Unknown layers return -1 so callers can ignore them safely.
+ */
+export function getCircuitJsonLayerIndex(
+  layerName: string,
+  numLayers: number,
+): number {
+  const normalizedLayer = layerName
+    .replace(/^F\.Cu$/, "top")
+    .replace(/^B\.Cu$/, "bottom")
+    .replace(/^In(\d+)\.Cu$/, "inner$1")
+  return getCircuitJsonBoardLayers(numLayers).indexOf(normalizedLayer)
+}
+
+/**
+ * Expands endpoint-style via layers into the full physical span through the
+ * board stackup. For example, inner1 -> bottom on a 4-layer board becomes
+ * [inner1, inner2, bottom].
+ */
+export function expandCircuitJsonViaSpan(
+  layers: string[],
+  numLayers: number,
+): string[] {
+  const indexes = layers
+    .map((layer) => getCircuitJsonLayerIndex(layer, numLayers))
+    .filter((index) => index >= 0)
+
+  if (indexes.length < 2) {
+    return layers
+  }
+
+  const startIndex = Math.min(...indexes)
+  const endIndex = Math.max(...indexes)
+  return getCircuitJsonBoardLayers(numLayers).slice(startIndex, endIndex + 1)
+}
+
 /**
  * Get all via layers for the given number of copper layers
  * Vias typically span all copper layers
