@@ -1,5 +1,6 @@
 import { Pts, Stroke, SymbolPolyline, SymbolPolylineFill, Xy } from "kicadts"
-import { applyToPoint, type Matrix } from "transformation-matrix"
+import type { Matrix } from "transformation-matrix"
+import { applyToPointRounded } from "../utils/roundKicadCoord"
 
 export function createPolylineFromPoints({
   points,
@@ -13,7 +14,7 @@ export function createPolylineFromPoints({
   const polyline = new SymbolPolyline()
 
   const xyPoints = points.map((p) => {
-    const transformed = applyToPoint(transform, p)
+    const transformed = applyToPointRounded(transform, p)
     return new Xy(transformed.x, transformed.y)
   })
   const pts = new Pts(xyPoints)
