@@ -27,7 +27,8 @@ export interface KicadSchFileOutputOptions {
 
 interface CircuitJsonToKicadSchConverterOptions {
   schematicUuid?: string
-  schematicInstancePath?: string
+  sheetInstancePath?: string
+  symbolInstancePath?: string
   schematicPageNumber?: string
 }
 
@@ -81,7 +82,8 @@ export class CircuitJsonToKicadSchConverter {
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
       schematicUuid: options.schematicUuid,
-      schematicInstancePath: options.schematicInstancePath,
+      sheetInstancePath: options.sheetInstancePath,
+      symbolInstancePath: options.symbolInstancePath,
       schematicPageNumber: options.schematicPageNumber,
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),

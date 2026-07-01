@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { convertCircuitJsonToStackedSchematicSheetsSvg } from "circuit-to-svg"
+import * as circuitToSvg from "circuit-to-svg"
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -8,6 +8,14 @@ import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+
+const convertCircuitJsonToStackedSchematicSheetsSvg = (circuitToSvg as any)
+  .convertCircuitJsonToStackedSchematicSheetsSvg as (
+  circuitJson: any[],
+  options: { width: number; height: number },
+) => string
+
+const SchematicSheet = "schematicsheet" as any
 
 const SheetCircuit = ({
   resistorName,
@@ -80,8 +88,8 @@ test("repro14 schematic sheet snapshots", async () => {
 
   circuit.add(
     <board width="20mm" height="20mm" routingDisabled>
-      <schematicsheet name="Sheet 1" displayName="Sheet 1" sheetIndex={0} />
-      <schematicsheet name="Sheet 2" displayName="Sheet 2" sheetIndex={1} />
+      <SchematicSheet name="Sheet 1" displayName="Sheet 1" sheetIndex={0} />
+      <SchematicSheet name="Sheet 2" displayName="Sheet 2" sheetIndex={1} />
 
       <SheetCircuit
         name="MAIN1"

@@ -65,7 +65,8 @@ export interface ConverterContext {
 
   /** KiCad hierarchy metadata for schematic child sheets */
   schematicUuid?: string
-  schematicInstancePath?: string
+  sheetInstancePath?: string
+  symbolInstancePath?: string
   schematicPageNumber?: string
 
   // Optional data that can be shared between stages

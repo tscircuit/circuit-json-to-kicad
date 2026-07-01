@@ -1,19 +1,24 @@
-import type { CircuitJson } from "circuit-json"
+import type { AnyCircuitElement, CircuitJson } from "circuit-json"
+
+type SchematicSheetElement = AnyCircuitElement & {
+  type: "schematic_sheet"
+  schematic_sheet_id: string
+  sheet_index?: number
+  display_name?: string
+  displayName?: string
+  name?: string
+}
+
+type ElementWithSchematicSheetMetadata = AnyCircuitElement & {
+  schematic_sheet_id?: string
+  schematic_component_id?: string
+}
 
 export interface SchematicSheetFile {
   schematicSheetId: string
   displayName: string
   filename: string
   kicadSheetUuid: string
-}
-
-const toKicadSheetFilename = (name: string): string => {
-  const basename = name
-    .trim()
-    .replace(/[^a-zA-Z0-9._-]+/g, "_")
-    .replace(/^_+|_+$/g, "")
-
-  return `${basename || "sheet"}.kicad_sch`
 }
 
 const simpleHash = (value: string): string => {
@@ -35,13 +40,18 @@ const createDeterministicUuid = (value: string): string => {
   return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-4${hash.slice(13, 16)}-8${hash.slice(17, 20)}-${hash.slice(20, 32)}`
 }
 
+const isSchematicSheetElement = (
+  element: AnyCircuitElement,
+): element is SchematicSheetElement => element.type === "schematic_sheet"
+
+const isSchematicElement = (element: AnyCircuitElement): boolean =>
+  element.type.startsWith("schematic_")
+
 export const getSchematicSheetFiles = (
   circuitJson: CircuitJson,
 ): SchematicSheetFile[] => {
-  const usedFilenames = new Map<string, number>()
-
-  return (circuitJson as any[])
-    .filter((element) => element.type === "schematic_sheet")
+  return circuitJson
+    .filter(isSchematicSheetElement)
     .sort((a, b) => {
       const aIndex = a.sheet_index ?? 0
       const bIndex = b.sheet_index ?? 0
@@ -51,26 +61,17 @@ export const getSchematicSheetFiles = (
       )
     })
     .map((sheet, index) => {
+      const sheetIndex = sheet.sheet_index ?? index
       const displayName =
         sheet.display_name ??
         sheet.displayName ??
         sheet.name ??
-        `Sheet ${index + 1}`
-      const filenameBase = toKicadSheetFilename(displayName)
-      const duplicateCount = usedFilenames.get(filenameBase) ?? 0
-      usedFilenames.set(filenameBase, duplicateCount + 1)
-      let filename = filenameBase
-      if (duplicateCount > 0) {
-        filename = filenameBase.replace(
-          /\.kicad_sch$/,
-          `_${duplicateCount + 1}.kicad_sch`,
-        )
-      }
+        `Sheet ${sheetIndex + 1}`
 
       return {
         schematicSheetId: sheet.schematic_sheet_id,
         displayName,
-        filename,
+        filename: `Sheet_${sheetIndex + 1}.kicad_sch`,
         kicadSheetUuid: createDeterministicUuid(
           `schematic_sheet:${sheet.schematic_sheet_id}`,
         ),
@@ -84,7 +85,7 @@ export const getCircuitJsonForSchematicSheet = (
 ): CircuitJson => {
   const componentIdsOnSheet = new Set<string>()
 
-  for (const element of circuitJson as any[]) {
+  for (const element of circuitJson as ElementWithSchematicSheetMetadata[]) {
     if (
       element.type === "schematic_component" &&
       element.schematic_sheet_id === schematicSheetId &&
@@ -94,16 +95,17 @@ export const getCircuitJsonForSchematicSheet = (
     }
   }
 
-  return (circuitJson as any[]).filter((element) => {
+  return circuitJson.filter((element) => {
+    const schematicElement = element as ElementWithSchematicSheetMetadata
     if (element.type === "schematic_sheet") return false
-    if (element.schematic_sheet_id === schematicSheetId) return true
+    if (schematicElement.schematic_sheet_id === schematicSheetId) return true
     if (
-      element.schematic_component_id &&
-      componentIdsOnSheet.has(element.schematic_component_id)
+      schematicElement.schematic_component_id &&
+      componentIdsOnSheet.has(schematicElement.schematic_component_id)
     ) {
       return true
     }
 
-    return !String(element.type).startsWith("schematic_")
-  }) as CircuitJson
+    return !isSchematicElement(element)
+  })
 }

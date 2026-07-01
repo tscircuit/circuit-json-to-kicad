@@ -188,7 +188,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const instances = new SymbolInstances()
     const project = new SymbolInstancesProject("")
     const path = new SymbolInstancePath(
-      this.ctx.schematicInstancePath ?? `/${kicadSch?.uuid?.value || ""}`,
+      this.ctx.symbolInstancePath ?? `/${kicadSch?.uuid?.value || ""}`,
     )
     path.reference = labelText
     path.unit = 1
