@@ -52,7 +52,10 @@ export const getSchematicSheetFiles = (
     })
     .map((sheet, index) => {
       const displayName =
-        sheet.display_name ?? sheet.displayName ?? sheet.name ?? `Sheet ${index + 1}`
+        sheet.display_name ??
+        sheet.displayName ??
+        sheet.name ??
+        `Sheet ${index + 1}`
       const filenameBase = toKicadSheetFilename(displayName)
       const duplicateCount = usedFilenames.get(filenameBase) ?? 0
       usedFilenames.set(filenameBase, duplicateCount + 1)

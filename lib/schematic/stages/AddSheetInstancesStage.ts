@@ -29,9 +29,7 @@ export class AddSheetInstancesStage extends ConverterStage<
     const path = new SheetInstancesRootPath()
     path.value = this.ctx.schematicInstancePath ?? "/"
 
-    const page = new SheetInstancesRootPage(
-      this.ctx.schematicPageNumber ?? "1",
-    )
+    const page = new SheetInstancesRootPage(this.ctx.schematicPageNumber ?? "1")
 
     // Set pages array directly instead of pushing
     path.pages = [page]
