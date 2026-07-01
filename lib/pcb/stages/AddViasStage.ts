@@ -9,7 +9,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import {
-  getKicadCopperLayerIndex,
+  expandCircuitJsonViaSpan,
   getKicadLayer,
   getViaLayers,
 } from "../utils/layerMapping"
@@ -77,17 +77,20 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getViaDedupeKey(via: ViaLike): string {
-    const layers = this.getKicadViaLayers(via).join(",")
+    const layers = this.getRawViaSpanLayers(via).map(getKicadLayer).join(",")
     return `${via.pcb_trace_id ?? ""}:${via.x}:${via.y}:${layers}`
   }
 
   private getRawViaSpanLayers(via: ViaLike): string[] {
     if (via.from_layer && via.to_layer) {
-      return [via.from_layer, via.to_layer]
+      return expandCircuitJsonViaSpan(
+        [via.from_layer, via.to_layer],
+        this.ctx.numLayers ?? 2,
+      )
     }
 
     if (via.layers && via.layers.length >= 2) {
-      return via.layers
+      return expandCircuitJsonViaSpan(via.layers, this.ctx.numLayers ?? 2)
     }
 
     return []
@@ -96,13 +99,9 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   private getKicadViaLayers(via: ViaLike): string[] {
     const rawLayers = this.getRawViaSpanLayers(via)
     if (rawLayers.length >= 2) {
-      const kicadLayers = [...new Set(rawLayers.map(getKicadLayer))]
-      const sortedLayers = kicadLayers.sort(
-        (a, b) =>
-          getKicadCopperLayerIndex(a, this.ctx.numLayers ?? 2) -
-          getKicadCopperLayerIndex(b, this.ctx.numLayers ?? 2),
-      )
-      return [sortedLayers[0]!, sortedLayers[sortedLayers.length - 1]!]
+      const kicadLayers = rawLayers.map(getKicadLayer)
+      // KiCad stores via layers as endpoint layers, while rawLayers keeps the full board span.
+      return [kicadLayers[0]!, kicadLayers[kicadLayers.length - 1]!]
     }
 
     const boardLayers = getViaLayers(this.ctx.numLayers ?? 2)
