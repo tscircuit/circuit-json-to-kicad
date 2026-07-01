@@ -1,15 +1,12 @@
 import { expect, test } from "bun:test"
+import { convertCircuitJsonToStackedSchematicSheetsSvg } from "circuit-to-svg"
 import { mkdtemp, rm } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
+import sharp from "sharp"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import {
-  getCircuitJsonForSchematicSheet,
-  getSchematicSheetFiles,
-} from "lib/schematic/schematicSheetFiles"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const SheetCircuit = ({
@@ -36,6 +33,47 @@ const SheetCircuit = ({
     <trace from={`.${resistorName} > .pin2`} to={`.${capacitorName} > .pin1`} />
   </subcircuit>
 )
+
+const stackKicadSnapshots = async (
+  generatedFileContent: Record<string, Buffer>,
+  rootSnapshotFilename: string,
+): Promise<Buffer> => {
+  const pngEntries = Object.entries(generatedFileContent)
+    .filter(([filename]) => filename.endsWith(".png"))
+    .sort(([a], [b]) => {
+      if (a === rootSnapshotFilename) return -1
+      if (b === rootSnapshotFilename) return 1
+      return a.localeCompare(b)
+    })
+  const metadata = await Promise.all(
+    pngEntries.map(([, png]) => sharp(png).metadata()),
+  )
+  const maxWidth = Math.max(...metadata.map((item) => item.width ?? 0))
+  const totalHeight = metadata.reduce(
+    (sum, item) => sum + (item.height ?? 0),
+    0,
+  )
+
+  return sharp({
+    create: {
+      width: maxWidth,
+      height: totalHeight,
+      channels: 4,
+      background: { r: 255, g: 255, b: 255, alpha: 1 },
+    },
+  })
+    .composite(
+      pngEntries.map(([, png], index) => ({
+        input: png,
+        left: 0,
+        top: metadata
+          .slice(0, index)
+          .reduce((sum, item) => sum + (item.height ?? 0), 0),
+      })),
+    )
+    .png()
+    .toBuffer()
+}
 
 test("repro14 schematic sheet snapshots", async () => {
   const circuit = new Circuit()
@@ -85,41 +123,26 @@ test("repro14 schematic sheet snapshots", async () => {
       kicadFileType: "sch",
     })
 
-    // takeKicadSnapshot opens the root .kicad_sch file, then KiCad plots one
-    // PNG for the root page and one PNG for each child sheet file referenced by
-    // the root. We snapshot the root page by itself, then stack each child
-    // sheet's Circuit JSON rendering above the matching KiCad child-page PNG.
-    await expect(
-      kicadSnapshot.generatedFileContent[
-        "repro14-schematic-sheet-output-files.png"
-      ]!,
-    ).toMatchPngSnapshot(
-      import.meta.path,
-      "repro14-schematic-sheet-output-files-root",
+    // Circuit JSON renders all schematic sheets as one stacked SVG; KiCad plots
+    // one root page plus one child-page PNG per referenced sheet.
+    const circuitJsonSnapshot = await sharp(
+      Buffer.from(
+        convertCircuitJsonToStackedSchematicSheetsSvg(circuitJson, {
+          width: 1200,
+          height: 600,
+        }),
+      ),
+    )
+      .png()
+      .toBuffer()
+    const kicadStackedSnapshot = await stackKicadSnapshots(
+      kicadSnapshot.generatedFileContent,
+      "repro14-schematic-sheet-output-files.png",
     )
 
-    for (const [index, sheetFile] of getSchematicSheetFiles(
-      circuitJson,
-    ).entries()) {
-      const circuitJsonPng = await takeCircuitJsonSnapshot({
-        circuitJson: getCircuitJsonForSchematicSheet(
-          circuitJson,
-          sheetFile.schematicSheetId,
-        ),
-        outputType: "schematic",
-      })
-      const kicadPng =
-        kicadSnapshot.generatedFileContent[
-          `repro14-schematic-sheet-output-files-${sheetFile.displayName}.png`
-        ]!
-
-      await expect(
-        stackCircuitJsonKicadPngs(circuitJsonPng, kicadPng),
-      ).toMatchPngSnapshot(
-        import.meta.path,
-        `repro14-schematic-sheet-output-files-sheet-${index + 1}`,
-      )
-    }
+    expect(
+      stackCircuitJsonKicadPngs(circuitJsonSnapshot, kicadStackedSnapshot),
+    ).toMatchPngSnapshot(import.meta.path)
   } finally {
     await rm(outputDir, { recursive: true, force: true })
   }

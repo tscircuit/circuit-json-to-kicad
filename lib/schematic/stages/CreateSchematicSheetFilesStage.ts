@@ -29,6 +29,10 @@ import {
   type SchematicSheetFile,
 } from "../schematicSheetFiles"
 
+const KICAD_SCHEMATIC_VERSION = 20250114
+const KICAD_GENERATOR = "circuit-json-to-kicad"
+const KICAD_GENERATOR_VERSION = "0.0.1"
+const ROOT_SHEET_PAPER_SIZE = "A4"
 const ROOT_SHEET_WIDTH_MM = 80
 const ROOT_SHEET_HEIGHT_MM = 30
 const ROOT_SHEET_X_MM = 35
@@ -45,14 +49,14 @@ const createRootSchematicString = (
   sheetFiles: SchematicSheetFile[],
 ): string => {
   const kicadSch = new KicadSch({
-    generator: "circuit-json-to-kicad",
-    generatorVersion: "0.0.1",
+    generator: KICAD_GENERATOR,
+    generatorVersion: KICAD_GENERATOR_VERSION,
   })
-  kicadSch.version = 20250114
+  kicadSch.version = KICAD_SCHEMATIC_VERSION
   kicadSch.uuid = new Uuid(crypto.randomUUID())
 
   const paper = new Paper()
-  paper.size = "A4"
+  paper.size = ROOT_SHEET_PAPER_SIZE
   kicadSch.paper = paper
 
   const sheetInstances = new SheetInstances()
