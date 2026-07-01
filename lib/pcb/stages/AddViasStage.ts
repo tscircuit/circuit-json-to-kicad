@@ -8,7 +8,11 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
-import { getKicadLayer, getViaLayers } from "../utils/layerMapping"
+import {
+  getKicadCopperLayerIndex,
+  getKicadLayer,
+  getViaLayers,
+} from "../utils/layerMapping"
 
 type ViaLike = {
   x: number
@@ -73,27 +77,36 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getViaDedupeKey(via: ViaLike): string {
-    const layers = this.getRawViaLayers(via).sort().join(",")
+    const layers = this.getKicadViaLayers(via).join(",")
     return `${via.pcb_trace_id ?? ""}:${via.x}:${via.y}:${layers}`
   }
 
-  private getRawViaLayers(via: ViaLike): string[] {
-    if (via.layers?.length) {
-      return [...via.layers]
+  private getRawViaSpanLayers(via: ViaLike): string[] {
+    if (via.from_layer && via.to_layer) {
+      return [via.from_layer, via.to_layer]
     }
 
-    return [via.from_layer, via.to_layer].filter((layer): layer is string =>
-      Boolean(layer),
-    )
+    if (via.layers && via.layers.length >= 2) {
+      return via.layers
+    }
+
+    return []
   }
 
   private getKicadViaLayers(via: ViaLike): string[] {
-    const rawLayers = this.getRawViaLayers(via)
-    if (rawLayers.length > 0) {
-      return rawLayers.map((layer) => getKicadLayer(layer))
+    const rawLayers = this.getRawViaSpanLayers(via)
+    if (rawLayers.length >= 2) {
+      const kicadLayers = [...new Set(rawLayers.map(getKicadLayer))]
+      const sortedLayers = kicadLayers.sort(
+        (a, b) =>
+          getKicadCopperLayerIndex(a, this.ctx.numLayers ?? 2) -
+          getKicadCopperLayerIndex(b, this.ctx.numLayers ?? 2),
+      )
+      return [sortedLayers[0]!, sortedLayers[sortedLayers.length - 1]!]
     }
 
-    return getViaLayers(this.ctx.numLayers ?? 2)
+    const boardLayers = getViaLayers(this.ctx.numLayers ?? 2)
+    return [boardLayers[0]!, boardLayers[boardLayers.length - 1]!]
   }
 
   override _step(): void {
