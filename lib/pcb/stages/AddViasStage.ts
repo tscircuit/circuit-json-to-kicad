@@ -73,7 +73,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getViaDedupeKey(via: ViaLike): string {
-    const layers = this.getRawViaLayers(via).sort().join(",")
+    const layers = this.getKicadViaLayers(via).join(",")
     return `${via.pcb_trace_id ?? ""}:${via.x}:${via.y}:${layers}`
   }
 
@@ -88,6 +88,10 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getKicadViaLayers(via: ViaLike): string[] {
+    if (via.from_layer && via.to_layer) {
+      return [getKicadLayer(via.from_layer), getKicadLayer(via.to_layer)]
+    }
+
     const rawLayers = this.getRawViaLayers(via)
     if (rawLayers.length > 0) {
       const kicadLayers = rawLayers.map((layer) => getKicadLayer(layer))
