@@ -4,6 +4,7 @@ import { KicadSch } from "kicadts"
 import { compose, scale, translate } from "transformation-matrix"
 import type { ConverterContext, ConverterStage } from "../types"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
+import { getSchematicSheetFiles } from "./schematicSheetFiles"
 import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
@@ -129,13 +130,20 @@ export class CircuitJsonToKicadSchConverter {
   }
 
   /**
-   * Returns every KiCad schematic file produced by this converter.
-   *
-   * Today this is a single root schematic file. This API is intentionally a
-   * file list so hierarchical schematic sheets can add child .kicad_sch files
-   * without changing callers.
+   * Returns the root schematic file, plus child sheet files for multi-sheet designs.
    */
   getOutputFiles(options: KicadSchFileOutputOptions): KicadSchFile[] {
+    const schematicSheetFiles = getSchematicSheetFiles(this.circuitJson)
+    if (schematicSheetFiles.length === 0) {
+      return [
+        {
+          filename: options.schematicFilename,
+          content: this.getOutputString(),
+        },
+      ]
+    }
+
+    // Designs with schematic_sheet elements need a root file plus child sheet files.
     return new CreateSchematicSheetFilesStage(
       this.circuitJson,
       this.getOutputString(),

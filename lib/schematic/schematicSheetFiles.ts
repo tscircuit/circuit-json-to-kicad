@@ -56,17 +56,18 @@ export const getSchematicSheetFiles = (
       const filenameBase = toKicadSheetFilename(displayName)
       const duplicateCount = usedFilenames.get(filenameBase) ?? 0
       usedFilenames.set(filenameBase, duplicateCount + 1)
+      let filename = filenameBase
+      if (duplicateCount > 0) {
+        filename = filenameBase.replace(
+          /\.kicad_sch$/,
+          `_${duplicateCount + 1}.kicad_sch`,
+        )
+      }
 
       return {
         schematicSheetId: sheet.schematic_sheet_id,
         displayName,
-        filename:
-          duplicateCount === 0
-            ? filenameBase
-            : filenameBase.replace(
-                /\.kicad_sch$/,
-                `_${duplicateCount + 1}.kicad_sch`,
-              ),
+        filename,
         kicadSheetUuid: createDeterministicUuid(
           `schematic_sheet:${sheet.schematic_sheet_id}`,
         ),
