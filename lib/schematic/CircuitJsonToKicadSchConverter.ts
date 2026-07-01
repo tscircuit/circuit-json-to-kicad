@@ -11,6 +11,7 @@ import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
+import { CreateSchematicSheetFilesStage } from "./stages/CreateSchematicSheetFilesStage"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
@@ -24,8 +25,15 @@ export interface KicadSchFileOutputOptions {
   schematicFilename: string
 }
 
+interface CircuitJsonToKicadSchConverterOptions {
+  schematicUuid?: string
+  schematicInstancePath?: string
+  schematicPageNumber?: string
+}
+
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
+  circuitJson: CircuitJson
 
   pipeline: ConverterStage<CircuitJson, KicadSch>[]
   currentStageIndex = 0
@@ -36,7 +44,11 @@ export class CircuitJsonToKicadSchConverter {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(circuitJson: CircuitJson) {
+  constructor(
+    circuitJson: CircuitJson,
+    options: CircuitJsonToKicadSchConverterOptions = {},
+  ) {
+    this.circuitJson = circuitJson
     const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
 
     const db = cju(circuitJson)
@@ -68,6 +80,9 @@ export class CircuitJsonToKicadSchConverter {
       }),
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
+      schematicUuid: options.schematicUuid,
+      schematicInstancePath: options.schematicInstancePath,
+      schematicPageNumber: options.schematicPageNumber,
       c2kMatSch: compose(
         translate(KICAD_CENTER_X, KICAD_CENTER_Y),
         scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
@@ -121,11 +136,10 @@ export class CircuitJsonToKicadSchConverter {
    * without changing callers.
    */
   getOutputFiles(options: KicadSchFileOutputOptions): KicadSchFile[] {
-    return [
-      {
-        filename: options.schematicFilename,
-        content: this.getOutputString(),
-      },
-    ]
+    return new CreateSchematicSheetFilesStage(
+      this.circuitJson,
+      this.getOutputString(),
+      options,
+    ).getOutputFiles()
   }
 }

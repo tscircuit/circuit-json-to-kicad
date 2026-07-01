@@ -11,7 +11,7 @@ export class InitializeSchematicStage extends ConverterStage<
   KicadSch
 > {
   override _step(): void {
-    const { kicadSch, schematicPaperSize } = this.ctx
+    const { kicadSch, schematicPaperSize, schematicUuid } = this.ctx
 
     if (!kicadSch) {
       throw new Error("KicadSch instance not initialized in context")
@@ -26,7 +26,7 @@ export class InitializeSchematicStage extends ConverterStage<
     kicadSch.paper = paper
 
     // Generate a UUID for this schematic
-    kicadSch.uuid = new Uuid(crypto.randomUUID())
+    kicadSch.uuid = new Uuid(schematicUuid ?? crypto.randomUUID())
 
     this.finished = true
   }
