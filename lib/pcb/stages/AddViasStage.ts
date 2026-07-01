@@ -8,7 +8,7 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
-import { getKicadLayer, getViaLayers } from "../utils/layerMapping"
+import { getKicadLayer } from "../utils/layerMapping"
 
 type ViaLike = {
   x: number
@@ -90,10 +90,15 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   private getKicadViaLayers(via: ViaLike): string[] {
     const rawLayers = this.getRawViaLayers(via)
     if (rawLayers.length > 0) {
-      return rawLayers.map((layer) => getKicadLayer(layer))
+      const kicadLayers = rawLayers.map((layer) => getKicadLayer(layer))
+      if (kicadLayers.length <= 2) return kicadLayers
+
+      const firstLayer = kicadLayers[0]!
+      const lastLayer = kicadLayers[kicadLayers.length - 1]!
+      return [firstLayer, lastLayer]
     }
 
-    return getViaLayers(this.ctx.numLayers ?? 2)
+    return ["F.Cu", "B.Cu"]
   }
 
   override _step(): void {
@@ -183,8 +188,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Get via layers based on board layer count
-    // For through-hole vias, span all copper layers
+    // KiCad vias use two layer endpoints; through vias are F.Cu to B.Cu.
     const viaLayers = this.getKicadViaLayers(via)
 
     // Preserve explicit Circuit JSON via dimensions; only fall back when absent.
