@@ -4,7 +4,6 @@ import { KicadSch } from "kicadts"
 import { compose, scale, translate } from "transformation-matrix"
 import type { ConverterContext, ConverterStage } from "../types"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
-import { getSchematicSheetFiles } from "./schematicSheetFiles"
 import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
@@ -133,17 +132,7 @@ export class CircuitJsonToKicadSchConverter {
    * Returns the root schematic file, plus child sheet files for multi-sheet designs.
    */
   getOutputFiles(options: KicadSchFileOutputOptions): KicadSchFile[] {
-    const schematicSheetFiles = getSchematicSheetFiles(this.circuitJson)
-    if (schematicSheetFiles.length === 0) {
-      return [
-        {
-          filename: options.schematicFilename,
-          content: this.getOutputString(),
-        },
-      ]
-    }
-
-    // Designs with schematic_sheet elements need a root file plus child sheet files.
+    // The stage preserves the old single-file output when no schematic_sheet exists.
     return new CreateSchematicSheetFilesStage(
       this.circuitJson,
       this.getOutputString(),
