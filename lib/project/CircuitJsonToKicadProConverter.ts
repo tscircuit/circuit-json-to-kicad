@@ -1,10 +1,20 @@
 import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
+import {
+  buildSchematicSheetPlan,
+  type SchematicSheetPlan,
+} from "../schematic/buildSchematicSheetPlan"
 
 interface CircuitJsonToKicadProOptions {
   projectName?: string
   schematicFilename?: string
   pcbFilename?: string
+  /**
+   * Sheet plan produced by CircuitJsonToKicadSchConverter. When provided, the
+   * project's `sheets` list uses the same root/sheet-node UUIDs so the
+   * `.kicad_pro` stays consistent with the generated `.kicad_sch` hierarchy.
+   */
+  schematicSheetPlan?: SchematicSheetPlan
 }
 
 interface KicadProNetClass {
@@ -157,6 +167,16 @@ export class CircuitJsonToKicadProConverter {
       (component) => component.type === "pcb_board",
     )[0] as PcbBoard
 
+    // Build the `sheets` list. When a sheet plan is supplied (hierarchical
+    // schematic), reuse its UUIDs so the project matches the .kicad_sch files;
+    // otherwise emit a single Root entry.
+    const schematicSheetPlan =
+      options.schematicSheetPlan ?? buildSchematicSheetPlan(circuitJson)
+    const sheets: [string, string][] = [[schematicSheetPlan.rootUuid, "Root"]]
+    for (const child of schematicSheetPlan.children) {
+      sheets.push([child.sheetNodeUuid, child.sheetName])
+    }
+
     const minViaDiameter = pcbBoard?.min_via_pad_diameter ?? 0.3
     const minViaDrill = pcbBoard?.min_via_hole_diameter ?? 0.2
     const minViaAnnularWidth = (minViaDiameter - minViaDrill) / 2
@@ -235,7 +255,7 @@ export class CircuitJsonToKicadProConverter {
         },
         last_opened_board: pcbFilename,
       },
-      sheets: [[Math.random().toString(36).substring(2, 15), "Root"]],
+      sheets,
     }
   }
 

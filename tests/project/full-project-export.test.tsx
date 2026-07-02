@@ -34,17 +34,8 @@ test("exports full KiCad project with .kicad_pro, .kicad_sch, and .kicad_pcb fil
   // Create output directory
   mkdirSync(OUTPUT_DIR, { recursive: true })
 
-  // Generate .kicad_pro file
-  const proConverter = new CircuitJsonToKicadProConverter(circuitJson, {
-    projectName: PROJECT_NAME,
-    schematicFilename: `${PROJECT_NAME}.kicad_sch`,
-    pcbFilename: `${PROJECT_NAME}.kicad_pcb`,
-  })
-  proConverter.runUntilFinished()
-  const proContent = proConverter.getOutputString()
-  writeFileSync(join(OUTPUT_DIR, `${PROJECT_NAME}.kicad_pro`), proContent)
-
-  // Generate .kicad_sch file
+  // Generate .kicad_sch file(s). Built first so its sheet plan can be shared
+  // with the project converter (keeps .kicad_pro sheet UUIDs consistent).
   const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
   schConverter.runUntilFinished()
   const schematicFiles = schConverter.getOutputFiles({
@@ -54,6 +45,17 @@ test("exports full KiCad project with .kicad_pro, .kicad_sch, and .kicad_pcb fil
   for (const { filename, content } of schematicFiles) {
     writeFileSync(join(OUTPUT_DIR, filename), content)
   }
+
+  // Generate .kicad_pro file
+  const proConverter = new CircuitJsonToKicadProConverter(circuitJson, {
+    projectName: PROJECT_NAME,
+    schematicFilename: `${PROJECT_NAME}.kicad_sch`,
+    pcbFilename: `${PROJECT_NAME}.kicad_pcb`,
+    schematicSheetPlan: schConverter.schematicSheetPlan,
+  })
+  proConverter.runUntilFinished()
+  const proContent = proConverter.getOutputString()
+  writeFileSync(join(OUTPUT_DIR, `${PROJECT_NAME}.kicad_pro`), proContent)
 
   // Generate .kicad_pcb file
   const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)

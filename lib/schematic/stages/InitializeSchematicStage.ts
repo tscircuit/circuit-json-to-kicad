@@ -25,8 +25,9 @@ export class InitializeSchematicStage extends ConverterStage<
     paper.size = schematicPaperSize?.name ?? "A4"
     kicadSch.paper = paper
 
-    // Generate a UUID for this schematic
-    kicadSch.uuid = new Uuid(crypto.randomUUID())
+    // Use the provided file UUID (shared across the sheet hierarchy) or
+    // generate a fresh one for standalone/legacy single-file output.
+    kicadSch.uuid = new Uuid(this.ctx.schematicFileUuid ?? crypto.randomUUID())
 
     this.finished = true
   }
