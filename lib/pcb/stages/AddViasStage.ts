@@ -8,7 +8,11 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
-import { getKicadLayer, getViaLayers } from "../utils/layerMapping"
+import {
+  getKicadLayer,
+  getViaLayers,
+  getViaLayerSpan,
+} from "../utils/layerMapping"
 
 type ViaLike = {
   x: number
@@ -49,8 +53,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             (point: any): ViaLike => ({
               x: point.x,
               y: point.y,
-              outer_diameter: point.outer_diameter,
-              hole_diameter: point.hole_diameter,
+              outer_diameter: point.outer_diameter ?? point.via_diameter,
+              hole_diameter: point.hole_diameter ?? point.via_hole_diameter,
               from_layer: point.from_layer,
               to_layer: point.to_layer,
               pcb_trace_id: trace.pcb_trace_id,
@@ -73,8 +77,13 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getViaDedupeKey(via: ViaLike): string {
-    const layers = this.getRawViaLayers(via).sort().join(",")
-    return `${via.pcb_trace_id ?? ""}:${via.x}:${via.y}:${layers}`
+    // A via is identified by its position and its layer span. `pcb_trace_id` and
+    // the raw layer list are intentionally excluded: the same physical via is
+    // represented both as a standalone `pcb_via` (with the full traversed-layer
+    // list) and as a trace `route` via-point (with only from/to layers), and
+    // those must dedupe to one via.
+    const span = [...this.getKicadViaLayers(via)].sort().join(",")
+    return `${via.x}:${via.y}:${span}`
   }
 
   private getRawViaLayers(via: ViaLike): string[] {
@@ -89,11 +98,15 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
 
   private getKicadViaLayers(via: ViaLike): string[] {
     const rawLayers = this.getRawViaLayers(via)
-    if (rawLayers.length > 0) {
-      return rawLayers.map((layer) => getKicadLayer(layer))
-    }
+    const numLayers = this.ctx.numLayers ?? 2
+    const kicadLayers =
+      rawLayers.length > 0
+        ? rawLayers.map((layer) => getKicadLayer(layer))
+        : getViaLayers(numLayers)
 
-    return getViaLayers(this.ctx.numLayers ?? 2)
+    // KiCad vias must list exactly two layers (top-most + bottom-most span);
+    // Circuit JSON may enumerate every traversed copper layer.
+    return getViaLayerSpan(kicadLayers, numLayers)
   }
 
   override _step(): void {
