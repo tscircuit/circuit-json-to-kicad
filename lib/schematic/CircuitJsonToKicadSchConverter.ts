@@ -2,7 +2,7 @@ import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
 import { KicadSch, type Sheet } from "kicadts"
 import { compose, scale, translate } from "transformation-matrix"
-import type { ConverterContext } from "../types"
+import type { ConverterContext, ConverterStage } from "../types"
 import { buildChildSheetNodes } from "./buildChildSheetNodes"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
 import { partitionCircuitJsonBySheet } from "./partitionCircuitJsonBySheet"
@@ -52,62 +52,49 @@ interface BuildSheetFileOptions {
 }
 
 export class CircuitJsonToKicadSchConverter {
-  circuitJson: CircuitJson
-  schematicSheetPlan: SchematicSheetPlan
+  ctx: ConverterContext
+
+  pipeline: ConverterStage<CircuitJson, KicadSch>[]
+  currentStageIndex = 0
 
   finished = false
 
+  circuitJson: CircuitJson
+  schematicSheetPlan: SchematicSheetPlan
   private files: BuiltSheetFile[] = []
   private built = false
+
+  get currentStage() {
+    return this.pipeline[this.currentStageIndex]
+  }
 
   constructor(circuitJson: CircuitJson) {
     this.circuitJson = circuitJson
     this.schematicSheetPlan = buildSchematicSheetPlan(circuitJson)
-  }
-
-  /** Builds a single `.kicad_sch` file (root, child, or legacy single-file). */
-  private buildSheetFile(options: BuildSheetFileOptions): {
-    kicadSch: KicadSch
-    content: string
-  } {
-    const {
-      circuitJson,
-      fileUuid,
-      symbolInstancePathPrefix,
-      emitSheetInstances,
-      childSheetNodes,
-      extraPaperExtentMm,
-    } = options
 
     const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
+
     const db = cju(circuitJson)
+
     const { center, bounds } = getSchematicBoundsAndCenter(db)
 
-    const contentWidthMm =
+    // Calculate the size of the schematic in KiCad coordinates (mm)
+    const schematicWidthMm =
       (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor
-    const contentHeightMm =
+    const schematicHeightMm =
       (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor
 
-    // Choose a paper big enough for both the page content and (for the root
-    // file) the sheet-node grid.
-    const requiredWidthMm = Math.max(
-      contentWidthMm + 2 * DEFAULT_PAPER_PADDING_MM,
-      extraPaperExtentMm?.width ?? 0,
-    )
-    const requiredHeightMm = Math.max(
-      contentHeightMm + 2 * DEFAULT_PAPER_PADDING_MM,
-      extraPaperExtentMm?.height ?? 0,
-    )
+    // Select appropriate paper size based on content
     const paperSize = selectSchematicPaperSize(
-      requiredWidthMm,
-      requiredHeightMm,
-      0,
+      schematicWidthMm,
+      schematicHeightMm,
     )
 
+    // Use the center of the selected paper size
     const KICAD_CENTER_X = paperSize.width / 2
     const KICAD_CENTER_Y = paperSize.height / 2
 
-    const ctx: ConverterContext = {
+    this.ctx = {
       db,
       circuitJson,
       kicadSch: new KicadSch({
@@ -121,117 +108,60 @@ export class CircuitJsonToKicadSchConverter {
         scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
         translate(-center.x, -center.y),
       ),
-      schematicFileUuid: fileUuid,
-      symbolInstancePathPrefix,
     }
-
-    // The pipeline is local (not an instance field) because a hierarchical
-    // design produces several files, and each one runs its own pipeline bound to
-    // its own context (uuid, circuit-json subset, transform).
-    const pipeline = [
-      new InitializeSchematicStage(circuitJson, ctx),
-      new AddLibrarySymbolsStage(circuitJson, ctx),
-      new AddSchematicSymbolsStage(circuitJson, ctx),
-      new AddSchematicNetLabelsStage(circuitJson, ctx),
-      new AddSchematicTracesStage(circuitJson, ctx),
-      new AddSchematicGraphicsStage(circuitJson, ctx),
-      ...(emitSheetInstances
-        ? [new AddSheetInstancesStage(circuitJson, ctx)]
-        : []),
+    this.pipeline = [
+      new InitializeSchematicStage(circuitJson, this.ctx),
+      new AddLibrarySymbolsStage(circuitJson, this.ctx),
+      new AddSchematicSymbolsStage(circuitJson, this.ctx),
+      new AddSchematicNetLabelsStage(circuitJson, this.ctx),
+      new AddSchematicTracesStage(circuitJson, this.ctx),
+      new AddSchematicGraphicsStage(circuitJson, this.ctx),
+      new AddSheetInstancesStage(circuitJson, this.ctx),
     ]
-
-    for (const stage of pipeline) stage.runUntilFinished()
-
-    const kicadSch = ctx.kicadSch!
-
-    // Sheet nodes are cross-file structural links for the root page, not content
-    // converted from this file's circuit-json, so they are attached here rather
-    // than in a pipeline stage.
-    if (childSheetNodes && childSheetNodes.length > 0) {
-      kicadSch.sheets = childSheetNodes
-    }
-
-    return { kicadSch, content: kicadSch.getString() }
   }
 
-  private buildAll() {
-    if (this.built) return
-
-    const { rootUuid, root, children, isHierarchical } = this.schematicSheetPlan
-
-    if (!isHierarchical) {
-      // Legacy single-file output: identical behavior to before sheets existed.
-      const built = this.buildSheetFile({
-        circuitJson: this.circuitJson,
-        fileUuid: rootUuid,
-        symbolInstancePathPrefix: `/${rootUuid}`,
-        emitSheetInstances: true,
-      })
-      this.files.push({
-        entry: root,
-        kicadSch: built.kicadSch,
-        content: built.content,
-      })
-      this.built = true
+  step() {
+    // A hierarchical design is emitted as several files, which don't fit the
+    // single-pipeline stepping model; build them all in one shot.
+    if (this.schematicSheetPlan.isHierarchical) {
+      this.buildAll()
+      this.finished = true
       return
     }
 
-    // Root file: sheet nodes + any content not assigned to a sheet.
-    const { nodes: childSheetNodes, extentMm } = buildChildSheetNodes(
-      children,
-      rootUuid,
-    )
-    const rootBuilt = this.buildSheetFile({
-      circuitJson: partitionCircuitJsonBySheet(this.circuitJson, null),
-      fileUuid: rootUuid,
-      symbolInstancePathPrefix: `/${rootUuid}`,
-      emitSheetInstances: true,
-      childSheetNodes,
-      extraPaperExtentMm: extentMm,
-    })
-    this.files.push({
-      entry: root,
-      kicadSch: rootBuilt.kicadSch,
-      content: rootBuilt.content,
-    })
-
-    // One child `.kicad_sch` per schematic sheet.
-    for (const child of children) {
-      const built = this.buildSheetFile({
-        circuitJson: partitionCircuitJsonBySheet(
-          this.circuitJson,
-          child.schematicSheetId,
-        ),
-        fileUuid: child.fileUuid,
-        symbolInstancePathPrefix: `/${rootUuid}/${child.sheetNodeUuid}`,
-        emitSheetInstances: false,
-      })
-      this.files.push({
-        entry: child,
-        kicadSch: built.kicadSch,
-        content: built.content,
-      })
+    if (!this.currentStage) {
+      this.finished = true
+      return
     }
-
-    this.built = true
+    this.currentStage.step()
+    if (this.currentStage.finished) {
+      this.currentStageIndex++
+    }
   }
 
   runUntilFinished() {
-    this.buildAll()
-    this.finished = true
+    while (!this.finished) {
+      this.step()
+    }
   }
 
   getOutput(): KicadSch {
-    this.buildAll()
-    return this.files[0]!.kicadSch
+    if (this.schematicSheetPlan.isHierarchical) {
+      this.buildAll()
+      return this.files[0]!.kicadSch
+    }
+    return this.ctx.kicadSch!
   }
 
   /**
-   * Get the root schematic file as a string.
+   * Get the (root) schematic as a string.
    */
   getOutputString(): string {
-    this.buildAll()
-    return this.files[0]!.content
+    if (this.schematicSheetPlan.isHierarchical) {
+      this.buildAll()
+      return this.files[0]!.content
+    }
+    return this.ctx.kicadSch!.getString()
   }
 
   /**
@@ -243,10 +173,137 @@ export class CircuitJsonToKicadSchConverter {
    * each named after its sheet and referenced by the root via `Sheetfile`.
    */
   getOutputFiles(options: KicadSchFileOutputOptions): KicadSchFile[] {
+    if (!this.schematicSheetPlan.isHierarchical) {
+      return [
+        {
+          filename: options.schematicFilename,
+          content: this.getOutputString(),
+        },
+      ]
+    }
+
     this.buildAll()
     return this.files.map((file, index) => ({
       filename: index === 0 ? options.schematicFilename : file.entry.filename,
       content: file.content,
     }))
+  }
+
+  /** Builds the root + child `.kicad_sch` files for a hierarchical design. */
+  private buildAll() {
+    if (this.built) return
+    this.built = true
+
+    const { rootUuid, root, children } = this.schematicSheetPlan
+
+    // Root file: the `(sheet)` nodes + any content not assigned to a sheet.
+    const { nodes: childSheetNodes, extentMm } = buildChildSheetNodes(
+      children,
+      rootUuid,
+    )
+    const rootSch = this.buildSheetFile({
+      circuitJson: partitionCircuitJsonBySheet(this.circuitJson, null),
+      fileUuid: rootUuid,
+      symbolInstancePathPrefix: `/${rootUuid}`,
+      emitSheetInstances: true,
+      childSheetNodes,
+      extraPaperExtentMm: extentMm,
+    })
+    this.files.push({
+      entry: root,
+      kicadSch: rootSch,
+      content: rootSch.getString(),
+    })
+
+    // One child `.kicad_sch` per schematic sheet.
+    for (const child of children) {
+      const childSch = this.buildSheetFile({
+        circuitJson: partitionCircuitJsonBySheet(
+          this.circuitJson,
+          child.schematicSheetId,
+        ),
+        fileUuid: child.fileUuid,
+        symbolInstancePathPrefix: `/${rootUuid}/${child.sheetNodeUuid}`,
+        emitSheetInstances: false,
+      })
+      this.files.push({
+        entry: child,
+        kicadSch: childSch,
+        content: childSch.getString(),
+      })
+    }
+  }
+
+  /** Builds one child/root `.kicad_sch` for a sheet, run to completion. */
+  private buildSheetFile(options: BuildSheetFileOptions): KicadSch {
+    const {
+      circuitJson,
+      fileUuid,
+      symbolInstancePathPrefix,
+      emitSheetInstances,
+      childSheetNodes,
+      extraPaperExtentMm,
+    } = options
+
+    const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
+    const db = cju(circuitJson)
+    const { center, bounds } = getSchematicBoundsAndCenter(db)
+
+    // Paper must fit the page content and (for the root file) the sheet-node grid.
+    const paperSize = selectSchematicPaperSize(
+      Math.max(
+        (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor +
+          2 * DEFAULT_PAPER_PADDING_MM,
+        extraPaperExtentMm?.width ?? 0,
+      ),
+      Math.max(
+        (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor +
+          2 * DEFAULT_PAPER_PADDING_MM,
+        extraPaperExtentMm?.height ?? 0,
+      ),
+      0,
+    )
+
+    const ctx: ConverterContext = {
+      db,
+      circuitJson,
+      kicadSch: new KicadSch({
+        generator: "circuit-json-to-kicad",
+        generatorVersion: "0.0.1",
+      }),
+      kicadSchematicScaleFactor,
+      schematicPaperSize: paperSize,
+      c2kMatSch: compose(
+        translate(paperSize.width / 2, paperSize.height / 2),
+        scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
+        translate(-center.x, -center.y),
+      ),
+      schematicFileUuid: fileUuid,
+      symbolInstancePathPrefix,
+    }
+
+    // Run the same stages as the single-file pipeline, but against this file's
+    // own context and to completion (each sheet file is a standalone .kicad_sch).
+    const stages: ConverterStage<CircuitJson, KicadSch>[] = [
+      new InitializeSchematicStage(circuitJson, ctx),
+      new AddLibrarySymbolsStage(circuitJson, ctx),
+      new AddSchematicSymbolsStage(circuitJson, ctx),
+      new AddSchematicNetLabelsStage(circuitJson, ctx),
+      new AddSchematicTracesStage(circuitJson, ctx),
+      new AddSchematicGraphicsStage(circuitJson, ctx),
+    ]
+    if (emitSheetInstances) {
+      stages.push(new AddSheetInstancesStage(circuitJson, ctx))
+    }
+    for (const stage of stages) stage.runUntilFinished()
+
+    const kicadSch = ctx.kicadSch!
+
+    // Sheet nodes are cross-file structural links attached to the root page.
+    if (childSheetNodes && childSheetNodes.length > 0) {
+      kicadSch.sheets = childSheetNodes
+    }
+
+    return kicadSch
   }
 }
