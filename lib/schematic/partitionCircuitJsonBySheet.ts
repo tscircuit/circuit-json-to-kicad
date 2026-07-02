@@ -1,6 +1,6 @@
-import type { CircuitJson } from "circuit-json"
+import type { AnyCircuitElement, CircuitJson } from "circuit-json"
 
-function isSchematicElement(el: any): boolean {
+function isSchematicElement(el: AnyCircuitElement): boolean {
   return typeof el.type === "string" && el.type.startsWith("schematic_")
 }
 

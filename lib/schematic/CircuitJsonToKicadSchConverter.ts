@@ -125,6 +125,9 @@ export class CircuitJsonToKicadSchConverter {
       symbolInstancePathPrefix,
     }
 
+    // The pipeline is local (not an instance field) because a hierarchical
+    // design produces several files, and each one runs its own pipeline bound to
+    // its own context (uuid, circuit-json subset, transform).
     const pipeline = [
       new InitializeSchematicStage(circuitJson, ctx),
       new AddLibrarySymbolsStage(circuitJson, ctx),

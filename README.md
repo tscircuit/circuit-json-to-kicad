@@ -110,18 +110,18 @@ Bun.write("output.kicad_pcb", pcbConverter.getOutputString())
 
 ### Hierarchical Schematic Sheets
 
-If your circuit uses tscircuit `<schematicsheet>` elements (or assigns components
-to a sheet with the `schSheetName` prop), the converter emits a **KiCad
+If your circuit declares tscircuit `<schematicsheet />` elements and assigns
+components to them with the `schSheetName` prop, the converter emits a **KiCad
 hierarchical schematic**: a root `.kicad_sch` containing one `(sheet)` node per
 sheet, plus a separate child `.kicad_sch` file for each sheet's contents.
 
 ```tsx
 circuit.add(
   <board>
-    <schematicsheet name="Power" displayName="Power" sheetIndex={0}>
-      <resistor name="R1" resistance="10k" footprint="0402" />
-    </schematicsheet>
+    <schematicsheet name="Power" displayName="Power" sheetIndex={0} />
     <schematicsheet name="Logic" displayName="Logic" sheetIndex={1} />
+
+    <resistor name="R1" resistance="10k" footprint="0402" schSheetName="Power" />
     <chip name="U1" footprint="soic8" schSheetName="Logic" />
   </board>,
 )
