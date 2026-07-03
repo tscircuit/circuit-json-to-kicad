@@ -114,6 +114,7 @@ convertBtn.addEventListener("click", async () => {
       projectName: baseName,
       schematicFilename: schematicFileName,
       pcbFilename: boardFileName,
+      schematicSheetPlan: schConverter.schematicSheetPlan,
     })
     proConverter.runUntilFinished()
 

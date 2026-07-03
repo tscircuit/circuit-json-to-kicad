@@ -63,6 +63,21 @@ export interface ConverterContext {
   /** Selected paper size for schematic */
   schematicPaperSize?: PaperDimensions
 
+  // Hierarchical schematic sheet data (set per-file when a design has sheets)
+  /**
+   * UUID written as this file's own top-level `(uuid ...)`. When set,
+   * InitializeSchematicStage uses it instead of generating a random one so the
+   * root uuid can be shared across the root file, child files, sheet nodes and
+   * the `.kicad_pro`.
+   */
+  schematicFileUuid?: string
+  /**
+   * Prefix used for every symbol `(instances ... (path ...))` in this file.
+   * Root/legacy files use `/<rootUuid>`; child sheet files use
+   * `/<rootUuid>/<sheetNodeUuid>` (KiCad requires the root uuid first).
+   */
+  symbolInstancePathPrefix?: string
+
   // Optional data that can be shared between stages
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>
   wireConnections?: Map<SchematicTraceId, SchematicPortId[]>

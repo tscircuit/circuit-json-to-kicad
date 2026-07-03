@@ -108,6 +108,47 @@ pcbConverter.runUntilFinished()
 Bun.write("output.kicad_pcb", pcbConverter.getOutputString())
 ```
 
+### Hierarchical Schematic Sheets
+
+If your circuit declares tscircuit `<schematicsheet />` elements and assigns
+components to them with the `schSheetName` prop, the converter emits a **KiCad
+hierarchical schematic**: a root `.kicad_sch` containing one `(sheet)` node per
+sheet, plus a separate child `.kicad_sch` file for each sheet's contents.
+
+```tsx
+circuit.add(
+  <board>
+    <schematicsheet name="Power" displayName="Power" sheetIndex={0} />
+    <schematicsheet name="Logic" displayName="Logic" sheetIndex={1} />
+
+    <resistor name="R1" resistance="10k" footprint="0402" schSheetName="Power" />
+    <chip name="U1" footprint="soic8" schSheetName="Logic" />
+  </board>,
+)
+await circuit.renderUntilSettled()
+
+const converter = new CircuitJsonToKicadSchConverter(circuit.getCircuitJson())
+converter.runUntilFinished()
+
+// Root schematic + one child .kicad_sch per sheet.
+for (const { filename, content } of converter.getOutputFiles({
+  schematicFilename: "my_project.kicad_sch",
+})) {
+  Bun.write(filename, content)
+}
+```
+
+Notes:
+
+- `getOutputString()` returns the **root** file; `getOutputFiles()` returns the
+  root file followed by one child file per sheet (named after the sheet). Write
+  them side by side so KiCad can resolve each `Sheetfile` reference.
+- A design with **no** `<schematicsheet>` produces a single flat file exactly as
+  before.
+- Nets shared across sheets (same-named net labels) become KiCad labels that
+  connect by name across the whole hierarchy, so no hierarchical sheet pins are
+  required.
+
 ## Features
 
 - **Schematic Conversion**: Convert Circuit JSON to KiCad schematic files (`.kicad_sch`)
@@ -115,6 +156,7 @@ Bun.write("output.kicad_pcb", pcbConverter.getOutputString())
   - Component placement
   - Wire routing
   - Net connections
+  - Hierarchical schematic sheets (multi-file `<schematicsheet>` export)
 
 - **PCB Conversion**: Convert Circuit JSON to KiCad PCB files (`.kicad_pcb`)
   - Footprint placement

@@ -62,3 +62,34 @@ export function getViaLayers(numLayers: number): string[] {
   layers.push("B.Cu")
   return layers
 }
+
+/**
+ * A KiCad via spans exactly two copper layers: its top-most and bottom-most.
+ * Given the copper layers a via touches, return that outermost pair in stackup
+ * order (front-most first). Circuit JSON may list every traversed layer (e.g.
+ * [F.Cu, In1.Cu, In2.Cu, B.Cu], which KiCad rejects) or the two span layers in
+ * either order (e.g. [B.Cu, F.Cu]); both are normalized here.
+ */
+export function getViaLayerSpan(
+  kicadLayers: string[],
+  numLayers: number,
+): string[] {
+  if (kicadLayers.length <= 1) return kicadLayers
+
+  let top = kicadLayers[0]!
+  let bottom = kicadLayers[0]!
+  let topIndex = getKicadCopperLayerIndex(top, numLayers)
+  let bottomIndex = topIndex
+  for (const layer of kicadLayers) {
+    const index = getKicadCopperLayerIndex(layer, numLayers)
+    if (index < topIndex) {
+      topIndex = index
+      top = layer
+    }
+    if (index > bottomIndex) {
+      bottomIndex = index
+      bottom = layer
+    }
+  }
+  return top === bottom ? [top] : [top, bottom]
+}
