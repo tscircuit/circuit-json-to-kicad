@@ -10,7 +10,7 @@ import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
-import polygonClipping from "polygon-clipping"
+import polygonClipping, { type Geom } from "polygon-clipping"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -242,7 +242,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
-      let boardGeom: any = [[boardPolyCoords]]
+      let boardGeom: Geom = [[boardPolyCoords]]
       if (cutoutPolys.length > 0) {
         boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
       }
