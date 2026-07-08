@@ -221,7 +221,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
-      const cutoutPolys: any[] = []
+      const cutoutPolys: Geom[] = []
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
