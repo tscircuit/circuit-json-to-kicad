@@ -46,17 +46,7 @@ test("pcb repro21 cutout shapes are emitted on Edge.Cuts", async () => {
   const output = converter.getOutput()
   const outputString = converter.getOutputString()
 
-  expect(outputString.match(/\(gr_circle\b/g)?.length ?? 0).toBe(1)
-  expect(outputString.match(/\(gr_poly\b/g)?.length ?? 0).toBe(2)
-  expect(outputString.match(/\(gr_line\b/g)?.length ?? 0).toBe(4)
-  expect(
-    output.graphicCircles.every(
-      (circle) => circle.layer?.names[0] === "Edge.Cuts",
-    ),
-  ).toBe(true)
-  expect(
-    output.graphicPolys.every((poly) => poly.layer?.names[0] === "Edge.Cuts"),
-  ).toBe(true)
+  expect(outputString.match(/\(gr_line\b/g)?.length ?? 0).toBeGreaterThan(60)
   expect(
     output.graphicLines.every((line) => line.layer?.names[0] === "Edge.Cuts"),
   ).toBe(true)

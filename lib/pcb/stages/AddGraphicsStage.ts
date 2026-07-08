@@ -10,6 +10,7 @@ import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
+import polygonClipping from "polygon-clipping"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -195,100 +196,90 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
+      let boardPolyCoords: [number, number][] = []
+
+      // Check if board has a custom outline, otherwise use width/height to create rectangle
       if (board.outline && board.outline.length > 0) {
         // Use the custom outline points
-        corners = normalizeOutlineCorners(board.outline)
+        boardPolyCoords = normalizeOutlineCorners(board.outline).map((c) => [
+          c.x,
+          c.y,
+        ])
       } else {
         // Fallback to rectangular outline based on width and height
         const halfWidth = board.width ? board.width / 2 : 0
         const halfHeight = board.height ? board.height / 2 : 0
 
         // Define the 4 corners of the board relative to center
-        corners = [
-          { x: board.center.x - halfWidth, y: board.center.y - halfHeight },
-          { x: board.center.x + halfWidth, y: board.center.y - halfHeight },
-          { x: board.center.x + halfWidth, y: board.center.y + halfHeight },
-          { x: board.center.x - halfWidth, y: board.center.y + halfHeight },
+        boardPolyCoords = [
+          [board.center.x - halfWidth, board.center.y - halfHeight],
+          [board.center.x + halfWidth, board.center.y - halfHeight],
+          [board.center.x + halfWidth, board.center.y + halfHeight],
+          [board.center.x - halfWidth, board.center.y + halfHeight],
         ]
       }
 
-      // Transform corners to KiCad coordinates
-      const transformedCorners = corners.map((corner) =>
-        applyToPoint(c2kMatPcb, corner),
-      )
+      const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
-      if (transformedCorners.length < 2) {
-        this.finished = true
-        return
+      const cutoutPolys: any[] = []
+      for (const cutout of pcbCutouts) {
+        if (cutout.shape === "rect") {
+          const cutoutCorners = getRectCutoutCorners(cutout)
+          cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
+        } else if (cutout.shape === "circle") {
+          const pts: [number, number][] = []
+          const steps = 64
+          for (let i = 0; i < steps; i++) {
+            const angle = (i / steps) * Math.PI * 2
+            pts.push([
+              cutout.center.x + cutout.radius * Math.cos(angle),
+              cutout.center.y + cutout.radius * Math.sin(angle),
+            ])
+          }
+          cutoutPolys.push([[pts]])
+        } else if (cutout.shape === "polygon") {
+          cutoutPolys.push([[cutout.points.map((c) => [c.x, c.y])]])
+        }
       }
 
-      // Create edge cut lines connecting the corners
-      for (let i = 0; i < transformedCorners.length; i++) {
-        const start = transformedCorners[i]
-        const end = transformedCorners[(i + 1) % transformedCorners.length]
+      let boardGeom: any = [[boardPolyCoords]]
+      if (cutoutPolys.length > 0) {
+        boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
+      }
 
-        if (!start || !end) continue
-        if (pointsAreEqual(start, end)) continue
+      // Convert resulting polygons back to lines on Edge.Cuts
+      for (const poly of boardGeom) {
+        for (const ring of poly) {
+          const transformedRing = ring.map((point: [number, number]) =>
+            applyToPoint(c2kMatPcb, { x: point[0], y: point[1] }),
+          )
 
-        const edgeLine = new GrLine({
-          start: { x: start.x, y: start.y },
-          end: { x: end.x, y: end.y },
-          layer: "Edge.Cuts",
-          width: EDGE_CUTS_WIDTH,
-        })
+          for (let i = 0; i < transformedRing.length; i++) {
+            const start = transformedRing[i]
+            const end = transformedRing[(i + 1) % transformedRing.length]
 
-        appendGraphicLine(kicadPcb, edgeLine)
+            if (!start || !end) continue
+            if (pointsAreEqual(start, end)) continue
+
+            const edgeLine = new GrLine({
+              start: { x: start.x, y: start.y },
+              end: { x: end.x, y: end.y },
+              layer: "Edge.Cuts",
+              width: EDGE_CUTS_WIDTH,
+            })
+
+            appendGraphicLine(kicadPcb, edgeLine)
+          }
+        }
       }
     }
 
     const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
-    // Board cutouts become Edge.Cuts graphics in KiCad so they participate in
-    // milling/outline geometry instead of being dropped.
+    // Independent edge.cuts for path cutouts, since polygon-clipping doesn't handle paths natively.
+    // Polygon, rect, and circle cutouts were already subtracted from the board outline.
     for (const cutout of pcbCutouts) {
-      if (cutout.shape === "circle") {
-        const transformedCenter = applyToPoint(c2kMatPcb, cutout.center)
-        const transformedEnd = applyToPoint(c2kMatPcb, {
-          x: cutout.center.x + cutout.radius,
-          y: cutout.center.y,
-        })
-
-        appendGraphicCircle(
-          kicadPcb,
-          new GrCircle({
-            center: transformedCenter,
-            end: transformedEnd,
-            layer: "Edge.Cuts",
-            width: EDGE_CUTS_WIDTH,
-          }),
-        )
-      } else if (cutout.shape === "polygon") {
-        const corners = normalizeOutlineCorners(cutout.points)
-        if (corners.length < 3) continue
-
-        appendGraphicPoly(
-          kicadPcb,
-          new GrPoly({
-            points: corners.map((point) => applyToPoint(c2kMatPcb, point)),
-            layer: "Edge.Cuts",
-            width: EDGE_CUTS_WIDTH,
-            fill: false,
-          }),
-        )
-      } else if (cutout.shape === "rect") {
-        const corners = normalizeOutlineCorners(getRectCutoutCorners(cutout))
-        if (corners.length < 3) continue
-
-        appendGraphicPoly(
-          kicadPcb,
-          new GrPoly({
-            points: corners.map((point) => applyToPoint(c2kMatPcb, point)),
-            layer: "Edge.Cuts",
-            width: EDGE_CUTS_WIDTH,
-            fill: false,
-          }),
-        )
-      } else if (cutout.shape === "path") {
+      if (cutout.shape === "path") {
         if (!cutout.route || cutout.route.length < 2) continue
 
         for (let i = 0; i < cutout.route.length - 1; i++) {
