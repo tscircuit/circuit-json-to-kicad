@@ -1,10 +1,5 @@
 import type { PcbSilkscreenText } from "circuit-json"
-import {
-  GrText,
-  TextEffects,
-  TextEffectsFont,
-  At,
-} from "kicadts"
+import { GrText, TextEffects, TextEffectsFont, At } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 import { createPcbTextJustify } from "./CreatePcbTextJustify"
