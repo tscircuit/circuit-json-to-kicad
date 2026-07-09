@@ -16,7 +16,7 @@ import {
   SymbolPinNames,
   SymbolPinNumbers,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPointRounded, roundKicadCoord } from "./utils/roundKicadCoord"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
@@ -56,7 +56,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
       if (!this.ctx.c2kMatSch) continue
-      const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+      const { x, y } = applyToPointRounded(this.ctx.c2kMatSch, {
         x: schematicComponent.center.x,
         y: schematicComponent.center.y,
       })
@@ -144,11 +144,21 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           sourceComponent.ftype === "simple_connector") &&
         Boolean(sourceComponent.manufacturer_part_number)
 
-      // Get text positions from schematic symbol definition
-      const { refTextPos, valTextPos } = this.getTextPositions(
+      // Get text positions from schematic symbol definition. These are derived
+      // from transformed coordinates plus literal offsets, so round them to
+      // keep the emitted .kicad_sch free of floating-point noise (see #292).
+      const rawTextPositions = this.getTextPositions(
         schematicComponent,
         hasManufacturerValueForValuePlacement,
       )
+      const refTextPos = {
+        x: roundKicadCoord(rawTextPositions.refTextPos.x),
+        y: roundKicadCoord(rawTextPositions.refTextPos.y),
+      }
+      const valTextPos = {
+        x: roundKicadCoord(rawTextPositions.valTextPos.x),
+        y: roundKicadCoord(rawTextPositions.valTextPos.y),
+      }
 
       // Check for kicadSymbolMetadata from circuit-json element
       let symbolMetadata: KicadSymbolMetadata | undefined
@@ -197,7 +207,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         key: "Footprint",
         value: fpMeta?.value ?? "",
         id: 2,
-        at: [x - 1.778, y, 90],
+        at: [roundKicadCoord(x - 1.778), y, 90],
         effects: this.createTextEffects(1.27, fpMeta?.effects?.hide ?? true),
       })
 
@@ -373,7 +383,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   } {
     const c2kMatSch = this.ctx.c2kMatSch!
     const schematicScale = c2kMatSch.a
-    const symbolKicadPos = applyToPoint(c2kMatSch, {
+    const symbolKicadPos = applyToPointRounded(c2kMatSch, {
       x: schematicComponent.center.x,
       y: schematicComponent.center.y,
     })
@@ -418,7 +428,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     if (refText) {
       // Use the schematic_text position for reference
-      const nameTextPos = applyToPoint(c2kMatSch, {
+      const nameTextPos = applyToPointRounded(c2kMatSch, {
         x: refText.position.x,
         y: refText.position.y,
       })
@@ -475,7 +485,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     const horizontalTextOffset = isVertical ? 0.15 : 0
 
     const refTextPos = refTextPrimitive
-      ? applyToPoint(c2kMatSch, {
+      ? applyToPointRounded(c2kMatSch, {
           x:
             schematicComponent.center.x +
             (refTextPrimitive.x - symbolCenter.x) +
@@ -486,7 +496,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       : { x: symbolKicadPos.x, y: referenceAboveBodyY }
 
     const valTextPos = valTextPrimitive
-      ? applyToPoint(c2kMatSch, {
+      ? applyToPointRounded(c2kMatSch, {
           x:
             schematicComponent.center.x +
             (valTextPrimitive.x - symbolCenter.x) +

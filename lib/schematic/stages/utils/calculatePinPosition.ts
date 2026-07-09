@@ -1,5 +1,6 @@
 import { applyToPoint, scale as createScaleMatrix } from "transformation-matrix"
 import type { SchematicComponent, SchematicPort } from "circuit-json"
+import { roundKicadCoord } from "./roundKicadCoord"
 
 /**
  * Calculate KiCad pin position and rotation from schematic-symbols port
@@ -110,5 +111,7 @@ export function calculatePinPosition({
     }
   }
 
-  return { x, y, angle }
+  // Round to KiCad's coordinate precision so pin endpoints land on the exact
+  // same value as the wires that connect to them (see issue #292).
+  return { x: roundKicadCoord(x), y: roundKicadCoord(y), angle }
 }

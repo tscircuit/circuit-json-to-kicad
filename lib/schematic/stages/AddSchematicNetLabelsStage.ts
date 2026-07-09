@@ -13,7 +13,7 @@ import {
   TextEffectsJustify,
   GlobalLabel,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPointRounded, roundKicadCoord } from "./utils/roundKicadCoord"
 import { ConverterStage } from "../../types"
 
 /**
@@ -100,7 +100,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     // Transform circuit-json coordinates to KiCad coordinates
     // Use anchor_position as primary source, fallback to center if not available
-    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+    const { x, y } = applyToPointRounded(this.ctx.c2kMatSch, {
       x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     })
@@ -133,7 +133,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Reference",
       value: labelText, // Use the label text as the reference
       id: 0,
-      at: [x, y + referenceOffset, 0],
+      at: [x, roundKicadCoord(y + referenceOffset), 0],
       effects: this.createTextEffects(1.27, false),
     })
 
@@ -141,7 +141,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Value",
       value: labelText,
       id: 1,
-      at: [x, y + valueOffset, 0],
+      at: [x, roundKicadCoord(y + valueOffset), 0],
       effects: this.createTextEffects(1.27, true),
     })
 
@@ -149,7 +149,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Footprint",
       value: "",
       id: 2,
-      at: [x - 1.778, y, 90],
+      at: [roundKicadCoord(x - 1.778), y, 90],
       effects: this.createTextEffects(1.27, true),
     })
 
@@ -211,7 +211,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     // Transform circuit-json coordinates to KiCad coordinates
     // Use anchor_position as primary source, fallback to center if not available
-    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+    const { x, y } = applyToPointRounded(this.ctx.c2kMatSch, {
       x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     })
