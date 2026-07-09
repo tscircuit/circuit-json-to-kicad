@@ -1,13 +1,8 @@
 import type { PcbSilkscreenText } from "circuit-json"
-import {
-  GrText,
-  TextEffects,
-  TextEffectsFont,
-  TextEffectsJustify,
-  At,
-} from "kicadts"
+import { GrText, TextEffects, TextEffectsFont, At } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
+import { buildSilkscreenTextJustify } from "./buildSilkscreenTextJustify"
 
 /**
  * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_silkscreen_text
@@ -43,39 +38,12 @@ export function createGrTextFromCircuitJson({
   const font = new TextEffectsFont()
   font.size = { width: fontSize, height: fontSize }
 
-  // Map anchor_alignment to KiCad justify
-  const justify = new TextEffectsJustify()
-  const anchorAlignment = textElement.anchor_alignment || "center"
-
-  // Map circuit JSON anchor_alignment to KiCad horizontal/vertical justify
-  switch (anchorAlignment) {
-    case "top_left":
-      justify.horizontal = "left"
-      justify.vertical = "top"
-      break
-    case "top_right":
-      justify.horizontal = "right"
-      justify.vertical = "top"
-      break
-    case "bottom_left":
-      justify.horizontal = "left"
-      justify.vertical = "bottom"
-      break
-    case "bottom_right":
-      justify.horizontal = "right"
-      justify.vertical = "bottom"
-      break
-    case "center":
-      // Default is center, no justify needed
-      break
-  }
-
   const textEffects = new TextEffects({
     font: font,
   })
 
-  // Only add justify if it's not center alignment
-  if (anchorAlignment !== "center") {
+  const justify = buildSilkscreenTextJustify(textElement, kicadLayer)
+  if (justify) {
     textEffects.justify = justify
   }
 
