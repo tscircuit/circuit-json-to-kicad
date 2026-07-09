@@ -10,6 +10,7 @@ import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
+import { circleToPolygon } from "./utils/circleToPolygon"
 import polygonClipping, { type Geom } from "polygon-clipping"
 
 const pointsAreEqual = (
@@ -39,10 +40,6 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
 }
 
 const EDGE_CUTS_WIDTH = 0.1
-// Target length for each line segment when approximating circles (in mm)
-const CIRCLE_APPROX_SEGMENT_LENGTH = 0.2
-const CIRCLE_APPROX_MIN_STEPS = 16
-const CIRCLE_APPROX_MAX_STEPS = 128
 
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
@@ -227,22 +224,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         } else if (cutout.shape === "circle") {
           // Approximate the circle as a polygon so polygon-clipping can process it.
           // Scaling the number of steps based on the radius to maintain smooth curves
-          const circumference = 2 * Math.PI * cutout.radius
-          let steps = Math.ceil(circumference / CIRCLE_APPROX_SEGMENT_LENGTH)
-          steps = Math.max(
-            CIRCLE_APPROX_MIN_STEPS,
-            Math.min(CIRCLE_APPROX_MAX_STEPS, steps),
-          )
-
-          const pts: [number, number][] = []
-          for (let i = 0; i < steps; i++) {
-            const angle = (i / steps) * Math.PI * 2
-            pts.push([
-              cutout.center.x + cutout.radius * Math.cos(angle),
-              cutout.center.y + cutout.radius * Math.sin(angle),
-            ])
-          }
-          cutoutPolys.push([[pts]])
+          cutoutPolys.push([[circleToPolygon(cutout.center, cutout.radius)]])
         } else if (cutout.shape === "polygon") {
           cutoutPolys.push([[cutout.points.map((c) => [c.x, c.y])]])
         }
