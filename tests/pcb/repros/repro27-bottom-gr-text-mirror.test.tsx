@@ -23,9 +23,7 @@ test("bottom standalone silkscreen gr_text includes justify mirror on B.SilkS", 
   converter.runUntilFinished()
   const pcb = converter.getOutputString()
 
-  const grTextBlock = pcb.match(
-    /\(gr_text[\s\S]*?"BOTTOM TEXT"[\s\S]*?\(layer B\.SilkS\)[\s\S]*?\)/,
+  expect(pcb).toMatch(
+    /\(gr_text[\s\S]*?"BOTTOM TEXT"[\s\S]*?\(layer B\.SilkS\)[\s\S]*?\(justify[^)]*mirror/,
   )
-  expect(grTextBlock).toBeDefined()
-  expect(grTextBlock![0]).toMatch(/\(justify[^)]*mirror/)
 })
