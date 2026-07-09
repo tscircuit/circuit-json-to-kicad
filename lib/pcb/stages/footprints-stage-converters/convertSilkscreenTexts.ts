@@ -6,14 +6,8 @@ export function convertSilkscreenTexts(params: {
   silkscreenTexts: PcbSilkscreenText[]
   componentCenter: { x: number; y: number }
   componentRotation: number
-  sourceComponentName?: string
 }): FpText[] {
-  const {
-    silkscreenTexts,
-    componentCenter,
-    componentRotation,
-    sourceComponentName,
-  } = params
+  const { silkscreenTexts, componentCenter, componentRotation } = params
   const fpTexts: FpText[] = []
 
   for (const textElement of silkscreenTexts) {
@@ -23,9 +17,6 @@ export function convertSilkscreenTexts(params: {
       componentRotation,
     })
     if (fpText) {
-      if (sourceComponentName && textElement.text === sourceComponentName) {
-        fpText.type = "reference"
-      }
       fpTexts.push(fpText)
     }
   }
