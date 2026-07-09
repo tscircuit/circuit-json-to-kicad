@@ -229,7 +229,10 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           // Scaling the number of steps based on the radius to maintain smooth curves
           const circumference = 2 * Math.PI * cutout.radius
           let steps = Math.ceil(circumference / CIRCLE_APPROX_SEGMENT_LENGTH)
-          steps = Math.max(CIRCLE_APPROX_MIN_STEPS, Math.min(CIRCLE_APPROX_MAX_STEPS, steps))
+          steps = Math.max(
+            CIRCLE_APPROX_MIN_STEPS,
+            Math.min(CIRCLE_APPROX_MAX_STEPS, steps),
+          )
 
           const pts: [number, number][] = []
           for (let i = 0; i < steps; i++) {
@@ -245,7 +248,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
-      let boardGeom: Geom = [[corners.map(c => [c.x, c.y])]]
+      let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
       if (cutoutPolys.length > 0) {
         boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
       }
