@@ -200,26 +200,20 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
-      let boardPolyCoords: [number, number][] = []
-
-      // Check if board has a custom outline, otherwise use width/height to create rectangle
       if (board.outline && board.outline.length > 0) {
         // Use the custom outline points
-        boardPolyCoords = normalizeOutlineCorners(board.outline).map((c) => [
-          c.x,
-          c.y,
-        ])
+        corners = normalizeOutlineCorners(board.outline)
       } else {
         // Fallback to rectangular outline based on width and height
         const halfWidth = board.width ? board.width / 2 : 0
         const halfHeight = board.height ? board.height / 2 : 0
 
         // Define the 4 corners of the board relative to center
-        boardPolyCoords = [
-          [board.center.x - halfWidth, board.center.y - halfHeight],
-          [board.center.x + halfWidth, board.center.y - halfHeight],
-          [board.center.x + halfWidth, board.center.y + halfHeight],
-          [board.center.x - halfWidth, board.center.y + halfHeight],
+        corners = [
+          { x: board.center.x - halfWidth, y: board.center.y - halfHeight },
+          { x: board.center.x + halfWidth, y: board.center.y - halfHeight },
+          { x: board.center.x + halfWidth, y: board.center.y + halfHeight },
+          { x: board.center.x - halfWidth, y: board.center.y + halfHeight },
         ]
       }
 
@@ -251,7 +245,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
-      let boardGeom: Geom = [[boardPolyCoords]]
+      let boardGeom: Geom = [[corners.map(c => [c.x, c.y])]]
       if (cutoutPolys.length > 0) {
         boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
       }
