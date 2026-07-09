@@ -227,6 +227,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           const cutoutCorners = getRectCutoutCorners(cutout)
           cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
         } else if (cutout.shape === "circle") {
+          // Approximate the circle as a 64-sided polygon so polygon-clipping can process it
           const pts: [number, number][] = []
           const steps = 64
           for (let i = 0; i < steps; i++) {

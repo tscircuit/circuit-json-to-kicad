@@ -1,8 +1,25 @@
 {
   "name": "circuit-json-to-kicad",
-  "main": "dist/index.js",
   "version": "0.0.157",
-  "type": "module",
+  "main": "dist/index.js",
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.4",
+    "@tscircuit/common": "^0.0.5",
+    "@types/bun": "latest",
+    "@types/earcut": "^3.0.0",
+    "circuit-json": "^0.0.443",
+    "earcut": "^3.0.2",
+    "jszip": "^3.10.1",
+    "kicadts": "^0.0.49",
+    "polygon-clipping": "^0.15.7",
+    "sharp": "^0.34.4",
+    "transformation-matrix": "^3.1.0",
+    "tscircuit": "^0.0.1976",
+    "tsup": "^8.5.0"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
   "files": [
     "dist"
   ],
@@ -17,24 +34,5 @@
     "kicad-library": "bun run scripts/build-kicad-library.ts",
     "compare-kicad": "bun run scripts/compare-kicad-files.ts"
   },
-  "devDependencies": {
-    "@biomejs/biome": "^2.2.4",
-    "@tscircuit/common": "^0.0.5",
-    "@types/bun": "latest",
-    "@types/earcut": "^3.0.0",
-    "circuit-json": "^0.0.443",
-    "earcut": "^3.0.2",
-    "jszip": "^3.10.1",
-    "kicadts": "^0.0.49",
-    "sharp": "^0.34.4",
-    "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.1976",
-    "tsup": "^8.5.0"
-  },
-  "peerDependencies": {
-    "typescript": "^5"
-  },
-  "dependencies": {
-    "polygon-clipping": "^0.15.7"
-  }
+  "type": "module"
 }
