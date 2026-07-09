@@ -39,6 +39,7 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
 }
 
 const EDGE_CUTS_WIDTH = 0.1
+const CIRCLE_APPROXIMATION_STEPS = 64
 
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
@@ -227,11 +228,10 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           const cutoutCorners = getRectCutoutCorners(cutout)
           cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
         } else if (cutout.shape === "circle") {
-          // Approximate the circle as a 64-sided polygon so polygon-clipping can process it
+          // Approximate the circle as a polygon so polygon-clipping can process it
           const pts: [number, number][] = []
-          const steps = 64
-          for (let i = 0; i < steps; i++) {
-            const angle = (i / steps) * Math.PI * 2
+          for (let i = 0; i < CIRCLE_APPROXIMATION_STEPS; i++) {
+            const angle = (i / CIRCLE_APPROXIMATION_STEPS) * Math.PI * 2
             pts.push([
               cutout.center.x + cutout.radius * Math.cos(angle),
               cutout.center.y + cutout.radius * Math.sin(angle),
