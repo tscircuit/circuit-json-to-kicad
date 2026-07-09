@@ -1,100 +1,60 @@
-import type { PcbSilkscreenText } from "circuit-json"
-import {
-  GrText,
-  TextEffects,
-  TextEffectsFont,
-  TextEffectsJustify,
-  At,
-} from "kicadts"
-import { applyToPoint, type Matrix } from "transformation-matrix"
-import { generateDeterministicUuid } from "./generateDeterministicUuid"
+import { expect, test } from "bun:test"
+import { Circuit } from "tscircuit"
+import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 
-/**
- * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_silkscreen_text
- * This is used for standalone text elements that are not associated with components
- */
-export function createGrTextFromCircuitJson({
-  textElement,
-  c2kMatPcb,
-}: {
-  textElement: PcbSilkscreenText
-  c2kMatPcb: Matrix
-}): GrText | null {
-  if (!textElement.text || !textElement.anchor_position) {
-    return null
-  }
+// https://github.com/tscircuit/circuit-json-to-kicad/issues/362
+test("bottom-side footprint silkscreen text is on B.SilkS and not dropped", async () => {
+  const circuit = new Circuit()
+  const FP = (
+    <footprint>
+      <smtpad
+        portHints={["pin1"]}
+        pcbX="-2mm"
+        pcbY="0mm"
+        width="1.6mm"
+        height="2.6mm"
+        shape="rect"
+      />
+      <smtpad
+        portHints={["pin2"]}
+        pcbX="2mm"
+        pcbY="0mm"
+        width="1.6mm"
+        height="2.6mm"
+        shape="rect"
+      />
+      <silkscreentext text="+" pcbX="-3.9mm" pcbY="0mm" fontSize="1mm" />
+      <silkscreentext text="BT1" pcbX="0mm" pcbY="-2.3mm" fontSize="0.8mm" />
+    </footprint>
+  )
 
-  // Transform position to KiCad coordinates
-  const transformedPos = applyToPoint(c2kMatPcb, {
-    x: textElement.anchor_position.x,
-    y: textElement.anchor_position.y,
-  })
+  circuit.add(
+    <board width="20mm" height="20mm" routingDisabled>
+      <chip name="BT1" footprint={FP} layer="bottom" pcbX={0} pcbY={0} />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
 
-  // Map circuit JSON layer names to KiCad layer names
-  const layerMap: Record<string, string> = {
-    top: "F.SilkS",
-    bottom: "B.SilkS",
-  }
-  const kicadLayer =
-    layerMap[textElement.layer] || textElement.layer || "F.SilkS"
+  const converter = new CircuitJsonToKicadPcbConverter(circuit.getCircuitJson())
+  converter.runUntilFinished()
+  const pcb = converter.getOutputString()
 
-  // Create text effects with font size (scaled to half for KiCad)
-  const fontSize = (textElement.font_size || 1) / 1.5
-  const font = new TextEffectsFont()
-  font.size = { width: fontSize, height: fontSize }
+  const blocks = pcb.split("(footprint").slice(1)
+  const bt1Block = blocks.find((b) => /"Reference"\s+"BT1"/.test(b))
+  expect(bt1Block).toBeDefined()
 
-  // Map anchor_alignment to KiCad justify
-  const justify = new TextEffectsJustify()
-  const anchorAlignment = textElement.anchor_alignment || "center"
+  expect(bt1Block).toMatch(/\(layer B\.Cu\)/)
+  expect(bt1Block).not.toMatch(/\(layer F\.SilkS\)/)
 
-  // Map circuit JSON anchor_alignment to KiCad horizontal/vertical justify
-  switch (anchorAlignment) {
-    case "top_left":
-      justify.horizontal = "left"
-      justify.vertical = "top"
-      break
-    case "top_right":
-      justify.horizontal = "right"
-      justify.vertical = "top"
-      break
-    case "bottom_left":
-      justify.horizontal = "left"
-      justify.vertical = "bottom"
-      break
-    case "bottom_right":
-      justify.horizontal = "right"
-      justify.vertical = "bottom"
-      break
-    case "center":
-      // Default is center, no justify needed
-      break
-  }
+  const plusText = bt1Block!.match(
+    /\(fp_text user "\+"[\s\S]*?\(layer ([^)]+)\)/,
+  )
+  expect(plusText).toBeDefined()
+  expect(plusText![1]).toBe("B.SilkS")
 
-  const textEffects = new TextEffects({
-    font: font,
-  })
-
-  // Only add justify if it's not center alignment
-  if (anchorAlignment !== "center") {
-    textEffects.justify = justify
-  }
-
-  // Handle rotation - circuit JSON uses ccw_rotation in degrees
-  const rotation = textElement.ccw_rotation || 0
-
-  // Create position object (At constructor expects an array: [x, y, angle])
-  const position = new At([transformedPos.x, transformedPos.y, rotation])
-
-  // Create a graphics text element
-  const grText = new GrText({
-    text: textElement.text,
-    layer: kicadLayer,
-    effects: textEffects,
-    uuid: generateDeterministicUuid(
-      textElement.pcb_silkscreen_text_id ?? textElement.text,
-    ),
-  })
-  grText.position = position
-
-  return grText
-}
+  const labelText = bt1Block!.match(
+    /\(fp_text user "BT1"[\s\S]*?\(layer ([^)]+)\)/,
+  )
+  expect(labelText).toBeDefined()
+  expect(labelText![1]).toBe("B.SilkS")
+})
