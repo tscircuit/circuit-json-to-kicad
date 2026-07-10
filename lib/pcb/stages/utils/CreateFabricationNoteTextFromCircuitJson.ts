@@ -1,13 +1,8 @@
 import type { PcbFabricationNoteText } from "circuit-json"
-import {
-  At,
-  GrText,
-  TextEffects,
-  TextEffectsFont,
-  TextEffectsJustify,
-} from "kicadts"
+import { At, GrText, TextEffectsJustify } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
+import { createPcbTextEffects } from "./createPcbTextEffects"
 
 /**
  * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_fabrication_note_text
@@ -37,11 +32,6 @@ export function createFabricationNoteTextFromCircuitJson({
   }
   const kicadLayer = layerMap[textElement.layer] || textElement.layer || "F.Fab"
 
-  // Create text effects with font size (scaled to half for KiCad)
-  const fontSize = (textElement.font_size || 1) / 1.5
-  const font = new TextEffectsFont()
-  font.size = { width: fontSize, height: fontSize }
-
   // Map anchor_alignment to KiCad justify
   const justify = new TextEffectsJustify()
   const anchorAlignment = textElement.anchor_alignment || "center"
@@ -69,9 +59,7 @@ export function createFabricationNoteTextFromCircuitJson({
       break
   }
 
-  const textEffects = new TextEffects({
-    font: font,
-  })
+  const textEffects = createPcbTextEffects(textElement.font_size || 1)
 
   // Only add justify if it's not center alignment
   if (anchorAlignment !== "center") {
