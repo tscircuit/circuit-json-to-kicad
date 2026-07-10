@@ -1,6 +1,7 @@
 import type { PcbSilkscreenText } from "circuit-json"
 import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
+import { createPcbTextJustify } from "./CreatePcbTextJustify"
 
 /**
  * Creates a KiCad fp_text (footprint text) element from a circuit JSON pcb_silkscreen_text
@@ -54,6 +55,14 @@ export function createFpTextFromCircuitJson({
   const textEffects = new TextEffects({
     font: font,
   })
+  const justify = createPcbTextJustify({
+    anchorAlignment: textElement.anchor_alignment,
+    kicadLayer,
+    isMirrored: textElement.is_mirrored,
+  })
+  if (justify) {
+    textEffects.justify = justify
+  }
 
   // Handle rotation - circuit JSON uses ccw_rotation in degrees
   const rotation = textElement.ccw_rotation || 0
