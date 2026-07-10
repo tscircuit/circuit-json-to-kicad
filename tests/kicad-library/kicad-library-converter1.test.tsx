@@ -185,7 +185,8 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (layer F.SilkS)
         (effects
           (font
-            (size 0.6666666666666666 0.6666666666666666)
+            (size 1 1)
+            (thickness 0.15)
           )
         )
       )
