@@ -1,8 +1,7 @@
 import type { PcbSilkscreenText } from "circuit-json"
-import { FpText } from "kicadts"
+import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 import { createPcbTextJustify } from "./CreatePcbTextJustify"
-import { createPcbTextEffects } from "./createPcbTextEffects"
 
 /**
  * Creates a KiCad fp_text (footprint text) element from a circuit JSON pcb_silkscreen_text
@@ -49,7 +48,13 @@ export function createFpTextFromCircuitJson({
   const kicadLayer =
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
 
-  const textEffects = createPcbTextEffects(textElement.font_size || 1)
+  const font = new TextEffectsFont()
+  font.size = {
+    width: textElement.font_size || 1,
+    height: textElement.font_size || 1,
+  }
+  font.thickness = 0.15
+  const textEffects = new TextEffects({ font })
   const justify = createPcbTextJustify({
     anchorAlignment: textElement.anchor_alignment,
     kicadLayer,

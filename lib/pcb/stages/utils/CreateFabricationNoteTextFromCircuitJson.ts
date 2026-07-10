@@ -1,8 +1,13 @@
 import type { PcbFabricationNoteText } from "circuit-json"
-import { At, GrText, TextEffectsJustify } from "kicadts"
+import {
+  At,
+  GrText,
+  TextEffects,
+  TextEffectsFont,
+  TextEffectsJustify,
+} from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
-import { createPcbTextEffects } from "./createPcbTextEffects"
 
 /**
  * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_fabrication_note_text
@@ -59,7 +64,13 @@ export function createFabricationNoteTextFromCircuitJson({
       break
   }
 
-  const textEffects = createPcbTextEffects(textElement.font_size || 1)
+  const font = new TextEffectsFont()
+  font.size = {
+    width: textElement.font_size || 1,
+    height: textElement.font_size || 1,
+  }
+  font.thickness = 0.15
+  const textEffects = new TextEffects({ font })
 
   // Only add justify if it's not center alignment
   if (anchorAlignment !== "center") {
