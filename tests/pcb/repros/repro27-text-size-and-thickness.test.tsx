@@ -10,7 +10,9 @@ const createRepro27CircuitJson = async () => {
   const circuitJson = JSON.parse(
     readFileSync("tests/assets/simple-circuit.json", "utf8"),
   ) as any[]
-  const pcbComponent = circuitJson.find((entry) => entry.type === "pcb_component")
+  const pcbComponent = circuitJson.find(
+    (entry) => entry.type === "pcb_component",
+  )
 
   expect(pcbComponent).toBeDefined()
 
