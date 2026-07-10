@@ -3,8 +3,11 @@ import type { PcbSilkscreenText } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { KicadPcb } from "kicadts"
 import { Circuit } from "tscircuit"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
-test("pcb repro26 bottom-layer silkscreen text gets justify mirror", async () => {
+const createRepro26CircuitJson = async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="20mm" height="20mm" routingDisabled>
@@ -28,7 +31,7 @@ test("pcb repro26 bottom-layer silkscreen text gets justify mirror", async () =>
     font_size: 1,
     text: "BOTTOM BOARD TEXT",
     layer: "bottom",
-    anchor_position: { x: -4, y: 5 },
+    anchor_position: { x: 0, y: 8 },
     anchor_alignment: "center",
   }
 
@@ -41,7 +44,7 @@ test("pcb repro26 bottom-layer silkscreen text gets justify mirror", async () =>
     text: "TOP MIRRORED TEXT",
     layer: "top",
     is_mirrored: true,
-    anchor_position: { x: 4, y: 5 },
+    anchor_position: { x: 0, y: 4 },
     anchor_alignment: "center",
   }
 
@@ -54,8 +57,8 @@ test("pcb repro26 bottom-layer silkscreen text gets justify mirror", async () =>
     text: "BOTTOM FOOTPRINT TEXT",
     layer: "bottom",
     anchor_position: {
-      x: pcbComponent!.center.x + 1,
-      y: pcbComponent!.center.y + 1,
+      x: pcbComponent!.center.x + 8,
+      y: pcbComponent!.center.y - 4,
     },
     anchor_alignment: "top_left",
   }
@@ -66,34 +69,61 @@ test("pcb repro26 bottom-layer silkscreen text gets justify mirror", async () =>
     footprintBottomText,
   )
 
-  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
-  converter.runUntilFinished()
+  return circuitJson
+}
 
-  const outputString = converter.getOutputString()
-  const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
+test(
+  "pcb repro26 bottom-layer silkscreen text gets justify mirror",
+  async () => {
+    const circuitJson = await createRepro26CircuitJson()
 
-  const bottomBoardText = kicadPcb.graphicTexts.find(
-    (text) => text.text === "BOTTOM BOARD TEXT",
-  )
-  expect(bottomBoardText?.layer?.getString()).toContain("B.SilkS")
-  expect(bottomBoardText?.effects?.justify?.mirror).toBe(true)
-  expect(bottomBoardText?.effects?.justify?.horizontal).toBeUndefined()
-  expect(bottomBoardText?.effects?.justify?.vertical).toBeUndefined()
+    const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+    converter.runUntilFinished()
 
-  const explicitMirrorText = kicadPcb.graphicTexts.find(
-    (text) => text.text === "TOP MIRRORED TEXT",
-  )
-  expect(explicitMirrorText?.layer?.getString()).toContain("F.SilkS")
-  expect(explicitMirrorText?.effects?.justify?.mirror).toBe(true)
+    const outputString = converter.getOutputString()
+    const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
 
-  const footprint = kicadPcb.footprints[0]
-  expect(footprint).toBeDefined()
+    const bottomBoardText = kicadPcb.graphicTexts.find(
+      (text) => text.text === "BOTTOM BOARD TEXT",
+    )
+    expect(bottomBoardText?.layer?.getString()).toContain("B.SilkS")
+    expect(bottomBoardText?.effects?.justify?.mirror).toBe(true)
+    expect(bottomBoardText?.effects?.justify?.horizontal).toBeUndefined()
+    expect(bottomBoardText?.effects?.justify?.vertical).toBeUndefined()
 
-  const bottomFootprintText = footprint?.fpTexts.find(
-    (text) => text.text === "BOTTOM FOOTPRINT TEXT",
-  )
-  expect(bottomFootprintText?.layer?.getString()).toContain("B.SilkS")
-  expect(bottomFootprintText?.effects?.justify?.mirror).toBe(true)
-  expect(bottomFootprintText?.effects?.justify?.horizontal).toBe("left")
-  expect(bottomFootprintText?.effects?.justify?.vertical).toBe("top")
-})
+    const explicitMirrorText = kicadPcb.graphicTexts.find(
+      (text) => text.text === "TOP MIRRORED TEXT",
+    )
+    expect(explicitMirrorText?.layer?.getString()).toContain("F.SilkS")
+    expect(explicitMirrorText?.effects?.justify?.mirror).toBe(true)
+
+    const footprint = kicadPcb.footprints[0]
+    expect(footprint).toBeDefined()
+
+    const bottomFootprintText = footprint?.fpTexts.find(
+      (text) => text.text === "BOTTOM FOOTPRINT TEXT",
+    )
+    expect(bottomFootprintText?.layer?.getString()).toContain("B.SilkS")
+    expect(bottomFootprintText?.effects?.justify?.mirror).toBe(true)
+    expect(bottomFootprintText?.effects?.justify?.horizontal).toBe("left")
+    expect(bottomFootprintText?.effects?.justify?.vertical).toBe("top")
+
+    const kicadSnapshot = await takeKicadSnapshot({
+      kicadFileContent: outputString,
+      kicadFileType: "pcb",
+    })
+
+    expect(kicadSnapshot.exitCode).toBe(0)
+
+    expect(
+      stackCircuitJsonKicadPngs(
+        await takeCircuitJsonSnapshot({
+          circuitJson,
+          outputType: "pcb",
+        }),
+        kicadSnapshot.generatedFileContent["temp_file.png"]!,
+      ),
+    ).toMatchPngSnapshot(import.meta.path)
+  },
+  { timeout: 120000 },
+)
