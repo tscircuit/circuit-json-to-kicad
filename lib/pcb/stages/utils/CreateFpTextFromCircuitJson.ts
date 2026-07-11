@@ -48,13 +48,13 @@ export function createFpTextFromCircuitJson({
   const kicadLayer =
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
 
-  // Create text effects with font size (scaled to half for KiCad)
-  const fontSize = (textElement.font_size || 1) / 1.5
   const font = new TextEffectsFont()
-  font.size = { width: fontSize, height: fontSize }
-  const textEffects = new TextEffects({
-    font: font,
-  })
+  font.size = {
+    width: textElement.font_size || 1,
+    height: textElement.font_size || 1,
+  }
+  font.thickness = 0.15
+  const textEffects = new TextEffects({ font })
   const justify = createPcbTextJustify({
     anchorAlignment: textElement.anchor_alignment,
     kicadLayer,

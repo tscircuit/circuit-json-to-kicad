@@ -37,11 +37,6 @@ export function createFabricationNoteTextFromCircuitJson({
   }
   const kicadLayer = layerMap[textElement.layer] || textElement.layer || "F.Fab"
 
-  // Create text effects with font size (scaled to half for KiCad)
-  const fontSize = (textElement.font_size || 1) / 1.5
-  const font = new TextEffectsFont()
-  font.size = { width: fontSize, height: fontSize }
-
   // Map anchor_alignment to KiCad justify
   const justify = new TextEffectsJustify()
   const anchorAlignment = textElement.anchor_alignment || "center"
@@ -69,9 +64,13 @@ export function createFabricationNoteTextFromCircuitJson({
       break
   }
 
-  const textEffects = new TextEffects({
-    font: font,
-  })
+  const font = new TextEffectsFont()
+  font.size = {
+    width: textElement.font_size || 1,
+    height: textElement.font_size || 1,
+  }
+  font.thickness = 0.15
+  const textEffects = new TextEffects({ font })
 
   // Only add justify if it's not center alignment
   if (anchorAlignment !== "center") {
