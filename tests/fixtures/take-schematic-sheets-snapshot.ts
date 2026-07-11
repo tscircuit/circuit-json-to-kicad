@@ -8,6 +8,8 @@ import { parseKicadSch } from "kicadts"
 import sharp from "sharp"
 import { stackPngsVertically } from "./stackPngsVertically"
 
+const getKicadCliPath = () => process.env["KICAD_CLI_PATH"] ?? "kicad-cli"
+
 export interface SchematicSheetsSnapshot {
   /** Per-page SVG names kicad-cli produced (root/overview page + one per sheet) */
   svgNames: string[]
@@ -67,7 +69,8 @@ export const takeSchematicSheetsSnapshot = async (params: {
 }): Promise<SchematicSheetsSnapshot> => {
   const { circuitJson, files, rootFilename } = params
 
-  const kicadCliVersion = await $`kicad-cli --version`
+  const kicadCliPath = getKicadCliPath()
+  const kicadCliVersion = await $`${kicadCliPath} --version`
   if (!kicadCliVersion.stdout.toString().trim().startsWith("10.")) {
     throw new Error("kicad-cli version 10.0.0 or higher is required")
   }
@@ -80,7 +83,7 @@ export const takeSchematicSheetsSnapshot = async (params: {
 
     const outputDir = join(tempDir, "output")
     const exportResult =
-      await $`kicad-cli sch export svg ${join(tempDir, rootFilename)} -o ${outputDir} --theme Modern`
+      await $`${kicadCliPath} sch export svg ${join(tempDir, rootFilename)} -o ${outputDir} --theme Modern`
     if (exportResult.exitCode !== 0) {
       throw new Error(
         `kicad-cli hierarchical export failed with exit code ${exportResult.exitCode}\nStderr: ${exportResult.stderr}`,

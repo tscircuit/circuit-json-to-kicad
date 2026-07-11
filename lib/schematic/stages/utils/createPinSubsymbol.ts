@@ -9,6 +9,35 @@ import {
 } from "kicadts"
 import { calculatePinPosition } from "./calculatePinPosition"
 
+const MINIMAL_DECORATIVE_PIN_LENGTH = 0.01
+
+function symbolHasDecorativeLeadStubs(symbolData: any): boolean {
+  const ports = Array.isArray(symbolData?.ports) ? symbolData.ports : []
+  const primitives = Array.isArray(symbolData?.primitives)
+    ? symbolData.primitives
+    : []
+
+  if (ports.length === 0 || primitives.length === 0) return false
+
+  const tolerance = 1e-4
+  const pointMatches = (
+    a: { x: number; y: number },
+    b: { x: number; y: number },
+  ) => Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance
+
+  return ports.every((port: any) =>
+    primitives.some((primitive: any) => {
+      if (primitive.type !== "path" || !Array.isArray(primitive.points)) {
+        return false
+      }
+      if (primitive.points.length !== 2) return false
+
+      const [start, end] = primitive.points
+      return pointMatches(start, port) || pointMatches(end, port)
+    }),
+  )
+}
+
 /**
  * Create the pin subsymbol for a KiCad library symbol
  */
@@ -33,6 +62,9 @@ export function createPinSubsymbol({
 
   const CHIP_PIN_LENGTH = 6.0
   const CUSTOM_SYMBOL_PIN_LENGTH = 2.54 // 0.1 inch
+  const customPinLength = symbolHasDecorativeLeadStubs(symbolData)
+    ? MINIMAL_DECORATIVE_PIN_LENGTH
+    : CUSTOM_SYMBOL_PIN_LENGTH
 
   for (let i = 0; i < (symbolData.ports?.length || 0); i++) {
     const port = symbolData.ports[i]
@@ -51,7 +83,7 @@ export function createPinSubsymbol({
       c2kMatSchScale,
     })
     pin.at = [x, y, angle]
-    pin.length = isChip ? CHIP_PIN_LENGTH : CUSTOM_SYMBOL_PIN_LENGTH
+    pin.length = isChip ? CHIP_PIN_LENGTH : customPinLength
 
     const nameFont = new TextEffectsFont()
     nameFont.size = { height: 1.27, width: 1.27 }

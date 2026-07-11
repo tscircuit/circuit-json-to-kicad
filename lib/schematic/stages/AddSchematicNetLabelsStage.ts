@@ -15,6 +15,7 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
+import { symbols } from "schematic-symbols"
 
 /**
  * Adds schematic net labels to the schematic
@@ -98,12 +99,25 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
   ): SchematicSymbol | null {
     if (!this.ctx.c2kMatSch) return null
 
-    // Transform circuit-json coordinates to KiCad coordinates
-    // Use anchor_position as primary source, fallback to center if not available
-    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+    const anchorPoint = {
       x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
-    })
+    }
+
+    // Place the symbol so its actual pin position coincides with the wire anchor.
+    const symbolData = symbols[symbolName as keyof typeof symbols]
+    const port = symbolData?.ports?.[0]
+    const symbolScale = this.ctx.kicadSchematicScaleFactor ?? 1
+    const portOffset = port
+      ? {
+          x: (port.x - (symbolData.center?.x ?? 0)) * symbolScale,
+          y: -(port.y - (symbolData.center?.y ?? 0)) * symbolScale,
+        }
+      : { x: 0, y: 0 }
+
+    const anchorInKicad = applyToPoint(this.ctx.c2kMatSch, anchorPoint)
+    const x = anchorInKicad.x - portOffset.x
+    const y = anchorInKicad.y - portOffset.y
 
     const uuid = crypto.randomUUID()
 
