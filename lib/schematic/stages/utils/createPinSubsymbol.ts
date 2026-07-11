@@ -16,20 +16,12 @@ import {
 import { calculatePinPosition } from "./calculatePinPosition"
 
 const MINIMAL_DECORATIVE_PIN_LENGTH = 0.01
-const DEFAULT_PIN_NAME = "~"
 
-type ImportedSymbolPort = Point & {
-  x: number
-  y: number
-  labels?: string[]
-  pinNumber?: number | string
-}
-type ImportedSymbolPathPrimitive = Pick<SchematicPath, "type" | "points">
-type SymbolDataLike = {
+type ImportedSymbol = {
   center?: Point
   size?: Size
-  ports?: ImportedSymbolPort[]
-  primitives?: ImportedSymbolPathPrimitive[]
+  ports?: any[]
+  primitives?: Array<Pick<SchematicPath, "type" | "points">>
 }
 
 function pointMatches(a: Point, b: Point): boolean {
@@ -37,7 +29,7 @@ function pointMatches(a: Point, b: Point): boolean {
   return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance
 }
 
-function symbolHasDecorativeLeadStubs(symbolData: SymbolDataLike): boolean {
+function symbolHasDecorativeLeadStubs(symbolData: ImportedSymbol): boolean {
   const ports = symbolData.ports ?? []
   const primitives = symbolData.primitives ?? []
 
@@ -82,7 +74,7 @@ export function createPinSubsymbol({
   c2kMatSchScale,
 }: {
   libId: string
-  symbolData: SymbolDataLike
+  symbolData: ImportedSymbol
   isChip: boolean
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
@@ -126,11 +118,14 @@ export function createPinSubsymbol({
     const nameFont = new TextEffectsFont()
     nameFont.size = { height: 1.27, width: 1.27 }
     const nameEffects = new TextEffects({ font: nameFont })
-    let pinName = DEFAULT_PIN_NAME
-    if (port.labels && port.labels[0]) {
-      pinName = port.labels[0]
+    // Imported passive symbols sometimes omit a visible pin label. In that case
+    // we leave the KiCad pin-name field unset instead of inventing one.
+    if (port.labels?.[0]) {
+      pin._sxName = new SymbolPinName({
+        value: port.labels[0],
+        effects: nameEffects,
+      })
     }
-    pin._sxName = new SymbolPinName({ value: pinName, effects: nameEffects })
 
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
