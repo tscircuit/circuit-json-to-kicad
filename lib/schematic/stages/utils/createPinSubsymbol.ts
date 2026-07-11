@@ -29,6 +29,7 @@ function pointMatches(a: Point, b: Point): boolean {
   return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance
 }
 
+// Some schematic-symbols passives already draw their own lead stubs at each port.
 function symbolHasDecorativeLeadStubs(
   symbolData: SchematicSymbolsShape,
 ): boolean {
