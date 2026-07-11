@@ -1,4 +1,10 @@
-import type { SchematicComponent, SchematicPort } from "circuit-json"
+import type {
+  Point,
+  SchematicComponent,
+  SchematicPath,
+  SchematicPort,
+  Size,
+} from "circuit-json"
 import {
   SchematicSymbol,
   SymbolPin,
@@ -10,32 +16,58 @@ import {
 import { calculatePinPosition } from "./calculatePinPosition"
 
 const MINIMAL_DECORATIVE_PIN_LENGTH = 0.01
+const DEFAULT_PIN_NAME = "~"
 
-function symbolHasDecorativeLeadStubs(symbolData: any): boolean {
-  const ports = Array.isArray(symbolData?.ports) ? symbolData.ports : []
-  const primitives = Array.isArray(symbolData?.primitives)
-    ? symbolData.primitives
-    : []
+type ImportedSymbolPort = Point & {
+  x: number
+  y: number
+  labels?: string[]
+  pinNumber?: number | string
+}
+type ImportedSymbolPathPrimitive = Pick<SchematicPath, "type" | "points">
+type SymbolDataLike = {
+  center?: Point
+  size?: Size
+  ports?: ImportedSymbolPort[]
+  primitives?: ImportedSymbolPathPrimitive[]
+}
 
-  if (ports.length === 0 || primitives.length === 0) return false
-
+function pointMatches(a: Point, b: Point): boolean {
   const tolerance = 1e-4
-  const pointMatches = (
-    a: { x: number; y: number },
-    b: { x: number; y: number },
-  ) => Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance
+  return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance
+}
 
-  return ports.every((port: any) =>
-    primitives.some((primitive: any) => {
-      if (primitive.type !== "path" || !Array.isArray(primitive.points)) {
-        return false
+function symbolHasDecorativeLeadStubs(symbolData: SymbolDataLike): boolean {
+  const ports = symbolData.ports ?? []
+  const primitives = symbolData.primitives ?? []
+
+  if (ports.length === 0) return false
+  if (primitives.length === 0) return false
+
+  for (const port of ports) {
+    let portHasLeadStub = false
+
+    for (const primitive of primitives) {
+      if (primitive.type !== "path") continue
+      if (!primitive.points) continue
+      if (primitive.points.length !== 2) continue
+
+      const start = primitive.points[0]
+      const end = primitive.points[1]
+      if (!start || !end) continue
+
+      if (pointMatches(start, port) || pointMatches(end, port)) {
+        portHasLeadStub = true
+        break
       }
-      if (primitive.points.length !== 2) return false
+    }
 
-      const [start, end] = primitive.points
-      return pointMatches(start, port) || pointMatches(end, port)
-    }),
-  )
+    if (!portHasLeadStub) {
+      return false
+    }
+  }
+
+  return true
 }
 
 /**
@@ -50,7 +82,7 @@ export function createPinSubsymbol({
   c2kMatSchScale,
 }: {
   libId: string
-  symbolData: any
+  symbolData: SymbolDataLike
   isChip: boolean
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
@@ -62,12 +94,15 @@ export function createPinSubsymbol({
 
   const CHIP_PIN_LENGTH = 6.0
   const CUSTOM_SYMBOL_PIN_LENGTH = 2.54 // 0.1 inch
-  const customPinLength = symbolHasDecorativeLeadStubs(symbolData)
-    ? MINIMAL_DECORATIVE_PIN_LENGTH
-    : CUSTOM_SYMBOL_PIN_LENGTH
+  let customPinLength = CUSTOM_SYMBOL_PIN_LENGTH
+  if (symbolHasDecorativeLeadStubs(symbolData)) {
+    customPinLength = MINIMAL_DECORATIVE_PIN_LENGTH
+  }
 
-  for (let i = 0; i < (symbolData.ports?.length || 0); i++) {
-    const port = symbolData.ports[i]
+  const ports = symbolData.ports ?? []
+  for (let i = 0; i < ports.length; i++) {
+    const port = ports[i]
+    if (!port) continue
     const pin = new SymbolPin()
     pin.pinElectricalType = "passive"
     pin.pinGraphicStyle = "line"
@@ -83,18 +118,27 @@ export function createPinSubsymbol({
       c2kMatSchScale,
     })
     pin.at = [x, y, angle]
-    pin.length = isChip ? CHIP_PIN_LENGTH : customPinLength
+    pin.length = customPinLength
+    if (isChip) {
+      pin.length = CHIP_PIN_LENGTH
+    }
 
     const nameFont = new TextEffectsFont()
     nameFont.size = { height: 1.27, width: 1.27 }
     const nameEffects = new TextEffects({ font: nameFont })
-    const pinName = port.labels?.[0] || "~"
+    let pinName = DEFAULT_PIN_NAME
+    if (port.labels && port.labels[0]) {
+      pinName = port.labels[0]
+    }
     pin._sxName = new SymbolPinName({ value: pinName, effects: nameEffects })
 
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
-    const pinNum = port.pinNumber?.toString() || `${i + 1}`
+    let pinNum = `${i + 1}`
+    if (port.pinNumber != null) {
+      pinNum = port.pinNumber.toString()
+    }
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,
