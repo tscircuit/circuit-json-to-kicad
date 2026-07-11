@@ -17,7 +17,7 @@ import { calculatePinPosition } from "./calculatePinPosition"
 
 const MINIMAL_DECORATIVE_PIN_LENGTH = 0.01
 
-type ImportedSymbol = {
+type SchematicSymbolsShape = {
   center?: Point
   size?: Size
   ports?: any[]
@@ -29,7 +29,9 @@ function pointMatches(a: Point, b: Point): boolean {
   return Math.abs(a.x - b.x) <= tolerance && Math.abs(a.y - b.y) <= tolerance
 }
 
-function symbolHasDecorativeLeadStubs(symbolData: ImportedSymbol): boolean {
+function symbolHasDecorativeLeadStubs(
+  symbolData: SchematicSymbolsShape,
+): boolean {
   const ports = symbolData.ports ?? []
   const primitives = symbolData.primitives ?? []
 
@@ -74,7 +76,7 @@ export function createPinSubsymbol({
   c2kMatSchScale,
 }: {
   libId: string
-  symbolData: ImportedSymbol
+  symbolData: SchematicSymbolsShape
   isChip: boolean
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
@@ -110,30 +112,18 @@ export function createPinSubsymbol({
       c2kMatSchScale,
     })
     pin.at = [x, y, angle]
-    pin.length = customPinLength
-    if (isChip) {
-      pin.length = CHIP_PIN_LENGTH
-    }
+    pin.length = isChip ? CHIP_PIN_LENGTH : customPinLength
 
     const nameFont = new TextEffectsFont()
     nameFont.size = { height: 1.27, width: 1.27 }
     const nameEffects = new TextEffects({ font: nameFont })
-    // Imported passive symbols sometimes omit a visible pin label. In that case
-    // we leave the KiCad pin-name field unset instead of inventing one.
-    if (port.labels?.[0]) {
-      pin._sxName = new SymbolPinName({
-        value: port.labels[0],
-        effects: nameEffects,
-      })
-    }
+    const pinName = port.labels?.[0] || "~"
+    pin._sxName = new SymbolPinName({ value: pinName, effects: nameEffects })
 
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
-    let pinNum = `${i + 1}`
-    if (port.pinNumber != null) {
-      pinNum = port.pinNumber.toString()
-    }
+    const pinNum = port.pinNumber?.toString() || `${i + 1}`
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,

@@ -13,7 +13,7 @@ import {
   TextEffectsJustify,
   GlobalLabel,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPoint, scale } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 
@@ -117,8 +117,13 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       symbolScale = DEFAULT_SCHEMATIC_SCALE
     }
     if (symbolData?.center && port) {
-      portOffset.x = (port.x - symbolData.center.x) * symbolScale
-      portOffset.y = -(port.y - symbolData.center.y) * symbolScale
+      const symbolOffsetTransform = scale(symbolScale, -symbolScale)
+      const symbolPortOffset = applyToPoint(symbolOffsetTransform, {
+        x: port.x - symbolData.center.x,
+        y: port.y - symbolData.center.y,
+      })
+      portOffset.x = symbolPortOffset.x
+      portOffset.y = symbolPortOffset.y
     }
 
     const anchorInKicad = applyToPoint(this.ctx.c2kMatSch, anchorPoint)
