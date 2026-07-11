@@ -5,8 +5,6 @@ import { join } from "node:path"
 import { At, parseKicadMod, parseKicadPcb } from "kicadts"
 import sharp from "sharp"
 
-const getKicadCliPath = () => process.env["KICAD_CLI_PATH"] ?? "kicad-cli"
-
 type FilePath = string
 type FileContent = Buffer
 
@@ -227,8 +225,8 @@ export const takeKicadSnapshot = async (params: {
     pcbCopperPourOpacity,
   } = params
 
-  const kicadCliPath = getKicadCliPath()
-  const kicadCliVersion = await $`${kicadCliPath} --version`
+  // Check to make sure kicad-cli is installed
+  const kicadCliVersion = await $`kicad-cli --version`
 
   if (!kicadCliVersion.stdout.toString().trim().startsWith("10.")) {
     throw new Error("kicad-cli version 10.0.0 or higher is required")
@@ -283,7 +281,7 @@ export const takeKicadSnapshot = async (params: {
       const outputPng = join(outputDir, "temp_file.png")
       await $`mkdir -p ${outputDir}`
       const exportResult =
-        await $`${kicadCliPath} pcb render ${inputFilePath} -o ${outputPng} --width 800 --height 600 --rotate 45,0,45 --perspective --quality basic`
+        await $`kicad-cli pcb render ${inputFilePath} -o ${outputPng} --width 800 --height 600 --rotate 45,0,45 --perspective --quality basic`
 
       if (exportResult.exitCode !== 0) {
         throw new Error(
@@ -303,8 +301,8 @@ export const takeKicadSnapshot = async (params: {
     // Export to SVG for sch/pcb/mod
     const exportCmd =
       kicadFileType === "sch"
-        ? $`${kicadCliPath} sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
-        : $`${kicadCliPath} pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers B.Cu,In1.Cu,In2.Cu,F.Cu,F.SilkS,B.SilkS,F.Fab,B.Fab,F.CrtYd,B.CrtYd,Edge.Cuts --mode-single --page-size-mode 2 --exclude-drawing-sheet`
+        ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
+        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers B.Cu,In1.Cu,In2.Cu,F.Cu,F.SilkS,B.SilkS,F.Fab,B.Fab,F.CrtYd,B.CrtYd,Edge.Cuts --mode-single --page-size-mode 2 --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
 
