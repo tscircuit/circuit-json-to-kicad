@@ -1,7 +1,6 @@
 import type {
   Point,
   SchematicComponent,
-  SchematicPath,
   SchematicPort,
   Size,
 } from "circuit-json"
@@ -21,7 +20,10 @@ type SchematicSymbolsShape = {
   center?: Point
   size?: Size
   ports?: any[]
-  primitives?: Array<Pick<SchematicPath, "type" | "points">>
+  primitives?: Array<{
+    type: string
+    points?: Point[]
+  }>
 }
 
 function pointMatches(a: Point, b: Point): boolean {
