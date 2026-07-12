@@ -1,9 +1,5 @@
 import type { KicadFootprintMetadata } from "@tscircuit/props"
-import type {
-  PcbComponent,
-  CadComponent,
-  CircuitJson,
-} from "circuit-json"
+import type { PcbComponent, CadComponent, CircuitJson } from "circuit-json"
 import type { SourceComponentBase } from "circuit-json"
 import type { FootprintEntry } from "../../types"
 import type {
