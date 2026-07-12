@@ -2,9 +2,9 @@ import type { KicadFootprintMetadata } from "@tscircuit/props"
 import type {
   PcbComponent,
   CadComponent,
-  SourceComponentBase,
   CircuitJson,
 } from "circuit-json"
+import type { SourceComponentBase } from "circuit-json"
 import type { FootprintEntry } from "../../types"
 import type {
   KicadLibraryConverterContext,
@@ -17,6 +17,13 @@ import { parseKicadMod } from "kicadts"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 
 const KICAD_3RD_PARTY_PLACEHOLDER = "${KICAD_3RD_PARTY}"
+// `CircuitJson` is a wide union, so `.find()` needs a narrower element type
+// before we can safely pass a source component into the naming helper.
+type CircuitJsonElement = CircuitJson[number]
+type SourceComponentElement = Extract<
+  CircuitJsonElement,
+  { type: "source_component" }
+>
 
 /**
  * Classifies footprints from extracted KiCad components into user and builtin libraries.
@@ -62,7 +69,7 @@ function getFootprintCandidateNamesForPcbComponent(params: {
     pcbComponent.source_component_id ?? cadComponent?.source_component_id
   const sourceComponent = sourceComponentId
     ? circuitJson.find(
-        (el): el is SourceComponentBase =>
+        (el): el is SourceComponentElement =>
           el.type === "source_component" &&
           el.source_component_id === sourceComponentId,
       )
@@ -70,7 +77,10 @@ function getFootprintCandidateNamesForPcbComponent(params: {
 
   if (sourceComponent) {
     candidateNames.add(
-      getKicadCompatibleComponentName(sourceComponent, cadComponent),
+      getKicadCompatibleComponentName(
+        sourceComponent as SourceComponentBase,
+        cadComponent,
+      ),
     )
   }
 

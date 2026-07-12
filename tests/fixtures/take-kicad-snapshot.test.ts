@@ -71,7 +71,7 @@ test("takeKicadSnapshot - schematic export", async () => {
   const snapshot = await takeKicadSnapshot({
     kicadFilePath: join(
       import.meta.dir,
-      "../../kicad-demos/demos/flat_hierarchy/flat_hierarchy.kicad_sch",
+      "../assets/repro13-schematic-sections-sch.kicad_sch",
     ),
     kicadFileType: "sch",
   })
