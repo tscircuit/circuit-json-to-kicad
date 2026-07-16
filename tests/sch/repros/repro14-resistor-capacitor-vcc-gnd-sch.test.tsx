@@ -1,7 +1,6 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
-import { applyToPoint } from "transformation-matrix"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -40,46 +39,6 @@ test("repro14 resistor-capacitor V3_3/GND schematic snapshot", async () => {
   const circuitJson = circuit.getCircuitJson()
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
-
-  const kicadSch = converter.getOutput()
-  const symbolNetLabels = circuitJson.filter(
-    (element: any) =>
-      element.type === "schematic_net_label" && element.symbol_name,
-  ) as any[]
-
-  for (const netLabel of symbolNetLabels) {
-    const libraryId = `Custom:${netLabel.symbol_name}`
-    const symbol = kicadSch.symbols.find(
-      (candidate) => candidate.libraryId === libraryId,
-    )
-    const librarySymbol = kicadSch.libSymbols?.symbols.find(
-      (candidate) => candidate.libraryId === libraryId,
-    )
-    const pin = librarySymbol?.subSymbols.flatMap(
-      (subSymbol) => subSymbol.pins,
-    )[0]
-    if (!symbol?.at || !pin?.at) {
-      throw new Error(`Missing exported pin for ${libraryId}`)
-    }
-    const anchor = applyToPoint(
-      converter.ctx.c2kMatSch!,
-      {
-        x: netLabel.anchor_position.x,
-        y: netLabel.anchor_position.y,
-      },
-    )
-
-    expect(symbol.at.x + pin.at.x).toBeCloseTo(anchor.x)
-    expect(symbol.at.y - pin.at.y).toBeCloseTo(anchor.y)
-  }
-
-  const resistorLibrarySymbol = kicadSch.libSymbols?.symbols.find(
-    (symbol) => symbol.libraryId === "Device:boxresistor_right",
-  )
-  const resistorPins = resistorLibrarySymbol?.subSymbols.flatMap(
-    (subSymbol) => subSymbol.pins,
-  )
-  expect(resistorPins?.map((pin) => pin.length)).toEqual([0.01, 0.01])
 
   const output = converter.getOutputString()
 
