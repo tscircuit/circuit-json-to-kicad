@@ -6,7 +6,15 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
-test(
+/**
+ * Known bug: Fiducial pads incorrectly export with F.Paste layer (Issue #372).
+ *
+ * Solder paste is suppressed by default on optical target fiducials.
+ * Marked `test.failing` because it asserts the CORRECT behavior (fiducial
+ * pads should not contain F.Paste, and the generated KiCad output should
+ * use `(layers F.Cu F.Mask)`). Remove `.failing` once the fix lands.
+ */
+test.failing(
   "standalone fiducials export as KiCad SMT pads",
   async () => {
     const circuit = new Circuit()
@@ -56,11 +64,11 @@ test(
       const padLayers = pad.layers!.layers
       expect(padLayers).toContain("F.Cu")
       expect(padLayers).toContain("F.Mask")
-
-      // Repro for #372: Documents current behavior to be updated in the fix PR.
-      expect(padLayers).toContain("F.Paste")
+      expect(padLayers).not.toContain("F.Paste")
     }
-    expect(outputString).toContain("(layers F.Cu F.Paste F.Mask)")
+    expect(outputString).toContain("(layers F.Cu F.Mask)")
+    expect(outputString).not.toContain("(layers F.Cu F.Paste F.Mask)")
+    expect(outputString).not.toContain("(layers F.Cu F.Mask F.Paste)")
 
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: outputString,
