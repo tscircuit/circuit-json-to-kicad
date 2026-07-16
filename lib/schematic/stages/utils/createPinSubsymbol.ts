@@ -32,7 +32,8 @@ export function createPinSubsymbol({
   })
 
   const CHIP_PIN_LENGTH = 6.0
-  const CUSTOM_SYMBOL_PIN_LENGTH = 2.54 // 0.1 inch
+  // Non-chip artwork already draws the visible lead up to each port.
+  const CUSTOM_SYMBOL_PIN_LENGTH = 0.01
 
   for (let i = 0; i < (symbolData.ports?.length || 0); i++) {
     const port = symbolData.ports[i]
