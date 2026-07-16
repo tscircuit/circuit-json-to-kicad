@@ -51,6 +51,17 @@ test(
     expect(kicadPcb.footprints[0]!.fpPads[0]!.solderMaskMargin).toBe(1)
     expect(outputString).toContain("(solder_mask_margin 1)")
 
+    for (const footprint of kicadPcb.footprints) {
+      const pad = footprint.fpPads[0]!
+      const padLayers = pad.layers!.layers
+      expect(padLayers).toContain("F.Cu")
+      expect(padLayers).toContain("F.Mask")
+
+      // Repro for #372: Documents current behavior to be updated in the fix PR.
+      expect(padLayers).toContain("F.Paste")
+    }
+    expect(outputString).toContain("(layers F.Cu F.Paste F.Mask)")
+
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: outputString,
       kicadFileType: "pcb",
