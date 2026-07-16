@@ -13,12 +13,10 @@ import {
   TextEffectsJustify,
   GlobalLabel,
 } from "kicadts"
-import { applyToPoint, scale } from "transformation-matrix"
+import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
-
-const DEFAULT_SCHEMATIC_SCALE = 1
-const FIRST_PORT_INDEX = 0
+import { calculatePinPosition } from "./utils/calculatePinPosition"
 
 /**
  * Adds schematic net labels to the schematic
@@ -107,28 +105,23 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     }
 
-    const symbolData = this.getBuiltinSymbolData(symbolName)
-    const port = symbolData?.ports?.[FIRST_PORT_INDEX]
-
-    // Power symbols are anchored by their pin, not by the symbol's local origin.
-    const portOffset = { x: 0, y: 0 }
-    let symbolScale = this.ctx.kicadSchematicScaleFactor
-    if (symbolScale == null) {
-      symbolScale = DEFAULT_SCHEMATIC_SCALE
-    }
-    if (symbolData?.center && port) {
-      const symbolOffsetTransform = scale(symbolScale, -symbolScale)
-      const symbolPortOffset = applyToPoint(symbolOffsetTransform, {
-        x: port.x - symbolData.center.x,
-        y: port.y - symbolData.center.y,
-      })
-      portOffset.x = symbolPortOffset.x
-      portOffset.y = symbolPortOffset.y
-    }
-
     const anchorInKicad = applyToPoint(this.ctx.c2kMatSch, anchorPoint)
-    const x = anchorInKicad.x - portOffset.x
-    const y = anchorInKicad.y - portOffset.y
+    let { x, y } = anchorInKicad
+
+    const symbolData = symbols[symbolName as keyof typeof symbols]
+    const port = symbolData?.ports?.[0]
+    if (port) {
+      const pinPosition = calculatePinPosition({
+        port,
+        center: symbolData.center,
+        size: symbolData.size,
+        isChip: false,
+        schematicPorts: [],
+        c2kMatSchScale: this.ctx.kicadSchematicScaleFactor ?? 1,
+      })
+      x -= pinPosition.x
+      y += pinPosition.y
+    }
 
     const uuid = crypto.randomUUID()
 
@@ -222,11 +215,6 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     symbol._sxInstances = instances
 
     return symbol
-  }
-
-  private getBuiltinSymbolData(symbolName: string) {
-    const builtinSymbols = symbols as Record<string, any>
-    return builtinSymbols[symbolName] ?? null
   }
 
   /**
