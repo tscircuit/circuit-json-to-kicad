@@ -10,6 +10,8 @@ export const circuitJsonLayerToKicadLayer: Record<string, string> = {
   inner4: "In4.Cu",
   inner5: "In5.Cu",
   inner6: "In6.Cu",
+  inner7: "In7.Cu",
+  inner8: "In8.Cu",
 }
 
 /**
@@ -17,9 +19,13 @@ export const circuitJsonLayerToKicadLayer: Record<string, string> = {
  */
 export function getKicadLayer(circuitJsonLayer: string | undefined): string {
   if (!circuitJsonLayer) return "F.Cu"
-  return (
-    circuitJsonLayerToKicadLayer[circuitJsonLayer] || circuitJsonLayer || "F.Cu"
-  )
+  const mappedLayer = circuitJsonLayerToKicadLayer[circuitJsonLayer]
+  if (mappedLayer) return mappedLayer
+
+  const innerLayerMatch = circuitJsonLayer.match(/^inner(\d+)$/)
+  if (innerLayerMatch?.[1]) return `In${innerLayerMatch[1]}.Cu`
+
+  return circuitJsonLayer
 }
 
 /**
