@@ -1,30 +1,29 @@
+import type { KicadSymbolMetadata } from "@tscircuit/props"
 import type { CircuitJson, SchematicComponent } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
+  EmbeddedFonts,
   SchematicSymbol,
-  SymbolLibId,
-  SymbolProperty,
-  SymbolPin,
+  SymbolInstancePath,
   SymbolInstances,
   SymbolInstancesProject,
-  SymbolInstancePath,
-  Uuid,
+  SymbolLibId,
+  SymbolPin,
+  SymbolPinNames,
+  SymbolPinNumbers,
+  SymbolProperty,
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
-  EmbeddedFonts,
-  SymbolPinNames,
-  SymbolPinNumbers,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
-import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../getLibraryId"
+import { applyToPoint } from "transformation-matrix"
+import { ConverterStage } from "../../types"
 import {
-  getReferenceDesignator,
   getKicadCompatibleComponentName,
+  getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
-import type { KicadSymbolMetadata } from "@tscircuit/props"
+import { getLibraryId } from "../getLibraryId"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -82,6 +81,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             cad.source_component_id === sourceComponent.source_component_id,
         )
 
+      const componentSchematicPorts = db.schematic_port
+        .list()
+        .filter(
+          (p: any) =>
+            p.schematic_component_id ===
+            schematicComponent.schematic_component_id,
+        )
+
       // Check for custom symbol via schematic_symbol_id
       let schematicSymbolName: string | undefined
       let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
@@ -132,6 +139,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         schematicComponent,
         cadComponent,
         schematicSymbolName,
+        componentSchematicPorts.length,
       )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
@@ -305,13 +313,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Add pin instances with UUIDs based on schematic ports
       // For custom symbols, use only ports with display_pin_label
       // For regular components, use all ports
-      let schematicPorts = db.schematic_port
-        .list()
-        .filter(
-          (p: any) =>
-            p.schematic_component_id ===
-            schematicComponent.schematic_component_id,
-        )
+      let schematicPorts = [...componentSchematicPorts]
 
       // If this is a custom symbol, filter to only ports with display_pin_label
       if (schematicSymbolId) {
