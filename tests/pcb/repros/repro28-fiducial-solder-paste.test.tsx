@@ -58,7 +58,7 @@ test(
   { timeout: 120000 },
 )
 
-test.failing("pcb repro28 fiducial without pcb_solder_paste omits F.Paste", async () => {
+test("pcb repro28 fiducial without pcb_solder_paste omits F.Paste", async () => {
   const circuitJson = await createRepro28CircuitJson()
   const pcbSmtPads = circuitJson.filter(
     (element): element is PcbSmtPad => element.type === "pcb_smtpad",
