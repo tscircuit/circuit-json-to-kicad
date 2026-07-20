@@ -4,6 +4,7 @@ import { KicadPcb } from "kicadts"
 import { cju } from "@tscircuit/circuit-json-util"
 import { compose, translate, scale } from "transformation-matrix"
 import { AddCopperPoursStage } from "./stages/AddCopperPoursStage"
+import { AddKeepoutsStage } from "./stages/AddKeepoutsStage"
 import { InitializePcbStage } from "./stages/InitializePcbStage"
 import { AddNetsStage } from "./stages/AddNetsStage"
 import { AddFootprintsStage } from "./stages/AddFootprintsStage"
@@ -72,6 +73,7 @@ export class CircuitJsonToKicadPcbConverter {
       new AddTracesStage(circuitJson, this.ctx),
       new AddViasStage(circuitJson, this.ctx),
       new AddCopperPoursStage(circuitJson, this.ctx),
+      new AddKeepoutsStage(circuitJson, this.ctx),
       new AddStandalonePcbElements(circuitJson, this.ctx),
       new AddGraphicsStage(circuitJson, this.ctx),
     ]
