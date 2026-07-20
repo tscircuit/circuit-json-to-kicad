@@ -28,6 +28,7 @@ export function createSmdPadFromCircuitJson({
   componentRotation = 0,
   netInfo,
   componentId,
+  includePaste = true,
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
@@ -35,6 +36,10 @@ export function createSmdPadFromCircuitJson({
   componentRotation?: number
   netInfo?: PcbNetInfo
   componentId?: string
+  /** Whether to include the solder paste aperture layer. Defaults to true for
+   *  backwards compatibility; set to false for pads like fiducials that have
+   *  no corresponding pcb_solder_paste element in the circuit JSON. */
+  includePaste?: boolean
 }): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
@@ -157,7 +162,7 @@ export function createSmdPadFromCircuitJson({
     size: padSize,
     layers: [
       `${padLayer}`,
-      `${padLayer === "F.Cu" ? "F" : "B"}.Paste`,
+      ...(includePaste ? [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`] : []),
       `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
     ],
     solderMaskMargin: pcbPad.soldermask_margin,
