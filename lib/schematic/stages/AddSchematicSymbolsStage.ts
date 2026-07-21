@@ -93,6 +93,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           (el: any) =>
             (el.type === "schematic_line" ||
               el.type === "schematic_circle" ||
+              el.type === "schematic_arc" ||
               el.type === "schematic_path") &&
             el.schematic_component_id ===
               schematicComponent.schematic_component_id &&
@@ -119,7 +120,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             cadComponent,
           )
           if (ergonomicName) {
-            schematicSymbolName = ergonomicName
+            schematicSymbolName = `${ergonomicName}_${schematicSymbolId}`
           } else {
             schematicSymbolName = `custom_${sourceComponent.ftype || "component"}_${schematicSymbolId}`
           }

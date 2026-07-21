@@ -124,6 +124,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         (el: any) =>
           (el.type === "schematic_line" ||
             el.type === "schematic_circle" ||
+            el.type === "schematic_arc" ||
             el.type === "schematic_path") &&
           el.schematic_component_id ===
             schematicComponent.schematic_component_id &&
@@ -290,7 +291,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         cadComponent,
       )
       if (ergonomicName) {
-        symbolName = ergonomicName
+        symbolName = `${ergonomicName}_${schematicSymbolId}`
       } else {
         symbolName = `custom_${sourceComp.ftype || "component"}_${schematicSymbolId}`
       }
@@ -505,6 +506,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       (el: any) =>
         (el.type === "schematic_path" ||
           el.type === "schematic_circle" ||
+          el.type === "schematic_arc" ||
           el.type === "schematic_line" ||
           el.type === "schematic_text") &&
         el.schematic_component_id === schematicComponentId &&
