@@ -20,10 +20,7 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
-import {
-  getReferenceDesignator,
-  getKicadCompatibleComponentName,
-} from "../../utils/getKicadCompatibleComponentName"
+import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 /**
@@ -83,7 +80,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         )
 
       // Check for custom symbol via schematic_symbol_id
-      let schematicSymbolName: string | undefined
+      let schematicSymbolLibraryKey: string | undefined
       let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
 
       // If not on the component, check if there are primitives linked to this component
@@ -110,20 +107,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             el.type === "schematic_symbol" &&
             el.schematic_symbol_id === schematicSymbolId,
         ) as any
+        schematicSymbolLibraryKey = schematicSymbolId
         if (schematicSymbol?.name) {
-          schematicSymbolName = schematicSymbol.name
-        } else {
-          // Generate a name consistent with AddLibrarySymbolsStage
-          // Use getKicadCompatibleComponentName for consistent naming
-          const ergonomicName = getKicadCompatibleComponentName(
-            sourceComponent,
-            cadComponent,
-          )
-          if (ergonomicName) {
-            schematicSymbolName = `${ergonomicName}_${schematicSymbolId}`
-          } else {
-            schematicSymbolName = `custom_${sourceComponent.ftype || "component"}_${schematicSymbolId}`
-          }
+          schematicSymbolLibraryKey = schematicSymbol.name
         }
       }
 
@@ -132,7 +118,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         sourceComponent,
         schematicComponent,
         cadComponent,
-        schematicSymbolName,
+        schematicSymbolLibraryKey,
       )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId

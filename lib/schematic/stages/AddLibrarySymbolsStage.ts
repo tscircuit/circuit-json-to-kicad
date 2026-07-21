@@ -278,28 +278,16 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       return null
     }
 
-    // Determine symbol name using precedence:
-    // 1. schematic_symbol.name
-    // 2. manufacturer_part_number / footprinter_string (via getKicadCompatibleComponentName)
-    // 3. Generated name based on ftype
-    let symbolName: string
+    // Use the explicit name when available; otherwise use the symbol ID as the
+    // unique internal library key.
+    let librarySymbolKey = schematicSymbolId
     if (schematicSymbol.name) {
-      symbolName = schematicSymbol.name
-    } else {
-      const ergonomicName = getKicadCompatibleComponentName(
-        sourceComp,
-        cadComponent,
-      )
-      if (ergonomicName) {
-        symbolName = `${ergonomicName}_${schematicSymbolId}`
-      } else {
-        symbolName = `custom_${sourceComp.ftype || "component"}_${schematicSymbolId}`
-      }
+      librarySymbolKey = schematicSymbol.name
     }
 
     // Check if we've already processed this symbol name
     // If two symbols have the same name, we assume they're the same symbol
-    const libId = `Custom:${symbolName}`
+    const libId = `Custom:${librarySymbolKey}`
     if (this.processedSymbolNames.has(libId)) {
       return null // Skip duplicate symbol definitions
     }
