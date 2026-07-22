@@ -25,6 +25,8 @@ import {
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
+import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
+import { calculatePinPosition } from "./utils/calculatePinPosition"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -35,6 +37,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 > {
   override _step(): void {
     const { kicadSch, db } = this.ctx
+    this.ctx.pinPositions = new Map()
 
     // Get all schematic components
     const schematicComponents = db.schematic_component.list()
@@ -329,6 +332,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         (a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0),
       )
 
+      const symbolData = this.getSymbolDataForComponent(
+        schematicComponent,
+        sourceComponent,
+      )
+      const isChipLike =
+        sourceComponent.ftype === "simple_chip" ||
+        sourceComponent.ftype === "simple_pin_header" ||
+        sourceComponent.ftype === "simple_connector"
+
       for (let i = 0; i < schematicPorts.length; i++) {
         const port = schematicPorts[i]
         if (!port) continue
@@ -337,6 +349,25 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         pin.numberString = `${port.pin_number || i + 1}`
         pin.uuid = crypto.randomUUID()
         symbol.pins.push(pin)
+
+        const symbolPort = symbolData?.ports?.[i]
+        if (symbolPort && this.ctx.pinPositions) {
+          const pinPosition = calculatePinPosition({
+            port: symbolPort,
+            center: symbolData.center,
+            size: symbolData.size,
+            isChip: isChipLike,
+            portIndex: i,
+            schematicComponent,
+            schematicPorts,
+            c2kMatSchScale: this.ctx.kicadSchematicScaleFactor!,
+          })
+
+          this.ctx.pinPositions.set(port.schematic_port_id, {
+            x: x + pinPosition.x,
+            y: y + pinPosition.y,
+          })
+        }
       }
 
       // Add instances section
@@ -359,6 +390,26 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }
 
     this.finished = true
+  }
+
+  private getSymbolDataForComponent(
+    schematicComponent: SchematicComponent,
+    sourceComponent: any,
+  ) {
+    const symbolName =
+      schematicComponent.symbol_name ||
+      (sourceComponent.ftype === "simple_chip" ||
+      sourceComponent.ftype === "simple_pin_header"
+        ? `generic_chip_${schematicComponent.source_component_id}`
+        : null)
+
+    if (!symbolName) return null
+
+    if (symbolName.startsWith("generic_chip_")) {
+      return createGenericChipSymbolData(schematicComponent, this.ctx.db)
+    }
+
+    return symbols[symbolName as keyof typeof symbols] || null
   }
 
   /**

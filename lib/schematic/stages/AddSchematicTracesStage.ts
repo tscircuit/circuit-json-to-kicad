@@ -5,6 +5,7 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
 
 const DEFAULT_LINE_WIDTH_MM = 0.254
+const PIN_SNAP_TOLERANCE_MM = 0.01
 
 /**
  * Adds schematic traces (wires) and junctions to the schematic
@@ -66,14 +67,8 @@ export class AddSchematicTracesStage extends ConverterStage<
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
-    const from = applyToPoint(this.ctx.c2kMatSch, {
-      x: edge.from.x,
-      y: edge.from.y,
-    })
-    const to = applyToPoint(this.ctx.c2kMatSch, {
-      x: edge.to.x,
-      y: edge.to.y,
-    })
+    const from = this.snapTraceEndpointToPinAnchor(edge.from)
+    const to = this.snapTraceEndpointToPinAnchor(edge.to)
 
     const x1 = from.x
     const y1 = from.y
@@ -94,6 +89,64 @@ export class AddSchematicTracesStage extends ConverterStage<
     wire.uuid = crypto.randomUUID()
 
     return wire
+  }
+
+  private snapTraceEndpointToPinAnchor(point: { x: number; y: number }) {
+    if (!this.ctx.c2kMatSch) {
+      throw new Error(
+        "Schematic transformation matrix not initialized in context",
+      )
+    }
+
+    const transformedPoint = applyToPoint(this.ctx.c2kMatSch, point)
+    const pinAnchorMappings = this.getPinAnchorMappings()
+
+    let nearestMapping:
+      | {
+          raw: { x: number; y: number }
+          actual: { x: number; y: number }
+        }
+      | undefined
+    let nearestDistanceSquared = Number.POSITIVE_INFINITY
+
+    for (const mapping of pinAnchorMappings) {
+      const dx = transformedPoint.x - mapping.raw.x
+      const dy = transformedPoint.y - mapping.raw.y
+      const distanceSquared = dx * dx + dy * dy
+
+      if (
+        distanceSquared <= PIN_SNAP_TOLERANCE_MM * PIN_SNAP_TOLERANCE_MM &&
+        distanceSquared < nearestDistanceSquared
+      ) {
+        nearestMapping = mapping
+        nearestDistanceSquared = distanceSquared
+      }
+    }
+
+    return nearestMapping?.actual ?? transformedPoint
+  }
+
+  private getPinAnchorMappings() {
+    const mappings: Array<{
+      raw: { x: number; y: number }
+      actual: { x: number; y: number }
+    }> = []
+
+    for (const schematicPort of this.ctx.db.schematic_port.list()) {
+      const actualPosition = this.ctx.pinPositions?.get(
+        schematicPort.schematic_port_id,
+      )
+      if (!actualPosition) continue
+      mappings.push({
+        raw: applyToPoint(this.ctx.c2kMatSch!, {
+          x: schematicPort.center.x,
+          y: schematicPort.center.y,
+        }),
+        actual: actualPosition,
+      })
+    }
+
+    return mappings
   }
 
   /**
