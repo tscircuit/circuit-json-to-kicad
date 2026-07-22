@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
+import { parseKicadPcb } from "kicadts"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -58,22 +59,31 @@ test(
 )
 
 /**
- * Known bug: pcb_keepout elements are dropped entirely by the PCB converter.
- * The converter has no stage that handles pcb_keepout, so they never appear
- * in the KiCad output as (zone ... (keepout ...)) rule areas.
+ * Regression test: pcb_keepout elements are converted to KiCad rule-area zones.
  *
- * Marked test.failing because it asserts the CORRECT behavior (the output
- * should contain a zone with a keepout sub-block), which the current code
- * does not satisfy. The fix is to add an AddKeepoutsStage; remove .failing
- * once it lands.
+ * kicad-cli's SVG plotter explicitly skips rule-area zones
+ * (GetIsRuleArea() → continue in PlotStandardLayer), so the keepout
+ * produces zero SVG elements regardless of export resolution.  The visual
+ * snapshot therefore cannot differ with or without the fix.
+ *
+ * The parsed-object assertions below provide authoritative structural proof
+ * that the KiCad output contains the keepout zone with all five ZoneKeepout
+ * constraints set to "not_allowed".
  */
-test.failing("pcb repro29 keepout exports as kicad rule-area zone", async () => {
+test("pcb repro29 keepout exports as kicad rule-area zone", async () => {
   const circuitJson = await createRepro29CircuitJson()
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
-  const outputString = converter.getOutputString()
 
-  expect(outputString).toContain("(zone")
-  expect(outputString).toContain("(keepout")
-  expect(outputString).toContain("(tracks not_allowed)")
+  const parsedPcb = parseKicadPcb(converter.getOutputString())
+  expect(parsedPcb.zones.length).toBeGreaterThan(0)
+  const keepoutZone = parsedPcb.zones[0]!
+  expect(keepoutZone.keepout).toBeDefined()
+  expect(keepoutZone.keepout!.tracks).toBe("not_allowed")
+  expect(keepoutZone.keepout!.vias).toBe("not_allowed")
+  expect(keepoutZone.keepout!.pads).toBe("not_allowed")
+  expect(keepoutZone.keepout!.copperpour).toBe("not_allowed")
+  expect(keepoutZone.keepout!.footprints).toBe("not_allowed")
+  expect(keepoutZone.filledPolygons).toHaveLength(0)
+  expect(keepoutZone.net).toBe(0)
 })
