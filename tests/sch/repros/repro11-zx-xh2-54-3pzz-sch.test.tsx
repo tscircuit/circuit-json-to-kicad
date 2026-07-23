@@ -172,14 +172,13 @@ test("repro11 ZX_XH2_54_3PZZ schematic snapshot", async () => {
   expect(output).toContain('(property "Reference" "J_TEMP"')
   expect(output).not.toContain('(property "Reference" "U?"')
 
-  await Bun.write(
-    "./debug-output/repro11-zx-xh2-54-3pzz-sch.stacked.png",
-    await stackCircuitJsonKicadPngs(
+  expect(
+    stackCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson,
         outputType: "schematic",
       }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
-  )
+  ).toMatchPngSnapshot(import.meta.path)
 })
