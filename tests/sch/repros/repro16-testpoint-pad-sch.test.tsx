@@ -1,0 +1,43 @@
+import { expect, test } from "bun:test"
+import { Circuit } from "tscircuit"
+import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+
+const TestpointPad = () => (
+  <testpoint
+    name="TCH1"
+    footprintVariant="pad"
+    padShape="circle"
+    padDiameter="1mm"
+  />
+)
+
+export default TestpointPad
+
+test("repro16 testpoint pad schematic", async () => {
+  const circuit = new Circuit()
+  circuit.add(<TestpointPad />)
+  await circuit.renderUntilSettled()
+
+  const circuitJson = circuit.getCircuitJson()
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
+  converter.runUntilFinished()
+
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
+
+  expect(kicadSnapshot.exitCode).toBe(0)
+  expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson,
+        outputType: "schematic",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
+})
