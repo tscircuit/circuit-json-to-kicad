@@ -25,6 +25,10 @@ import {
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
+import {
+  getTextJustificationFromSchematicSymbol,
+  type KicadTextJustification,
+} from "./utils/getTextJustificationFromSchematicSymbol"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -143,12 +147,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         (sourceComponent.ftype === "simple_chip" ||
           sourceComponent.ftype === "simple_connector") &&
         Boolean(sourceComponent.manufacturer_part_number)
+      const isTestPoint = sourceComponent.ftype === "simple_test_point"
 
       // Get text positions from schematic symbol definition
-      const { refTextPos, valTextPos } = this.getTextPositions(
+      const { refTextPos, valTextPos } = this.getTextPositions({
         schematicComponent,
-        hasManufacturerValueForValuePlacement,
-      )
+        placeValueAtNamePosition: hasManufacturerValueForValuePlacement,
+        centerVerticalText: isTestPoint,
+      })
 
       // Check for kicadSymbolMetadata from circuit-json element
       let symbolMetadata: KicadSymbolMetadata | undefined
@@ -165,6 +171,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
+      let referenceJustification: KicadTextJustification | undefined
+      if (isTestPoint) {
+        referenceJustification = getTextJustificationFromSchematicSymbol(
+          schematicComponent.symbol_name,
+          "{REF}",
+        )
+      }
       const referenceProperty = new SymbolProperty({
         key: "Reference",
         value: refMeta?.value ?? reference,
@@ -173,13 +186,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         effects: this.createTextEffects(
           Number(refMeta?.effects?.font?.size?.x ?? 1.27),
           refMeta?.effects?.hide ?? false,
+          referenceJustification,
         ),
       })
 
       const hideValue =
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
-        sourceComponent.ftype === "simple_pin_header"
+        sourceComponent.ftype === "simple_pin_header" ||
+        isTestPoint
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
@@ -364,10 +379,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   /**
    * Get text positions from schematic symbol definition or schematic_text elements
    */
-  private getTextPositions(
-    schematicComponent: SchematicComponent,
-    placeValueAtNamePosition: boolean,
-  ): {
+  private getTextPositions({
+    schematicComponent,
+    placeValueAtNamePosition,
+    centerVerticalText,
+  }: {
+    schematicComponent: SchematicComponent
+    placeValueAtNamePosition: boolean
+    centerVerticalText: boolean
+  }): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
   } {
@@ -472,7 +492,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     const isVertical =
       symbolName.includes("_down") || symbolName.includes("_up")
-    const horizontalTextOffset = isVertical ? 0.15 : 0
+    let horizontalTextOffset = 0
+    if (isVertical && !centerVerticalText) {
+      horizontalTextOffset = 0.15
+    }
 
     const refTextPos = refTextPrimitive
       ? applyToPoint(c2kMatSch, {
@@ -607,14 +630,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   private createTextEffects(
     size: number,
     hide = false,
-    justify?: "left" | "right",
+    justify?: KicadTextJustification,
   ): TextEffects {
     const font = new TextEffectsFont()
     font.size = { height: size, width: size }
 
-    const justifyObj = justify
-      ? new TextEffectsJustify({ horizontal: justify })
-      : undefined
+    let justifyObj: TextEffectsJustify | undefined
+    if (justify) {
+      justifyObj = new TextEffectsJustify(justify)
+    }
 
     const effects = new TextEffects({
       font: font,
