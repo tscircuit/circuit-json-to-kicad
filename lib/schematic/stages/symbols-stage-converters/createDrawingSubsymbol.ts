@@ -4,8 +4,9 @@ import {
   scale as createScaleMatrix,
   translate,
 } from "transformation-matrix"
-import { createPolylineFromPoints } from "./createPolylineFromPoints"
+import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
+import { createPolylineFromPoints } from "./createPolylineFromPoints"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
 
 export function createDrawingSubsymbol({
@@ -53,6 +54,12 @@ export function createDrawingSubsymbol({
         scale: symbolScale,
       })
       drawingSymbol.circles.push(circle)
+    } else if (primitive.type === "arc") {
+      const arc = createArcFromPrimitive({
+        arc: primitive.arc,
+        circuitJsonToKicadSymbolTransform: transform,
+      })
+      drawingSymbol.arcs.push(arc)
     }
   }
 
