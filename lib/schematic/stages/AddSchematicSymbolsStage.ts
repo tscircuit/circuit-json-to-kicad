@@ -30,6 +30,8 @@ import {
   type KicadTextJustification,
 } from "./utils/getTextJustificationFromSchematicSymbol"
 
+const VERTICAL_SYMBOL_TEXT_OFFSET_MM = 0.15
+
 /**
  * Adds schematic symbol instances (placed components) to the schematic
  */
@@ -147,13 +149,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         (sourceComponent.ftype === "simple_chip" ||
           sourceComponent.ftype === "simple_connector") &&
         Boolean(sourceComponent.manufacturer_part_number)
-      const isTestPoint = sourceComponent.ftype === "simple_test_point"
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos } = this.getTextPositions({
         schematicComponent,
         placeValueAtNamePosition: hasManufacturerValueForValuePlacement,
-        centerVerticalText: isTestPoint,
       })
 
       // Check for kicadSymbolMetadata from circuit-json element
@@ -171,16 +171,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
-      let referenceJustification: KicadTextJustification | undefined
-      if (isTestPoint) {
-        referenceJustification = getTextJustificationFromSchematicSymbol(
-          schematicComponent.symbol_name,
-          "{REF}",
-        )
-      }
+      const referencePropertyText = refMeta?.value ?? reference
+      const referenceJustification = getTextJustificationFromSchematicSymbol(
+        schematicComponent.symbol_name,
+        "{REF}",
+      )
       const referenceProperty = new SymbolProperty({
         key: "Reference",
-        value: refMeta?.value ?? reference,
+        value: referencePropertyText,
         id: 0,
         at: [refTextPos.x, refTextPos.y, 0],
         effects: this.createTextEffects(
@@ -190,15 +188,16 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         ),
       })
 
+      const valMeta = symbolMetadata?.properties?.Value
+      const valuePropertyText = valMeta?.value ?? value
       const hideValue =
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
         sourceComponent.ftype === "simple_pin_header" ||
-        isTestPoint
-      const valMeta = symbolMetadata?.properties?.Value
+        valuePropertyText === referencePropertyText
       const valueProperty = new SymbolProperty({
         key: "Value",
-        value: valMeta?.value ?? value,
+        value: valuePropertyText,
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(
@@ -382,11 +381,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   private getTextPositions({
     schematicComponent,
     placeValueAtNamePosition,
-    centerVerticalText,
   }: {
     schematicComponent: SchematicComponent
     placeValueAtNamePosition: boolean
-    centerVerticalText: boolean
   }): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
@@ -492,9 +489,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     const isVertical =
       symbolName.includes("_down") || symbolName.includes("_up")
-    let horizontalTextOffset = 0
-    if (isVertical && !centerVerticalText) {
-      horizontalTextOffset = 0.15
+    let refHorizontalTextOffset = 0
+    if (
+      isVertical &&
+      !getTextJustificationFromSchematicSymbol(symbolName, "{REF}")
+    ) {
+      refHorizontalTextOffset = VERTICAL_SYMBOL_TEXT_OFFSET_MM
+    }
+
+    let valHorizontalTextOffset = 0
+    if (
+      isVertical &&
+      !getTextJustificationFromSchematicSymbol(symbolName, "{VAL}")
+    ) {
+      valHorizontalTextOffset = VERTICAL_SYMBOL_TEXT_OFFSET_MM
     }
 
     const refTextPos = refTextPrimitive
@@ -502,7 +510,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           x:
             schematicComponent.center.x +
             (refTextPrimitive.x - symbolCenter.x) +
-            horizontalTextOffset,
+            refHorizontalTextOffset,
           y:
             schematicComponent.center.y + (refTextPrimitive.y - symbolCenter.y),
         })
@@ -513,7 +521,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           x:
             schematicComponent.center.x +
             (valTextPrimitive.x - symbolCenter.x) +
-            horizontalTextOffset,
+            valHorizontalTextOffset,
           y:
             schematicComponent.center.y + (valTextPrimitive.y - symbolCenter.y),
         })

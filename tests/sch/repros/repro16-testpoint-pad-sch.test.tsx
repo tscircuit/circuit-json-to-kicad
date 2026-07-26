@@ -16,7 +16,7 @@ const TestpointPad = () => (
 
 export default TestpointPad
 
-test("repro16 testpoint pad schematic", async () => {
+const createTestpointConverter = async () => {
   const circuit = new Circuit()
   circuit.add(<TestpointPad />)
   await circuit.renderUntilSettled()
@@ -25,6 +25,19 @@ test("repro16 testpoint pad schematic", async () => {
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
 
+  return { circuitJson, converter }
+}
+
+test("uses symbol text semantics for testpoint properties", async () => {
+  const { converter } = await createTestpointConverter()
+  const output = converter.getOutputString()
+
+  expect(output).toMatch(/property "Reference" "TCH1"[\s\S]*justify left/)
+  expect(output).toMatch(/property "Value" "TCH1"[\s\S]*hide/)
+})
+
+test("repro16 testpoint pad schematic", async () => {
+  const { circuitJson, converter } = await createTestpointConverter()
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
     kicadFileType: "sch",
