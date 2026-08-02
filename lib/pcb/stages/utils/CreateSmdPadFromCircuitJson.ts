@@ -74,9 +74,7 @@ export function createSmdPadFromCircuitJson({
   }
   const padLayer = layerMap[pcbPad.layer] || "F.Cu"
   const solderPasteMargin =
-    !hasExplicitSolderPaste &&
-    "solderpaste_margin" in pcbPad &&
-    typeof pcbPad.solderpaste_margin === "number"
+    !hasExplicitSolderPaste && typeof pcbPad.solderpaste_margin === "number"
       ? pcbPad.solderpaste_margin
       : undefined
   const shouldIncludePasteLayer =

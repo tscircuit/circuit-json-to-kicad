@@ -22,7 +22,7 @@
     "@tscircuit/common": "^0.0.5",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "^0.0.450",
+    "circuit-json": "^0.0.463",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.7",
     "jszip": "^3.10.1",

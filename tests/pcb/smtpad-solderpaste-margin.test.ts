@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import type { PcbSmtPad } from "circuit-json"
 import { createSmdPadFromCircuitJson } from "lib/pcb/stages/utils/CreateSmdPadFromCircuitJson"
 
-const pcbPad = {
+const pcbPad: PcbSmtPad = {
   type: "pcb_smtpad",
   pcb_smtpad_id: "pcb_smtpad_0",
   shape: "rect",
@@ -13,7 +13,7 @@ const pcbPad = {
   height: 1,
   is_covered_with_solder_mask: true,
   solderpaste_margin: -0.1,
-} as PcbSmtPad & { solderpaste_margin: number }
+}
 
 test("solderpaste margin is used when explicit pad paste is absent", () => {
   const pad = createSmdPadFromCircuitJson({
