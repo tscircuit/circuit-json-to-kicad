@@ -28,6 +28,7 @@ export function createSmdPadFromCircuitJson({
   componentRotation = 0,
   netInfo,
   componentId,
+  hasExplicitSolderPaste = false,
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
@@ -35,6 +36,7 @@ export function createSmdPadFromCircuitJson({
   componentRotation?: number
   netInfo?: PcbNetInfo
   componentId?: string
+  hasExplicitSolderPaste?: boolean
 }): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
@@ -71,6 +73,16 @@ export function createSmdPadFromCircuitJson({
     bottom: "B.Cu",
   }
   const padLayer = layerMap[pcbPad.layer] || "F.Cu"
+  const solderPasteMargin =
+    !hasExplicitSolderPaste &&
+    "solderpaste_margin" in pcbPad &&
+    typeof pcbPad.solderpaste_margin === "number"
+      ? pcbPad.solderpaste_margin
+      : undefined
+  const shouldIncludePasteLayer =
+    hasExplicitSolderPaste ||
+    solderPasteMargin !== undefined ||
+    !pcbPad.is_covered_with_solder_mask
 
   // Handle different pad shapes (circle pads have radius, rect pads have width/height, polygon pads use custom shape)
   let padShape: string | undefined
@@ -157,12 +169,13 @@ export function createSmdPadFromCircuitJson({
     size: padSize,
     layers: [
       `${padLayer}`,
-      ...(pcbPad.is_covered_with_solder_mask
-        ? []
-        : [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]),
+      ...(shouldIncludePasteLayer
+        ? [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]
+        : []),
       `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
     ],
     solderMaskMargin: pcbPad.soldermask_margin,
+    solderPasteMargin,
     roundrectRatio: roundrect_rratio,
     uuid: generateDeterministicUuid(padData),
   })

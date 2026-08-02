@@ -56,6 +56,11 @@ export function convertSmdPads(
       componentRotation,
       netInfo,
       componentId,
+      hasExplicitSolderPaste: ctx.circuitJson.some(
+        (element) =>
+          element.type === "pcb_solder_paste" &&
+          element.pcb_smtpad_id === pcbPad.pcb_smtpad_id,
+      ),
     })
     pads.push(pad)
     padNumber++

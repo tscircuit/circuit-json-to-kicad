@@ -75,6 +75,11 @@ export class AddStandalonePcbElements extends ConverterStage<
           padNumber: 1,
           componentRotation: 0,
           componentId: pcbPad.pcb_smtpad_id,
+          hasExplicitSolderPaste: this.ctx.circuitJson.some(
+            (element) =>
+              element.type === "pcb_solder_paste" &&
+              element.pcb_smtpad_id === pcbPad.pcb_smtpad_id,
+          ),
         }),
       ]
       const footprints = kicadPcb.footprints
