@@ -1,13 +1,6 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import {
-  Pts,
-  Xy,
-  Zone,
-  ZoneHatch,
-  ZoneKeepout,
-  ZonePolygon,
-} from "kicadts"
+import { Pts, Xy, Zone, ZoneHatch, ZoneKeepout, ZonePolygon } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { getKicadLayer } from "../utils/layerMapping"
@@ -17,12 +10,9 @@ import { circleToPolygon } from "./utils/circleToPolygon"
 type PcbKeepout = Extract<CircuitJson[number], { type: "pcb_keepout" }>
 
 const getKeepouts = (circuitJson: CircuitJson): PcbKeepout[] =>
-  circuitJson.filter(
-    (el): el is PcbKeepout => el.type === "pcb_keepout",
-  )
+  circuitJson.filter((el): el is PcbKeepout => el.type === "pcb_keepout")
 
-const mapLayers = (layers: string[]): string[] =>
-  layers.map(getKicadLayer)
+const mapLayers = (layers: string[]): string[] => layers.map(getKicadLayer)
 
 const getRectPoints = (
   keepout: PcbKeepout & { shape: "rect" },
@@ -71,9 +61,15 @@ export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       let points: Xy[]
       if (keepout.shape === "rect") {
-        points = getRectPoints(keepout as PcbKeepout & { shape: "rect" }, c2kMatPcb)
+        points = getRectPoints(
+          keepout as PcbKeepout & { shape: "rect" },
+          c2kMatPcb,
+        )
       } else {
-        points = getCirclePoints(keepout as PcbKeepout & { shape: "circle" }, c2kMatPcb)
+        points = getCirclePoints(
+          keepout as PcbKeepout & { shape: "circle" },
+          c2kMatPcb,
+        )
       }
 
       if (points.length < 3) continue
@@ -83,9 +79,7 @@ export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
         netName: "",
         layers: kicadLayers.length > 1 ? kicadLayers : undefined,
         layer: kicadLayers.length === 1 ? kicadLayers[0] : undefined,
-        uuid: generateDeterministicUuid(
-          `keepout:${keepout.pcb_keepout_id}`,
-        ),
+        uuid: generateDeterministicUuid(`keepout:${keepout.pcb_keepout_id}`),
         hatch: new ZoneHatch("edge", 0.5),
         keepout: new ZoneKeepout({
           tracks: "not_allowed",
