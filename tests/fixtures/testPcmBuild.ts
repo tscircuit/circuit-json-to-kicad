@@ -131,7 +131,7 @@ export async function testPcmBuild(
   })
 
   // Generate PCM assets
-  await generatePcmAssets({
+  const pcmOptions = {
     packageName: "test-library",
     version: "0.0.1",
     author: "tscircuit",
@@ -140,7 +140,8 @@ export async function testPcmBuild(
     kicadLibraryPath: kicadLibDir,
     outputDir: pcmOutputDir,
     baseUrl: `http://localhost:${PORT}`,
-  })
+  }
+  await generatePcmAssets(pcmOptions)
 
   // Find and extract the zip file
   const files = fs.readdirSync(pcmOutputDir)
