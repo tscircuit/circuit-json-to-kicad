@@ -1,20 +1,24 @@
 import type {
-  SourceComponentBase,
-  SchematicComponent,
   CadComponent,
+  SchematicComponent,
+  SourceComponentBase,
   SourceSimplePinHeader,
 } from "circuit-json"
+import { symbols } from "schematic-symbols"
 import {
   getKicadCompatibleComponentName,
   getReferencePrefixForComponent,
 } from "../utils/getKicadCompatibleComponentName"
-import { symbols } from "schematic-symbols"
 
 /**
  * Checks if a symbol name is a known builtin symbol from schematic-symbols package.
  */
 function isBuiltinSymbol(symbolName: string): boolean {
   return symbolName in symbols
+}
+
+function getConnectorGenericLibraryId(pinCount: number): string {
+  return `Connector_Generic:Conn_01x${String(pinCount).padStart(2, "0")}`
 }
 
 /**
@@ -24,6 +28,7 @@ function isBuiltinSymbol(symbolName: string): boolean {
  * @param schematicComp - The schematic component
  * @param cadComponent - Optional CAD component for footprinter_string
  * @param schematicSymbolName - Optional name from schematic_symbol element (highest priority)
+ * @param connectorPinCount - Optional rendered schematic pin count for simple connectors
  * @returns Library ID string like "Device:resistor" or "Custom:my_symbol"
  */
 export function getLibraryId(
@@ -31,6 +36,7 @@ export function getLibraryId(
   schematicComp: SchematicComponent,
   cadComponent?: CadComponent | null,
   schematicSymbolName?: string,
+  connectorPinCount?: number,
 ): string {
   // Highest priority: schematic_symbol.name (for custom symbols)
   if (schematicSymbolName) {
@@ -59,7 +65,15 @@ export function getLibraryId(
   }
   if (sourceComp.ftype === "simple_pin_header") {
     const pinCount = (sourceComp as SourceSimplePinHeader).pin_count
-    return `Connector_Generic:Conn_01x${pinCount}`
+    return getConnectorGenericLibraryId(pinCount)
+  }
+
+  if (
+    sourceComp.ftype === "simple_connector" &&
+    connectorPinCount &&
+    connectorPinCount > 0
+  ) {
+    return getConnectorGenericLibraryId(connectorPinCount)
   }
 
   // Generate ergonomic name using manufacturer part number or footprint string
