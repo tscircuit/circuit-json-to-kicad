@@ -136,6 +136,7 @@ export async function testPcmBuild(
     version: "0.0.1",
     author: "tscircuit",
     description: "Test library",
+    license: "MIT",
     kicadLibraryPath: kicadLibDir,
     outputDir: pcmOutputDir,
     baseUrl: `http://localhost:${PORT}`,

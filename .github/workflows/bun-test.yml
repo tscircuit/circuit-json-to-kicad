@@ -37,7 +37,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: kicad-demos
-          key: kicad-demos
+          key: kicad-demos-9.0.9-rc1
       - name: Download kicad-demos if not cached
         if: steps.cache-kicad-demos.outputs.cache-hit != 'true'
         run: bun run download-demos
