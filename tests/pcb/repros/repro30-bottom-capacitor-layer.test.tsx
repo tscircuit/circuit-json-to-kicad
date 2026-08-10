@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -37,6 +38,10 @@ test("pcb repro30 bottom capacitor footprint matches snapshot", async () => {
   converter.runUntilFinished()
 
   const outputString = converter.getOutputString()
+  const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
+
+  expect(kicadPcb.footprints).toHaveLength(1)
+  expect(kicadPcb.footprints[0]?.layer?.getString()).toContain("F.Cu")
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: outputString,
