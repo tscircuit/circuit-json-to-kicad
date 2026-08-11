@@ -9,7 +9,7 @@ import type {
   PcbSmtPad,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Footprint } from "kicadts"
+import { Footprint, FootprintAttr } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
@@ -79,6 +79,14 @@ export class AddStandalonePcbElements extends ConverterStage<
         kicadComponentValue: footprint.libraryLink?.replace(/^tscircuit:/, ""),
       },
     })
+
+    // Nothing here comes from a source component, so there is nothing to buy
+    // and nothing for a machine to place. KiCad's own MountingHole footprints
+    // carry the same pair.
+    const attr = footprint.attr ?? new FootprintAttr()
+    attr.excludeFromPosFiles = true
+    attr.excludeFromBom = true
+    footprint.attr = attr
   }
 
   override _step(): void {
