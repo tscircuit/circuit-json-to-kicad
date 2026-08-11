@@ -1,0 +1,18 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`pcb repro30 bottom footprint layer export 1`] = `
+[
+  {
+    "circuitJsonLayer": "top",
+    "expectedKicadLayer": "F.Cu",
+    "exportedKicadLayer": "F.Cu",
+    "referenceDesignator": "R1",
+  },
+  {
+    "circuitJsonLayer": "bottom",
+    "expectedKicadLayer": "B.Cu",
+    "exportedKicadLayer": "F.Cu",
+    "referenceDesignator": "C1",
+  },
+]
+`;
