@@ -1,30 +1,36 @@
 import type {
   CircuitJson,
   PcbHole,
+  PcbHoleCircularWithRectPad,
+  PcbHolePillWithRectPad,
+  PcbHoleRotatedPillWithRectPad,
   PcbPlatedHole,
   PcbPlatedHoleOval,
-  PcbHolePillWithRectPad,
-  PcbHoleCircularWithRectPad,
-  PcbHoleRotatedPillWithRectPad,
   PcbSmtPad,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
-import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { type ConverterContext, ConverterStage } from "../../types"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
-import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
+import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
+import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
 > {
   private unprocessedElements: Array<PcbHole | PcbPlatedHole | PcbSmtPad> = []
+  private takenReferences = new Set<string>()
+  private referenceCounts = new Map<string, number>()
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
+    for (const sourceComponent of this.ctx.db.source_component?.list() ?? []) {
+      if (sourceComponent.name) this.takenReferences.add(sourceComponent.name)
+    }
     this.unprocessedElements = [
       ...(this.ctx.db.pcb_hole.list() as PcbHole[]).filter(
         (hole) => !hole.pcb_component_id,
@@ -36,6 +42,43 @@ export class AddStandalonePcbElements extends ConverterStage<
         (pad) => !pad.pcb_component_id,
       ),
     ]
+  }
+
+  /**
+   * Standalone elements have no source component to take a reference
+   * designator from, so hand out the next free one for the prefix, skipping
+   * anything a real component already claims.
+   */
+  private takeReference(prefix: string): string {
+    let count = this.referenceCounts.get(prefix) ?? 0
+    let reference: string
+    do {
+      count++
+      reference = `${prefix}${count}`
+    } while (this.takenReferences.has(reference))
+    this.referenceCounts.set(prefix, count)
+    this.takenReferences.add(reference)
+    return reference
+  }
+
+  /**
+   * KiCad rejects a footprint with no reference designator when exporting a
+   * Specctra DSN (what the freerouting plugin runs on), so every footprint
+   * needs the same property block a component footprint gets. The value is
+   * the footprint name, matching KiCad's own MountingHole footprints.
+   */
+  private applyStandaloneFootprintMetadata(
+    footprint: Footprint,
+    prefix: string,
+  ) {
+    applyMetadataToFootprint({
+      footprint,
+      metadata: undefined,
+      componentProperty: {
+        reference: this.takeReference(prefix),
+        kicadComponentValue: footprint.libraryLink?.replace(/^tscircuit:/, ""),
+      },
+    })
   }
 
   override _step(): void {
@@ -77,6 +120,7 @@ export class AddStandalonePcbElements extends ConverterStage<
           componentId: pcbPad.pcb_smtpad_id,
         }),
       ]
+      this.applyStandaloneFootprintMetadata(footprint, "PAD")
       const footprints = kicadPcb.footprints
       footprints.push(footprint)
       kicadPcb.footprints = footprints
@@ -102,6 +146,7 @@ export class AddStandalonePcbElements extends ConverterStage<
 
       if (npthPads.length > 0) {
         footprint.fpPads = npthPads
+        this.applyStandaloneFootprintMetadata(footprint, "H")
         const footprints = kicadPcb.footprints
         footprints.push(footprint)
         kicadPcb.footprints = footprints
@@ -128,6 +173,7 @@ export class AddStandalonePcbElements extends ConverterStage<
 
       if (pad) {
         footprint.fpPads = [pad]
+        this.applyStandaloneFootprintMetadata(footprint, "H")
         const footprints = kicadPcb.footprints
         footprints.push(footprint)
         kicadPcb.footprints = footprints
