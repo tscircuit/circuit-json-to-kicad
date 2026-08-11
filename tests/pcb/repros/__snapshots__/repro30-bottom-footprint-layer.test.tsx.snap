@@ -11,7 +11,7 @@ exports[`pcb repro30 bottom footprint layer export 1`] = `
   {
     "circuitJsonLayer": "bottom",
     "expectedKicadLayer": "B.Cu",
-    "exportedKicadLayer": "F.Cu",
+    "exportedKicadLayer": "B.Cu",
     "referenceDesignator": "C1",
   },
 ]
