@@ -124,7 +124,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const footprintData = `footprint:${component.pcb_component_id}:${transformedPos.x},${transformedPos.y}`
     const footprint = new Footprint({
       libraryLink: `tscircuit:${footprintName}`,
-      layer: "F.Cu",
+      layer: component.layer === "bottom" ? "B.Cu" : "F.Cu",
       at: [transformedPos.x, transformedPos.y, component.rotation || 0],
       uuid: generateDeterministicUuid(footprintData),
     })
