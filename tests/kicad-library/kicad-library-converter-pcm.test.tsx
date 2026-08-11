@@ -280,7 +280,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
       (at 0 0 0)
       (descr "")
       (tags "")
-      (attr through_hole)
+      (attr smd)
       (embedded_fonts no)
       (property "Reference" "REF**"
         (at 0 -4.34 0)
