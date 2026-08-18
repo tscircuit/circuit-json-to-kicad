@@ -25,6 +25,12 @@ import {
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
+import {
+  getTextJustificationFromSchematicSymbol,
+  type KicadTextJustification,
+} from "./utils/getTextJustificationFromSchematicSymbol"
+
+const VERTICAL_SYMBOL_TEXT_OFFSET_MM = 0.15
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -145,10 +151,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         Boolean(sourceComponent.manufacturer_part_number)
 
       // Get text positions from schematic symbol definition
-      const { refTextPos, valTextPos } = this.getTextPositions(
+      const { refTextPos, valTextPos } = this.getTextPositions({
         schematicComponent,
-        hasManufacturerValueForValuePlacement,
-      )
+        placeValueAtNamePosition: hasManufacturerValueForValuePlacement,
+      })
 
       // Check for kicadSymbolMetadata from circuit-json element
       let symbolMetadata: KicadSymbolMetadata | undefined
@@ -165,25 +171,33 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
+      const referencePropertyText = refMeta?.value ?? reference
+      const referenceJustification = getTextJustificationFromSchematicSymbol(
+        schematicComponent.symbol_name,
+        "{REF}",
+      )
       const referenceProperty = new SymbolProperty({
         key: "Reference",
-        value: refMeta?.value ?? reference,
+        value: referencePropertyText,
         id: 0,
         at: [refTextPos.x, refTextPos.y, 0],
         effects: this.createTextEffects(
           Number(refMeta?.effects?.font?.size?.x ?? 1.27),
           refMeta?.effects?.hide ?? false,
+          referenceJustification,
         ),
       })
 
+      const valMeta = symbolMetadata?.properties?.Value
+      const valuePropertyText = valMeta?.value ?? value
       const hideValue =
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
-        sourceComponent.ftype === "simple_pin_header"
-      const valMeta = symbolMetadata?.properties?.Value
+        sourceComponent.ftype === "simple_pin_header" ||
+        valuePropertyText === referencePropertyText
       const valueProperty = new SymbolProperty({
         key: "Value",
-        value: valMeta?.value ?? value,
+        value: valuePropertyText,
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(
@@ -364,10 +378,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   /**
    * Get text positions from schematic symbol definition or schematic_text elements
    */
-  private getTextPositions(
-    schematicComponent: SchematicComponent,
-    placeValueAtNamePosition: boolean,
-  ): {
+  private getTextPositions({
+    schematicComponent,
+    placeValueAtNamePosition,
+  }: {
+    schematicComponent: SchematicComponent
+    placeValueAtNamePosition: boolean
+  }): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
   } {
@@ -472,14 +489,28 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     const isVertical =
       symbolName.includes("_down") || symbolName.includes("_up")
-    const horizontalTextOffset = isVertical ? 0.15 : 0
+    let refHorizontalTextOffset = 0
+    if (
+      isVertical &&
+      !getTextJustificationFromSchematicSymbol(symbolName, "{REF}")
+    ) {
+      refHorizontalTextOffset = VERTICAL_SYMBOL_TEXT_OFFSET_MM
+    }
+
+    let valHorizontalTextOffset = 0
+    if (
+      isVertical &&
+      !getTextJustificationFromSchematicSymbol(symbolName, "{VAL}")
+    ) {
+      valHorizontalTextOffset = VERTICAL_SYMBOL_TEXT_OFFSET_MM
+    }
 
     const refTextPos = refTextPrimitive
       ? applyToPoint(c2kMatSch, {
           x:
             schematicComponent.center.x +
             (refTextPrimitive.x - symbolCenter.x) +
-            horizontalTextOffset,
+            refHorizontalTextOffset,
           y:
             schematicComponent.center.y + (refTextPrimitive.y - symbolCenter.y),
         })
@@ -490,7 +521,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           x:
             schematicComponent.center.x +
             (valTextPrimitive.x - symbolCenter.x) +
-            horizontalTextOffset,
+            valHorizontalTextOffset,
           y:
             schematicComponent.center.y + (valTextPrimitive.y - symbolCenter.y),
         })
@@ -607,14 +638,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   private createTextEffects(
     size: number,
     hide = false,
-    justify?: "left" | "right",
+    justify?: KicadTextJustification,
   ): TextEffects {
     const font = new TextEffectsFont()
     font.size = { height: size, width: size }
 
-    const justifyObj = justify
-      ? new TextEffectsJustify({ horizontal: justify })
-      : undefined
+    let justifyObj: TextEffectsJustify | undefined
+    if (justify) {
+      justifyObj = new TextEffectsJustify(justify)
+    }
 
     const effects = new TextEffects({
       font: font,
