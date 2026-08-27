@@ -54,5 +54,5 @@ test("repro18: footprint identifier overlaps net labels in KiCad", async () => {
       }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
-  ).toMatchPngSnapshot(import.meta.path, "fixed-placement")
+  ).toMatchPngSnapshot(import.meta.path)
 })

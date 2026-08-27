@@ -151,6 +151,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const { refTextPos, valTextPos } = this.getTextPositions(
         schematicComponent,
         hasManufacturerValueForValuePlacement,
+        reference,
+        value,
       )
 
       // Check for kicadSymbolMetadata from circuit-json element
@@ -370,6 +372,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   private getTextPositions(
     schematicComponent: SchematicComponent,
     placeValueAtNamePosition: boolean,
+    reference: string,
+    value: string,
   ): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
@@ -416,15 +420,41 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             schematicComponent.schematic_component_id,
         ) || []
 
-    // Look for reference text (usually the component name like "U1")
-    const refText = schematicTexts.find((t: any) => t.text && t.text.length > 0)
+    // Circuit JSON emits independent text primitives for component fields. Use
+    // the matching field text rather than choosing the first primitive or
+    // centering the field around the symbol: their positions encode the
+    // schematic author's intended alignment.
+    const getTextPosition = (text: any) =>
+      text
+        ? applyToPoint(c2kMatSch, {
+            x: text.position.x,
+            y: text.position.y,
+          })
+        : undefined
+    const refTextPosFromCircuitJson = getTextPosition(
+      schematicTexts.find((text: any) => text.text === reference),
+    )
+    const valTextPosFromCircuitJson = getTextPosition(
+      schematicTexts.find((text: any) => text.text === value),
+    )
 
-    if (refText) {
+    if (refTextPosFromCircuitJson || valTextPosFromCircuitJson) {
+      return {
+        refTextPos: refTextPosFromCircuitJson ?? {
+          x: symbolKicadPos.x,
+          y: referenceAboveBodyY,
+        },
+        valTextPos: valTextPosFromCircuitJson ?? {
+          x: symbolKicadPos.x,
+          y: symbolKicadPos.y + 6,
+        },
+      }
+    }
+
+    const firstText = schematicTexts.find((t: any) => t.text && t.text.length > 0)
+    if (firstText) {
       // Use the schematic_text position for reference
-      const nameTextPos = applyToPoint(c2kMatSch, {
-        x: refText.position.x,
-        y: refText.position.y,
-      })
+      const nameTextPos = getTextPosition(firstText)!
 
       if (placeValueAtNamePosition) {
         return {
