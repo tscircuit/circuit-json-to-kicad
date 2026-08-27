@@ -71,7 +71,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         onBoard: true,
         dnp: false,
         uuid: uuid,
-        fieldsAutoplaced: true,
+        // Circuit JSON already supplies the intended field positions. Marking
+        // these fields as autoplaced lets KiCad rearrange them on load and
+        // breaks their alignment with pins and net labels.
+        fieldsAutoplaced: false,
       })
 
       // Get the cad_component for footprinter_string (if available)
