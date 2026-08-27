@@ -5,9 +5,6 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-process.env.BUN_UPDATE_SNAPSHOTS = "1"
-process.env.FORCE_BUN_UPDATE_SNAPSHOTS = "1"
-
 test("repro18: footprint identifier overlaps net labels in KiCad", async () => {
   const circuit = new Circuit()
 
