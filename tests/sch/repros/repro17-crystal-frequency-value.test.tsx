@@ -52,6 +52,20 @@ test("repro17: crystal frequency is preserved in the KiCad value", async () => {
     '(property "Value" "32kHz / 15pF"',
   )
 
+  const circuitJsonWithoutLoadCapacitance = circuitJson.map((element) =>
+    element === crystal ? { ...element, load_capacitance: undefined } : element,
+  )
+  const converterWithoutLoadCapacitance = new CircuitJsonToKicadSchConverter(
+    circuitJsonWithoutLoadCapacitance,
+  )
+  converterWithoutLoadCapacitance.runUntilFinished()
+  const outputWithoutLoadCapacitance =
+    converterWithoutLoadCapacitance.getOutputString()
+  expect(outputWithoutLoadCapacitance).toContain('(property "Value" "32kHz"')
+  expect(outputWithoutLoadCapacitance).not.toContain(
+    '(property "Value" "32kHz /',
+  )
+
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
     kicadFileType: "sch",
