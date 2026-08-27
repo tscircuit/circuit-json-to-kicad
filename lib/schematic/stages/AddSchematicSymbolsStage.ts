@@ -30,6 +30,10 @@ import {
   getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
 import { getLibraryId } from "../getLibraryId"
+import {
+  getTextJustificationFromAnchor,
+  type TextJustification,
+} from "./utils/getTextJustificationFromAnchor"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -190,7 +194,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const hideValue =
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
-        sourceComponent.ftype === "simple_pin_header"
+        sourceComponent.ftype === "simple_pin_header" ||
+        sourceComponent.ftype === "simple_test_point"
       const valMeta = symbolMetadata?.properties?.Value
       const valueProperty = new SymbolProperty({
         key: "Value",
@@ -395,8 +400,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   }): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
-    refJustify?: "left" | "right"
-    valJustify?: "left" | "right"
+    refJustify?: TextJustification
+    valJustify?: TextJustification
   } {
     const c2kMatSch = this.ctx.c2kMatSch!
     const symbolKicadPos = applyToPoint(c2kMatSch, {
@@ -449,12 +454,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // the matching field text rather than choosing the first primitive or
     // centering the field around the symbol: their positions encode the
     // schematic author's intended alignment.
-    const refTextPosFromCircuitJson = this.getTextPosition(
-      schematicTexts.find((text) => text.text === reference),
+    const referenceText = schematicTexts.find(
+      (text) => reference.length > 0 && text.text === reference,
     )
-    const valTextPosFromCircuitJson = this.getTextPosition(
-      schematicTexts.find((text) => text.text === value),
+    const valueText = schematicTexts.find(
+      (text) => value.length > 0 && value !== reference && text.text === value,
     )
+    const refTextPosFromCircuitJson = this.getTextPosition(referenceText)
+    const valTextPosFromCircuitJson = this.getTextPosition(valueText)
 
     if (refTextPosFromCircuitJson || valTextPosFromCircuitJson) {
       return {
@@ -550,18 +557,27 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         })
       : { x: symbolKicadPos.x, y: valueBelowBodyY }
 
-    return { refTextPos, valTextPos }
+    // Testpoint reference primitives sit beside the glyph. Centering that text
+    // on its anchor point places the reference directly over the testpoint.
+    const shouldPreservePrimitiveAnchors = symbolName.startsWith("testpoint_")
+
+    return {
+      refTextPos,
+      valTextPos,
+      refJustify: shouldPreservePrimitiveAnchors
+        ? getTextJustificationFromAnchor(refTextPrimitive?.anchor)
+        : undefined,
+      valJustify: shouldPreservePrimitiveAnchors
+        ? getTextJustificationFromAnchor(valTextPrimitive?.anchor)
+        : undefined,
+    }
   }
 
   private getTextPosition(text?: SchematicText) {
     if (!text) return undefined
-    const justify: "left" | "right" | undefined =
-      text.anchor === "left" || text.anchor === "right"
-        ? text.anchor
-        : undefined
     return {
       position: applyToPoint(this.ctx.c2kMatSch!, text.position),
-      justify,
+      justify: getTextJustificationFromAnchor(text.anchor),
     }
   }
 
@@ -688,14 +704,12 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     {
       hide = false,
       justify,
-    }: { hide?: boolean; justify?: "left" | "right" } = {},
+    }: { hide?: boolean; justify?: TextJustification } = {},
   ): TextEffects {
     const font = new TextEffectsFont()
     font.size = { height: size, width: size }
 
-    const justifyObj = justify
-      ? new TextEffectsJustify({ horizontal: justify })
-      : undefined
+    const justifyObj = justify ? new TextEffectsJustify(justify) : undefined
 
     const effects = new TextEffects({
       font: font,

@@ -37,10 +37,12 @@ export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
           { x: keepout.center.x + halfW, y: keepout.center.y + halfH },
           { x: keepout.center.x - halfW, y: keepout.center.y + halfH },
         ]
-      } else {
+      } else if (keepout.shape === "circle") {
         rawPoints = circleToPolygon(keepout.center, keepout.radius).map(
           ([x, y]) => ({ x, y }),
         )
+      } else {
+        rawPoints = keepout.outline
       }
 
       const kicadPoints = rawPoints.map((p) => {

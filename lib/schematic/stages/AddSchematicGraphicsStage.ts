@@ -11,11 +11,13 @@ import {
   Stroke,
   TextEffects,
   TextEffectsFont,
+  TextEffectsJustify,
   Uuid,
   Xy,
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
+import { getTextJustificationFromAnchor } from "./utils/getTextJustificationFromAnchor"
 
 const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
 const DEFAULT_SECTION_LINE_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
@@ -88,12 +90,19 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     if (schematicTexts.length > 0) {
       const texts = kicadSch.texts || []
       for (const text of schematicTexts) {
+        const isInlineTraceText = "source_trace_id" in text
         let sourceY = text.position?.y ?? 0
-        if (text.position?.y !== undefined && text.position.y < 2) {
+        if (
+          !isInlineTraceText &&
+          text.position?.y !== undefined &&
+          text.position.y < 2
+        ) {
           sourceY = text.position.y - DEFAULT_SECTION_TEXT_PADDING_Y_MM
         }
         const position = applyToPoint(this.ctx.c2kMatSch, {
-          x: (text.position?.x ?? 0) + DEFAULT_SECTION_TEXT_PADDING_X_MM,
+          x:
+            (text.position?.x ?? 0) +
+            (isInlineTraceText ? 0 : DEFAULT_SECTION_TEXT_PADDING_X_MM),
           y: sourceY,
         })
 
@@ -104,9 +113,13 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         }
         font.color = DEFAULT_SECTION_TEXT_COLOR
 
+        const justify = isInlineTraceText
+          ? getTextJustificationFromAnchor(text.anchor)
+          : undefined
         const effects = new TextEffects({
           font,
           hiddenText: false,
+          justify: justify ? new TextEffectsJustify(justify) : undefined,
         })
 
         const schematicText = new SchematicText({
