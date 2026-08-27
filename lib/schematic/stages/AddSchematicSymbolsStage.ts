@@ -1,30 +1,33 @@
-import type { CircuitJson, SchematicComponent } from "circuit-json"
+import type { KicadSymbolMetadata } from "@tscircuit/props"
+import type {
+  CircuitJson,
+  SchematicComponent,
+  SchematicText,
+} from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
+  EmbeddedFonts,
   SchematicSymbol,
-  SymbolLibId,
-  SymbolProperty,
-  SymbolPin,
+  SymbolInstancePath,
   SymbolInstances,
   SymbolInstancesProject,
-  SymbolInstancePath,
-  Uuid,
+  SymbolLibId,
+  SymbolPin,
+  SymbolPinNames,
+  SymbolPinNumbers,
+  SymbolProperty,
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
-  EmbeddedFonts,
-  SymbolPinNames,
-  SymbolPinNumbers,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
-import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../getLibraryId"
+import { applyToPoint } from "transformation-matrix"
+import { ConverterStage } from "../../types"
 import {
-  getReferenceDesignator,
   getKicadCompatibleComponentName,
+  getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
-import type { KicadSymbolMetadata } from "@tscircuit/props"
+import { getLibraryId } from "../getLibraryId"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -149,12 +152,12 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos, refJustify, valJustify } =
-        this.getTextPositions(
+        this.getTextPositions({
           schematicComponent,
-          hasManufacturerValueForValuePlacement,
+          placeValueAtNamePosition: hasManufacturerValueForValuePlacement,
           reference,
           value,
-        )
+        })
 
       // Check for kicadSymbolMetadata from circuit-json element
       let symbolMetadata: KicadSymbolMetadata | undefined
@@ -178,8 +181,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         at: [refTextPos.x, refTextPos.y, 0],
         effects: this.createTextEffects(
           Number(refMeta?.effects?.font?.size?.x ?? 1.27),
-          refMeta?.effects?.hide ?? false,
-          refJustify,
+          { hide: refMeta?.effects?.hide ?? false, justify: refJustify },
         ),
       })
 
@@ -195,8 +197,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(
           Number(valMeta?.effects?.font?.size?.x ?? 1.27),
-          valMeta?.effects?.hide ?? hideValue,
-          valJustify,
+          { hide: valMeta?.effects?.hide ?? hideValue, justify: valJustify },
         ),
       })
 
@@ -206,7 +207,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: fpMeta?.value ?? "",
         id: 2,
         at: [x - 1.778, y, 90],
-        effects: this.createTextEffects(1.27, fpMeta?.effects?.hide ?? true),
+        effects: this.createTextEffects(1.27, {
+          hide: fpMeta?.effects?.hide ?? true,
+        }),
       })
 
       const dsMeta = symbolMetadata?.properties?.Datasheet
@@ -215,7 +218,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: dsMeta?.value ?? "~",
         id: 3,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, dsMeta?.effects?.hide ?? true),
+        effects: this.createTextEffects(1.27, {
+          hide: dsMeta?.effects?.hide ?? true,
+        }),
       })
 
       const descMeta = symbolMetadata?.properties?.Description
@@ -224,7 +229,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: descMeta?.value ?? description,
         id: 4,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, descMeta?.effects?.hide ?? true),
+        effects: this.createTextEffects(1.27, {
+          hide: descMeta?.effects?.hide ?? true,
+        }),
       })
 
       symbol.properties.push(
@@ -243,7 +250,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value: kwMeta.value,
           id: 5,
           at: [x, y, 0],
-          effects: this.createTextEffects(1.27, kwMeta.effects?.hide ?? true),
+          effects: this.createTextEffects(1.27, {
+            hide: kwMeta.effects?.hide ?? true,
+          }),
         })
         symbol.properties.push(keywordsProperty)
       }
@@ -256,10 +265,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value: fpFilterMeta.value,
           id: 6,
           at: [x, y, 0],
-          effects: this.createTextEffects(
-            1.27,
-            fpFilterMeta.effects?.hide ?? true,
-          ),
+          effects: this.createTextEffects(1.27, {
+            hide: fpFilterMeta.effects?.hide ?? true,
+          }),
         })
         symbol.properties.push(fpFiltersProperty)
       }
@@ -372,26 +380,36 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   /**
    * Get text positions from schematic symbol definition or schematic_text elements
    */
-  private getTextPositions(
-    schematicComponent: SchematicComponent,
-    placeValueAtNamePosition: boolean,
-    reference: string,
-    value: string,
-  ): {
+  private getTextPositions({
+    schematicComponent,
+    placeValueAtNamePosition,
+    reference,
+    value,
+  }: {
+    schematicComponent: SchematicComponent
+    placeValueAtNamePosition: boolean
+    reference: string
+    value: string
+  }): {
     refTextPos: { x: number; y: number }
     valTextPos: { x: number; y: number }
     refJustify?: "left" | "right"
     valJustify?: "left" | "right"
   } {
     const c2kMatSch = this.ctx.c2kMatSch!
-    const schematicScale = c2kMatSch.a
     const symbolKicadPos = applyToPoint(c2kMatSch, {
       x: schematicComponent.center.x,
       y: schematicComponent.center.y,
     })
-    const componentHeightMm =
-      (schematicComponent.size?.height || 1) * schematicScale
+    const bodyEdge = applyToPoint(c2kMatSch, {
+      x: schematicComponent.center.x,
+      y:
+        schematicComponent.center.y +
+        (schematicComponent.size?.height || 1) / 2,
+    })
+    const componentHeightMm = Math.abs(bodyEdge.y - symbolKicadPos.y) * 2
     const referenceAboveBodyY = symbolKicadPos.y - componentHeightMm / 2 - 3
+    const valueBelowBodyY = symbolKicadPos.y + componentHeightMm / 2 + 3
 
     const isCustomSymbol = this.isCustomSymbolComponent(schematicComponent)
     if (isCustomSymbol) {
@@ -420,8 +438,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       this.ctx.db.schematic_text
         ?.list?.()
         ?.filter(
-          (t: any) =>
-            t.schematic_component_id ===
+          (text) =>
+            text.schematic_component_id ===
             schematicComponent.schematic_component_id,
         ) || []
 
@@ -429,24 +447,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // the matching field text rather than choosing the first primitive or
     // centering the field around the symbol: their positions encode the
     // schematic author's intended alignment.
-    const getTextPosition = (text: any) =>
-      text
-        ? {
-            position: applyToPoint(c2kMatSch, {
-              x: text.position.x,
-              y: text.position.y,
-            }),
-            justify:
-              text.anchor === "left" || text.anchor === "right"
-                ? (text.anchor as "left" | "right")
-                : undefined,
-          }
-        : undefined
-    const refTextPosFromCircuitJson = getTextPosition(
-      schematicTexts.find((text: any) => text.text === reference),
+    const refTextPosFromCircuitJson = this.getTextPosition(
+      schematicTexts.find((text) => text.text === reference),
     )
-    const valTextPosFromCircuitJson = getTextPosition(
-      schematicTexts.find((text: any) => text.text === value),
+    const valTextPosFromCircuitJson = this.getTextPosition(
+      schematicTexts.find((text) => text.text === value),
     )
 
     if (refTextPosFromCircuitJson || valTextPosFromCircuitJson) {
@@ -457,7 +462,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         },
         valTextPos: valTextPosFromCircuitJson?.position ?? {
           x: symbolKicadPos.x,
-          y: symbolKicadPos.y + 6,
+          y: valueBelowBodyY,
         },
         refJustify: refTextPosFromCircuitJson?.justify,
         valJustify: valTextPosFromCircuitJson?.justify,
@@ -465,11 +470,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }
 
     const firstText = schematicTexts.find(
-      (t: any) => t.text && t.text.length > 0,
+      (text) => text.text && text.text.length > 0,
     )
     if (firstText) {
       // Use the schematic_text position for reference
-      const nameTextPos = getTextPosition(firstText)!.position
+      const nameTextPos = this.getTextPosition(firstText)!.position
 
       if (placeValueAtNamePosition) {
         return {
@@ -479,7 +484,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       }
 
       const refTextPos = nameTextPos
-      const valTextPos = { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
+      const valTextPos = { x: symbolKicadPos.x, y: valueBelowBodyY }
       return { refTextPos, valTextPos }
     }
 
@@ -487,7 +492,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     if (!symbolName) {
       return {
         refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
-        valTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 },
+        valTextPos: { x: symbolKicadPos.x, y: valueBelowBodyY },
       }
     }
     const symbol = (symbols as any)[symbolName]
@@ -496,7 +501,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     if (!symbol) {
       return {
         refTextPos: { x: symbolKicadPos.x, y: referenceAboveBodyY },
-        valTextPos: { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 },
+        valTextPos: { x: symbolKicadPos.x, y: valueBelowBodyY },
       }
     }
 
@@ -542,9 +547,21 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           y:
             schematicComponent.center.y + (valTextPrimitive.y - symbolCenter.y),
         })
-      : { x: symbolKicadPos.x, y: symbolKicadPos.y + 6 }
+      : { x: symbolKicadPos.x, y: valueBelowBodyY }
 
     return { refTextPos, valTextPos }
+  }
+
+  private getTextPosition(text?: SchematicText) {
+    if (!text) return undefined
+    const justify: "left" | "right" | undefined =
+      text.anchor === "left" || text.anchor === "right"
+        ? text.anchor
+        : undefined
+    return {
+      position: applyToPoint(this.ctx.c2kMatSch!, text.position),
+      justify,
+    }
   }
 
   private isCustomSymbolComponent(
@@ -654,8 +671,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
    */
   private createTextEffects(
     size: number,
-    hide = false,
-    justify?: "left" | "right",
+    {
+      hide = false,
+      justify,
+    }: { hide?: boolean; justify?: "left" | "right" } = {},
   ): TextEffects {
     const font = new TextEffectsFont()
     font.size = { height: size, width: size }
