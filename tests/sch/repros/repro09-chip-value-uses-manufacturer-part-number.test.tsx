@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit"
+import { Circuit } from "tscircuit-latest"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
+import { parseKicadSch } from "kicadts"
+import { applyToPoint } from "transformation-matrix"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -35,6 +37,31 @@ test("repro09: simple chip schematic value uses manufacturer part number", async
   converter.runUntilFinished()
 
   const output = converter.getOutputString()
+  const parsedSchematic = parseKicadSch(output)
+  const chipSymbol = parsedSchematic.symbols.find((symbol) =>
+    symbol.properties.some(
+      (property) => property.key === "Reference" && property.value === "U1",
+    ),
+  )
+  const valueProperty = chipSymbol?.properties.find(
+    (property) => property.key === "Value",
+  )
+  const valueText = circuitJson.find(
+    (element) =>
+      element.type === "schematic_text" && element.text === "MPM3612GLQ_Z",
+  )
+
+  expect(valueProperty?.value).toBe("MPM3612GLQ_Z")
+  expect(valueProperty?.effects?.justify?.horizontal).toBe("left")
+  expect(valueText?.type).toBe("schematic_text")
+  if (valueText?.type === "schematic_text") {
+    const expectedPosition = applyToPoint(
+      converter.ctx.c2kMatSch!,
+      valueText.position,
+    )
+    expect(valueProperty?.at?.x).toBeCloseTo(expectedPosition.x)
+    expect(valueProperty?.at?.y).toBeCloseTo(expectedPosition.y)
+  }
 
   Bun.write(
     "./debug-output/repro09-chip-value-uses-manufacturer-part-number.kicad_sch",
