@@ -341,7 +341,8 @@ export const takeKicadSnapshot = async (params: {
 
       if (kicadFileType === "sch" && fitSchematicToContent) {
         const croppedPng = await sharp(normalizedSvgBuffer, { density: 300 })
-          .trim()
+          .flatten({ background: "#f5f4ef" })
+          .trim({ background: "#f5f4ef" })
           .png()
           .toBuffer()
         pngProcessor = sharp(croppedPng).resize(1200, 600, {

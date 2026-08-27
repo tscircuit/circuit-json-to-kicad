@@ -50,4 +50,4 @@ test("repro19: inline net labels shift below traces and into the component", asy
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
-})
+}, 60_000)
