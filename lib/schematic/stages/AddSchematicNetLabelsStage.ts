@@ -133,7 +133,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       onBoard: true,
       dnp: false,
       uuid: uuid,
-      fieldsAutoplaced: true,
+      fieldsAutoplaced: false,
     })
 
     // Use Custom library for schematic-symbols symbols
@@ -283,7 +283,9 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       at: [x, y, orientation.angle],
       effects: effects,
       uuid: crypto.randomUUID(),
-      fieldsAutoplaced: true,
+      // Keep the label anchor supplied by Circuit JSON instead of allowing
+      // KiCad to reposition it when the schematic is opened.
+      fieldsAutoplaced: false,
     })
 
     return globalLabel

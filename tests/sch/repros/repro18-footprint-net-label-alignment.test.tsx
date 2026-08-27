@@ -35,9 +35,14 @@ test("repro18: footprint identifier overlaps net labels in KiCad", async () => {
   const circuitJson = circuit.getCircuitJson()
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
+  const output = converter.getOutputString()
+
+  expect(output).toContain("(fields_autoplaced no)")
+  expect(output).not.toContain("(fields_autoplaced yes)")
+  expect(output).toContain("(justify left)")
 
   const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutputString(),
+    kicadFileContent: output,
     kicadFileType: "sch",
   })
   expect(kicadSnapshot.exitCode).toBe(0)
