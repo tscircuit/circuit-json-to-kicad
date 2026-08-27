@@ -33,6 +33,7 @@ test("generates a minimal KiCad project file", async () => {
   expect(project.version).toBe(1)
   expect(project.head.project_name).toBe(PROJECT_NAME)
   expect(project.schematic.last_opened_files).toContain(SCHEMATIC_FILENAME)
+  expect(project.schematic.drawing.intersheets_ref_show).toBe(false)
   expect(project.board.last_opened_board).toBe(PCB_FILENAME)
   expect(Array.isArray(project.sheets)).toBe(true)
   expect(project.sheets[0][1]).toBe("Root")

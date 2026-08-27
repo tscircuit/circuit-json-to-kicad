@@ -80,6 +80,9 @@ interface KicadProProject {
     meta: {
       version: number
     }
+    drawing: {
+      intersheets_ref_show: boolean
+    }
     page_layout_descr_file: string
     last_opened_files: string[]
   }
@@ -236,6 +239,11 @@ export class CircuitJsonToKicadProConverter {
       schematic: {
         meta: {
           version: 1,
+        },
+        drawing: {
+          // KiCad adds a ${INTERSHEET_REFS} field to global labels. Keep it
+          // hidden by default so unresolved references do not render as "?".
+          intersheets_ref_show: false,
         },
         page_layout_descr_file: "",
         last_opened_files: [schematicFilename],
