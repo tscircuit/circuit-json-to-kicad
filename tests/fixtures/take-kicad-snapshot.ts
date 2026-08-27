@@ -214,6 +214,7 @@ export const takeKicadSnapshot = async (params: {
   kicadFilePath?: string
   kicadFileContent?: string
   kicadFileType: "sch" | "pcb" | "3d" | "mod"
+  fitSchematicToContent?: boolean
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
 }): Promise<KicadOutput> => {
@@ -221,6 +222,7 @@ export const takeKicadSnapshot = async (params: {
     kicadFilePath,
     kicadFileContent,
     kicadFileType,
+    fitSchematicToContent = false,
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
   } = params
@@ -301,7 +303,7 @@ export const takeKicadSnapshot = async (params: {
     // Export to SVG for sch/pcb/mod
     const exportCmd =
       kicadFileType === "sch"
-        ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
+        ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern ${fitSchematicToContent ? ["--exclude-drawing-sheet"] : []}`
         : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers B.Cu,In1.Cu,In2.Cu,F.Cu,F.SilkS,B.SilkS,F.Fab,B.Fab,F.CrtYd,B.CrtYd,Edge.Cuts --mode-single --page-size-mode 2 --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
@@ -336,6 +338,17 @@ export const takeKicadSnapshot = async (params: {
           )
         : rawSvgBuffer
       let pngProcessor = sharp(normalizedSvgBuffer, { density: 100 })
+
+      if (kicadFileType === "sch" && fitSchematicToContent) {
+        const croppedPng = await sharp(normalizedSvgBuffer, { density: 300 })
+          .trim()
+          .png()
+          .toBuffer()
+        pngProcessor = sharp(croppedPng).resize(1200, 600, {
+          fit: "contain",
+          background: "#f5f4ef",
+        })
+      }
 
       // For PCB files, scale 3x and add black background
       if (isPcbSnapshot) {

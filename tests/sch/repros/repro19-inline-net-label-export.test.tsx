@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import sharp from "sharp"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -31,15 +32,21 @@ test("repro19: inline net labels shift below traces and into the component", asy
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
+    fitSchematicToContent: true,
   })
   expect(kicadSnapshot.exitCode).toBe(0)
 
-  expect(
+  await expect(
     stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({
-        circuitJson,
-        outputType: "schematic",
-      }),
+      await sharp(
+        await takeCircuitJsonSnapshot({
+          circuitJson,
+          outputType: "schematic",
+        }),
+      )
+        .resize(1200, 600, { fit: "contain", background: "#f5f1ed" })
+        .png()
+        .toBuffer(),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
