@@ -340,15 +340,26 @@ export const takeKicadSnapshot = async (params: {
       let pngProcessor = sharp(normalizedSvgBuffer, { density: 100 })
 
       if (kicadFileType === "sch" && fitSchematicToContent) {
-        const croppedPng = await sharp(normalizedSvgBuffer, { density: 300 })
+        const renderedPng = await sharp(normalizedSvgBuffer, { density: 300 })
           .flatten({ background: "#f5f4ef" })
+          .png()
+          .toBuffer()
+        const croppedPng = await sharp(renderedPng)
           .trim({ background: "#f5f4ef" })
           .png()
           .toBuffer()
-        pngProcessor = sharp(croppedPng).resize(1200, 600, {
-          fit: "contain",
-          background: "#f5f4ef",
-        })
+        pngProcessor = sharp(croppedPng)
+          .resize(1120, 520, {
+            fit: "contain",
+            background: "#f5f4ef",
+          })
+          .extend({
+            top: 40,
+            bottom: 40,
+            left: 40,
+            right: 40,
+            background: "#f5f4ef",
+          })
       }
 
       // For PCB files, scale 3x and add black background
