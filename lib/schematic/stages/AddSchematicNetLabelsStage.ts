@@ -256,7 +256,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       right: {
         angle: 180,
         shape: "input",
-        justify: { horizontal: "right" },
+        justify: { horizontal: "left" },
       },
       top: {
         angle: 270,

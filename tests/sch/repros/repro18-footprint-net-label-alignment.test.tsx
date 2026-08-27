@@ -39,6 +39,7 @@ test("repro18: footprint identifier overlaps net labels in KiCad", async () => {
 
   expect(output).toContain("(fields_autoplaced no)")
   expect(output).not.toContain("(fields_autoplaced yes)")
+  expect(output).toContain("(justify left)")
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
