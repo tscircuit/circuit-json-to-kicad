@@ -1,4 +1,3 @@
-import type { KicadSymbolMetadata } from "@tscircuit/props"
 import type {
   CircuitJson,
   SchematicComponent,
@@ -6,28 +5,30 @@ import type {
 } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
-  EmbeddedFonts,
   SchematicSymbol,
-  SymbolInstancePath,
+  SymbolLibId,
+  SymbolProperty,
+  SymbolPin,
   SymbolInstances,
   SymbolInstancesProject,
-  SymbolLibId,
-  SymbolPin,
-  SymbolPinNames,
-  SymbolPinNumbers,
-  SymbolProperty,
+  SymbolInstancePath,
+  Uuid,
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
+  EmbeddedFonts,
+  SymbolPinNames,
+  SymbolPinNumbers,
 } from "kicadts"
-import { symbols } from "schematic-symbols"
 import { applyToPoint } from "transformation-matrix"
-import { ConverterStage } from "../../types"
-import {
-  getKicadCompatibleComponentName,
-  getReferenceDesignator,
-} from "../../utils/getKicadCompatibleComponentName"
+import { ConverterStage, type ConverterContext } from "../../types"
+import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
+import {
+  getReferenceDesignator,
+  getKicadCompatibleComponentName,
+} from "../../utils/getKicadCompatibleComponentName"
+import type { KicadSymbolMetadata } from "@tscircuit/props"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -438,8 +439,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       this.ctx.db.schematic_text
         ?.list?.()
         ?.filter(
-          (text) =>
-            text.schematic_component_id ===
+          (t) =>
+            t.schematic_component_id ===
             schematicComponent.schematic_component_id,
         ) || []
 
@@ -469,12 +470,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       }
     }
 
-    const firstText = schematicTexts.find(
-      (text) => text.text && text.text.length > 0,
-    )
-    if (firstText) {
+    const refText = schematicTexts.find((t) => t.text && t.text.length > 0)
+
+    if (refText) {
       // Use the schematic_text position for reference
-      const nameTextPos = this.getTextPosition(firstText)!.position
+      const nameTextPos = this.getTextPosition(refText)!.position
 
       if (placeValueAtNamePosition) {
         return {
