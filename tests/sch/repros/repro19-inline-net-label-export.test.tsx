@@ -19,7 +19,25 @@ test("repro19: inline net labels shift below traces and into the component", asy
       element.type === "schematic_text" && "source_trace_id" in element,
   )
 
-  expect(inlineNetLabels).toHaveLength(5)
+  expect(inlineNetLabels).toHaveLength(4)
+  expect(inlineNetLabels.map((label) => label.anchor)).toEqual([
+    "right",
+    "right",
+    "left",
+    "left",
+  ])
+  expect(circuitJson.some((element) => element.type.startsWith("pcb_"))).toBe(
+    false,
+  )
+  for (const label of inlineNetLabels) {
+    expect(
+      circuitJson.some(
+        (element) =>
+          element.type === "schematic_trace" &&
+          element.source_trace_id === label.source_trace_id,
+      ),
+    ).toBe(true)
+  }
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
