@@ -5,7 +5,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro17: crystal frequency is missing from the KiCad value", async () => {
+test("repro17: crystal frequency is preserved in the KiCad value", async () => {
   const circuit = new Circuit()
 
   circuit.add(
@@ -48,6 +48,9 @@ test("repro17: crystal frequency is missing from the KiCad value", async () => {
   expect(crystal).toBeDefined()
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
+  expect(converter.getOutputString()).toContain(
+    '(property "Value" "32kHz / 15pF"',
+  )
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),

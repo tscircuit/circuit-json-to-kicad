@@ -1,30 +1,31 @@
+import type { KicadSymbolMetadata } from "@tscircuit/props"
 import type { CircuitJson, SchematicComponent } from "circuit-json"
+import { formatSiUnit } from "format-si-unit"
 import type { KicadSch } from "kicadts"
 import {
+  EmbeddedFonts,
   SchematicSymbol,
-  SymbolLibId,
-  SymbolProperty,
-  SymbolPin,
+  SymbolInstancePath,
   SymbolInstances,
   SymbolInstancesProject,
-  SymbolInstancePath,
-  Uuid,
+  SymbolLibId,
+  SymbolPin,
+  SymbolPinNames,
+  SymbolPinNumbers,
+  SymbolProperty,
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
-  EmbeddedFonts,
-  SymbolPinNames,
-  SymbolPinNumbers,
+  Uuid,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
-import { ConverterStage, type ConverterContext } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../getLibraryId"
+import { applyToPoint } from "transformation-matrix"
+import { type ConverterContext, ConverterStage } from "../../types"
 import {
-  getReferenceDesignator,
   getKicadCompatibleComponentName,
+  getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
-import type { KicadSymbolMetadata } from "@tscircuit/props"
+import { getLibraryId } from "../getLibraryId"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -546,6 +547,19 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         reference,
         value: sourceComp.display_inductance || "L",
         description: "Inductor",
+      }
+    }
+
+    if (sourceComp.ftype === "simple_crystal") {
+      const frequencyDisplay = `${formatSiUnit(sourceComp.frequency)}Hz`
+      const loadCapacitanceDisplay = sourceComp.load_capacitance
+        ? ` / ${formatSiUnit(sourceComp.load_capacitance)}F`
+        : ""
+
+      return {
+        reference,
+        value: `${frequencyDisplay}${loadCapacitanceDisplay}`,
+        description: "Crystal oscillator",
       }
     }
 
