@@ -64,6 +64,18 @@ test("repro19: convert the Consumer Wireless Module generated system", async () 
     ),
   ).toBeTrue()
 
+  const d6 = parsedInputPowerSchematic.symbols.find((symbol) =>
+    symbol.properties.some(
+      ({ key, value }) => key === "Reference" && value === "D6",
+    ),
+  )
+  expect(d6?.properties.find(({ key }) => key === "Value")?.value).toBe(
+    "ESD5Z6.0T1G",
+  )
+  expect(
+    d6?.properties.find(({ key }) => key === "Value")?.effects?.hiddenText,
+  ).toBeTrue()
+
   const wirelessSchematic = files.find(
     ({ filename }) => filename === "wireless_connectivity.kicad_sch",
   )

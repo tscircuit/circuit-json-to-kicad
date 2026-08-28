@@ -199,6 +199,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         Boolean(schematicSymbolId) ||
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
+        (sourceComponent.ftype === "simple_diode" &&
+          !schematicComponent.symbol_display_value) ||
         sourceComponent.ftype === "simple_pin_header" ||
         sourceComponent.ftype === "simple_test_point"
       const valMeta = symbolMetadata?.properties?.Value
@@ -638,7 +640,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     if (sourceComp.ftype === "simple_diode") {
       return {
         reference,
-        value: "D",
+        value: sourceComp.manufacturer_part_number || "",
         description: "Diode",
       }
     }
