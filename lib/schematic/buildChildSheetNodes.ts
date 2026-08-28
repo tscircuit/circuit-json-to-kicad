@@ -99,6 +99,9 @@ export function buildChildSheetNodes(
   rootUuid: string,
 ): { nodes: Sheet[]; extentMm: { width: number; height: number } } {
   const count = children.length
+  if (count === 0) {
+    return { nodes: [], extentMm: { width: 0, height: 0 } }
+  }
   const cols = Math.max(1, Math.ceil(Math.sqrt(count)))
   const rows = Math.max(1, Math.ceil(count / cols))
 

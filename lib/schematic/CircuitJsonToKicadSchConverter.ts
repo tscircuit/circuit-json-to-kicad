@@ -32,6 +32,14 @@ export interface KicadSchFileOutputOptions {
   schematicFilename: string
 }
 
+export interface CircuitJsonToKicadSchOptions {
+  /**
+   * Promote this circuit-json `schematic_sheet` to KiCad page 1. Other sheets
+   * remain child files. By default page 1 is the implicit hierarchy root.
+   */
+  rootSchematicSheetId?: string
+}
+
 interface BuiltSheetFile {
   entry: SchematicSheetPlanEntry
   kicadSch: KicadSch
@@ -49,6 +57,8 @@ interface BuildSheetFileOptions {
   childSheetNodes?: Sheet[]
   /** Extra paper extent (mm) that must fit, e.g. the sheet-node grid */
   extraPaperExtentMm?: { width: number; height: number }
+  /** Reserve the extra extent above the circuit instead of allowing overlap */
+  placeContentBelowExtraExtent?: boolean
 }
 
 export class CircuitJsonToKicadSchConverter {
@@ -68,9 +78,12 @@ export class CircuitJsonToKicadSchConverter {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(circuitJson: CircuitJson) {
+  constructor(
+    circuitJson: CircuitJson,
+    options: CircuitJsonToKicadSchOptions = {},
+  ) {
     this.circuitJson = circuitJson
-    this.schematicSheetPlan = buildSchematicSheetPlan(circuitJson)
+    this.schematicSheetPlan = buildSchematicSheetPlan(circuitJson, options)
 
     const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
 
@@ -169,8 +182,9 @@ export class CircuitJsonToKicadSchConverter {
    *
    * For a design with no `schematic_sheet` elements this is a single root file.
    * For a hierarchical design it is the root file (named by
-   * `options.schematicFilename`) followed by one child `.kicad_sch` per sheet,
-   * each named after its sheet and referenced by the root via `Sheetfile`.
+   * `options.schematicFilename`) followed by one child `.kicad_sch` per
+   * non-root sheet, each named after its sheet and referenced by the root via
+   * `Sheetfile`.
    */
   getOutputFiles(options: KicadSchFileOutputOptions): KicadSchFile[] {
     if (!this.schematicSheetPlan.isHierarchical) {
@@ -196,18 +210,23 @@ export class CircuitJsonToKicadSchConverter {
 
     const { rootUuid, root, children } = this.schematicSheetPlan
 
-    // Root file: the `(sheet)` nodes + any content not assigned to a sheet.
+    // Root file: the selected/root content plus `(sheet)` nodes for children.
     const { nodes: childSheetNodes, extentMm } = buildChildSheetNodes(
       children,
       rootUuid,
     )
     const rootSch = this.buildSheetFile({
-      circuitJson: partitionCircuitJsonBySheet(this.circuitJson, null),
+      circuitJson: partitionCircuitJsonBySheet(
+        this.circuitJson,
+        root.schematicSheetId,
+        { includeRootContent: root.schematicSheetId !== null },
+      ),
       fileUuid: rootUuid,
       symbolInstancePathPrefix: `/${rootUuid}`,
       emitSheetInstances: true,
       childSheetNodes,
       extraPaperExtentMm: extentMm,
+      placeContentBelowExtraExtent: root.schematicSheetId !== null,
     })
     this.files.push({
       entry: root,
@@ -243,6 +262,7 @@ export class CircuitJsonToKicadSchConverter {
       emitSheetInstances,
       childSheetNodes,
       extraPaperExtentMm,
+      placeContentBelowExtraExtent,
     } = options
 
     const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
@@ -250,19 +270,26 @@ export class CircuitJsonToKicadSchConverter {
     const { center, bounds } = getSchematicBoundsAndCenter(db)
 
     // Paper must fit the page content and (for the root file) the sheet-node grid.
+    const contentWidthMm =
+      (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor
+    const contentHeightMm =
+      (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor
+    const extraWidthMm = extraPaperExtentMm?.width ?? 0
+    const extraHeightMm = extraPaperExtentMm?.height ?? 0
     const paperSize = selectSchematicPaperSize(
-      Math.max(
-        (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor +
-          2 * DEFAULT_PAPER_PADDING_MM,
-        extraPaperExtentMm?.width ?? 0,
-      ),
-      Math.max(
-        (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor +
-          2 * DEFAULT_PAPER_PADDING_MM,
-        extraPaperExtentMm?.height ?? 0,
-      ),
+      Math.max(contentWidthMm + 2 * DEFAULT_PAPER_PADDING_MM, extraWidthMm),
+      placeContentBelowExtraExtent
+        ? contentHeightMm + 2 * DEFAULT_PAPER_PADDING_MM + extraHeightMm
+        : Math.max(
+            contentHeightMm + 2 * DEFAULT_PAPER_PADDING_MM,
+            extraHeightMm,
+          ),
       0,
     )
+
+    const circuitCenterY = placeContentBelowExtraExtent
+      ? extraHeightMm + (paperSize.height - extraHeightMm) / 2
+      : paperSize.height / 2
 
     const ctx: ConverterContext = {
       db,
@@ -274,7 +301,7 @@ export class CircuitJsonToKicadSchConverter {
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
       c2kMatSch: compose(
-        translate(paperSize.width / 2, paperSize.height / 2),
+        translate(paperSize.width / 2, circuitCenterY),
         scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
         translate(-center.x, -center.y),
       ),

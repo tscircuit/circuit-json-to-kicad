@@ -172,7 +172,9 @@ export class CircuitJsonToKicadProConverter {
     // otherwise emit a single Root entry.
     const schematicSheetPlan =
       options.schematicSheetPlan ?? buildSchematicSheetPlan(circuitJson)
-    const sheets: [string, string][] = [[schematicSheetPlan.rootUuid, "Root"]]
+    const sheets: [string, string][] = [
+      [schematicSheetPlan.rootUuid, schematicSheetPlan.root.sheetName],
+    ]
     for (const child of schematicSheetPlan.children) {
       sheets.push([child.sheetNodeUuid, child.sheetName])
     }

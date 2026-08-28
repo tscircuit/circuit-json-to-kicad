@@ -7,7 +7,7 @@ function isSchematicElement(el: AnyCircuitElement): boolean {
 /** Whether a single element belongs in the subset for `sheetId`. */
 function keepElementForSheet(
   el: any,
-  sheetId: string | null,
+  sheetIds: ReadonlySet<string | null>,
   componentIdsOnSheet: Set<string>,
 ): boolean {
   if (!isSchematicElement(el)) return true
@@ -22,7 +22,7 @@ function keepElementForSheet(
   // file so custom symbols resolve on whichever sheet uses them.
   if (!hasSheetIdField && !hasComponentIdField) return true
 
-  if ((el.schematic_sheet_id ?? null) === sheetId) return true
+  if (sheetIds.has(el.schematic_sheet_id ?? null)) return true
 
   return (
     el.schematic_component_id != null &&
@@ -35,7 +35,8 @@ function keepElementForSheet(
  *
  * Passing `sheetId = null` selects the "root" content: every schematic element
  * not assigned to any `schematic_sheet` (i.e. laid out directly on the top-level
- * page).
+ * page). `includeRootContent` also retains those unassigned elements when a
+ * declared sheet is promoted to the root page.
  *
  * The subset keeps:
  *  - every non-`schematic_*` element (source_*, cad_component, pcb_*, simulation_*,
@@ -54,21 +55,24 @@ function keepElementForSheet(
 export function partitionCircuitJsonBySheet(
   circuitJson: CircuitJson,
   sheetId: string | null,
+  options: { includeRootContent?: boolean } = {},
 ): CircuitJson {
   const elements = circuitJson as any[]
+  const sheetIds = new Set<string | null>([sheetId])
+  if (options.includeRootContent) sheetIds.add(null)
 
-  // Component ids that live on the target sheet (root = no sheet id).
+  // Component ids that live on the target sheet(s) (root = no sheet id).
   const componentIdsOnSheet = new Set<string>()
   for (const el of elements) {
     if (el.type !== "schematic_component") continue
-    if ((el.schematic_sheet_id ?? null) === sheetId) {
+    if (sheetIds.has(el.schematic_sheet_id ?? null)) {
       componentIdsOnSheet.add(el.schematic_component_id)
     }
   }
 
   const subset: any[] = []
   for (const el of elements) {
-    if (keepElementForSheet(el, sheetId, componentIdsOnSheet)) {
+    if (keepElementForSheet(el, sheetIds, componentIdsOnSheet)) {
       subset.push(el)
     }
   }

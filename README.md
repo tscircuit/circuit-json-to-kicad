@@ -138,6 +138,16 @@ for (const { filename, content } of converter.getOutputFiles({
 }
 ```
 
+To put a real circuit sheet on KiCad page 1, select it when constructing the
+converter. The selected sheet is emitted as the root file, while every other
+sheet remains a child:
+
+```ts
+const converter = new CircuitJsonToKicadSchConverter(circuitJson, {
+  rootSchematicSheetId: "schematic_sheet_power",
+})
+```
+
 Notes:
 
 - `getOutputString()` returns the **root** file; `getOutputFiles()` returns the
@@ -145,6 +155,9 @@ Notes:
   them side by side so KiCad can resolve each `Sheetfile` reference.
 - A design with **no** `<schematicsheet>` produces a single flat file exactly as
   before.
+- `rootSchematicSheetId` is optional. Without it, the root remains a hierarchy
+  overview for backward compatibility. Any unassigned root-page content is
+  retained alongside a promoted sheet.
 - Nets shared across sheets (same-named net labels) become KiCad labels that
   connect by name across the whole hierarchy, so no hierarchical sheet pins are
   required.
