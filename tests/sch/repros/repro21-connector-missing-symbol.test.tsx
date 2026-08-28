@@ -7,7 +7,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro21: generic connector instance has no embedded symbol definition", async () => {
+test("repro21: generic connector instance has an embedded symbol definition", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
   circuit.add(
@@ -59,10 +59,8 @@ test("repro21: generic connector instance has no embedded symbol definition", as
   expect(connector!.pins).toHaveLength(6)
   const libraryId = connector!.libraryId
   expect(libraryId).toBeDefined()
-  // Capture the existing defect: the instance references a missing library symbol.
-  expect(schematic.libSymbols!.getString()).not.toContain(
-    `(symbol "${libraryId}"`,
-  )
+  // Regression coverage: every connector instance must have a library symbol.
+  expect(schematic.libSymbols!.getString()).toContain(`(symbol "${libraryId}"`)
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
