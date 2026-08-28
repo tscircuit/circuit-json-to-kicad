@@ -180,6 +180,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
+      const hideGeneratedCustomReference = Boolean(schematicSymbolId)
       const referenceProperty = new SymbolProperty({
         key: "Reference",
         value: refMeta?.value ?? reference,
@@ -187,11 +188,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         at: [refTextPos.x, refTextPos.y, 0],
         effects: this.createTextEffects(
           Number(refMeta?.effects?.font?.size?.x ?? 1.27),
-          { hide: refMeta?.effects?.hide ?? false, justify: refJustify },
+          {
+            hide: refMeta?.effects?.hide ?? hideGeneratedCustomReference,
+            justify: refJustify,
+          },
         ),
       })
 
       const hideValue =
+        Boolean(schematicSymbolId) ||
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
         sourceComponent.ftype === "simple_pin_header" ||
