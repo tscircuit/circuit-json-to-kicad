@@ -56,6 +56,7 @@ export const runGeneratedSystemRepro = async (params: {
     ),
   ])
 
+  const svgMismatches: string[] = []
   for (const svgName of svgNames) {
     const snapshotName = svgName
       .replace(/\.svg$/, "")
@@ -81,12 +82,13 @@ export const runGeneratedSystemRepro = async (params: {
     const normalizedStored = normalizeKicadSvgSnapshot(storedSvg)
     if (normalizedGenerated !== normalizedStored) {
       await writeFile(receivedUrl, generatedSvg, "utf8")
+      svgMismatches.push(svgName)
     } else {
       await rm(receivedUrl, { force: true })
     }
     expect(generatedSvg).toContain("<svg")
-    expect(normalizedGenerated).toBe(normalizedStored)
   }
+  expect(svgMismatches).toEqual([])
 
   await Bun.write(`./debug-output/${params.debugOutputName}`, stackedPng)
   expect(stackedPng).toMatchPngSnapshot(params.snapshotPath)
