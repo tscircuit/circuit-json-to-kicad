@@ -30,7 +30,6 @@ test("repro21: generic connector instance has no embedded symbol definition", as
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
-    fitSchematicToContent: true,
   })
   expect(kicadSnapshot.exitCode).toBe(0)
   const circuitJsonPng = await sharp(
