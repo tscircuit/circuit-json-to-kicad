@@ -1,9 +1,17 @@
 import { expect } from "bun:test"
-import { readFile, writeFile } from "node:fs/promises"
+import { readFile, rm, writeFile } from "node:fs/promises"
 import { basename } from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeSchematicSheetsSnapshot } from "./take-schematic-sheets-snapshot"
+
+function replaceKicadExportTimestampForComparison(kicadSvg: string): string {
+  // kicad-cli writes the export time into the title on every invocation.
+  return kicadSvg.replace(
+    /(<title>SVG Image created as .*? date )[^<]*(<\/title>)/,
+    "$1<export timestamp ignored>$2",
+  )
+}
 
 export const runGeneratedSystemRepro = async (params: {
   fixtureUrl: URL
@@ -29,44 +37,62 @@ export const runGeneratedSystemRepro = async (params: {
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
-  const files = converter.getOutputFiles({
+  const kicadSchematicFiles = converter.getOutputFiles({
     schematicFilename: params.rootFilename,
   })
-  expect(files.map(({ filename }) => filename)).toEqual([
+  expect(kicadSchematicFiles.map(({ filename }) => filename)).toEqual([
     params.rootFilename,
     ...sourceSheets.map((sheet) => `${String(sheet.name)}.kicad_sch`),
   ])
 
   const { stackedPng, svgFiles, svgNames } = await takeSchematicSheetsSnapshot({
     circuitJson,
-    files,
+    files: kicadSchematicFiles,
     rootFilename: params.rootFilename,
   })
-  const rootBase = basename(params.rootFilename, ".kicad_sch")
+  const rootSchematicName = basename(params.rootFilename, ".kicad_sch")
   expect(svgNames).toEqual([
-    `${rootBase}.svg`,
+    `${rootSchematicName}.svg`,
     ...params.expectedSheetNames.map(
-      (sheetName) => `${rootBase}-${sheetName.replace(/[\\/]/g, "_")}.svg`,
+      (sheetName) =>
+        `${rootSchematicName}-${sheetName.replace(/[\\/]/g, "_")}.svg`,
     ),
   ])
 
+  const mismatchedSvgNames: string[] = []
   for (const svgName of svgNames) {
-    const snapshotName = svgName
+    const svgSnapshotName = svgName
       .replace(/\.svg$/, "")
       .replace(/[^a-zA-Z0-9_-]+/g, "_")
-    const snapshotUrl = new URL(
-      `../sch/repros/__snapshots__/${snapshotName}.snap.svg`,
+    const expectedSvgSnapshotUrl = new URL(
+      `../sch/repros/__snapshots__/${svgSnapshotName}.snap.svg`,
       import.meta.url,
     )
     if (
       process.env.BUN_UPDATE_SNAPSHOTS ||
       process.env.FORCE_BUN_UPDATE_SNAPSHOTS
     ) {
-      await writeFile(snapshotUrl, svgFiles[svgName] ?? "", "utf8")
+      await writeFile(expectedSvgSnapshotUrl, svgFiles[svgName] ?? "", "utf8")
     }
-    expect(svgFiles[svgName]).toContain("<svg")
-    expect(await readFile(snapshotUrl, "utf8")).toContain("<svg")
+    const generatedKicadSvg = svgFiles[svgName] ?? ""
+    const expectedKicadSvg = await readFile(expectedSvgSnapshotUrl, "utf8")
+    const receivedSvgSnapshotUrl = new URL(
+      `../sch/repros/__snapshots__/${svgSnapshotName}.received.svg`,
+      import.meta.url,
+    )
+    const generatedKicadSvgForComparison =
+      replaceKicadExportTimestampForComparison(generatedKicadSvg)
+    const expectedKicadSvgForComparison =
+      replaceKicadExportTimestampForComparison(expectedKicadSvg)
+    if (generatedKicadSvgForComparison !== expectedKicadSvgForComparison) {
+      await writeFile(receivedSvgSnapshotUrl, generatedKicadSvg, "utf8")
+      mismatchedSvgNames.push(svgName)
+    } else {
+      await rm(receivedSvgSnapshotUrl, { force: true })
+    }
+    expect(generatedKicadSvg).toContain("<svg")
   }
+  expect(mismatchedSvgNames).toEqual([])
 
   await Bun.write(`./debug-output/${params.debugOutputName}`, stackedPng)
   expect(stackedPng).toMatchPngSnapshot(params.snapshotPath)
