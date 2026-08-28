@@ -23,7 +23,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
-    "@resvg/resvg-js": "^2.6.2",
     "@tscircuit/common": "^0.0.5",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
@@ -34,6 +33,8 @@
     "kicadts": "^0.0.49",
     "polygon-clipping": "^0.15.7",
     "sharp": "^0.34.4",
+    "svg-path-commander": "^2.3.1",
+    "svgson": "^5.3.1",
     "transformation-matrix": "^3.1.0",
     "tscircuit": "^0.0.2046",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",

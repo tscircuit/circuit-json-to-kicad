@@ -55,13 +55,12 @@ test("repro19: convert the Consumer Wireless Module generated system", async () 
   if (!systemDiagramSchematic) {
     throw new Error("system_diagram.kicad_sch was not generated")
   }
-  const systemDiagramImages = parseKicadSch(
-    systemDiagramSchematic.content,
-  ).images
-  expect(systemDiagramImages).toHaveLength(1)
-  expect(
-    systemDiagramImages[0]?.data?.value.startsWith("iVBORw0KGgo"),
-  ).toBeTrue()
+  const systemDiagram = parseKicadSch(systemDiagramSchematic.content)
+  expect(systemDiagram.texts.map((text) => text.value)).toContain(
+    "System Diagram",
+  )
+  expect(systemDiagram.rectangles.length).toBeGreaterThanOrEqual(7)
+  expect(systemDiagram.polylines.length).toBeGreaterThanOrEqual(6)
 
   for (const svgName of svgNames) {
     const snapshotName = svgName
