@@ -5,13 +5,13 @@ import { compose, scale, translate } from "transformation-matrix"
 import type { ConverterContext, ConverterStage } from "../types"
 import { buildChildSheetNodes } from "./buildChildSheetNodes"
 import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
+import { getSchematicPageLayout } from "./getSchematicPageLayout"
 import { partitionCircuitJsonBySheet } from "./partitionCircuitJsonBySheet"
 import {
   buildSchematicSheetPlan,
   type SchematicSheetPlan,
   type SchematicSheetPlanEntry,
 } from "./buildSchematicSheetPlan"
-import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
 import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
@@ -21,7 +21,6 @@ import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
-const DEFAULT_PAPER_PADDING_MM = 20
 
 export interface KicadSchFile {
   filename: string
@@ -84,15 +83,10 @@ export class CircuitJsonToKicadSchConverter {
     const schematicHeightMm =
       (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor
 
-    // Select appropriate paper size based on content
-    const paperSize = selectSchematicPaperSize(
-      schematicWidthMm,
-      schematicHeightMm,
-    )
-
-    // Use the center of the selected paper size
-    const KICAD_CENTER_X = paperSize.width / 2
-    const KICAD_CENTER_Y = paperSize.height / 2
+    const { paperSize, contentCenter } = getSchematicPageLayout({
+      contentWidthMm: schematicWidthMm,
+      contentHeightMm: schematicHeightMm,
+    })
 
     this.ctx = {
       db,
@@ -104,7 +98,7 @@ export class CircuitJsonToKicadSchConverter {
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
       c2kMatSch: compose(
-        translate(KICAD_CENTER_X, KICAD_CENTER_Y),
+        translate(contentCenter.x, contentCenter.y),
         scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
         translate(-center.x, -center.y),
       ),
@@ -249,20 +243,15 @@ export class CircuitJsonToKicadSchConverter {
     const db = cju(circuitJson)
     const { center, bounds } = getSchematicBoundsAndCenter(db)
 
-    // Paper must fit the page content and (for the root file) the sheet-node grid.
-    const paperSize = selectSchematicPaperSize(
-      Math.max(
-        (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor +
-          2 * DEFAULT_PAPER_PADDING_MM,
-        extraPaperExtentMm?.width ?? 0,
-      ),
-      Math.max(
-        (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor +
-          2 * DEFAULT_PAPER_PADDING_MM,
-        extraPaperExtentMm?.height ?? 0,
-      ),
-      0,
-    )
+    const schematicWidthMm =
+      (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor
+    const schematicHeightMm =
+      (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor
+    const { paperSize, contentCenter } = getSchematicPageLayout({
+      contentWidthMm: schematicWidthMm,
+      contentHeightMm: schematicHeightMm,
+      extraPaperExtentMm,
+    })
 
     const ctx: ConverterContext = {
       db,
@@ -274,7 +263,7 @@ export class CircuitJsonToKicadSchConverter {
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
       c2kMatSch: compose(
-        translate(paperSize.width / 2, paperSize.height / 2),
+        translate(contentCenter.x, contentCenter.y),
         scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
         translate(-center.x, -center.y),
       ),
