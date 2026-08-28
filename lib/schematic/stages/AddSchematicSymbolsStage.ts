@@ -25,7 +25,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import {
-  getKicadCompatibleComponentName,
+  getKicadCompatibleCustomSymbolName,
   getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
 import { getLibraryId } from "../getLibraryId"
@@ -124,17 +124,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         if (schematicSymbol?.name) {
           schematicSymbolName = schematicSymbol.name
         } else {
-          // Generate a name consistent with AddLibrarySymbolsStage
-          // Use getKicadCompatibleComponentName for consistent naming
-          const ergonomicName = getKicadCompatibleComponentName(
+          schematicSymbolName = getKicadCompatibleCustomSymbolName(
             sourceComponent,
             cadComponent,
+            schematicSymbolId,
           )
-          if (ergonomicName) {
-            schematicSymbolName = ergonomicName
-          } else {
-            schematicSymbolName = `custom_${sourceComponent.ftype || "component"}_${schematicSymbolId}`
-          }
         }
       }
 
