@@ -12,6 +12,7 @@ import {
   type SchematicSheetPlan,
   type SchematicSheetPlanEntry,
 } from "./buildSchematicSheetPlan"
+import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
 import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
@@ -83,10 +84,13 @@ export class CircuitJsonToKicadSchConverter {
     const schematicHeightMm =
       (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor
 
-    const { paperSize, contentCenter } = getSchematicPageLayout({
-      contentWidthMm: schematicWidthMm,
-      contentHeightMm: schematicHeightMm,
-    })
+    // Preserve the established centered layout for ordinary single-sheet
+    // exports. Title-block clearance is applied when building hierarchical
+    // files below, where each child sheet has its own page.
+    const paperSize = selectSchematicPaperSize(
+      schematicWidthMm,
+      schematicHeightMm,
+    )
 
     this.ctx = {
       db,
@@ -98,7 +102,7 @@ export class CircuitJsonToKicadSchConverter {
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
       c2kMatSch: compose(
-        translate(contentCenter.x, contentCenter.y),
+        translate(paperSize.width / 2, paperSize.height / 2),
         scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
         translate(-center.x, -center.y),
       ),
