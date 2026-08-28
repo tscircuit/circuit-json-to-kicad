@@ -1,18 +1,51 @@
 import { expect, test } from "bun:test"
-import type { CircuitJson } from "circuit-json"
+import { Circuit } from "tscircuit-latest"
 import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import sharp from "sharp"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
-import fixture from "./fixtures/repro21-connector-missing-symbol.json"
-
-process.env.BUN_UPDATE_SNAPSHOTS = "1"
-process.env.FORCE_BUN_UPDATE_SNAPSHOTS = "1"
 
 test("repro21: generic connector instance has no embedded symbol definition", async () => {
-  const circuitJson = fixture as CircuitJson
+  const circuit = new Circuit()
+  circuit.pcbDisabled = true
+  circuit.add(
+    <board>
+      <connector
+        name="J3"
+        pinLabels={{
+          pin1: "3V3",
+          pin2: "GND",
+          pin3: "TX",
+          pin4: "RX",
+          pin5: "EN",
+          pin6: "IO0",
+        }}
+        schPinArrangement={{
+          leftSide: { direction: "top-to-bottom", pins: [1, 2, 3] },
+          rightSide: { direction: "top-to-bottom", pins: [6, 5, 4] },
+        }}
+        schPinSpacing={0.8}
+      />
+      <resistor name="R1" resistance="10k" schX={-4} schY={0.8} />
+      <resistor name="R2" resistance="10k" schX={4} schY={0.8} />
+      <trace from=".J3 > .pin1" to=".R1 > .pin2" />
+      <trace from=".R1 > .pin1" to=".J3 > .pin2" />
+      <trace from=".J3 > .pin6" to=".R2 > .pin1" />
+      <trace from=".R2 > .pin2" to=".J3 > .pin5" />
+      <trace from=".J3 > .pin3" to=".J3 > .pin4" />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+  const sourceTraces = circuitJson.filter(
+    (element) => element.type === "source_trace",
+  )
+  expect(sourceTraces).toHaveLength(5)
+  for (const trace of sourceTraces) {
+    expect(trace.connected_source_port_ids).toHaveLength(2)
+  }
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
