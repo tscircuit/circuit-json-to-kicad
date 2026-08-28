@@ -16,6 +16,7 @@ import {
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { getLibraryId } from "../getLibraryId"
+import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import {
   getKicadCompatibleComponentName,
   getReferencePrefixForComponent,
@@ -383,7 +384,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       return createGenericChipSymbolData(schematicComponent, this.ctx.db)
     }
 
-    return symbols[symbolName as keyof typeof symbols] || null
+    return getSchematicSymbolData(symbolName) || null
   }
 
   /**

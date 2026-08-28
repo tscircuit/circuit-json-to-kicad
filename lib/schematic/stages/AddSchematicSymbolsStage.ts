@@ -22,7 +22,6 @@ import {
   TextEffectsJustify,
   Uuid,
 } from "kicadts"
-import { symbols } from "schematic-symbols"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import {
@@ -30,6 +29,7 @@ import {
   getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
 import { getLibraryId } from "../getLibraryId"
+import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import {
   getTextJustificationFromAnchor,
   type TextJustification,
@@ -503,7 +503,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         valTextPos: { x: symbolKicadPos.x, y: valueBelowBodyY },
       }
     }
-    const symbol = (symbols as any)[symbolName]
+    const symbol = getSchematicSymbolData(symbolName)
 
     // Default positions if symbol not found
     if (!symbol) {
