@@ -64,6 +64,19 @@ test("repro19: convert the Consumer Wireless Module generated system", async () 
     ),
   ).toBeTrue()
 
+  const wirelessSchematic = files.find(
+    ({ filename }) => filename === "wireless_connectivity.kicad_sch",
+  )
+  if (!wirelessSchematic) {
+    throw new Error("wireless_connectivity.kicad_sch was not generated")
+  }
+  const parsedWirelessSchematic = parseKicadSch(wirelessSchematic.content)
+  expect(
+    parsedWirelessSchematic.libSymbols?.symbols.some(
+      ({ libraryId }) => libraryId === "Device:J_U_FL-R-SMT-1_10",
+    ),
+  ).toBeTrue()
+
   for (const svgName of svgNames) {
     const snapshotName = svgName
       .replace(/\.svg$/, "")
