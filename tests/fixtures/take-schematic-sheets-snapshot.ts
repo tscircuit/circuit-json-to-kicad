@@ -3,9 +3,10 @@ import { mkdtemp, readFile, readdir, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { basename, join } from "node:path"
 import type { CircuitJson } from "circuit-json"
-import { convertCircuitJsonToStackedSchematicSheetsSvg } from "circuit-to-svg"
+import { convertCircuitJsonToSchematicSvg } from "circuit-to-svg"
 import { parseKicadSch } from "kicadts"
 import sharp from "sharp"
+import { stackPngsHorizontally } from "./stackPngsHorizontally"
 import { stackPngsVertically } from "./stackPngsVertically"
 
 export interface SchematicSheetsSnapshot {
@@ -13,7 +14,7 @@ export interface SchematicSheetsSnapshot {
   svgNames: string[]
   /** Raw per-page SVG output, keyed by the filename produced by kicad-cli. */
   svgFiles: Record<string, string>
-  /** tscircuit stacked-sheets render above the KiCad-rendered hierarchy, as one PNG */
+  /** KiCad root page followed by one tscircuit/KiCad comparison row per child sheet. */
   stackedPng: Buffer
 }
 
@@ -122,7 +123,7 @@ export const takeSchematicSheetsSnapshot = async (params: {
       throw new Error("kicad-cli produced no SVG files")
     }
 
-    // KiCad column: each sheet's SVG -> labeled PNG -> stacked.
+    // Render the KiCad root page and child sheets in hierarchy order.
     const kicadPngs: Buffer[] = []
     const svgFiles: Record<string, string> = {}
     for (const svgName of svgNames) {
@@ -131,20 +132,34 @@ export const takeSchematicSheetsSnapshot = async (params: {
       const png = await sharp(svgBuffer, { density: 100 }).png().toBuffer()
       kicadPngs.push(await withLabel(png, svgName, 22, 6))
     }
-    const kicadStackedPng = await stackPngsVertically(kicadPngs)
+    const sourceSheets = circuitJson
+      .filter((element) => element.type === "schematic_sheet")
+      .sort(
+        (left, right) =>
+          Number(left.sheet_index ?? 0) - Number(right.sheet_index ?? 0),
+      )
+    const comparisonRows = [kicadPngs[0]!]
+    for (const [sheetIndex, sourceSheet] of sourceSheets.entries()) {
+      const sourceSvg = convertCircuitJsonToSchematicSvg(circuitJson as any, {
+        schematicSheetId: String(sourceSheet.schematic_sheet_id),
+      })
+      const sourcePng = await sharp(Buffer.from(sourceSvg)).png().toBuffer()
+      const sourceSheetName = String(
+        Reflect.get(sourceSheet, "display_name") ?? sourceSheet.name,
+      )
+      const kicadPng = kicadPngs[sheetIndex + 1]
+      if (!kicadPng) {
+        throw new Error(`Missing KiCad render for ${sourceSheetName}`)
+      }
+      comparisonRows.push(
+        await stackPngsHorizontally([
+          await withLabel(sourcePng, `Circuit JSON: ${sourceSheetName}`, 22, 6),
+          kicadPng,
+        ]),
+      )
+    }
 
-    // tscircuit column: the stacked-sheets schematic render.
-    const circuitJsonSvg = convertCircuitJsonToStackedSchematicSheetsSvg(
-      circuitJson as any,
-    )
-    const circuitJsonPng = await sharp(Buffer.from(circuitJsonSvg))
-      .png()
-      .toBuffer()
-
-    const stackedPng = await stackPngsVertically([
-      await withLabel(circuitJsonPng, "Circuit JSON (tscircuit)", 26, 8),
-      await withLabel(kicadStackedPng, "KiCad", 26, 8),
-    ])
+    const stackedPng = await stackPngsVertically(comparisonRows)
 
     return { svgFiles, svgNames, stackedPng }
   } finally {
