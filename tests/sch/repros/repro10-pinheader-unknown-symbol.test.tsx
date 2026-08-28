@@ -5,22 +5,36 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 
-test("repro10 pinheader schematic unknown symbol", async () => {
+test("repro10 pinheaders keep distinct embedded symbols", async () => {
   const circuit = new Circuit()
 
   circuit.add(
     <board width="30mm" height="30mm">
       <pinheader
-        name="J2"
-        pinCount={8}
+        name="J_INPUT"
+        pinCount={2}
         gender="male"
         pitch="2.54mm"
-        footprint="pinrow8_rows2"
-        doubleRow={true}
+        footprint="pinrow2"
         showSilkscreenPinLabels={true}
-        pinLabels={["VCC", "GND", "SDA", "SCL", "MISO", "MOSI", "SCK", "CS"]}
-        pcbX={0}
-        pcbY={10}
+        pinLabels={["VIN", "GND"]}
+        schX={-2}
+        schY={0}
+        pcbX={-2}
+        pcbY={0}
+      />
+      <pinheader
+        name="J_OUTPUT"
+        pinCount={2}
+        gender="female"
+        pitch="2.54mm"
+        footprint="pinrow2"
+        showSilkscreenPinLabels={true}
+        pinLabels={["LEFT", "RIGHT"]}
+        schX={2}
+        schY={0}
+        pcbX={2}
+        pcbY={0}
       />
     </board>,
   )
@@ -32,6 +46,9 @@ test("repro10 pinheader schematic unknown symbol", async () => {
   converter.runUntilFinished()
 
   const output = converter.getOutputString()
+
+  expect(output).toContain('(symbol "Connector_Generic:Conn_01x2_J_INPUT"')
+  expect(output).toContain('(symbol "Connector_Generic:Conn_01x2_J_OUTPUT"')
 
   Bun.write("./debug-output/repro10-pinheader-unknown-symbol.kicad_sch", output)
 
