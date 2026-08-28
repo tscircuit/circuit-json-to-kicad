@@ -1,5 +1,5 @@
 import { expect } from "bun:test"
-import { readFile, writeFile } from "node:fs/promises"
+import { readFile, rm, writeFile } from "node:fs/promises"
 import { basename } from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadSchConverter } from "lib"
@@ -66,16 +66,26 @@ export const runGeneratedSystemRepro = async (params: {
     )
     if (
       process.env.BUN_UPDATE_SNAPSHOTS ||
-      process.env.FORCE_BUN_UPDATE_SNAPSHOTS
+      process.env.FORCE_BUN_UPDATE_SNAPSHOTS ||
+      process.env.KICAD_UPDATE_GENERATED_SYSTEM_SVG_SNAPSHOTS
     ) {
       await writeFile(snapshotUrl, svgFiles[svgName] ?? "", "utf8")
     }
     const generatedSvg = svgFiles[svgName] ?? ""
     const storedSvg = await readFile(snapshotUrl, "utf8")
-    expect(generatedSvg).toContain("<svg")
-    expect(normalizeKicadSvgSnapshot(generatedSvg)).toBe(
-      normalizeKicadSvgSnapshot(storedSvg),
+    const receivedUrl = new URL(
+      `../sch/repros/__snapshots__/${snapshotName}.received.svg`,
+      import.meta.url,
     )
+    const normalizedGenerated = normalizeKicadSvgSnapshot(generatedSvg)
+    const normalizedStored = normalizeKicadSvgSnapshot(storedSvg)
+    if (normalizedGenerated !== normalizedStored) {
+      await writeFile(receivedUrl, generatedSvg, "utf8")
+    } else {
+      await rm(receivedUrl, { force: true })
+    }
+    expect(generatedSvg).toContain("<svg")
+    expect(normalizedGenerated).toBe(normalizedStored)
   }
 
   await Bun.write(`./debug-output/${params.debugOutputName}`, stackedPng)
