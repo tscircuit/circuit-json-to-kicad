@@ -5,6 +5,12 @@ import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeSchematicSheetsSnapshot } from "./take-schematic-sheets-snapshot"
 
+const normalizeKicadSvgSnapshot = (svg: string) =>
+  svg.replace(
+    /(<title>SVG Image created as .*? date )[^<]*(<\/title>)/,
+    "$1<normalized>$2",
+  )
+
 export const runGeneratedSystemRepro = async (params: {
   fixtureUrl: URL
   rootFilename: string
@@ -64,8 +70,12 @@ export const runGeneratedSystemRepro = async (params: {
     ) {
       await writeFile(snapshotUrl, svgFiles[svgName] ?? "", "utf8")
     }
-    expect(svgFiles[svgName]).toContain("<svg")
-    expect(await readFile(snapshotUrl, "utf8")).toContain("<svg")
+    const generatedSvg = svgFiles[svgName] ?? ""
+    const storedSvg = await readFile(snapshotUrl, "utf8")
+    expect(generatedSvg).toContain("<svg")
+    expect(normalizeKicadSvgSnapshot(generatedSvg)).toBe(
+      normalizeKicadSvgSnapshot(storedSvg),
+    )
   }
 
   await Bun.write(`./debug-output/${params.debugOutputName}`, stackedPng)
