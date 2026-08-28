@@ -8,6 +8,9 @@ import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapsh
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import fixture from "./fixtures/repro21-connector-missing-symbol.json"
 
+process.env.BUN_UPDATE_SNAPSHOTS = "1"
+process.env.FORCE_BUN_UPDATE_SNAPSHOTS = "1"
+
 test("repro21: generic connector instance has no embedded symbol definition", async () => {
   const circuitJson = fixture as CircuitJson
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
