@@ -14,15 +14,16 @@ interface SchematicSheetPlanEntryBase {
   fileUuid: string
 }
 
-/** The top-level root schematic (page "1"); it holds the `(sheet)` nodes. */
+/** The top-level root schematic (page "1"); it holds content and `(sheet)` nodes. */
 export interface RootSchematicSheetPlanEntry
   extends SchematicSheetPlanEntryBase {
-  schematicSheetId: null
+  /** circuit-json sheet promoted to page 1, or null for the implicit root */
+  schematicSheetId: string | null
 }
 
 /**
- * One circuit-json `schematic_sheet`, emitted as a `(sheet)` node on the root
- * page plus its own child `.kicad_sch` file.
+ * One non-root circuit-json `schematic_sheet`, emitted as a `(sheet)` node on
+ * the root page plus its own child `.kicad_sch` file.
  */
 export interface ChildSchematicSheetPlanEntry
   extends SchematicSheetPlanEntryBase {
@@ -41,10 +42,10 @@ export type SchematicSheetPlanEntry =
 
 /**
  * Blueprint of the KiCad schematic files to emit for one circuit-json input:
- * the root `.kicad_sch` plus one child `.kicad_sch` per `schematic_sheet`, each
- * with the UUIDs, filename, and page number KiCad needs. Computed up front (with
- * no file content) so the schematic converter and the `.kicad_pro` converter
- * agree on the same identifiers.
+ * the root `.kicad_sch` plus one child `.kicad_sch` per remaining sheet, each
+ * with the UUIDs, filename, and page number KiCad needs. Computed up front
+ * (with no file content) so the schematic converter and the `.kicad_pro`
+ * converter agree on the same identifiers.
  */
 export interface SchematicSheetPlan {
   /**
@@ -55,8 +56,16 @@ export interface SchematicSheetPlan {
   rootUuid: string
   root: RootSchematicSheetPlanEntry
   children: ChildSchematicSheetPlanEntry[]
-  /** True when the design has `schematic_sheet`s and must be emitted as a hierarchy */
+  /** True when sheet-aware conversion is required, even if every sheet was promoted */
   isHierarchical: boolean
+}
+
+export interface BuildSchematicSheetPlanOptions {
+  /**
+   * Promote this circuit-json `schematic_sheet` to KiCad's root page instead of
+   * emitting it as a child file. The implicit root remains the default.
+   */
+  rootSchematicSheetId?: string
 }
 
 const DEFAULT_ROOT_FILENAME = "schematic.kicad_sch"
@@ -81,31 +90,47 @@ function toFileBaseName(sheetName: string, fallbackIndex: number): string {
  */
 export function buildSchematicSheetPlan(
   circuitJson: CircuitJson,
+  options: BuildSchematicSheetPlanOptions = {},
 ): SchematicSheetPlan {
   const rootUuid = crypto.randomUUID()
-
-  const root: RootSchematicSheetPlanEntry = {
-    schematicSheetId: null,
-    sheetName: "Root",
-    fileBaseName: "root",
-    filename: DEFAULT_ROOT_FILENAME,
-    pageNumber: "1",
-    fileUuid: rootUuid,
-  }
 
   const schematicSheets = (circuitJson as any[])
     .filter((el) => el.type === "schematic_sheet")
     .slice()
     .sort((a, b) => (a.sheet_index ?? 0) - (b.sheet_index ?? 0))
 
+  const selectedRootSheet = options.rootSchematicSheetId
+    ? schematicSheets.find(
+        (sheet) => sheet.schematic_sheet_id === options.rootSchematicSheetId,
+      )
+    : undefined
+  if (options.rootSchematicSheetId && !selectedRootSheet) {
+    throw new Error(
+      `Unknown rootSchematicSheetId "${options.rootSchematicSheetId}"`,
+    )
+  }
+
+  const root: RootSchematicSheetPlanEntry = {
+    schematicSheetId: selectedRootSheet?.schematic_sheet_id ?? null,
+    sheetName:
+      selectedRootSheet?.display_name ?? selectedRootSheet?.name ?? "Root",
+    fileBaseName: "root",
+    filename: DEFAULT_ROOT_FILENAME,
+    pageNumber: "1",
+    fileUuid: rootUuid,
+  }
+
   const usedFileBaseNames = new Set<string>(["root"])
   const children: ChildSchematicSheetPlanEntry[] = []
-  for (let index = 0; index < schematicSheets.length; index++) {
-    const sheet = schematicSheets[index]
+  const childSheets = schematicSheets
+    .map((sheet, originalIndex) => ({ sheet, originalIndex }))
+    .filter(({ sheet }) => sheet.schematic_sheet_id !== root.schematicSheetId)
+  for (let index = 0; index < childSheets.length; index++) {
+    const { sheet, originalIndex } = childSheets[index]!
     const sheetName: string =
-      sheet.display_name ?? sheet.name ?? `Sheet ${index + 1}`
+      sheet.display_name ?? sheet.name ?? `Sheet ${originalIndex + 1}`
 
-    let fileBaseName = toFileBaseName(sheet.name ?? sheetName, index)
+    let fileBaseName = toFileBaseName(sheet.name ?? sheetName, originalIndex)
     if (usedFileBaseNames.has(fileBaseName)) {
       let suffix = 2
       while (usedFileBaseNames.has(`${fileBaseName}_${suffix}`)) suffix++
@@ -128,6 +153,6 @@ export function buildSchematicSheetPlan(
     rootUuid,
     root,
     children,
-    isHierarchical: children.length > 0,
+    isHierarchical: schematicSheets.length > 0,
   }
 }
