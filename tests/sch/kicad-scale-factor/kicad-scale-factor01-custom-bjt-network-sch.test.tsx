@@ -165,13 +165,16 @@ test("kicad-scale-factor01 custom BJT-style symbol with mixed components", async
 
   expect(kicadSnapshot.exitCode).toBe(0)
 
-  expect(
-    stackSchematicCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({
-        circuitJson,
-        outputType: "schematic",
-      }),
-      kicadSnapshot.generatedFileContent["temp_file.png"]!,
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
+  const comparisonPng = await stackSchematicCircuitJsonKicadPngs(
+    await takeCircuitJsonSnapshot({
+      circuitJson,
+      outputType: "schematic",
+    }),
+    kicadSnapshot.generatedFileContent["temp_file.png"]!,
+  )
+  await Bun.write(
+    "./debug-output/kicad-scale-factor01-comparison.png",
+    comparisonPng,
+  )
+  expect(comparisonPng).toMatchPngSnapshot(import.meta.path)
 }, 20_000)
