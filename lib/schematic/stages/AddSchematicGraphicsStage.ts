@@ -1,3 +1,4 @@
+import { Resvg } from "@resvg/resvg-js"
 import type {
   CircuitJson,
   SchematicLine as CircuitSchematicLine,
@@ -5,6 +6,7 @@ import type {
 } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
+  Image,
   Polyline,
   Pts,
   SchematicText,
@@ -24,10 +26,27 @@ const DEFAULT_SECTION_LINE_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
 const DEFAULT_SECTION_TEXT_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
 const DEFAULT_SECTION_TEXT_PADDING_X_MM = 0.22
 const DEFAULT_SECTION_TEXT_PADDING_Y_MM = 0.18
+const KICAD_IMAGE_DPI = 300
+const IMAGE_PAPER_MARGIN_MM = 10
 
 const isStandaloneSchematicElement = (
   element: CircuitSchematicLine | CircuitSchematicText,
 ): boolean => !element.schematic_component_id
+
+const decodeInlineSvg = (url: string): string | undefined => {
+  const dataUrlMatch = url.match(/^data:image\/svg\+xml(;base64)?,(.*)$/s)
+  if (!dataUrlMatch) return undefined
+
+  const [, base64Marker, encodedData] = dataUrlMatch
+  if (!encodedData) return undefined
+
+  return base64Marker
+    ? Buffer.from(encodedData, "base64").toString("utf8")
+    : decodeURIComponent(encodedData)
+}
+
+const splitImageData = (base64Data: string): string[] =>
+  base64Data.match(/.{1,76}/g) ?? []
 
 export class AddSchematicGraphicsStage extends ConverterStage<
   CircuitJson,
@@ -51,8 +70,13 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     const schematicTexts = (db.schematic_text?.list() || []).filter(
       isStandaloneSchematicElement,
     )
+    const schematicGraphics = db.schematic_graphic?.list() || []
 
-    if (schematicLines.length === 0 && schematicTexts.length === 0) {
+    if (
+      schematicLines.length === 0 &&
+      schematicTexts.length === 0 &&
+      schematicGraphics.length === 0
+    ) {
       this.finished = true
       return
     }
@@ -133,6 +157,43 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         texts.push(schematicText)
       }
       kicadSch.texts = texts
+    }
+
+    if (schematicGraphics.length > 0) {
+      const paperSize = this.ctx.schematicPaperSize
+      if (!paperSize) {
+        throw new Error("Schematic paper size is required for graphics")
+      }
+      const images = kicadSch.images || []
+      for (const graphic of schematicGraphics) {
+        const inlineSvg =
+          graphic.svg_content ??
+          (graphic.asset ? decodeInlineSvg(graphic.asset.url) : undefined)
+        if (!inlineSvg) continue
+
+        const renderedImage = new Resvg(inlineSvg, {
+          fitTo: { mode: "original" },
+        }).render()
+        const baseWidthMm = (renderedImage.width / KICAD_IMAGE_DPI) * 25.4
+        const baseHeightMm = (renderedImage.height / KICAD_IMAGE_DPI) * 25.4
+        const availableWidthMm = paperSize.width - 2 * IMAGE_PAPER_MARGIN_MM
+        const availableHeightMm = paperSize.height - 2 * IMAGE_PAPER_MARGIN_MM
+        const imageScale = Math.min(
+          availableWidthMm / baseWidthMm,
+          availableHeightMm / baseHeightMm,
+        )
+        const pngBase64 = renderedImage.asPng().toString("base64")
+
+        images.push(
+          new Image({
+            position: [paperSize.width / 2, paperSize.height / 2],
+            scale: imageScale,
+            uuid: crypto.randomUUID(),
+            data: splitImageData(pngBase64),
+          }),
+        )
+      }
+      kicadSch.images = images
     }
 
     this.finished = true

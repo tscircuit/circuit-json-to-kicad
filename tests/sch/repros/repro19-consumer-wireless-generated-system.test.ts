@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { readFile } from "node:fs/promises"
 import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import { parseKicadSch } from "kicadts"
 import { takeSchematicSheetsSnapshot } from "../../fixtures/take-schematic-sheets-snapshot"
 
 const fixtureUrl = new URL(
@@ -47,6 +48,21 @@ test("repro19: convert the Consumer Wireless Module generated system", async () 
     "consumer_wireless_module-TMP103 Sensors.svg",
     "consumer_wireless_module-W3006 Wireless Connectivity Antenna.svg",
   ])
+
+  const systemDiagramSchematic = files.find(
+    ({ filename }) => filename === "system_diagram.kicad_sch",
+  )
+  if (!systemDiagramSchematic) {
+    throw new Error("system_diagram.kicad_sch was not generated")
+  }
+  const systemDiagramImages = parseKicadSch(
+    systemDiagramSchematic.content,
+  ).images
+  expect(systemDiagramImages).toHaveLength(1)
+  expect(
+    systemDiagramImages[0]?.data?.value.startsWith("iVBORw0KGgo"),
+  ).toBeTrue()
+
   for (const svgName of svgNames) {
     const snapshotName = svgName
       .replace(/\.svg$/, "")
