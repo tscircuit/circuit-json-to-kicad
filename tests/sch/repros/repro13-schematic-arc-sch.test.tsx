@@ -2,9 +2,9 @@ import { expect, test } from "bun:test"
 import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 
 test("repro13 schematic arc schematic", async () => {
   const circuit = new Circuit()
@@ -56,7 +56,7 @@ test("repro13 schematic arc schematic", async () => {
   expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson: circuitJson as any,
         outputType: "schematic",

@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { Circuit } from "tscircuit"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
@@ -114,7 +114,7 @@ test("repro13 schematic sections snapshot", async () => {
     kicadFileType: "sch",
   })
 
-  const stackedSnapshot = await stackCircuitJsonKicadPngs(
+  const stackedSnapshot = await stackSchematicCircuitJsonKicadPngs(
     await takeCircuitJsonSnapshot({
       circuitJson,
       outputType: "schematic",

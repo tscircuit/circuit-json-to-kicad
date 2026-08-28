@@ -4,7 +4,7 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { parseKicadSch } from "kicadts"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 
 const Example = () => (
   <board width="10mm" height="10mm">
@@ -95,7 +95,7 @@ test("repro15 custom symbol schematic graphics", async () => {
   })
 
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson,
         outputType: "schematic",

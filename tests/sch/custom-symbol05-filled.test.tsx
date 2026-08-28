@@ -3,7 +3,7 @@ import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../fixtures/stackSchematicCircuitJsonKicadPngs"
 
 /**
  * This test verifies that isFilled and fillColor properties work correctly
@@ -94,7 +94,7 @@ test("custom-symbol05: filled path with isFilled=true", async () => {
   expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson: circuitJson,
         outputType: "schematic",

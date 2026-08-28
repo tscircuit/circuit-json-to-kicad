@@ -3,7 +3,7 @@ import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../fixtures/stackSchematicCircuitJsonKicadPngs"
 
 /**
  * Pin on BOTTOM of symbol should have angle=90
@@ -62,7 +62,7 @@ test("custom-symbol10: pin on BOTTOM has angle 90", async () => {
   expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson: circuitJson,
         outputType: "schematic",

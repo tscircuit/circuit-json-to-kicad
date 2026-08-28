@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit-latest"
 import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
@@ -97,7 +97,7 @@ test("repro20: long references stay beside vertical resistors and capacitors", a
   })
   expect(kicadSnapshot.exitCode).toBe(0)
   await expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),

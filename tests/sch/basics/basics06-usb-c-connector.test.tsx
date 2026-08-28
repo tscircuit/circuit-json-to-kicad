@@ -7,6 +7,7 @@ import type { AnyCircuitElement } from "circuit-json"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 import usbCC165948CircuitJson from "tests/assets/usb-c-C165948.circuit.json"
 
 test("sch basics06 usb-c connector", async () => {
@@ -105,7 +106,7 @@ test("sch basics06 usb-c connector", async () => {
   expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),

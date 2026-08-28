@@ -3,7 +3,7 @@ import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 
 test("repro20 generic connector has an embedded KiCad symbol", async () => {
   const circuit = new Circuit()
@@ -80,7 +80,7 @@ test("repro20 generic connector has an embedded KiCad symbol", async () => {
 
   expect(kicadSnapshot.exitCode).toBe(0)
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson,
         outputType: "schematic",

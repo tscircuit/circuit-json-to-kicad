@@ -4,7 +4,7 @@ import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 
 const pinLabels = {
   pin1: ["pin1"],
@@ -174,7 +174,7 @@ test("repro11 ZX_XH2_54_3PZZ schematic snapshot", async () => {
 
   await Bun.write(
     "./debug-output/repro11-zx-xh2-54-3pzz-sch.stacked.png",
-    await stackCircuitJsonKicadPngs(
+    await stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson,
         outputType: "schematic",
