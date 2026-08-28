@@ -58,7 +58,7 @@ function getCleanTypeName(ftype?: string): string {
 function sanitizeName(name: string): string {
   return (
     name
-      .replace(/[\\\/:\s]+/g, "_") // Replace invalid chars with underscore
+      .replace(/[^A-Za-z0-9_-]+/g, "_") // Replace invalid chars with underscore
       .replace(/_+/g, "_") // Collapse multiple underscores
       .replace(/^_|_$/g, "") // Trim leading/trailing underscores
       .trim() || "component"
