@@ -61,8 +61,8 @@ function svgSheetRank(
 
 /**
  * Renders a full hierarchical KiCad schematic project (root + child sheet files)
- * with real `kicad-cli`, then stacks the tscircuit stacked-sheets render above
- * the per-sheet KiCad renders so a reviewer can compare them side by side.
+ * with real `kicad-cli`, then renders the KiCad root page followed by one
+ * side-by-side Circuit JSON/KiCad comparison row for each child sheet.
  *
  * Throws if kicad-cli fails to parse/render the hierarchy, so a malformed sheet
  * node, instance path, or missing child file fails the test loudly.
