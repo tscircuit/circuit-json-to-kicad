@@ -43,12 +43,6 @@ jobs:
         run: bun run download-demos
 
       - name: Run tests
-        env:
-          BUN_UPDATE_SNAPSHOTS: '1'
-          FORCE_BUN_UPDATE_SNAPSHOTS: '1'
-        run: bun test tests/sch/repros/repro20-vertical-long-reference.test.ts
-
-      - name: Run suite
         run: bun test
 
       - name: Upload snapshot artifacts
