@@ -1,13 +1,60 @@
 import { expect, test } from "bun:test"
-import type { CircuitJson } from "circuit-json"
+import { Circuit } from "tscircuit-latest"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
-import fixture from "./fixtures/repro20-vertical-long-reference.json"
 
 test("repro20: long references collide with vertical resistors and capacitors", async () => {
-  const circuitJson = fixture as CircuitJson
+  const circuit = new Circuit()
+  circuit.pcbDisabled = true
+  circuit.add(
+    <board>
+      <resistor
+        name="R_GPIO0_PU"
+        resistance="10k"
+        symbolName="boxresistor"
+        schRotation={270}
+        schX={-2}
+        schY={1.5}
+      />
+      <capacitor
+        name="C_REG_OUT_BULK"
+        capacitance="10uF"
+        schRotation={270}
+        schX={2}
+        schY={1.5}
+      />
+      <resistor
+        name="R1"
+        resistance="10k"
+        symbolName="boxresistor"
+        schRotation={270}
+        schX={-2}
+        schY={-1.5}
+      />
+      <capacitor
+        name="C1"
+        capacitance="10uF"
+        schRotation={270}
+        schX={2}
+        schY={-1.5}
+      />
+      <trace from=".R_GPIO0_PU > .pin1" to=".C_REG_OUT_BULK > .pin1" />
+      <trace from=".R_GPIO0_PU > .pin2" to=".C_REG_OUT_BULK > .pin2" />
+      <trace from=".R1 > .pin1" to=".C1 > .pin1" />
+      <trace from=".R1 > .pin2" to=".C1 > .pin2" />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+  const sourceTraces = circuitJson.filter(
+    (element) => element.type === "source_trace",
+  )
+  expect(sourceTraces).toHaveLength(4)
+  for (const trace of sourceTraces) {
+    expect(trace.connected_source_port_ids).toHaveLength(2)
+  }
   const components = circuitJson.filter(
     (element) => element.type === "source_component",
   )
@@ -36,7 +83,6 @@ test("repro20: long references collide with vertical resistors and capacitors", 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
-    fitSchematicToContent: true,
   })
   expect(kicadSnapshot.exitCode).toBe(0)
   await expect(
