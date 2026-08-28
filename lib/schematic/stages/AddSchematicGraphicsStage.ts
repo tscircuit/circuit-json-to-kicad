@@ -27,7 +27,9 @@ const DEFAULT_SECTION_TEXT_PADDING_Y_MM = 0.18
 
 const isStandaloneSchematicElement = (
   element: CircuitSchematicLine | CircuitSchematicText,
-): boolean => !element.schematic_component_id
+): boolean =>
+  !element.schematic_component_id &&
+  !("schematic_symbol_id" in element && element.schematic_symbol_id)
 
 export class AddSchematicGraphicsStage extends ConverterStage<
   CircuitJson,

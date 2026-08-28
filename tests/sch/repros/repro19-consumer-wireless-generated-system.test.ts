@@ -83,7 +83,8 @@ test("repro19: convert the Consumer Wireless Module generated system", async () 
   if (!logicSchematic) {
     throw new Error("logic_control.kicad_sch was not generated")
   }
-  const logicSymbol = parseKicadSch(logicSchematic.content).symbols[0]
+  const parsedLogicSchematic = parseKicadSch(logicSchematic.content)
+  const logicSymbol = parsedLogicSchematic.symbols[0]
   expect(
     logicSymbol?.properties.find(({ key }) => key === "Reference")?.effects
       ?.hiddenText,
@@ -92,6 +93,9 @@ test("repro19: convert the Consumer Wireless Module generated system", async () 
     logicSymbol?.properties.find(({ key }) => key === "Value")?.effects
       ?.hiddenText,
   ).toBeTrue()
+  expect(
+    parsedLogicSchematic.texts.filter(({ value }) => value === "LVC1G34"),
+  ).toHaveLength(0)
 
   for (const svgName of svgNames) {
     const snapshotName = svgName
