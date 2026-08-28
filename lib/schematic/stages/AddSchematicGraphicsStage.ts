@@ -1,5 +1,6 @@
 import type {
   CircuitJson,
+  SchematicArc as CircuitSchematicArc,
   SchematicLine as CircuitSchematicLine,
   SchematicText as CircuitSchematicText,
 } from "circuit-json"
@@ -7,8 +8,10 @@ import type { KicadSch } from "kicadts"
 import {
   Polyline,
   Pts,
+  SchematicArc,
   SchematicText,
   Stroke,
+  SymbolArcFill,
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
@@ -17,6 +20,7 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
+import { getSchematicArcPoints } from "../getSchematicArcPoints"
 import { getTextJustificationFromAnchor } from "./utils/getTextJustificationFromAnchor"
 
 const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
@@ -26,7 +30,7 @@ const DEFAULT_SECTION_TEXT_PADDING_X_MM = 0.22
 const DEFAULT_SECTION_TEXT_PADDING_Y_MM = 0.18
 
 const isStandaloneSchematicElement = (
-  element: CircuitSchematicLine | CircuitSchematicText,
+  element: CircuitSchematicArc | CircuitSchematicLine | CircuitSchematicText,
 ): boolean =>
   !element.schematic_component_id &&
   !("schematic_symbol_id" in element && element.schematic_symbol_id)
@@ -50,13 +54,51 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     const schematicLines = (db.schematic_line?.list() || []).filter(
       isStandaloneSchematicElement,
     )
+    const schematicArcs = (db.schematic_arc?.list() || []).filter(
+      isStandaloneSchematicElement,
+    )
     const schematicTexts = (db.schematic_text?.list() || []).filter(
       isStandaloneSchematicElement,
     )
 
-    if (schematicLines.length === 0 && schematicTexts.length === 0) {
+    if (
+      schematicLines.length === 0 &&
+      schematicArcs.length === 0 &&
+      schematicTexts.length === 0
+    ) {
       this.finished = true
       return
+    }
+
+    if (schematicArcs.length > 0) {
+      const arcs = kicadSch.arcs || []
+      for (const arc of schematicArcs) {
+        const points = getSchematicArcPoints(arc)
+        const start = applyToPoint(this.ctx.c2kMatSch, points.start)
+        const mid = applyToPoint(this.ctx.c2kMatSch, points.mid)
+        const end = applyToPoint(this.ctx.c2kMatSch, points.end)
+
+        const stroke = new Stroke()
+        stroke.width =
+          (arc.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
+        stroke.type = arc.is_dashed ? "dash" : "default"
+        stroke.color = DEFAULT_SECTION_LINE_COLOR
+
+        const fill = new SymbolArcFill()
+        fill.type = "none"
+
+        arcs.push(
+          new SchematicArc({
+            start,
+            mid,
+            end,
+            stroke,
+            fill,
+            uuid: crypto.randomUUID(),
+          }),
+        )
+      }
+      kicadSch.arcs = arcs
     }
 
     if (schematicLines.length > 0) {

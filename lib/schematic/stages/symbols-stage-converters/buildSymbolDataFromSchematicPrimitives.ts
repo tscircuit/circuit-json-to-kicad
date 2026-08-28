@@ -1,11 +1,13 @@
 import type {
   CircuitJson,
+  SchematicArc,
   SchematicCircle,
   SchematicLine,
   SchematicPath,
   SchematicPort,
   SchematicText,
 } from "circuit-json"
+import { getSchematicArcPoints } from "../../getSchematicArcPoints"
 
 export function buildSymbolDataFromSchematicPrimitives(params: {
   circuitJson: CircuitJson
@@ -37,6 +39,10 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     )
   }
   // Collect all primitives linked to this schematic_symbol
+  const arcs = circuitJson.filter(
+    (el): el is SchematicArc =>
+      el.type === "schematic_arc" && isElementInTargetSymbolScope(el),
+  )
   const circles = circuitJson.filter(
     (el): el is SchematicCircle =>
       el.type === "schematic_circle" && isElementInTargetSymbolScope(el),
@@ -125,6 +131,15 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
 
   // Convert to internal primitive format
   const primitives: any[] = []
+
+  // Convert schematic_arc to KiCad's start/mid/end representation.
+  for (const arc of arcs) {
+    primitives.push({
+      type: "arc",
+      ...getSchematicArcPoints(arc),
+      isDashed: arc.is_dashed,
+    })
+  }
 
   // Convert schematic_circle to circle primitives
   for (const circle of circles) {

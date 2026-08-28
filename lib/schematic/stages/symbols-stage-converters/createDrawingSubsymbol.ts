@@ -4,8 +4,9 @@ import {
   scale as createScaleMatrix,
   translate,
 } from "transformation-matrix"
-import { createPolylineFromPoints } from "./createPolylineFromPoints"
+import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
+import { createPolylineFromPoints } from "./createPolylineFromPoints"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
 
 export function createDrawingSubsymbol({
@@ -32,7 +33,14 @@ export function createDrawingSubsymbol({
   )
 
   for (const primitive of symbolData.primitives || []) {
-    if (primitive.type === "path" && primitive.points) {
+    if (primitive.type === "arc") {
+      drawingSymbol.arcs.push(
+        createArcFromPrimitive({
+          primitive,
+          transform,
+        }),
+      )
+    } else if (primitive.type === "path" && primitive.points) {
       let fillType: "none" | "background" | "outline" = "none"
       if (primitive.fill) {
         fillType = "background"

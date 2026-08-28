@@ -82,6 +82,13 @@ test("repro15 custom symbol schematic graphics", async () => {
     "Custom:custom_chip_schematic_symbol_2",
   ])
 
+  const drawingSubsymbol = converter
+    .getOutput()
+    .libSymbols?.symbols[0]?.subSymbols.find((symbol) =>
+      symbol.libraryId?.endsWith("_0_1"),
+    )
+  expect(drawingSubsymbol?.arcs).toHaveLength(1)
+
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
     kicadFileType: "sch",
