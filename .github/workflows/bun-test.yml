@@ -55,5 +55,4 @@ jobs:
             tests/**/__snapshots__/*.snap.svg
             tests/**/__snapshots__/*.received.svg
             tests/**/__snapshots__/*.diff.png
-            debug-output/kicad-scale-factor01-comparison.png
           if-no-files-found: ignore
