@@ -17,6 +17,15 @@ function isBuiltinSymbol(symbolName: string): boolean {
   return symbolName in symbols
 }
 
+function sanitizeLibraryIdentifierPart(value: string): string {
+  return (
+    value
+      .replace(/[^A-Za-z0-9_-]+/g, "_")
+      .replace(/_+/g, "_")
+      .replace(/^_|_$/g, "") || "connector"
+  )
+}
+
 /**
  * Get the library ID for a component's symbol.
  *
@@ -59,7 +68,10 @@ export function getLibraryId(
   }
   if (sourceComp.ftype === "simple_pin_header") {
     const pinCount = (sourceComp as SourceSimplePinHeader).pin_count
-    return `Connector_Generic:Conn_01x${pinCount}`
+    const instanceName = sanitizeLibraryIdentifierPart(
+      sourceComp.name ?? schematicComp.schematic_component_id,
+    )
+    return `Connector_Generic:Conn_01x${pinCount}_${instanceName}`
   }
 
   // Generate ergonomic name using manufacturer part number or footprint string
