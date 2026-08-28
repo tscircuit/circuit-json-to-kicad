@@ -11,6 +11,8 @@ import { stackPngsVertically } from "./stackPngsVertically"
 export interface SchematicSheetsSnapshot {
   /** Per-page SVG names kicad-cli produced (root/overview page + one per sheet) */
   svgNames: string[]
+  /** Raw per-page SVG output, keyed by the filename produced by kicad-cli. */
+  svgFiles: Record<string, string>
   /** tscircuit stacked-sheets render above the KiCad-rendered hierarchy, as one PNG */
   stackedPng: Buffer
 }
@@ -48,7 +50,11 @@ function svgSheetRank(
 ): number {
   if (svgName === `${rootBase}.svg`) return -1
   const sheetName = svgName.slice(rootBase.length + 1, -".svg".length)
-  const idx = orderedSheetNames.indexOf(sheetName)
+  // kicad-cli replaces path separators in sheet display names when deriving
+  // per-page SVG filenames (for example, "I/O" becomes "I_O").
+  const idx = orderedSheetNames
+    .map((name) => name.replace(/[\\/]/g, "_"))
+    .indexOf(sheetName)
   return idx === -1 ? Number.MAX_SAFE_INTEGER : idx
 }
 
@@ -118,8 +124,10 @@ export const takeSchematicSheetsSnapshot = async (params: {
 
     // KiCad column: each sheet's SVG -> labeled PNG -> stacked.
     const kicadPngs: Buffer[] = []
+    const svgFiles: Record<string, string> = {}
     for (const svgName of svgNames) {
       const svgBuffer = await readFile(join(outputDir, svgName))
+      svgFiles[svgName] = svgBuffer.toString("utf8")
       const png = await sharp(svgBuffer, { density: 100 }).png().toBuffer()
       kicadPngs.push(await withLabel(png, svgName, 22, 6))
     }
@@ -138,7 +146,7 @@ export const takeSchematicSheetsSnapshot = async (params: {
       await withLabel(kicadStackedPng, "KiCad", 26, 8),
     ])
 
-    return { svgNames, stackedPng }
+    return { svgFiles, svgNames, stackedPng }
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
