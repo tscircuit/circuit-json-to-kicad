@@ -211,7 +211,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolName =
       schematicComponent.symbol_name ||
       (sourceComp.ftype === "simple_chip" ||
-      sourceComp.ftype === "simple_pin_header"
+      sourceComp.ftype === "simple_pin_header" ||
+      sourceComp.ftype === "simple_connector"
         ? `generic_chip_${schematicComponent.source_component_id}`
         : null)
 
