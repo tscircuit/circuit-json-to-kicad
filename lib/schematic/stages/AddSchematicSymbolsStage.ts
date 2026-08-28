@@ -531,16 +531,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Need to subtract symbol center to match the normalized geometry
     const symbolCenter = symbol.center || { x: 0, y: 0 }
 
-    const isVertical =
-      symbolName.includes("_down") || symbolName.includes("_up")
-    const horizontalTextOffset = isVertical ? 0.15 : 0
-
     const refTextPos = refTextPrimitive
       ? applyToPoint(c2kMatSch, {
           x:
-            schematicComponent.center.x +
-            (refTextPrimitive.x - symbolCenter.x) +
-            horizontalTextOffset,
+            schematicComponent.center.x + (refTextPrimitive.x - symbolCenter.x),
           y:
             schematicComponent.center.y + (refTextPrimitive.y - symbolCenter.y),
         })
@@ -549,27 +543,19 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     const valTextPos = valTextPrimitive
       ? applyToPoint(c2kMatSch, {
           x:
-            schematicComponent.center.x +
-            (valTextPrimitive.x - symbolCenter.x) +
-            horizontalTextOffset,
+            schematicComponent.center.x + (valTextPrimitive.x - symbolCenter.x),
           y:
             schematicComponent.center.y + (valTextPrimitive.y - symbolCenter.y),
         })
       : { x: symbolKicadPos.x, y: valueBelowBodyY }
 
-    // Testpoint reference primitives sit beside the glyph. Centering that text
-    // on its anchor point places the reference directly over the testpoint.
-    const shouldPreservePrimitiveAnchors = symbolName.startsWith("testpoint_")
-
+    // Text positions are anchor points, not centers. Preserve the primitive's
+    // alignment so longer fields grow away from the symbol instead of across it.
     return {
       refTextPos,
       valTextPos,
-      refJustify: shouldPreservePrimitiveAnchors
-        ? getTextJustificationFromAnchor(refTextPrimitive?.anchor)
-        : undefined,
-      valJustify: shouldPreservePrimitiveAnchors
-        ? getTextJustificationFromAnchor(valTextPrimitive?.anchor)
-        : undefined,
+      refJustify: getTextJustificationFromAnchor(refTextPrimitive?.anchor),
+      valJustify: getTextJustificationFromAnchor(valTextPrimitive?.anchor),
     }
   }
 

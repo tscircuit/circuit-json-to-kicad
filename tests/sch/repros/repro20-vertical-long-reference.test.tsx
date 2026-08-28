@@ -1,11 +1,12 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit-latest"
+import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro20: long references collide with vertical resistors and capacitors", async () => {
+test("repro20: long references stay beside vertical resistors and capacitors", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
   circuit.add(
@@ -79,6 +80,16 @@ test("repro20: long references collide with vertical resistors and capacitors", 
   const output = converter.getOutputString()
   for (const component of components) {
     expect(output).toContain(`(property "Reference" "${component.name}"`)
+  }
+  const schematic = parseKicadSch(output)
+  for (const symbol of schematic.symbols) {
+    for (const key of ["Reference", "Value"]) {
+      const property = symbol.properties.find(
+        (property) => property.key === key,
+      )
+      expect(property?.effects?.justify?.horizontal).toBe("left")
+      expect(property!.at!.x).toBeGreaterThan(symbol.at!.x)
+    }
   }
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
