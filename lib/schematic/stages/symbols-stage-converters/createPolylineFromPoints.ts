@@ -1,14 +1,19 @@
 import { Pts, Stroke, SymbolPolyline, SymbolPolylineFill, Xy } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
+import { createSymbolFillSexprPrimitives } from "./createSymbolFillSexprPrimitives"
 
 export function createPolylineFromPoints({
   points,
   transform,
-  fillType,
+  isFilled,
+  fillColor,
+  fallbackFillType,
 }: {
   points: Array<{ x: number; y: number }>
   transform: Matrix
-  fillType: "none" | "background" | "outline"
+  isFilled: boolean
+  fillColor?: string
+  fallbackFillType?: "background" | "outline"
 }): SymbolPolyline {
   const polyline = new SymbolPolyline()
 
@@ -24,8 +29,13 @@ export function createPolylineFromPoints({
   stroke.type = "default"
   polyline.stroke = stroke
 
-  const fill = new SymbolPolylineFill()
-  fill.type = fillType
+  const fill = SymbolPolylineFill.fromSexprPrimitives(
+    createSymbolFillSexprPrimitives({
+      isFilled,
+      fillColor,
+      fallbackFillType,
+    }),
+  )
   polyline.fill = fill
 
   return polyline
