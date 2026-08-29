@@ -183,13 +183,30 @@ test("repro24: preserves schematic rectangle in KiCad", async () => {
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
+  const crystalRectangle = circuitJson.find(
+    (element) => element.type === "schematic_rect",
+  )
+  const expectedCrystalPolylineCount = circuitJson.filter(
+    (element) =>
+      ((element.type === "schematic_path" ||
+        element.type === "schematic_line" ||
+        element.type === "schematic_rect") &&
+        element.schematic_symbol_id ===
+          crystalRectangle?.schematic_symbol_id) ||
+      (element.type === "schematic_line" &&
+        element.schematic_component_id ===
+          crystalRectangle?.schematic_component_id &&
+        !element.schematic_symbol_id),
+  ).length
   const crystalDrawingSymbol = converter
     .getOutput()
     .libSymbols?.symbols.find((symbol) =>
       symbol.libraryId?.includes("X322525MRB4SI"),
     )
     ?.subSymbols.find((symbol) => symbol.libraryId?.includes("_0_1"))
-  expect(crystalDrawingSymbol?.polylines).toHaveLength(10)
+  expect(crystalDrawingSymbol?.polylines).toHaveLength(
+    expectedCrystalPolylineCount,
+  )
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
