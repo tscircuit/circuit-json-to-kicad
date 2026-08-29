@@ -9,6 +9,7 @@ export function createPolylineFromPoints({
   fillColor,
   fallbackFillType,
   strokeWidth,
+  isDashed,
   scale,
 }: {
   points: Array<{ x: number; y: number }>
@@ -17,6 +18,7 @@ export function createPolylineFromPoints({
   fillColor?: string
   fallbackFillType?: "background" | "outline"
   strokeWidth?: number | null
+  isDashed?: boolean
   scale: number
 }): SymbolPolyline {
   const polyline = new SymbolPolyline()
@@ -30,7 +32,7 @@ export function createPolylineFromPoints({
 
   const stroke = new Stroke()
   stroke.width = strokeWidth == null ? 0.254 : strokeWidth * scale
-  stroke.type = "default"
+  stroke.type = isDashed ? "dash" : "default"
   polyline.stroke = stroke
 
   const fill = SymbolPolylineFill.fromSexprPrimitives(

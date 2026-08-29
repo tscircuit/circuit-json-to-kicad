@@ -10,7 +10,7 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 const decouplingCapacitors = ["C51", "C52", "C53", "C54"] as const
 const ethernetTerminationCapacitors = ["C32", "C33", "C34", "C35"] as const
 
-test("repro24: C70593 schematic rectangle is missing from KiCad", async () => {
+test("repro24: preserves schematic rectangle in KiCad", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board
@@ -183,7 +183,30 @@ test("repro24: C70593 schematic rectangle is missing from KiCad", async () => {
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
-  expect(output).not.toContain("(rectangle")
+  const crystalRectangle = circuitJson.find(
+    (element) => element.type === "schematic_rect",
+  )
+  const expectedCrystalPolylineCount = circuitJson.filter(
+    (element) =>
+      ((element.type === "schematic_path" ||
+        element.type === "schematic_line") &&
+        element.schematic_symbol_id ===
+          crystalRectangle?.schematic_symbol_id) ||
+      (element.type === "schematic_line" &&
+        element.schematic_component_id ===
+          crystalRectangle?.schematic_component_id &&
+        !element.schematic_symbol_id),
+  ).length
+  const crystalDrawingSymbol = converter
+    .getOutput()
+    .libSymbols?.symbols.find((symbol) =>
+      symbol.libraryId?.includes("X322525MRB4SI"),
+    )
+    ?.subSymbols.find((symbol) => symbol.libraryId?.includes("_0_1"))
+  expect(crystalDrawingSymbol?.polylines).toHaveLength(
+    expectedCrystalPolylineCount,
+  )
+  expect(crystalDrawingSymbol?.rectangles).toHaveLength(1)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
