@@ -50,6 +50,7 @@ export function createDrawingSubsymbol({
         fallbackFillType:
           primitive.kicadFillType === "outline" ? "outline" : "background",
         strokeWidth: primitive.strokeWidth,
+        isDashed: primitive.isDashed,
         scale: symbolScale,
       })
       drawingSymbol.polylines.push(polyline)

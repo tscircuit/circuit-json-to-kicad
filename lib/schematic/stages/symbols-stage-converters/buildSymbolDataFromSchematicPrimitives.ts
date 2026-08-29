@@ -5,6 +5,7 @@ import type {
   SchematicLine,
   SchematicPath,
   SchematicPort,
+  SchematicRect,
   SchematicText,
 } from "circuit-json"
 import { getSchematicArcPoints } from "../../getSchematicArcPoints"
@@ -67,6 +68,10 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   const paths = circuitJson.filter(
     (el): el is SchematicPath =>
       el.type === "schematic_path" && isElementInTargetSymbolScope(el),
+  )
+  const rectangles = circuitJson.filter(
+    (el): el is SchematicRect =>
+      el.type === "schematic_rect" && isElementInTargetSymbolScope(el),
   )
   // Collect schematic_text elements for custom symbol text (e.g., +/- labels)
   const texts = circuitJson.filter(
@@ -178,6 +183,35 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
         strokeWidth: path.stroke_width,
       })
     }
+  }
+
+  // KiCad symbol rectangles cannot be rotated, so represent every rectangle
+  // as a closed polyline. This preserves both rotated and axis-aligned
+  // schematic_rect elements through the same conversion path.
+  for (const rect of rectangles) {
+    const halfWidth = rect.width / 2
+    const halfHeight = rect.height / 2
+    const rotationRadians = (rect.rotation * Math.PI) / 180
+    const cos = Math.cos(rotationRadians)
+    const sin = Math.sin(rotationRadians)
+    const corners = [
+      { x: -halfWidth, y: -halfHeight },
+      { x: halfWidth, y: -halfHeight },
+      { x: halfWidth, y: halfHeight },
+      { x: -halfWidth, y: halfHeight },
+    ].map((corner) => ({
+      x: rect.center.x + corner.x * cos - corner.y * sin,
+      y: rect.center.y + corner.x * sin + corner.y * cos,
+    }))
+
+    primitives.push({
+      type: "path",
+      points: [...corners, corners[0]],
+      fill: rect.is_filled,
+      fillColor: rect.fill_color,
+      strokeWidth: rect.stroke_width,
+      isDashed: rect.is_dashed,
+    })
   }
 
   // Convert schematic_text to text primitives

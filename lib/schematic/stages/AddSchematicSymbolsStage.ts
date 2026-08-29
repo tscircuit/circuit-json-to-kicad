@@ -106,7 +106,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             (el.type === "schematic_line" ||
               el.type === "schematic_circle" ||
               el.type === "schematic_arc" ||
-              el.type === "schematic_path") &&
+              el.type === "schematic_path" ||
+              el.type === "schematic_rect") &&
             el.schematic_component_id ===
               schematicComponent.schematic_component_id &&
             el.schematic_symbol_id,
@@ -579,7 +580,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         (el.type === "schematic_line" ||
           el.type === "schematic_circle" ||
           el.type === "schematic_arc" ||
-          el.type === "schematic_path") &&
+          el.type === "schematic_path" ||
+          el.type === "schematic_rect") &&
         el.schematic_component_id === componentId &&
         el.schematic_symbol_id,
     )
