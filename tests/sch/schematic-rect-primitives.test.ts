@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import { schematic_rect } from "circuit-json"
+import { Xy } from "kicadts"
 import { buildSymbolDataFromSchematicPrimitives } from "lib/schematic/stages/symbols-stage-converters/buildSymbolDataFromSchematicPrimitives"
 import { createDrawingSubsymbol } from "lib/schematic/stages/symbols-stage-converters/createDrawingSubsymbol"
 
@@ -42,11 +43,14 @@ for (const rotation of [0, 360, -360, 45, 90]) {
       const points = drawing.polylines[0]!.points!.points
       expect(points).toHaveLength(5)
       expect(points[0]).toEqual(points[4])
+      const firstPoint = points[0]
+      if (!(firstPoint instanceof Xy))
+        throw new Error("Expected rectangle corner")
       const radians = (rotation * Math.PI) / 180
-      expect(points[0]!.x).toBeCloseTo(
+      expect(firstPoint.x).toBeCloseTo(
         -4 * Math.cos(radians) + 2 * Math.sin(radians),
       )
-      expect(points[0]!.y).toBeCloseTo(
+      expect(firstPoint.y).toBeCloseTo(
         -4 * Math.sin(radians) - 2 * Math.cos(radians),
       )
     }
