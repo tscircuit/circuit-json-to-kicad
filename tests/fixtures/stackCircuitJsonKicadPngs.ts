@@ -1,30 +1,57 @@
 import sharp from "sharp"
 
-export const stackCircuitJsonKicadPngs = async (
+const SCHEMATIC_COMPARISON_CONTENT_PADDING = 48
+const SCHEMATIC_COMPARISON_BACKGROUND = {
+  r: 245,
+  g: 241,
+  b: 237,
+  alpha: 1,
+}
+
+async function cropSchematicToContent(schematicPng: Buffer): Promise<Buffer> {
+  return sharp(schematicPng)
+    .trim({ threshold: 10 })
+    .flatten({ background: SCHEMATIC_COMPARISON_BACKGROUND })
+    .extend({
+      top: SCHEMATIC_COMPARISON_CONTENT_PADDING,
+      right: SCHEMATIC_COMPARISON_CONTENT_PADDING,
+      bottom: SCHEMATIC_COMPARISON_CONTENT_PADDING,
+      left: SCHEMATIC_COMPARISON_CONTENT_PADDING,
+      background: SCHEMATIC_COMPARISON_BACKGROUND,
+    })
+    .png()
+    .toBuffer()
+}
+
+export async function createFocusedSchematicComparisonPanels({
+  circuitJsonPng,
+  kicadPng,
+}: {
+  circuitJsonPng: Buffer
+  kicadPng: Buffer
+}): Promise<{ circuitJsonPanel: Buffer; kicadPanel: Buffer }> {
+  const circuitJsonPanel = await cropSchematicToContent(circuitJsonPng)
+  const kicadPanel = await cropSchematicToContent(kicadPng)
+  return { circuitJsonPanel, kicadPanel }
+}
+
+async function stackLabeledComparisonPngs(
   circuitJsonPng: Buffer,
   kicadPng: Buffer,
-): Promise<Buffer> => {
+  background = { r: 255, g: 255, b: 255, alpha: 1 },
+): Promise<Buffer> {
   const labelFontSize = 24
   const labelPadding = 8
+  const circuitJsonMetadata = await sharp(circuitJsonPng).metadata()
+  const kicadMetadata = await sharp(kicadPng).metadata()
+  const circuitJsonWidth = circuitJsonMetadata.width ?? 0
+  const circuitJsonHeight = circuitJsonMetadata.height ?? 0
+  const kicadWidth = kicadMetadata.width ?? 0
+  const kicadHeight = kicadMetadata.height ?? 0
+  const width = Math.max(circuitJsonWidth, kicadWidth)
+  const height = circuitJsonHeight + kicadHeight
 
-  // Get metadata for both images
-  const [cjMetadata, kicadMetadata] = await Promise.all([
-    sharp(circuitJsonPng).metadata(),
-    sharp(kicadPng).metadata(),
-  ])
-
-  const cjWidth = cjMetadata.width || 0
-  const cjHeight = cjMetadata.height || 0
-  const kicadWidth = kicadMetadata.width || 0
-  const kicadHeight = kicadMetadata.height || 0
-
-  // Calculate canvas dimensions
-  const maxWidth = Math.max(cjWidth, kicadWidth)
-  const totalHeight = cjHeight + kicadHeight
-
-  // Create text labels as SVG with black background and white text
   const createLabel = (text: string) => {
-    // Approximate text width (rough estimate)
     const textWidth = text.length * labelFontSize * 0.6
     const boxWidth = textWidth + labelPadding * 2
     const boxHeight = labelFontSize + labelPadding * 2
@@ -46,17 +73,16 @@ export const stackCircuitJsonKicadPngs = async (
   const cjLabel = createLabel("Circuit JSON")
   const kicadLabel = createLabel("KiCad")
 
-  // Create composite operations - images first, then labels on top
   const compositeOps = [
     {
-      input: await sharp(circuitJsonPng).toBuffer(),
-      left: Math.floor((maxWidth - cjWidth) / 2),
+      input: circuitJsonPng,
+      left: Math.floor((width - circuitJsonWidth) / 2),
       top: 0,
     },
     {
-      input: await sharp(kicadPng).toBuffer(),
-      left: Math.floor((maxWidth - kicadWidth) / 2),
-      top: cjHeight,
+      input: kicadPng,
+      left: Math.floor((width - kicadWidth) / 2),
+      top: circuitJsonHeight,
     },
     {
       input: await sharp(cjLabel).png().toBuffer(),
@@ -66,17 +92,16 @@ export const stackCircuitJsonKicadPngs = async (
     {
       input: await sharp(kicadLabel).png().toBuffer(),
       left: 0,
-      top: cjHeight,
+      top: circuitJsonHeight,
     },
   ]
 
-  // Create a blank canvas and composite all elements
   const result = await sharp({
     create: {
-      width: maxWidth,
-      height: totalHeight,
+      width,
+      height,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
+      background,
     },
   })
     .composite(compositeOps)
@@ -84,4 +109,22 @@ export const stackCircuitJsonKicadPngs = async (
     .toBuffer()
 
   return result
+}
+
+export const stackCircuitJsonKicadPngs = stackLabeledComparisonPngs
+
+export const stackSchematicCircuitJsonKicadPngs = async (
+  circuitJsonPng: Buffer,
+  kicadPng: Buffer,
+): Promise<Buffer> => {
+  const { circuitJsonPanel, kicadPanel } =
+    await createFocusedSchematicComparisonPanels({
+      circuitJsonPng,
+      kicadPng,
+    })
+  return stackLabeledComparisonPngs(
+    circuitJsonPanel,
+    kicadPanel,
+    SCHEMATIC_COMPARISON_BACKGROUND,
+  )
 }

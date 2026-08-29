@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
@@ -52,7 +52,7 @@ test("repro14 resistor-capacitor V3_3/GND schematic snapshot", async () => {
     kicadFileType: "sch",
   })
 
-  const stackedSnapshot = await stackCircuitJsonKicadPngs(
+  const stackedSnapshot = await stackSchematicCircuitJsonKicadPngs(
     await takeCircuitJsonSnapshot({
       circuitJson,
       outputType: "schematic",

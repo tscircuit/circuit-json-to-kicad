@@ -2,7 +2,7 @@ import { test, expect } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 import circuitJson from "tests/assets/led-water-accelerometer.json"
 
 test("pcb basics01", async () => {
@@ -20,7 +20,7 @@ test("pcb basics01", async () => {
   expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),

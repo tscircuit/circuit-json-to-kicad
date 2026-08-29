@@ -5,7 +5,7 @@ import { parseKicadSch } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { stackSchematicCircuitJsonKicadPngs } from "../../fixtures/stackSchematicCircuitJsonKicadPngs"
 
 test("repro09: simple chip schematic value uses manufacturer part number", async () => {
   const circuit = new Circuit()
@@ -76,7 +76,7 @@ test("repro09: simple chip schematic value uses manufacturer part number", async
   expect(kicadSnapshot.exitCode).toBe(0)
 
   expect(
-    stackCircuitJsonKicadPngs(
+    stackSchematicCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson,
         outputType: "schematic",

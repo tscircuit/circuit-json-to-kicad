@@ -74,6 +74,7 @@ test("takeKicadSnapshot - schematic export", async () => {
       "../../kicad-demos/demos/flat_hierarchy/flat_hierarchy.kicad_sch",
     ),
     kicadFileType: "sch",
+    includeSchematicDrawingSheet: true,
   })
 
   // Basic assertions
