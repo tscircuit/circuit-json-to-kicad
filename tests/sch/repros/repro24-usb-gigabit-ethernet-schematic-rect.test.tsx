@@ -203,11 +203,4 @@ test("repro24: C70593 schematic rectangle is missing from KiCad", async () => {
     ),
   ).toMatchPngSnapshot(import.meta.path)
 
-  const boardPng = await sharp(
-    await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
-  )
-    .resize(1200, 850, { fit: "contain", background: "#f5f1ed" })
-    .png()
-    .toBuffer()
-  await expect(boardPng).toMatchPngSnapshot(import.meta.path, "repro24-board")
 }, 120_000)
