@@ -12,9 +12,19 @@ test("repro24: dashed schematic line becomes solid in KiCad", async () => {
   circuit.pcbDisabled = true
   circuit.add(
     <board>
-      <schematictext text="BASIC LINE" schX={-3.2} schY={1} fontSize={0.25} />
-      <schematicline x1={-1.5} y1={1} x2={3} y2={1} />
-      <schematictext text="DASHED LINE" schX={-3.2} schY={-1} fontSize={0.25} />
+      <schematictext
+        text="SOLID CONTROL"
+        schX={-3.2}
+        schY={1}
+        fontSize={0.25}
+      />
+      <schematicline x1={-1.5} y1={1} x2={3} y2={1} strokeWidth={0.08} />
+      <schematictext
+        text="DASHED INPUT"
+        schX={-3.2}
+        schY={-1}
+        fontSize={0.25}
+      />
       <schematicline
         x1={-1.5}
         y1={-1}
@@ -23,6 +33,7 @@ test("repro24: dashed schematic line becomes solid in KiCad", async () => {
         isDashed
         dashLength={0.35}
         dashGap={0.2}
+        strokeWidth={0.08}
       />
       <resistor name="R1" resistance="10k" schX={0.75} schY={-3} />
     </board>,
@@ -35,6 +46,7 @@ test("repro24: dashed schematic line becomes solid in KiCad", async () => {
   )
   expect(lines).toHaveLength(2)
   expect(lines.filter((line) => line.is_dashed)).toHaveLength(1)
+  expect(lines.every((line) => line.stroke_width === 0.08)).toBe(true)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
@@ -44,6 +56,9 @@ test("repro24: dashed schematic line becomes solid in KiCad", async () => {
   expect(
     schematic.polylines.filter((line) => line.stroke?.type === "default"),
   ).toHaveLength(2)
+  expect(schematic.polylines.every((line) => line.stroke?.width === 0)).toBe(
+    true,
+  )
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
