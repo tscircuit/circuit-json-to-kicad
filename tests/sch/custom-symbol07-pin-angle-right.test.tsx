@@ -56,6 +56,7 @@ test("custom-symbol07: pin on RIGHT side has angle 180", async () => {
   expect(pinMatch![3]).toBe("180")
   expect(kicadOutput).toContain("(type color)")
   expect(kicadOutput).toContain("(color 68 136 255 1)")
+  expect(kicadOutput).toContain("(width 3)")
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: kicadOutput,
