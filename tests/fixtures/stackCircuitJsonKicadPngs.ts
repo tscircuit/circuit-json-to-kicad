@@ -1,7 +1,5 @@
 import sharp from "sharp"
 
-const SCHEMATIC_COMPARISON_PANEL_WIDTH = 1200
-const SCHEMATIC_COMPARISON_PANEL_HEIGHT = 600
 const SCHEMATIC_COMPARISON_CONTENT_PADDING = 48
 const SCHEMATIC_COMPARISON_BACKGROUND = {
   r: 245,
@@ -9,71 +7,18 @@ const SCHEMATIC_COMPARISON_BACKGROUND = {
   b: 237,
   alpha: 1,
 }
-const KICAD_DRAWING_SHEET_HORIZONTAL_CROP_RATIO = 0.12
-const KICAD_DRAWING_SHEET_TOP_CROP_RATIO = 0.14
-const KICAD_DRAWING_SHEET_BOTTOM_CROP_RATIO = 0.24
 
-async function fitSchematicContentToComparisonPanel(
-  schematicPng: Buffer,
-): Promise<Buffer> {
-  const trimmedPng = await sharp(schematicPng)
+async function cropSchematicToContent(schematicPng: Buffer): Promise<Buffer> {
+  return sharp(schematicPng)
     .trim({ threshold: 10 })
-    .toBuffer()
-  const metadata = await sharp(trimmedPng).metadata()
-  const contentWidth = Math.max(metadata.width ?? 1, 1)
-  const contentHeight = Math.max(metadata.height ?? 1, 1)
-  const availableWidth =
-    SCHEMATIC_COMPARISON_PANEL_WIDTH - SCHEMATIC_COMPARISON_CONTENT_PADDING * 2
-  const availableHeight =
-    SCHEMATIC_COMPARISON_PANEL_HEIGHT - SCHEMATIC_COMPARISON_CONTENT_PADDING * 2
-  const scale = Math.min(
-    availableWidth / contentWidth,
-    availableHeight / contentHeight,
-  )
-  const resizedWidth = Math.max(1, Math.round(contentWidth * scale))
-  const resizedHeight = Math.max(1, Math.round(contentHeight * scale))
-  const resizedPng = await sharp(trimmedPng)
-    .resize(resizedWidth, resizedHeight, { fit: "fill" })
-    .png()
-    .toBuffer()
-
-  return sharp({
-    create: {
-      width: SCHEMATIC_COMPARISON_PANEL_WIDTH,
-      height: SCHEMATIC_COMPARISON_PANEL_HEIGHT,
-      channels: 4,
+    .flatten({ background: SCHEMATIC_COMPARISON_BACKGROUND })
+    .extend({
+      top: SCHEMATIC_COMPARISON_CONTENT_PADDING,
+      right: SCHEMATIC_COMPARISON_CONTENT_PADDING,
+      bottom: SCHEMATIC_COMPARISON_CONTENT_PADDING,
+      left: SCHEMATIC_COMPARISON_CONTENT_PADDING,
       background: SCHEMATIC_COMPARISON_BACKGROUND,
-    },
-  })
-    .composite([
-      {
-        input: resizedPng,
-        left: Math.round((SCHEMATIC_COMPARISON_PANEL_WIDTH - resizedWidth) / 2),
-        top: Math.round(
-          (SCHEMATIC_COMPARISON_PANEL_HEIGHT - resizedHeight) / 2,
-        ),
-      },
-    ])
-    .png()
-    .toBuffer()
-}
-
-async function removeKicadDrawingSheetFromComparison(
-  kicadPng: Buffer,
-): Promise<Buffer> {
-  const metadata = await sharp(kicadPng).metadata()
-  const width = Math.max(metadata.width ?? 1, 1)
-  const height = Math.max(metadata.height ?? 1, 1)
-  const left = Math.round(width * KICAD_DRAWING_SHEET_HORIZONTAL_CROP_RATIO)
-  const top = Math.round(height * KICAD_DRAWING_SHEET_TOP_CROP_RATIO)
-  const extractedWidth = Math.max(1, width - left * 2)
-  const extractedHeight = Math.max(
-    1,
-    height - top - Math.round(height * KICAD_DRAWING_SHEET_BOTTOM_CROP_RATIO),
-  )
-
-  return sharp(kicadPng)
-    .extract({ left, top, width: extractedWidth, height: extractedHeight })
+    })
     .png()
     .toBuffer()
 }
@@ -85,16 +30,15 @@ export async function createFocusedSchematicComparisonPanels({
   circuitJsonPng: Buffer
   kicadPng: Buffer
 }): Promise<{ circuitJsonPanel: Buffer; kicadPanel: Buffer }> {
-  const circuitJsonPanel =
-    await fitSchematicContentToComparisonPanel(circuitJsonPng)
-  const kicadContentPng = await removeKicadDrawingSheetFromComparison(kicadPng)
-  const kicadPanel = await fitSchematicContentToComparisonPanel(kicadContentPng)
+  const circuitJsonPanel = await cropSchematicToContent(circuitJsonPng)
+  const kicadPanel = await cropSchematicToContent(kicadPng)
   return { circuitJsonPanel, kicadPanel }
 }
 
 async function stackLabeledComparisonPngs(
   circuitJsonPng: Buffer,
   kicadPng: Buffer,
+  background = { r: 255, g: 255, b: 255, alpha: 1 },
 ): Promise<Buffer> {
   const labelFontSize = 24
   const labelPadding = 8
@@ -157,7 +101,7 @@ async function stackLabeledComparisonPngs(
       width,
       height,
       channels: 4,
-      background: { r: 255, g: 255, b: 255, alpha: 1 },
+      background,
     },
   })
     .composite(compositeOps)
@@ -178,5 +122,9 @@ export const stackSchematicCircuitJsonKicadPngs = async (
       circuitJsonPng,
       kicadPng,
     })
-  return stackLabeledComparisonPngs(circuitJsonPanel, kicadPanel)
+  return stackLabeledComparisonPngs(
+    circuitJsonPanel,
+    kicadPanel,
+    SCHEMATIC_COMPARISON_BACKGROUND,
+  )
 }

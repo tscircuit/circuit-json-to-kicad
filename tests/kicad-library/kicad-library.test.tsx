@@ -145,6 +145,7 @@ test(
     const schSnapshot = await takeKicadSnapshot({
       kicadFileContent: schConverter.getOutputString(),
       kicadFileType: "sch",
+      includeSchematicDrawingSheet: true,
     })
     expect(schSnapshot.exitCode).toBe(0)
 
