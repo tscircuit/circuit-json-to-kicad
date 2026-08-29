@@ -1,9 +1,10 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit"
+import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { Circuit } from "tscircuit"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 test("repro13 schematic arc schematic", async () => {
   const circuit = new Circuit()
@@ -31,6 +32,20 @@ test("repro13 schematic arc schematic", async () => {
   converter.runUntilFinished()
 
   const output = converter.getOutputString()
+  const parsedSchematic = parseKicadSch(output)
+  expect(parsedSchematic.arcs).toHaveLength(1)
+  expect(parsedSchematic.arcs[0]?.start?.toObject()).toEqual({
+    x: 163.5,
+    y: 105,
+  })
+  expect(parsedSchematic.arcs[0]?.mid?.toObject()).toEqual({
+    x: 148.5,
+    y: 90,
+  })
+  expect(parsedSchematic.arcs[0]?.end?.toObject()).toEqual({
+    x: 133.5,
+    y: 105,
+  })
   await Bun.write("./debug-output/repro13-schematic-arc-sch.kicad_sch", output)
 
   const kicadSnapshot = await takeKicadSnapshot({
