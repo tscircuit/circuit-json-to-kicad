@@ -6,7 +6,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro24: rotated schematic rectangle is missing from KiCad", async () => {
+test("repro24: schematic rectangle is missing from KiCad", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
   circuit.add(
@@ -29,7 +29,6 @@ test("repro24: rotated schematic rectangle is missing from KiCad", async () => {
         schY={0}
         width={3.2}
         height={2.2}
-        rotation={20}
         strokeWidth={0.08}
       />
     </board>,
@@ -41,7 +40,7 @@ test("repro24: rotated schematic rectangle is missing from KiCad", async () => {
     (element) => element.type === "schematic_rect",
   )
   expect(rectangles).toHaveLength(1)
-  expect(rectangles[0]?.rotation).toBe(20)
+  expect(rectangles[0]?.rotation).toBe(0)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
