@@ -202,5 +202,4 @@ test("repro24: C70593 schematic rectangle is missing from KiCad", async () => {
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
-
 }, 120_000)
