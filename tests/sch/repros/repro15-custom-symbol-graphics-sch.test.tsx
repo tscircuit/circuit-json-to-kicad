@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import { parseKicadSch } from "kicadts"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -63,6 +64,23 @@ test("repro15 custom symbol schematic graphics", async () => {
   const circuitJson = circuit.getCircuitJson()
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
+  const kicadSchematic = parseKicadSch(converter.getOutputString())
+  if (!kicadSchematic.libSymbols) {
+    throw new Error("Expected generated KiCad library symbols")
+  }
+
+  expect(
+    kicadSchematic.libSymbols.symbols.map(({ libraryId }) => libraryId),
+  ).toEqual([
+    "Custom:custom_chip_schematic_symbol_0",
+    "Custom:custom_chip_schematic_symbol_1",
+    "Custom:custom_chip_schematic_symbol_2",
+  ])
+  expect(kicadSchematic.symbols.map(({ libraryId }) => libraryId)).toEqual([
+    "Custom:custom_chip_schematic_symbol_0",
+    "Custom:custom_chip_schematic_symbol_1",
+    "Custom:custom_chip_schematic_symbol_2",
+  ])
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),

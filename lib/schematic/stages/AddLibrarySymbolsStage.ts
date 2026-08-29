@@ -19,6 +19,7 @@ import { getLibraryId } from "../getLibraryId"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import {
   getKicadCompatibleComponentName,
+  getKicadCompatibleCustomSymbolName,
   getReferencePrefixForComponent,
 } from "../../utils/getKicadCompatibleComponentName"
 import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converters/buildSymbolDataFromSchematicPrimitives"
@@ -287,15 +288,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (schematicSymbol.name) {
       symbolName = schematicSymbol.name
     } else {
-      const ergonomicName = getKicadCompatibleComponentName(
+      symbolName = getKicadCompatibleCustomSymbolName(
         sourceComp,
         cadComponent,
+        schematicSymbolId,
       )
-      if (ergonomicName) {
-        symbolName = ergonomicName
-      } else {
-        symbolName = `custom_${sourceComp.ftype || "component"}_${schematicSymbolId}`
-      }
     }
 
     // Check if we've already processed this symbol name

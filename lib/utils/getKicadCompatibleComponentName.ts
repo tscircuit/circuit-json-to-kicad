@@ -36,6 +36,31 @@ export function getKicadCompatibleComponentName(
 }
 
 /**
+ * Returns a stable library name for a custom schematic symbol.
+ *
+ * A generic component type such as `chip` is not enough to identify custom
+ * artwork: two anonymous `<symbol>` definitions can have entirely different
+ * bodies. Prefer reusable part metadata when it exists, otherwise include the
+ * schematic symbol id so each anonymous definition retains its own artwork.
+ */
+export function getKicadCompatibleCustomSymbolName(
+  sourceComponent: SourceComponentBase,
+  cadComponent: CadComponent | null | undefined,
+  schematicSymbolId: string,
+): string {
+  if (
+    sourceComponent.manufacturer_part_number ||
+    cadComponent?.footprinter_string
+  ) {
+    return getKicadCompatibleComponentName(sourceComponent, cadComponent)
+  }
+
+  return sanitizeName(
+    `custom_${getCleanTypeName(sourceComponent.ftype)}_${schematicSymbolId}`,
+  )
+}
+
+/**
  * Clean up the ftype by removing "simple_" prefix
  */
 function getCleanTypeName(ftype?: string): string {
