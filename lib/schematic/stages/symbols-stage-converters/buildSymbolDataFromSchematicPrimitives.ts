@@ -185,12 +185,22 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     }
   }
 
-  // KiCad symbol rectangles cannot be rotated, so represent every rectangle
-  // as a closed polyline. This preserves both rotated and axis-aligned
-  // schematic_rect elements through the same conversion path.
+  // Keep native rectangles unless rotation requires a closed polyline.
   for (const rect of rectangles) {
     const halfWidth = rect.width / 2
     const halfHeight = rect.height / 2
+    if ((rect.rotation ?? 0) % 360 === 0) {
+      primitives.push({
+        type: "rectangle",
+        start: { x: rect.center.x - halfWidth, y: rect.center.y - halfHeight },
+        end: { x: rect.center.x + halfWidth, y: rect.center.y + halfHeight },
+        fill: rect.is_filled,
+        fillColor: rect.fill_color,
+        strokeWidth: rect.stroke_width,
+        isDashed: rect.is_dashed,
+      })
+      continue
+    }
     const rotationRadians = (rect.rotation * Math.PI) / 180
     const cos = Math.cos(rotationRadians)
     const sin = Math.sin(rotationRadians)

@@ -7,6 +7,7 @@ import {
 import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
 import { createPolylineFromPoints } from "./createPolylineFromPoints"
+import { createRectangleFromPrimitive } from "./createRectangleFromPrimitive"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
 
 export function createDrawingSubsymbol({
@@ -54,6 +55,14 @@ export function createDrawingSubsymbol({
         scale: symbolScale,
       })
       drawingSymbol.polylines.push(polyline)
+    } else if (primitive.type === "rectangle") {
+      drawingSymbol.rectangles.push(
+        createRectangleFromPrimitive({
+          primitive,
+          transform,
+          scale: symbolScale,
+        }),
+      )
     } else if (primitive.type === "circle") {
       const circle = createCircleFromPrimitive({
         primitive,

@@ -189,8 +189,7 @@ test("repro24: preserves schematic rectangle in KiCad", async () => {
   const expectedCrystalPolylineCount = circuitJson.filter(
     (element) =>
       ((element.type === "schematic_path" ||
-        element.type === "schematic_line" ||
-        element.type === "schematic_rect") &&
+        element.type === "schematic_line") &&
         element.schematic_symbol_id ===
           crystalRectangle?.schematic_symbol_id) ||
       (element.type === "schematic_line" &&
@@ -207,6 +206,7 @@ test("repro24: preserves schematic rectangle in KiCad", async () => {
   expect(crystalDrawingSymbol?.polylines).toHaveLength(
     expectedCrystalPolylineCount,
   )
+  expect(crystalDrawingSymbol?.rectangles).toHaveLength(1)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
