@@ -8,12 +8,16 @@ export function createPolylineFromPoints({
   isFilled,
   fillColor,
   fallbackFillType,
+  strokeWidth,
+  scale,
 }: {
   points: Array<{ x: number; y: number }>
   transform: Matrix
   isFilled: boolean
   fillColor?: string
   fallbackFillType?: "background" | "outline"
+  strokeWidth?: number | null
+  scale: number
 }): SymbolPolyline {
   const polyline = new SymbolPolyline()
 
@@ -25,7 +29,7 @@ export function createPolylineFromPoints({
   polyline.points = pts
 
   const stroke = new Stroke()
-  stroke.width = 0.254
+  stroke.width = strokeWidth == null ? 0.254 : strokeWidth * scale
   stroke.type = "default"
   polyline.stroke = stroke
 

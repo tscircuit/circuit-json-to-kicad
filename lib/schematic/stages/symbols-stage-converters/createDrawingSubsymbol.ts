@@ -38,6 +38,7 @@ export function createDrawingSubsymbol({
         createArcFromPrimitive({
           primitive,
           transform,
+          scale: symbolScale,
         }),
       )
     } else if (primitive.type === "path" && primitive.points) {
@@ -48,6 +49,8 @@ export function createDrawingSubsymbol({
         fillColor: primitive.fillColor,
         fallbackFillType:
           primitive.kicadFillType === "outline" ? "outline" : "background",
+        strokeWidth: primitive.strokeWidth,
+        scale: symbolScale,
       })
       drawingSymbol.polylines.push(polyline)
     } else if (primitive.type === "circle") {

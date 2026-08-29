@@ -138,6 +138,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
       type: "arc",
       ...getSchematicArcPoints(arc),
       isDashed: arc.is_dashed,
+      strokeWidth: arc.stroke_width,
     })
   }
 
@@ -150,6 +151,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
       radius: circle.radius ?? 0.5,
       fill: circle.is_filled ?? false,
       fillColor: circle.fill_color,
+      strokeWidth: circle.stroke_width,
     })
   }
 
@@ -161,6 +163,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
         { x: line.x1 ?? 0, y: line.y1 ?? 0 },
         { x: line.x2 ?? 0, y: line.y2 ?? 0 },
       ],
+      strokeWidth: line.stroke_width,
     })
   }
 
@@ -172,6 +175,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
         points: path.points,
         fill: path.is_filled ?? false,
         fillColor: path.fill_color,
+        strokeWidth: path.stroke_width,
       })
     }
   }

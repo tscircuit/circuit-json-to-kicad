@@ -9,6 +9,7 @@ type CirclePrimitive = {
   fill?: boolean
   fillColor?: string
   kicadFillType?: "outline"
+  strokeWidth?: number | null
 }
 
 export function createCircleFromPrimitive({
@@ -28,7 +29,14 @@ export function createCircleFromPrimitive({
   return SymbolCircle.fromSexprPrimitives([
     ["center", scaledPos.x, scaledPos.y],
     ["radius", primitive.radius * scale],
-    ["stroke", ["width", 0.254], ["type", "default"]],
+    [
+      "stroke",
+      [
+        "width",
+        primitive.strokeWidth == null ? 0.254 : primitive.strokeWidth * scale,
+      ],
+      ["type", "default"],
+    ],
     [
       "fill",
       ...createSymbolFillSexprPrimitives({
