@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import sharp from "sharp"
 import { Circuit } from "tscircuit-latest"
+import { X322525MRB4SI } from "../../../imports/X322525MRB4SI"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -72,54 +73,7 @@ test("repro24: C70593 schematic rectangle is missing from KiCad", async () => {
         }}
       />
 
-      <chip
-        name="Y2"
-        manufacturerPartNumber="X322525MRB4SI"
-        supplierPartNumbers={{ jlcpcb: ["C70593"] }}
-        footprint="crystal_w3.2mm_h2.5mm"
-        pcbX={-8}
-        pcbY={0}
-        schX={-6}
-        schY={-4}
-        symbol={
-          <symbol>
-            <schematicrect width={2.4} height={1.6} strokeWidth={0.12} />
-            <schematicpath
-              points={[
-                { x: -0.3, y: -0.5 },
-                { x: -0.3, y: 0.5 },
-              ]}
-              strokeWidth={0.08}
-            />
-            <schematicpath
-              points={[
-                { x: 0.3, y: -0.5 },
-                { x: 0.3, y: 0.5 },
-              ]}
-              strokeWidth={0.08}
-            />
-            <schematicpath
-              points={[
-                { x: -1.2, y: 0 },
-                { x: -0.3, y: 0 },
-              ]}
-              strokeWidth={0.08}
-            />
-            <schematicpath
-              points={[
-                { x: 0.3, y: 0 },
-                { x: 1.2, y: 0 },
-              ]}
-              strokeWidth={0.08}
-            />
-            <schematictext text="25MHz / 18pF" fontSize={0.18} schY={-0.6} />
-            <port name="XTAL_IN" direction="left" schX={-1.2} schY={0} />
-            <port name="XTAL_OUT" direction="right" schX={1.2} schY={0} />
-            <port name="GND1" direction="up" schX={0} schY={0.8} />
-            <port name="GND2" direction="down" schX={0} schY={-0.8} />
-          </symbol>
-        }
-      />
+      <X322525MRB4SI name="Y2" pcbX={-8} pcbY={0} schX={-6} schY={-4} />
 
       <inductor
         name="L3"
@@ -182,8 +136,8 @@ test("repro24: C70593 schematic rectangle is missing from KiCad", async () => {
       <trace from=".U3 > .MDI2N" to=".J_ETH > .MDI2N" pcbStraightLine />
       <trace from=".U3 > .MDI3P" to=".J_ETH > .MDI3P" pcbStraightLine />
       <trace from=".U3 > .MDI3N" to=".J_ETH > .MDI3N" pcbStraightLine />
-      <trace from=".U3 > .XTAL_IN" to=".Y2 > .XTAL_IN" />
-      <trace from=".U3 > .XTAL_OUT" to=".Y2 > .XTAL_OUT" />
+      <trace from=".U3 > .XTAL_IN" to=".Y2 > .OSC1" />
+      <trace from=".U3 > .XTAL_OUT" to=".Y2 > .OSC2" />
       <trace from=".Y2 > .GND1" to="net.GND" />
       <trace from=".Y2 > .GND2" to="net.GND" />
       <trace from=".L3 > .pin1" to="net.ETH_3V3" />
