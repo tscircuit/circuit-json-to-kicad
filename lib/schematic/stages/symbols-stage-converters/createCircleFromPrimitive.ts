@@ -1,46 +1,42 @@
-import {
-  Stroke,
-  SymbolCircle,
-  SymbolCircleCenter,
-  SymbolCircleFill,
-  SymbolCircleRadius,
-} from "kicadts"
+import { SymbolCircle } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
+import { createSymbolFillSexprPrimitives } from "./createSymbolFillSexprPrimitives"
+
+type CirclePrimitive = {
+  x: number
+  y: number
+  radius: number
+  fill?: boolean
+  fillColor?: string
+  kicadFillType?: "outline"
+}
 
 export function createCircleFromPrimitive({
   primitive,
   transform,
   scale,
 }: {
-  primitive: any
+  primitive: CirclePrimitive
   transform: Matrix
   scale: number
 }): SymbolCircle {
-  const circle = new SymbolCircle()
-
   const scaledPos = applyToPoint(transform, {
     x: primitive.x,
     y: primitive.y,
   })
 
-  const c = circle as any
-  c._sxCenter = new SymbolCircleCenter(scaledPos.x, scaledPos.y)
-  c._sxRadius = new SymbolCircleRadius(primitive.radius * scale)
-
-  const stroke = new Stroke()
-  stroke.width = 0.254
-  stroke.type = "default"
-  c._sxStroke = stroke
-
-  const fill = new SymbolCircleFill()
-  fill.type = "none"
-  if (primitive.fill) {
-    fill.type = "background"
-    if (primitive.kicadFillType === "outline") {
-      fill.type = "outline"
-    }
-  }
-  c._sxFill = fill
-
-  return circle
+  return SymbolCircle.fromSexprPrimitives([
+    ["center", scaledPos.x, scaledPos.y],
+    ["radius", primitive.radius * scale],
+    ["stroke", ["width", 0.254], ["type", "default"]],
+    [
+      "fill",
+      ...createSymbolFillSexprPrimitives({
+        isFilled: primitive.fill ?? false,
+        fillColor: primitive.fillColor,
+        fallbackFillType:
+          primitive.kicadFillType === "outline" ? "outline" : "background",
+      }),
+    ],
+  ])
 }

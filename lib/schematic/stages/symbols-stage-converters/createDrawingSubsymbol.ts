@@ -41,17 +41,13 @@ export function createDrawingSubsymbol({
         }),
       )
     } else if (primitive.type === "path" && primitive.points) {
-      let fillType: "none" | "background" | "outline" = "none"
-      if (primitive.fill) {
-        fillType = "background"
-        if (primitive.kicadFillType === "outline") {
-          fillType = "outline"
-        }
-      }
       const polyline = createPolylineFromPoints({
         points: primitive.points,
         transform,
-        fillType,
+        isFilled: primitive.fill ?? false,
+        fillColor: primitive.fillColor,
+        fallbackFillType:
+          primitive.kicadFillType === "outline" ? "outline" : "background",
       })
       drawingSymbol.polylines.push(polyline)
     } else if (primitive.type === "circle") {
