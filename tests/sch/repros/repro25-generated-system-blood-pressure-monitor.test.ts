@@ -11,7 +11,6 @@ test("repro25: convert the blood pressure monitor multisheet generated system", 
     snapshotPath: import.meta.path,
     debugOutputName:
       "repro25-generated-system-blood-pressure-monitor.stacked.png",
-    snapshotLayout: "stacked-renders",
     expectedSheetNames: [
       "Input + Reference",
       "Connectors + Jumpers + Test Points",
