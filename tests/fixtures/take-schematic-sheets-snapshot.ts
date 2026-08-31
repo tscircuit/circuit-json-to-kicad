@@ -71,8 +71,14 @@ export const takeSchematicSheetsSnapshot = async (params: {
   circuitJson: CircuitJson
   files: { filename: string; content: string }[]
   rootFilename: string
+  sheetComparisonLayout?: "horizontal" | "vertical"
 }): Promise<SchematicSheetsSnapshot> => {
-  const { circuitJson, files, rootFilename } = params
+  const {
+    circuitJson,
+    files,
+    rootFilename,
+    sheetComparisonLayout = "horizontal",
+  } = params
 
   const kicadCliVersion = await $`kicad-cli --version`
   if (!kicadCliVersion.stdout.toString().trim().startsWith("10.")) {
@@ -151,11 +157,14 @@ export const takeSchematicSheetsSnapshot = async (params: {
       if (!kicadPng) {
         throw new Error(`Missing KiCad render for ${sourceSheetName}`)
       }
+      const sheetComparisonPngs = [
+        await withLabel(sourcePng, `Circuit JSON: ${sourceSheetName}`, 22, 6),
+        kicadPng,
+      ]
       comparisonRows.push(
-        await stackPngsHorizontally([
-          await withLabel(sourcePng, `Circuit JSON: ${sourceSheetName}`, 22, 6),
-          kicadPng,
-        ]),
+        sheetComparisonLayout === "vertical"
+          ? await stackPngsVertically(sheetComparisonPngs)
+          : await stackPngsHorizontally(sheetComparisonPngs),
       )
     }
 
