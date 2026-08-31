@@ -15,12 +15,9 @@ function keepElementForSheet(
   // schematic_sheet rows become (sheet) nodes, never page content.
   if (el.type === "schematic_sheet") return false
 
-  const hasSheetIdField = "schematic_sheet_id" in el
-  const hasComponentIdField = "schematic_component_id" in el
-
-  // Shared definitions referenced by id (e.g. schematic_symbol) belong in every
-  // file so custom symbols resolve on whichever sheet uses them.
-  if (!hasSheetIdField && !hasComponentIdField) return true
+  // A schematic_symbol is a shared definition rather than a placed page
+  // element, so it must be available in every file that may reference it.
+  if (el.type === "schematic_symbol") return true
 
   if ((el.schematic_sheet_id ?? null) === sheetId) return true
 
@@ -44,8 +41,11 @@ function keepElementForSheet(
  *  - `schematic_*` elements linked (via `schematic_component_id`) to a component
  *    that lives on this sheet, even if the element's own `schematic_sheet_id` is
  *    unset (robustly keeps ports/texts with their component),
- *  - shared schematic definitions that are referenced by id rather than placed
- *    on a page (e.g. `schematic_symbol` custom-symbol geometry).
+ *  - shared `schematic_symbol` definitions in every file that may reference
+ *    them.
+ *
+ * Unassigned placed elements are root-page content. They are not shared with
+ * every child sheet merely because they lack a `schematic_sheet_id`.
  *
  * The `schematic_sheet` rows themselves are dropped from the subset because they
  * are represented in KiCad as `(sheet ...)` nodes on the root page, not as page
