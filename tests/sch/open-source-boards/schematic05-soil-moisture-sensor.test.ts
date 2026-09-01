@@ -4,7 +4,7 @@ import {
   expectOpenSourceSchematicSvgSnapshot,
 } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 
-test("compares the soil sensor Circuit JSON schematic with its KiCad conversion", async () => {
+test("renders the open-source soil moisture sensor KiCad schematic", async () => {
   const svg = await createOpenSourceSchematicSvgSnapshot(
     "soil-moisture-sensor.kicad_sch",
   )

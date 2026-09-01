@@ -25,7 +25,7 @@ const sheets = [
   },
 ]
 
-test("compares every EBAZ4205 Circuit JSON sheet with its KiCad conversion", async () => {
+test("renders every sheet of the open-source EBAZ4205 KiCad schematic", async () => {
   const exports =
     await createOpenSourceSchematicSvgSnapshots("ebaz4205.kicad_sch")
   const svgs = sheets.map(({ outputFilename }) => {

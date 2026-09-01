@@ -4,7 +4,7 @@ import {
   expectOpenSourceSchematicSvgSnapshot,
 } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 
-test("compares the pan-tilt sensor Circuit JSON schematic with its KiCad conversion", async () => {
+test("renders the open-source pan-tilt sensor KiCad schematic", async () => {
   const svg = await createOpenSourceSchematicSvgSnapshot(
     "pan-tilt-home-sensor.kicad_sch",
   )
