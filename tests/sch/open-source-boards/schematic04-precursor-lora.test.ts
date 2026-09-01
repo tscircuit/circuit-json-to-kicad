@@ -4,7 +4,7 @@ import {
   expectOpenSourceSchematicSvgSnapshot,
 } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 
-test("compares the open-source Precursor LoRa KiCad schematic round trip", async () => {
+test("compares the Precursor LoRa Circuit JSON schematic with its KiCad conversion", async () => {
   const svg = await createOpenSourceSchematicSvgSnapshot(
     "precursor-lora.kicad_sch",
   )

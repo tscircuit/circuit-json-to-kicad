@@ -4,7 +4,7 @@ import {
   expectOpenSourceSchematicSvgSnapshot,
 } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 
-test("compares the open-source Pi Switcher Plus KiCad schematic round trip", async () => {
+test("compares the Pi Switcher Plus Circuit JSON schematic with its KiCad conversion", async () => {
   const svg = await createOpenSourceSchematicSvgSnapshot(
     "pi-switcher-plus.kicad_sch",
   )

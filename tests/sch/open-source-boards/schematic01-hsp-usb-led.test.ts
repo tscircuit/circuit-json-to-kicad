@@ -4,7 +4,7 @@ import {
   expectOpenSourceSchematicSvgSnapshot,
 } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 
-test("compares the open-source HSP USB LED KiCad schematic round trip", async () => {
+test("compares the HSP USB LED Circuit JSON schematic with its KiCad conversion", async () => {
   const svg = await createOpenSourceSchematicSvgSnapshot(
     "hsp-usb-led.kicad_sch",
   )

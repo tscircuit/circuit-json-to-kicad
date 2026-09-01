@@ -16,8 +16,14 @@ function readSvgSize(svg: string): SvgSize {
   return { height, width }
 }
 
-function toSvgDataUrl(svg: string): string {
-  return `data:image/svg+xml;base64,${Buffer.from(svg).toString("base64")}`
+function positionNestedSvg(svg: string, x: number): string {
+  const start = svg.indexOf("<svg")
+  const end = svg.lastIndexOf("</svg>")
+  if (start === -1 || end === -1) {
+    throw new Error("Expected a complete SVG document")
+  }
+  const nestedSvg = svg.slice(start, end + "</svg>".length)
+  return nestedSvg.replace("<svg", `<svg x="${x}" y="0"`)
 }
 
 export function createSideBySideSvg(
@@ -30,7 +36,8 @@ export function createSideBySideSvg(
   const height = Math.max(sourceSize.height, roundTripSize.height)
 
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
-  <image x="0" y="0" width="${sourceSize.width}" height="${sourceSize.height}" href="${toSvgDataUrl(sourceSvg)}"/>
-  <image x="${sourceSize.width}" y="0" width="${roundTripSize.width}" height="${roundTripSize.height}" href="${toSvgDataUrl(roundTripSvg)}"/>
+  <rect x="0" y="0" width="${width}" height="${height}" fill="white"/>
+  ${positionNestedSvg(sourceSvg, 0)}
+  ${positionNestedSvg(roundTripSvg, sourceSize.width)}
 </svg>`
 }
