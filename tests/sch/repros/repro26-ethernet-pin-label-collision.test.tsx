@@ -185,6 +185,16 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
 
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
+  const ethernetConnectorSource = circuitJson.find(
+    (element) =>
+      element.type === "source_component" && element.name === "J_ETH",
+  )
+  const ethernetConnector = circuitJson.find(
+    (element) =>
+      element.type === "schematic_component" &&
+      element.source_component_id ===
+        ethernetConnectorSource?.source_component_id,
+  )
   expect(
     circuitJson.filter((element) => element.type === "pcb_board"),
   ).toHaveLength(1)
@@ -199,12 +209,13 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
     ),
   ).toHaveLength(16)
   expect(
-    circuitJson.some(
+    circuitJson.filter(
       (element) =>
         element.type === "schematic_port" &&
-        element.display_pin_label === "MDI0+",
+        element.schematic_component_id ===
+          ethernetConnector?.schematic_component_id,
     ),
-  ).toBe(true)
+  ).toHaveLength(16)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
