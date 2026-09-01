@@ -194,7 +194,7 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
   expect(
     circuitJson.filter(
       (element) =>
-        element.type === "schematic_net_label" &&
+        element.type === "schematic_text" &&
         element.text?.startsWith("ETH_MDI"),
     ),
   ).toHaveLength(16)
