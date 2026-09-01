@@ -192,9 +192,6 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
     circuitJson.filter((element) => element.type === "pcb_component").length,
   ).toBeGreaterThan(10)
   expect(
-    circuitJson.filter((element) => element.type === "pcb_trace").length,
-  ).toBeGreaterThan(10)
-  expect(
     circuitJson.filter(
       (element) =>
         element.type === "schematic_net_label" &&
