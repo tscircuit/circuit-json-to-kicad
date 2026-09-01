@@ -338,8 +338,10 @@ export const takeKicadSnapshot = async (params: {
           )
         : rawSvgBuffer
       const relativeSvgPath = svgFilePath.replace(`${outputDir}/`, "")
-      generatedFileContent[relativeSvgPath] = normalizedSvgBuffer
-      if (!generatePng) continue
+      if (!generatePng) {
+        generatedFileContent[relativeSvgPath] = normalizedSvgBuffer
+        continue
+      }
       let pngProcessor = sharp(normalizedSvgBuffer, { density: 100 })
 
       // For PCB files, scale 3x and add black background

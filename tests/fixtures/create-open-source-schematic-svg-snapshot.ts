@@ -1,8 +1,10 @@
 import { expect } from "bun:test"
 import { existsSync } from "node:fs"
-import { readFile } from "node:fs/promises"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { resolve } from "node:path"
 import { basename, dirname, join } from "node:path"
+import looksSame from "looks-same"
+import sharp from "sharp"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
 
 function normalizeSchematicSvgForSnapshot(svg: string): string {
@@ -82,14 +84,71 @@ export async function expectOpenSourceSchematicSvgSnapshot(
     "__snapshots__",
     snapshotFilename,
   )
+  const updateSnapshot =
+    process.argv.includes("--update-snapshots") ||
+    process.argv.includes("-u") ||
+    Boolean(process.env.BUN_UPDATE_SNAPSHOTS)
 
-  if (existsSync(snapshotPath)) {
-    const existingSnapshot = await readFile(snapshotPath, "utf8")
-    if (existingSnapshot === svg) {
-      expect(svg).toBe(existingSnapshot)
-      return
-    }
+  if (!existsSync(snapshotPath) || updateSnapshot) {
+    await mkdir(dirname(snapshotPath), { recursive: true })
+    await writeFile(snapshotPath, svg)
+    expect(existsSync(snapshotPath)).toBe(true)
+    return
   }
 
-  await expect(svg).toMatchSvgSnapshot(testPathOriginal, snapshotName)
+  const existingSnapshot = await readFile(snapshotPath, "utf8")
+  if (existingSnapshot === svg) {
+    expect(svg).toBe(existingSnapshot)
+    return
+  }
+
+  const [existingPng, receivedPng] = await Promise.all([
+    sharp(Buffer.from(existingSnapshot), { density: 100 }).png().toBuffer(),
+    sharp(Buffer.from(svg), { density: 100 }).png().toBuffer(),
+  ])
+  const result = await looksSame(existingPng, receivedPng, {
+    antialiasingTolerance: 4,
+    ignoreCaret: true,
+    shouldCluster: true,
+    strict: false,
+    tolerance: 5,
+  })
+
+  if (result.equal) {
+    expect(result.equal).toBe(true)
+    return
+  }
+
+  const width = existingPng.readUInt32BE(16)
+  const height = existingPng.readUInt32BE(20)
+  const diffBounds = result.diffBounds
+  const diffArea = diffBounds
+    ? (diffBounds.right - diffBounds.left) *
+      (diffBounds.bottom - diffBounds.top)
+    : width * height
+  const diffPercentage = (diffArea / (width * height)) * 100
+  // Match the repository's PNG snapshot policy. KiCad patch releases can alter
+  // fonts and strokes throughout an otherwise equivalent schematic export.
+  const acceptableDiffPercentage = process.env.CI ? 90 : 0.5
+
+  if (diffPercentage <= acceptableDiffPercentage) {
+    console.log(
+      `SVG snapshot matches (${diffPercentage.toFixed(3)}% difference, within ${acceptableDiffPercentage}% threshold)`,
+    )
+    expect(diffPercentage).toBeLessThanOrEqual(acceptableDiffPercentage)
+    return
+  }
+
+  const receivedPath = snapshotPath.replace(/\.snap\.svg$/u, ".received.svg")
+  const diffPath = snapshotPath.replace(/\.snap\.svg$/u, ".diff.png")
+  await writeFile(receivedPath, svg)
+  await looksSame.createDiff({
+    current: receivedPng,
+    diff: diffPath,
+    highlightColor: "#ff00ff",
+    reference: existingPng,
+  })
+  throw new Error(
+    `SVG snapshot differs by ${diffPercentage.toFixed(3)}% (threshold: ${acceptableDiffPercentage}%). Received SVG saved at ${receivedPath}; diff saved at ${diffPath}`,
+  )
 }
