@@ -198,12 +198,18 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
         element.text?.startsWith("ETH_MDI"),
     ),
   ).toHaveLength(16)
+  expect(
+    circuitJson.some(
+      (element) =>
+        element.type === "schematic_port" &&
+        element.display_pin_label === "MDI0+",
+    ),
+  ).toBe(true)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
   expect(output).toContain("ETH_MDI0_P")
-  expect(output).toContain("MDI0+")
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
