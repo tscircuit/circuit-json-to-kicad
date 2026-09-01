@@ -27,6 +27,7 @@
     "@tscircuit/common": "^0.0.5",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
+    "bun-match-svg": "^0.0.16",
     "circuit-json": "^0.0.480",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
