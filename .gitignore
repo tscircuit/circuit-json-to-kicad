@@ -43,3 +43,7 @@ yalc.lock
 site-build
 .vercel
 DO_NOT_COMMIT
+
+# downloaded open-source board references
+references/*.kicad_pcb
+references/*.kicad_prl
