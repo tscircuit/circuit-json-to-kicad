@@ -25,7 +25,7 @@ const sheets = [
   },
 ]
 
-test("renders every sheet of the open-source EBAZ4205 KiCad schematic", async () => {
+test("compares every sheet of the open-source EBAZ4205 KiCad schematic round trip", async () => {
   const exports =
     await createOpenSourceSchematicSvgSnapshots("ebaz4205.kicad_sch")
   const svgs = sheets.map(({ outputFilename }) => {

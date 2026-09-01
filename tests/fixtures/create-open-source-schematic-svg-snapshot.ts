@@ -1,11 +1,21 @@
+import { $ } from "bun"
 import { expect } from "bun:test"
 import { existsSync } from "node:fs"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { resolve } from "node:path"
 import { basename, dirname, join } from "node:path"
+import type { CircuitJson } from "circuit-json"
+import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
+import { parseKicadSch } from "kicadts"
 import looksSame from "looks-same"
 import sharp from "sharp"
+import { CircuitJsonToKicadSchConverter } from "../../lib"
+import { createSideBySideSvg } from "./create-side-by-side-svg"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
+
+const KICAD_TO_CIRCUIT_JSON_UNSUPPORTED_PROPERTY_METADATA =
+  /\s+\((?:show_name|show_value|do_not_autoplace)\s+[^)]+\)/gu
 
 function normalizeSchematicSvgForSnapshot(svg: string): string {
   const dimensions = svg.match(/\bwidth="([\d.]+)mm"\s+height="([\d.]+)mm"/u)
@@ -33,6 +43,86 @@ function normalizeSchematicSvgForSnapshot(svg: string): string {
   return normalizedSvg
 }
 
+async function upgradeSchematicForRoundTrip(
+  filename: string,
+  sourceContent: string,
+): Promise<string> {
+  const tempDir = await mkdtemp(join(tmpdir(), "kicad-sch-upgrade-"))
+  const tempPath = join(tempDir, basename(filename))
+  try {
+    await writeFile(tempPath, sourceContent)
+    const upgradeResult = await $`kicad-cli sch upgrade --force ${tempPath}`
+      .quiet()
+      .nothrow()
+    if (upgradeResult.exitCode !== 0) {
+      throw new Error(
+        `kicad-cli schematic upgrade failed for ${filename}: ${upgradeResult.stderr.toString()}`,
+      )
+    }
+
+    // kicad-to-circuit-json 0.0.120 predates these KiCad 10 property display
+    // flags. They do not affect schematic connectivity or rendered content, so
+    // remove them from the temporary upgraded copy used as conversion input.
+    return (await readFile(tempPath, "utf8")).replace(
+      KICAD_TO_CIRCUIT_JSON_UNSUPPORTED_PROPERTY_METADATA,
+      "",
+    )
+  } finally {
+    await rm(tempDir, { force: true, recursive: true })
+  }
+}
+
+async function createRoundTripSchematicSvg(
+  filename: string,
+  upgradedSourceContent: string,
+): Promise<string> {
+  const sourceConverter = new KicadToCircuitJsonConverter()
+  sourceConverter.addFile(filename, upgradedSourceContent)
+  sourceConverter.runUntilFinished()
+
+  const converter = new CircuitJsonToKicadSchConverter(
+    sourceConverter.getOutput() as CircuitJson,
+  )
+  converter.runUntilFinished()
+  const roundTripSnapshot = await takeKicadSnapshot({
+    generatePng: false,
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
+  const roundTripSvg = Object.entries(
+    roundTripSnapshot.generatedFileContent,
+  ).find(([outputFilename]) => outputFilename.endsWith(".svg"))?.[1]
+  if (!roundTripSvg) {
+    throw new Error(`KiCad did not export the round-trip SVG for ${filename}`)
+  }
+  return normalizeSchematicSvgForSnapshot(roundTripSvg.toString("utf8"))
+}
+
+function getSourceFilesBySvgName(
+  rootFilename: string,
+  upgradedRootContent: string,
+): Map<string, string> {
+  const rootBase = basename(rootFilename, ".kicad_sch")
+  const sourceFilesBySvgName = new Map<string, string>([
+    [`${rootBase}.svg`, rootFilename],
+  ])
+  const rootSchematic = parseKicadSch(upgradedRootContent)
+  for (const sheet of rootSchematic.sheets) {
+    const sheetName = sheet.properties.find(
+      (property) => property.key === "Sheetname",
+    )?.value
+    const sheetFilename = sheet.properties.find(
+      (property) => property.key === "Sheetfile",
+    )?.value
+    if (!sheetName || !sheetFilename) continue
+    sourceFilesBySvgName.set(
+      `${rootBase}-${sheetName.replace(/[\\/]/gu, "_")}.svg`,
+      sheetFilename,
+    )
+  }
+  return sourceFilesBySvgName
+}
+
 export async function createOpenSourceSchematicSvgSnapshots(
   filename: string,
 ): Promise<Record<string, string>> {
@@ -48,13 +138,52 @@ export async function createOpenSourceSchematicSvgSnapshots(
     kicadFilePath: schematicPath,
     kicadFileType: "sch",
   })
+  const rootContent = await readFile(schematicPath, "utf8")
+  const upgradedRootContent = await upgradeSchematicForRoundTrip(
+    filename,
+    rootContent,
+  )
+  const sourceFilesBySvgName = getSourceFilesBySvgName(
+    filename,
+    upgradedRootContent,
+  )
+  const sourceSvgEntries = Object.entries(snapshot.generatedFileContent).filter(
+    ([outputFilename]) => outputFilename.endsWith(".svg"),
+  )
+
   return Object.fromEntries(
-    Object.entries(snapshot.generatedFileContent)
-      .filter(([outputFilename]) => outputFilename.endsWith(".svg"))
-      .map(([outputFilename, svg]) => [
-        outputFilename,
-        normalizeSchematicSvgForSnapshot(svg.toString("utf8")),
-      ]),
+    await Promise.all(
+      sourceSvgEntries.map(async ([outputFilename, sourceSvg]) => {
+        const sourceFilename = sourceFilesBySvgName.get(outputFilename)
+        if (!sourceFilename) {
+          throw new Error(
+            `Could not map KiCad SVG ${outputFilename} to a source schematic file`,
+          )
+        }
+        const sourceContent =
+          sourceFilename === filename
+            ? rootContent
+            : await readFile(
+                resolve(dirname(schematicPath), sourceFilename),
+                "utf8",
+              )
+        const upgradedSourceContent =
+          sourceFilename === filename
+            ? upgradedRootContent
+            : await upgradeSchematicForRoundTrip(sourceFilename, sourceContent)
+        const roundTripSvg = await createRoundTripSchematicSvg(
+          sourceFilename,
+          upgradedSourceContent,
+        )
+        return [
+          outputFilename,
+          createSideBySideSvg(
+            normalizeSchematicSvgForSnapshot(sourceSvg.toString("utf8")),
+            roundTripSvg,
+          ),
+        ]
+      }),
+    ),
   )
 }
 
