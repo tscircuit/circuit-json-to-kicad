@@ -70,6 +70,24 @@ const Magjack = () => (
           schY={1.72}
           fontSize={0.16}
         />
+        {leftPorts.map(({ label, y }) => (
+          <schematictext
+            text={label}
+            schX={-0.95}
+            schY={y}
+            anchor="left"
+            fontSize={0.16}
+          />
+        ))}
+        {rightPorts.map(({ label, y }) => (
+          <schematictext
+            text={label}
+            schX={0.95}
+            schY={y}
+            anchor="right"
+            fontSize={0.16}
+          />
+        ))}
         {leftPorts.map(({ pinNumber, label, y }) => (
           <port
             name={`pin${pinNumber}`}
