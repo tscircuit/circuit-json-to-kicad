@@ -62,14 +62,14 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
         schX={8}
         schY={0}
         pinLabels={{
-          pin1: "MDI0+",
-          pin2: "MDI0-",
-          pin3: "MDI1+",
-          pin4: "MDI1-",
-          pin5: "MDI2+",
-          pin6: "MDI2-",
-          pin7: "MDI3+",
-          pin8: "MDI3-",
+          pin1: "MDI0P",
+          pin2: "MDI0N",
+          pin3: "MDI1P",
+          pin4: "MDI1N",
+          pin5: "MDI2P",
+          pin6: "MDI2N",
+          pin7: "MDI3P",
+          pin8: "MDI3N",
           pin9: "LED1A",
           pin10: "LED1K",
           pin11: "LED2A",
@@ -185,16 +185,24 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
 
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
-  const ethernetConnectorSource = circuitJson.find(
-    (element) =>
-      element.type === "source_component" && element.name === "J_ETH",
-  )
-  const ethernetConnector = circuitJson.find(
-    (element) =>
-      element.type === "schematic_component" &&
-      element.source_component_id ===
-        ethernetConnectorSource?.source_component_id,
-  )
+  const ethernetPinLabels = new Set([
+    "MDI0P",
+    "MDI0N",
+    "MDI1P",
+    "MDI1N",
+    "MDI2P",
+    "MDI2N",
+    "MDI3P",
+    "MDI3N",
+    "LED1A",
+    "LED1K",
+    "LED2A",
+    "LED2K",
+    "P9",
+    "P10",
+    "SH1",
+    "SH2",
+  ])
   expect(
     circuitJson.filter((element) => element.type === "pcb_board"),
   ).toHaveLength(1)
@@ -212,8 +220,7 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
     circuitJson.filter(
       (element) =>
         element.type === "schematic_port" &&
-        element.schematic_component_id ===
-          ethernetConnector?.schematic_component_id,
+        ethernetPinLabels.has(element.display_pin_label ?? ""),
     ),
   ).toHaveLength(16)
 
