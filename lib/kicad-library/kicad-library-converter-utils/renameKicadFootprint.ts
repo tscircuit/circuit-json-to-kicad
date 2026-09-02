@@ -57,5 +57,6 @@ export function renameKicadFootprint(params: {
     footprintName: newKicadFootprintName,
     kicadModString: footprint.getString(),
     model3dSourcePaths: kicadFootprint.model3dSourcePaths,
+    isBuiltin: kicadFootprint.isBuiltin,
   }
 }

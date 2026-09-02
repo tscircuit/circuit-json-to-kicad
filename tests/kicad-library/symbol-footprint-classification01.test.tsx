@@ -2,6 +2,7 @@ import { test, expect } from "bun:test"
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
+import type { KicadFootprintMetadata } from "@tscircuit/props"
 import path from "path"
 
 const stepFilePath = path.resolve(
@@ -19,7 +20,9 @@ const stepFilePath = path.resolve(
  * (e.g. resistor) for the user library instead of matching the symbol whose
  * Footprint property references the custom footprint.
  */
-async function renderMixedBoard(): Promise<CircuitJson> {
+async function renderMixedBoard(params?: {
+  footprintMetadata?: KicadFootprintMetadata
+}): Promise<CircuitJson> {
   const circuit = new Circuit()
   circuit.add(
     <board width="30mm" height="20mm">
@@ -27,6 +30,7 @@ async function renderMixedBoard(): Promise<CircuitJson> {
       <capacitor name="C1" capacitance="100nF" footprint="0603" pcbX={5} />
       <chip
         name="U1"
+        kicadFootprintMetadata={params?.footprintMetadata}
         footprint={
           <footprint>
             <smtpad
@@ -149,4 +153,38 @@ test("symbol-footprint classification: correct symbol assigned to user library w
   const symLibTable = output.kicadProjectFsMap["sym-lib-table"] as string
   expect(symLibTable).toContain('(name "test-lib")')
   expect(symLibTable).toContain('(name "tscircuit_builtin")')
+})
+
+test("symbol-footprint classification honors metadata footprint rename in user symbol refs", async () => {
+  const circuitJson = await renderMixedBoard({
+    footprintMetadata: {
+      footprintName: "CustomMixedBoardFootprint",
+    },
+  })
+
+  const converter = new KicadLibraryConverter({
+    kicadLibraryName: "test-lib",
+    entrypoint: "lib/index.ts",
+    getExportsFromTsxFile: async () => ["MixedBoard"],
+    buildFileToCircuitJson: async () => circuitJson,
+    includeBuiltins: true,
+  })
+
+  await converter.run()
+  const output = converter.getOutput()
+  const outputKeys = Object.keys(output.kicadProjectFsMap).sort()
+
+  expect(outputKeys).toContain(
+    "footprints/test-lib.pretty/CustomMixedBoardFootprint.kicad_mod",
+  )
+  expect(outputKeys).not.toContain(
+    "footprints/test-lib.pretty/MixedBoard.kicad_mod",
+  )
+
+  const userSymbolContent = output.kicadProjectFsMap[
+    "symbols/test-lib.kicad_sym"
+  ] as string
+  expect(userSymbolContent).toContain(
+    '"Footprint" "test-lib:CustomMixedBoardFootprint"',
+  )
 })
