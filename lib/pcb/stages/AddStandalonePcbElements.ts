@@ -16,6 +16,9 @@ import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
+import { finiteOr } from "./utils/finiteOr"
+
+const DEFAULT_HOLE_DIMENSION_MM = 1.0
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
@@ -138,14 +141,14 @@ export class AddStandalonePcbElements extends ConverterStage<
   private getHoleLibraryLink(hole: PcbHole): string {
     const { hole_shape: shape } = hole
     if (shape === "circle") {
-      return `tscircuit:hole_${shape}_holeDiameter${hole.hole_diameter}mm`
+      return `tscircuit:hole_${shape}_holeDiameter${finiteOr(hole.hole_diameter, DEFAULT_HOLE_DIMENSION_MM)}mm`
     }
     if (shape === "pill" || shape === "oval") {
       const h = hole
-      return `tscircuit:hole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm`
+      return `tscircuit:hole_${shape}_holeWidth${finiteOr(h.hole_width, DEFAULT_HOLE_DIMENSION_MM)}mm_holeHeight${finiteOr(h.hole_height, DEFAULT_HOLE_DIMENSION_MM)}mm`
     }
     if (shape === "rotated_pill") {
-      return `tscircuit:hole_${shape}_holeWidth${hole.hole_width}mm_holeHeight${hole.hole_height}mm_ccwRotation${hole.ccw_rotation}deg`
+      return `tscircuit:hole_${shape}_holeWidth${finiteOr(hole.hole_width, DEFAULT_HOLE_DIMENSION_MM)}mm_holeHeight${finiteOr(hole.hole_height, DEFAULT_HOLE_DIMENSION_MM)}mm_ccwRotation${finiteOr(hole.ccw_rotation, 0)}deg`
     }
     return "tscircuit:hole"
   }
@@ -153,7 +156,7 @@ export class AddStandalonePcbElements extends ConverterStage<
   private getPlatedHoleLibraryLink(hole: PcbPlatedHole): string {
     const shape = hole.shape
     if (shape === "circle") {
-      return `tscircuit:platedhole_${shape}_holeDiameter${hole.hole_diameter}mm_outerDiameter${hole.outer_diameter}mm`
+      return `tscircuit:platedhole_${shape}_holeDiameter${finiteOr(hole.hole_diameter, DEFAULT_HOLE_DIMENSION_MM)}mm_outerDiameter${finiteOr(hole.outer_diameter, DEFAULT_HOLE_DIMENSION_MM)}mm`
     }
     if (shape === "pill" || shape === "oval") {
       const h = hole as PcbPlatedHoleOval
