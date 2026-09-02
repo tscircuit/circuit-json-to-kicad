@@ -25,187 +25,34 @@ const pinLabels = {
   pin26: ["P10"],
 } as const
 
-const leftPorts = [
-  { pinNumber: 15, label: "MDI0+", y: 1.4 },
-  { pinNumber: 16, label: "MDI0-", y: 1 },
-  { pinNumber: 20, label: "MDI1+", y: 0.6 },
-  { pinNumber: 17, label: "MDI1-", y: 0.2 },
-  { pinNumber: 21, label: "MDI2+", y: -0.2 },
-  { pinNumber: 18, label: "MDI2-", y: -0.6 },
-  { pinNumber: 22, label: "MDI3+", y: -1 },
-  { pinNumber: 19, label: "MDI3-", y: -1.4 },
-] as const
-
-const rightPorts = [
-  { pinNumber: 11, label: "LED1A", y: 1.4 },
-  { pinNumber: 12, label: "LED1K", y: 1 },
-  { pinNumber: 13, label: "LED2A", y: 0.6 },
-  { pinNumber: 14, label: "LED2K", y: 0.2 },
-  { pinNumber: 25, label: "P9", y: -0.4 },
-  { pinNumber: 26, label: "P10", y: -0.8 },
-  { pinNumber: 23, label: "SH1", y: -1.2 },
-  { pinNumber: 24, label: "SH2", y: -1.6 },
-] as const
-
 const Magjack = () => (
   <chip
     name="J_ETH"
     manufacturerPartNumber="HR911130A"
     pinLabels={pinLabels}
+    schWidth={2.15}
+    schHeight={4}
+    schPinArrangement={{
+      leftSide: {
+        direction: "top-to-bottom",
+        pins: [
+          "MDI0+",
+          "MDI0-",
+          "MDI1+",
+          "MDI1-",
+          "MDI2+",
+          "MDI2-",
+          "MDI3+",
+          "MDI3-",
+        ],
+      },
+      rightSide: {
+        direction: "top-to-bottom",
+        pins: ["LED1A", "LED1K", "LED2A", "LED2K", "P9", "P10", "SH1", "SH2"],
+      },
+    }}
     schX={0}
     schY={0}
-    symbol={
-      <symbol>
-        <schematicrect
-          schX={0}
-          schY={0}
-          width={2.15}
-          height={4}
-          color="#880000"
-          strokeWidth={0.1}
-        />
-        <schematictext
-          text="4-PAIR MAGJACK"
-          schX={0}
-          schY={1.72}
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI0+"
-          schX={-0.95}
-          schY={1.4}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI0-"
-          schX={-0.95}
-          schY={1}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI1+"
-          schX={-0.95}
-          schY={0.6}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI1-"
-          schX={-0.95}
-          schY={0.2}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI2+"
-          schX={-0.95}
-          schY={-0.2}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI2-"
-          schX={-0.95}
-          schY={-0.6}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI3+"
-          schX={-0.95}
-          schY={-1}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI3-"
-          schX={-0.95}
-          schY={-1.4}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED1A"
-          schX={0.95}
-          schY={1.4}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED1K"
-          schX={0.95}
-          schY={1}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED2A"
-          schX={0.95}
-          schY={0.6}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED2K"
-          schX={0.95}
-          schY={0.2}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="P9"
-          schX={0.95}
-          schY={-0.4}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="P10"
-          schX={0.95}
-          schY={-0.8}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="SH1"
-          schX={0.95}
-          schY={-1.2}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="SH2"
-          schX={0.95}
-          schY={-1.6}
-          anchor="right"
-          fontSize={0.16}
-        />
-        {leftPorts.map(({ pinNumber, label, y }) => (
-          <port
-            name={`pin${pinNumber}`}
-            pinNumber={pinNumber}
-            aliases={[label]}
-            direction="left"
-            schX={-1.475}
-            schY={y}
-            schStemLength={0.4}
-          />
-        ))}
-        {rightPorts.map(({ pinNumber, label, y }) => (
-          <port
-            name={`pin${pinNumber}`}
-            pinNumber={pinNumber}
-            aliases={[label]}
-            direction="right"
-            schX={1.475}
-            schY={y}
-            schStemLength={0.4}
-          />
-        ))}
-      </symbol>
-    }
   />
 )
 
