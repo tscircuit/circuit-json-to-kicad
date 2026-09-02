@@ -70,123 +70,11 @@ const Magjack = () => (
           schY={1.72}
           fontSize={0.16}
         />
-        <schematictext
-          text="MDI0+"
-          schX={-0.95}
-          schY={1.4}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI0-"
-          schX={-0.95}
-          schY={1}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI1+"
-          schX={-0.95}
-          schY={0.6}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI1-"
-          schX={-0.95}
-          schY={0.2}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI2+"
-          schX={-0.95}
-          schY={-0.2}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI2-"
-          schX={-0.95}
-          schY={-0.6}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI3+"
-          schX={-0.95}
-          schY={-1}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="MDI3-"
-          schX={-0.95}
-          schY={-1.4}
-          anchor="left"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED1A"
-          schX={0.95}
-          schY={1.4}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED1K"
-          schX={0.95}
-          schY={1}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED2A"
-          schX={0.95}
-          schY={0.6}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="LED2K"
-          schX={0.95}
-          schY={0.2}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="P9"
-          schX={0.95}
-          schY={-0.4}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="P10"
-          schX={0.95}
-          schY={-0.8}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="SH1"
-          schX={0.95}
-          schY={-1.2}
-          anchor="right"
-          fontSize={0.16}
-        />
-        <schematictext
-          text="SH2"
-          schX={0.95}
-          schY={-1.6}
-          anchor="right"
-          fontSize={0.16}
-        />
         {leftPorts.map(({ pinNumber, label, y }) => (
           <port
-            name={`pin${pinNumber}`}
+            name={label}
             pinNumber={pinNumber}
-            aliases={[label]}
+            aliases={[`pin${pinNumber}`]}
             direction="left"
             schX={-1.475}
             schY={y}
@@ -195,9 +83,9 @@ const Magjack = () => (
         ))}
         {rightPorts.map(({ pinNumber, label, y }) => (
           <port
-            name={`pin${pinNumber}`}
+            name={label}
             pinNumber={pinNumber}
-            aliases={[label]}
+            aliases={[`pin${pinNumber}`]}
             direction="right"
             schX={1.475}
             schY={y}
@@ -235,6 +123,13 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
   expect(
     circuitJson.filter((element) => element.type === "schematic_port"),
   ).toHaveLength(16)
+  expect(
+    circuitJson.some(
+      (element) =>
+        element.type === "schematic_port" &&
+        element.display_pin_label === "MDI0+",
+    ),
+  ).toBe(true)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
