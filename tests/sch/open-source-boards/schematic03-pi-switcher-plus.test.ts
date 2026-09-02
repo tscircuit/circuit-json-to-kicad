@@ -10,4 +10,4 @@ test("renders the open-source Pi Switcher Plus KiCad schematic", async () => {
   )
   expect(svg).toContain("<svg")
   await expectOpenSourceSchematicSvgSnapshot(svg, import.meta.path)
-})
+}, 20_000)

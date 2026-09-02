@@ -1,7 +1,7 @@
 import type {
   CircuitJson,
-  SchematicNetLabel,
   SchematicComponent,
+  SchematicNetLabel,
   SchematicPort,
   SourceComponentBase,
 } from "circuit-json"
@@ -13,20 +13,21 @@ import {
   SymbolPinNames,
   SymbolPinNumbers,
 } from "kicadts"
-import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
-import { getLibraryId } from "../getLibraryId"
-import { getSchematicSymbolData } from "../getSchematicSymbolData"
+import { ConverterStage } from "../../types"
 import {
   getKicadCompatibleComponentName,
   getKicadCompatibleCustomSymbolName,
   getReferencePrefixForComponent,
 } from "../../utils/getKicadCompatibleComponentName"
+import { getComponentLevelLibraryId, getLibraryId } from "../getLibraryId"
+import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converters/buildSymbolDataFromSchematicPrimitives"
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
 import { createPinSubsymbol } from "./utils/createPinSubsymbol"
+import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
@@ -147,8 +148,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       )
     }
 
-    const hasInnerSymbolPrimitives = this.hasComponentLevelSymbolPrimitives(
-      schematicComponent.schematic_component_id,
+    const hasInnerSymbolPrimitives = hasComponentLevelSymbolPrimitives(
+      this.ctx.circuitJson,
+      schematicComponent,
     )
 
     if (hasInnerSymbolPrimitives) {
@@ -164,30 +166,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       })
 
       if (innerSymbolData.primitives?.length > 0) {
-        const baseSymbolData = createGenericChipSymbolData(
-          schematicComponent,
-          this.ctx.db,
-        )
-        const innerPrimitivesWithFillHints = (
-          innerSymbolData.primitives || []
-        ).map((primitive: any) => {
-          if (primitive.fill && primitive.fillColor) {
-            return { ...primitive, kicadFillType: "outline" }
-          }
-          return primitive
-        })
         const symbolData = {
-          ...baseSymbolData,
-          // Keep the generic box and ports, append component-level inner artwork.
-          primitives: [
-            ...(baseSymbolData.primitives || []),
-            ...innerPrimitivesWithFillHints,
-          ],
-          // Avoid duplicate U1/MPN text: Value/Reference are emitted as properties.
+          ...innerSymbolData,
+          // Imported symbol text is emitted as standalone schematic text.
           texts: [],
         }
 
-        const libId = getLibraryId(sourceComp, schematicComponent, cadComponent)
+        const libId = getComponentLevelLibraryId(
+          sourceComp,
+          schematicComponent,
+          cadComponent,
+        )
         const footprintName = getKicadCompatibleComponentName(
           sourceComp,
           cadComponent,
@@ -200,7 +189,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         return this.createLibrarySymbol({
           libId,
           symbolData,
-          isChip: true,
+          isChip: false,
+          hidePinNames: true,
           schematicComponent,
           description: this.getDescription(sourceComp),
           keywords: this.getKeywords(sourceComp),
@@ -394,6 +384,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     libId,
     symbolData,
     isChip,
+    hidePinNames = false,
     schematicComponent,
     description,
     keywords,
@@ -405,6 +396,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     libId: string
     symbolData: any
     isChip: boolean
+    hidePinNames?: boolean
     schematicComponent?: SchematicComponent
     description: string
     keywords: string
@@ -430,6 +422,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const pinNames = new SymbolPinNames()
     // For chips, use larger offset to position names well inside; for others, use 0
     pinNames.offset = isChip ? 1.27 : 0
+    if (hidePinNames) pinNames.hide = true
     symbol._sxPinNames = pinNames
 
     // Add properties
@@ -496,23 +489,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (sourceComp?.ftype === "simple_chip") return "*"
     if (sourceComp?.ftype === "simple_connector") return "*"
     return "*"
-  }
-
-  private hasComponentLevelSymbolPrimitives(
-    schematicComponentId: string | undefined,
-  ): boolean {
-    if (!schematicComponentId) return false
-    return this.ctx.circuitJson.some(
-      (el: any) =>
-        (el.type === "schematic_path" ||
-          el.type === "schematic_circle" ||
-          el.type === "schematic_arc" ||
-          el.type === "schematic_line" ||
-          el.type === "schematic_rect" ||
-          el.type === "schematic_text") &&
-        el.schematic_component_id === schematicComponentId &&
-        !el.schematic_symbol_id,
-    )
   }
 
   override getOutput(): KicadSch {

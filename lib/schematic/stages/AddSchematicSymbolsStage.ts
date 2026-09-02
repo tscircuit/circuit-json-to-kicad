@@ -28,12 +28,13 @@ import {
   getKicadCompatibleCustomSymbolName,
   getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
-import { getLibraryId } from "../getLibraryId"
+import { getComponentLevelLibraryId, getLibraryId } from "../getLibraryId"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import {
   getTextJustificationFromAnchor,
   type TextJustification,
 } from "./utils/getTextJustificationFromAnchor"
+import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -135,12 +136,23 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       }
 
       // Get the appropriate library ID based on component type
-      const libId = getLibraryId(
-        sourceComponent,
-        schematicComponent,
-        cadComponent,
-        schematicSymbolName,
-      )
+      const usesComponentLevelSymbolPrimitives =
+        hasComponentLevelSymbolPrimitives(
+          this.ctx.circuitJson,
+          schematicComponent,
+        )
+      const libId = usesComponentLevelSymbolPrimitives
+        ? getComponentLevelLibraryId(
+            sourceComponent,
+            schematicComponent,
+            cadComponent,
+          )
+        : getLibraryId(
+            sourceComponent,
+            schematicComponent,
+            cadComponent,
+            schematicSymbolName,
+          )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
 
@@ -176,7 +188,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
-      const hideGeneratedCustomReference = Boolean(schematicSymbolId)
+      const hideGeneratedCustomReference =
+        Boolean(schematicSymbolId) || usesComponentLevelSymbolPrimitives
       const referenceProperty = new SymbolProperty({
         key: "Reference",
         value: refMeta?.value ?? reference,
@@ -193,6 +206,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       const hideValue =
         Boolean(schematicSymbolId) ||
+        usesComponentLevelSymbolPrimitives ||
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
         (sourceComponent.ftype === "simple_diode" &&
