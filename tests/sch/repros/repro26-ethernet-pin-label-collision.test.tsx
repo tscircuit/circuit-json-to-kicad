@@ -50,20 +50,11 @@ const Magjack = () => (
     schPinArrangement={{
       leftSide: {
         direction: "top-to-bottom",
-        pins: [
-          "MDI0+",
-          "MDI0-",
-          "MDI1+",
-          "MDI1-",
-          "MDI2+",
-          "MDI2-",
-          "MDI3+",
-          "MDI3-",
-        ],
+        pins: [15, 16, 20, 17, 21, 18, 22, 19],
       },
       rightSide: {
         direction: "top-to-bottom",
-        pins: ["LED1A", "LED1K", "LED2A", "LED2K", "P9", "P10", "SH1", "SH2"],
+        pins: [11, 12, 13, 14, 25, 26, 23, 24],
       },
     }}
     schX={8}
@@ -203,7 +194,7 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
   ).toHaveLength(20)
   expect(
     circuitJson.filter((element) => element.type === "schematic_port"),
-  ).toHaveLength(16)
+  ).toHaveLength(28)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
