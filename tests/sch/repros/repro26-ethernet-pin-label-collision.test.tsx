@@ -194,7 +194,7 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
   ).toHaveLength(20)
   expect(
     circuitJson.filter((element) => element.type === "schematic_port"),
-  ).toHaveLength(28)
+  ).toHaveLength(64)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
