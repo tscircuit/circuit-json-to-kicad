@@ -70,8 +70,9 @@ const Magjack = () => (
           schY={1.72}
           fontSize={0.16}
         />
-        {leftPorts.map(({ label, y }) => (
+        {leftPorts.map(({ pinNumber, label, y }) => (
           <schematictext
+            name={`left-pin-name-${pinNumber}`}
             text={label}
             schX={-0.95}
             schY={y}
@@ -79,8 +80,9 @@ const Magjack = () => (
             fontSize={0.16}
           />
         ))}
-        {rightPorts.map(({ label, y }) => (
+        {rightPorts.map(({ pinNumber, label, y }) => (
           <schematictext
+            name={`right-pin-name-${pinNumber}`}
             text={label}
             schX={0.95}
             schY={y}
