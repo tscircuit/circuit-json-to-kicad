@@ -72,9 +72,9 @@ const Magjack = () => (
         />
         {leftPorts.map(({ pinNumber, label, y }) => (
           <port
-            name={label}
+            name={`pin${pinNumber}`}
             pinNumber={pinNumber}
-            aliases={[`pin${pinNumber}`]}
+            aliases={[label]}
             direction="left"
             schX={-1.475}
             schY={y}
@@ -83,9 +83,9 @@ const Magjack = () => (
         ))}
         {rightPorts.map(({ pinNumber, label, y }) => (
           <port
-            name={label}
+            name={`pin${pinNumber}`}
             pinNumber={pinNumber}
-            aliases={[`pin${pinNumber}`]}
+            aliases={[label]}
             direction="right"
             schX={1.475}
             schY={y}
