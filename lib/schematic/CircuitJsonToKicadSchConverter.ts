@@ -22,6 +22,46 @@ import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
+const COMPACT_LARGE_SHEET_MARGIN_MM = 15
+
+const getSingleSheetSchematicLayout = (db: ReturnType<typeof cju>) => {
+  let measurement = getSchematicBoundsAndCenter(db)
+  let contentWidthMm =
+    (measurement.bounds.maxX - measurement.bounds.minX) *
+    DEFAULT_SCHEMATIC_SCALE_FACTOR
+  let contentHeightMm =
+    (measurement.bounds.maxY - measurement.bounds.minY) *
+    DEFAULT_SCHEMATIC_SCALE_FACTOR
+  let paperSize = selectSchematicPaperSize(contentWidthMm, contentHeightMm)
+
+  if (
+    !measurement.hasComponentLevelSourceGeometry ||
+    paperSize.name === "A4" ||
+    paperSize.name === "A3"
+  ) {
+    return { ...measurement, paperSize }
+  }
+
+  // Imported KiCad sheets often use the area between the 15 mm drawing margin
+  // and the default 20 mm generated-content margin. Keep that valid source
+  // geometry on the smaller large-format sheet instead of shrinking it by a
+  // full ISO paper-size step.
+  measurement = getSchematicBoundsAndCenter(db, {
+    useComponentLevelSourceGeometry: true,
+  })
+  contentWidthMm =
+    (measurement.bounds.maxX - measurement.bounds.minX) *
+    DEFAULT_SCHEMATIC_SCALE_FACTOR
+  contentHeightMm =
+    (measurement.bounds.maxY - measurement.bounds.minY) *
+    DEFAULT_SCHEMATIC_SCALE_FACTOR
+  paperSize = selectSchematicPaperSize(
+    contentWidthMm,
+    contentHeightMm,
+    COMPACT_LARGE_SHEET_MARGIN_MM,
+  )
+  return { ...measurement, paperSize }
+}
 
 export interface KicadSchFile {
   filename: string
@@ -76,21 +116,7 @@ export class CircuitJsonToKicadSchConverter {
 
     const db = cju(circuitJson)
 
-    const { center, bounds } = getSchematicBoundsAndCenter(db)
-
-    // Calculate the size of the schematic in KiCad coordinates (mm)
-    const schematicWidthMm =
-      (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor
-    const schematicHeightMm =
-      (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor
-
-    // Preserve the established centered layout for ordinary single-sheet
-    // exports. Title-block clearance is applied when building hierarchical
-    // files below, where each child sheet has its own page.
-    const paperSize = selectSchematicPaperSize(
-      schematicWidthMm,
-      schematicHeightMm,
-    )
+    const { center, paperSize } = getSingleSheetSchematicLayout(db)
 
     this.ctx = {
       db,
