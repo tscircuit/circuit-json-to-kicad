@@ -11,14 +11,14 @@ const pinLabels = {
   pin12: ["LED1K"],
   pin13: ["LED2A"],
   pin14: ["LED2K"],
-  pin15: ["MDI0+"],
-  pin16: ["MDI0-"],
-  pin17: ["MDI1-"],
-  pin18: ["MDI2-"],
-  pin19: ["MDI3-"],
-  pin20: ["MDI1+"],
-  pin21: ["MDI2+"],
-  pin22: ["MDI3+"],
+  pin15: ["MDI0P"],
+  pin16: ["MDI0N"],
+  pin17: ["MDI1N"],
+  pin18: ["MDI2N"],
+  pin19: ["MDI3N"],
+  pin20: ["MDI1P"],
+  pin21: ["MDI2P"],
+  pin22: ["MDI3P"],
   pin23: ["SH1"],
   pin24: ["SH2"],
   pin25: ["P9"],
@@ -50,11 +50,20 @@ const Magjack = () => (
     schPinArrangement={{
       leftSide: {
         direction: "top-to-bottom",
-        pins: [15, 16, 20, 17, 21, 18, 22, 19],
+        pins: [
+          "MDI0P",
+          "MDI0N",
+          "MDI1P",
+          "MDI1N",
+          "MDI2P",
+          "MDI2N",
+          "MDI3P",
+          "MDI3N",
+        ],
       },
       rightSide: {
         direction: "top-to-bottom",
-        pins: [11, 12, 13, 14, 25, 26, 23, 24],
+        pins: ["LED1A", "LED1K", "LED2A", "LED2K", "P9", "P10", "SH1", "SH2"],
       },
     }}
     schX={8}
@@ -199,7 +208,7 @@ test("repro26: Ethernet pin names collide with connected net labels", async () =
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
-  expect(output).toContain('(name "MDI0+"')
+  expect(output).toContain('(name "MDI0P"')
   expect(output).toContain('(text "ETH_MDI0_P"')
   expect(output).toContain("(length 0.01)")
 
