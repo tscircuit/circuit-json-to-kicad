@@ -165,7 +165,7 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
         (at 0 0 0)
         (descr "")
         (tags "")
-        (attr through_hole)
+        (attr smd)
         (embedded_fonts no)
         (property "Reference" "SW**"
           (at 0 0 0)
