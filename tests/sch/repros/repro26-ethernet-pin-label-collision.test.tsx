@@ -29,6 +29,7 @@ const Magjack = () => (
   <chip
     name="J_ETH"
     manufacturerPartNumber="HR911130A"
+    footprint="dip26"
     pinLabels={pinLabels}
     schWidth={2.15}
     schHeight={4}
