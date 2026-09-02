@@ -38,6 +38,7 @@ import { create3DModelsFromCadComponent } from "./footprints-stage-converters/cr
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
+import { flipFootprintToBack } from "../utils/flipFootprintToBack"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -144,7 +145,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         silkscreenTexts: pcbSilkscreenTexts,
         componentCenter: component.center,
         componentRotation: component.rotation || 0,
-        sourceComponentName: sourceComponent?.name,
       }),
     )
 
@@ -400,6 +400,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         metadata: footprintMetadata,
         componentProperty: kicadComponentProperty,
       })
+    }
+
+    if (component.layer === "bottom") {
+      flipFootprintToBack(footprint)
     }
 
     const footprints = kicadPcb.footprints
