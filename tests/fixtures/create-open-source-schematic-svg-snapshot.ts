@@ -1,10 +1,23 @@
 import { expect } from "bun:test"
 import { existsSync } from "node:fs"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
-import { resolve } from "node:path"
-import { basename, dirname, join } from "node:path"
+import {
+  copyFile,
+  mkdir,
+  mkdtemp,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { basename, dirname, join, resolve } from "node:path"
+import { $ } from "bun"
+import type { CircuitJson } from "circuit-json"
+import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
 import looksSame from "looks-same"
 import sharp from "sharp"
+import { CircuitJsonToKicadSchConverter } from "../../lib"
+import { createSideBySideSvg } from "./create-side-by-side-svg"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
 
 function normalizeSchematicSvgForSnapshot(svg: string): string {
@@ -33,8 +46,60 @@ function normalizeSchematicSvgForSnapshot(svg: string): string {
   return normalizedSvg
 }
 
+async function createConvertedSchematicSvg(
+  schematicPath: string,
+): Promise<string> {
+  const tempDir = await mkdtemp(join(tmpdir(), "kicad-sch-upgrade-"))
+
+  let sourceContent: string
+  try {
+    const schematicDir = dirname(schematicPath)
+    const siblingFilenames = await readdir(schematicDir)
+    await Promise.all(
+      siblingFilenames
+        .filter((siblingFilename) => siblingFilename.endsWith(".kicad_sch"))
+        .map((siblingFilename) =>
+          copyFile(
+            join(schematicDir, siblingFilename),
+            join(tempDir, siblingFilename),
+          ),
+        ),
+    )
+
+    const upgradedSchematicPath = join(tempDir, basename(schematicPath))
+    await $`kicad-cli sch upgrade ${upgradedSchematicPath}`.quiet()
+    sourceContent = await readFile(upgradedSchematicPath, "utf8")
+  } finally {
+    await rm(tempDir, { force: true, recursive: true })
+  }
+
+  const sourceConverter = new KicadToCircuitJsonConverter()
+  sourceConverter.addFile(basename(schematicPath), sourceContent)
+  sourceConverter.runUntilFinished()
+
+  const converter = new CircuitJsonToKicadSchConverter(
+    sourceConverter.getOutput() as CircuitJson,
+  )
+  converter.runUntilFinished()
+  const convertedSnapshot = await takeKicadSnapshot({
+    generatePng: false,
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
+  const convertedSvg = Object.entries(
+    convertedSnapshot.generatedFileContent,
+  ).find(([outputFilename]) => outputFilename.endsWith(".svg"))?.[1]
+  if (!convertedSvg) {
+    throw new Error(
+      `KiCad did not export the converted SVG for ${basename(schematicPath)}`,
+    )
+  }
+  return normalizeSchematicSvgForSnapshot(convertedSvg.toString("utf8"))
+}
+
 export async function createOpenSourceSchematicSvgSnapshots(
   filename: string,
+  sourceFilenameByOutputFilename: Record<string, string> = {},
 ): Promise<Record<string, string>> {
   const schematicPath = resolve(
     import.meta.dir,
@@ -48,13 +113,40 @@ export async function createOpenSourceSchematicSvgSnapshots(
     kicadFilePath: schematicPath,
     kicadFileType: "sch",
   })
+  const rootSvgFilename = filename.replace(/\.kicad_sch$/u, ".svg")
+  const sourceFilesBySvgName = new Map(
+    Object.entries({
+      [rootSvgFilename]: filename,
+      ...sourceFilenameByOutputFilename,
+    }),
+  )
+  const sourceSvgEntries = Object.entries(snapshot.generatedFileContent).filter(
+    ([outputFilename]) => outputFilename.endsWith(".svg"),
+  )
+
   return Object.fromEntries(
-    Object.entries(snapshot.generatedFileContent)
-      .filter(([outputFilename]) => outputFilename.endsWith(".svg"))
-      .map(([outputFilename, svg]) => [
-        outputFilename,
-        normalizeSchematicSvgForSnapshot(svg.toString("utf8")),
-      ]),
+    await Promise.all(
+      sourceSvgEntries.map(async ([outputFilename, sourceSvg]) => {
+        const sourceFilename = sourceFilesBySvgName.get(outputFilename)
+        if (!sourceFilename) {
+          throw new Error(
+            `Could not map KiCad SVG ${outputFilename} to a source schematic file`,
+          )
+        }
+        const sourcePath =
+          sourceFilename === filename
+            ? schematicPath
+            : resolve(dirname(schematicPath), sourceFilename)
+        const convertedSvg = await createConvertedSchematicSvg(sourcePath)
+        return [
+          outputFilename,
+          createSideBySideSvg(
+            normalizeSchematicSvgForSnapshot(sourceSvg.toString("utf8")),
+            convertedSvg,
+          ),
+        ]
+      }),
+    ),
   )
 }
 
@@ -75,6 +167,12 @@ export async function expectOpenSourceSchematicSvgSnapshot(
   testPathOriginal: string,
   snapshotName?: string,
 ): Promise<void> {
+  expect(svg).toContain('data-comparison="source"')
+  expect(svg).toContain('data-comparison="converted"')
+  await expect(
+    sharp(Buffer.from(svg), { density: 100 }).metadata(),
+  ).resolves.toBeDefined()
+
   const testPath = testPathOriginal.replace(/\.test\.tsx?$/u, "")
   const snapshotFilename = snapshotName
     ? `${basename(testPath)}-${snapshotName}.snap.svg`
@@ -108,8 +206,8 @@ export async function expectOpenSourceSchematicSvgSnapshot(
   ])
   const result = await looksSame(existingPng, receivedPng, {
     antialiasingTolerance: 4,
+    createDiffImage: true,
     ignoreCaret: true,
-    shouldCluster: true,
     strict: false,
     tolerance: 5,
   })
@@ -119,14 +217,7 @@ export async function expectOpenSourceSchematicSvgSnapshot(
     return
   }
 
-  const width = existingPng.readUInt32BE(16)
-  const height = existingPng.readUInt32BE(20)
-  const diffBounds = result.diffBounds
-  const diffArea = diffBounds
-    ? (diffBounds.right - diffBounds.left) *
-      (diffBounds.bottom - diffBounds.top)
-    : width * height
-  const diffPercentage = (diffArea / (width * height)) * 100
+  const diffPercentage = (result.differentPixels / result.totalPixels) * 100
   // Match the repository's PNG snapshot policy. KiCad patch releases can alter
   // fonts and strokes throughout an otherwise equivalent schematic export.
   const acceptableDiffPercentage = process.env.CI ? 90 : 0.5
@@ -142,12 +233,7 @@ export async function expectOpenSourceSchematicSvgSnapshot(
   const receivedPath = snapshotPath.replace(/\.snap\.svg$/u, ".received.svg")
   const diffPath = snapshotPath.replace(/\.snap\.svg$/u, ".diff.png")
   await writeFile(receivedPath, svg)
-  await looksSame.createDiff({
-    current: receivedPng,
-    diff: diffPath,
-    highlightColor: "#ff00ff",
-    reference: existingPng,
-  })
+  await result.diffImage.save(diffPath)
   throw new Error(
     `SVG snapshot differs by ${diffPercentage.toFixed(3)}% (threshold: ${acceptableDiffPercentage}%). Received SVG saved at ${receivedPath}; diff saved at ${diffPath}`,
   )

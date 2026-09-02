@@ -43,6 +43,6 @@ that Circuit JSON back to KiCad with this package, and reopens the generated
 file with `kicadts`.
 
 The assertions cover exact supported footprint, pad, routed-segment, via,
-copper-pour, and net-name preservation. Each board test stores a
-source/generated side-by-side KiCad render, while the schematic tests store
-native SVG exports for every matching source sheet.
+copper-pour, and net-name preservation. The board and schematic tests store
+source/generated side-by-side native KiCad renders, including every source
+sheet in hierarchical schematics.
