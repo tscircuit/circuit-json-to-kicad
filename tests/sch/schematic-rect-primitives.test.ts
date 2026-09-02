@@ -56,3 +56,29 @@ for (const rotation of [0, 360, -360, 45, 90]) {
     }
   })
 }
+
+test("schematic primitives preserve imported KiCad rgb fills", () => {
+  const rect = schematic_rect.parse({
+    schematic_symbol_id: "symbol1",
+    type: "schematic_rect",
+    center: { x: 3, y: 4 },
+    width: 4,
+    height: 2,
+    rotation: 0,
+    is_filled: true,
+    fill_color: "rgb(255, 255, 194)",
+  })
+  const symbolData = buildSymbolDataFromSchematicPrimitives({
+    circuitJson: [rect],
+    schematicSymbolId: "symbol1",
+    schematicSymbol: { center: rect.center },
+  })
+  const drawing = createDrawingSubsymbol({
+    libId: "Custom:rectangle",
+    symbolData,
+    isChip: false,
+    c2kMatSchScale: 2,
+  })
+
+  expect(drawing.getString()).toContain("(color 255 255 194 1)")
+})

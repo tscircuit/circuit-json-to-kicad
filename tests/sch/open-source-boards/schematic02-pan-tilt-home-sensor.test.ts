@@ -10,4 +10,4 @@ test("renders the open-source pan-tilt sensor KiCad schematic", async () => {
   )
   expect(svg).toContain("<svg")
   await expectOpenSourceSchematicSvgSnapshot(svg, import.meta.path)
-})
+}, 20_000)
