@@ -55,7 +55,7 @@ const Magjack = () => (
     schX={0}
     schY={0}
     symbol={
-      <symbol>
+      <symbol width={2.15} height={4}>
         <schematicrect
           schX={0}
           schY={0}
