@@ -52,6 +52,7 @@ const Magjack = () => (
     name="J_ETH"
     manufacturerPartNumber="HR911130A"
     pinLabels={pinLabels}
+    showPinAliases
     schX={0}
     schY={0}
     symbol={
