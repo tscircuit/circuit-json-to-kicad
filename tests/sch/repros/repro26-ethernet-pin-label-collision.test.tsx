@@ -7,22 +7,22 @@ import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapsh
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const pinLabels = {
-  pin11: "LED1A",
-  pin12: "LED1K",
-  pin13: "LED2A",
-  pin14: "LED2K",
-  pin15: "MDI0+",
-  pin16: "MDI0-",
-  pin17: "MDI1-",
-  pin18: "MDI2-",
-  pin19: "MDI3-",
-  pin20: "MDI1+",
-  pin21: "MDI2+",
-  pin22: "MDI3+",
-  pin23: "SH1",
-  pin24: "SH2",
-  pin25: "P9",
-  pin26: "P10",
+  pin11: ["LED1A"],
+  pin12: ["LED1K"],
+  pin13: ["LED2A"],
+  pin14: ["LED2K"],
+  pin15: ["MDI0+"],
+  pin16: ["MDI0-"],
+  pin17: ["MDI1-"],
+  pin18: ["MDI2-"],
+  pin19: ["MDI3-"],
+  pin20: ["MDI1+"],
+  pin21: ["MDI2+"],
+  pin22: ["MDI3+"],
+  pin23: ["SH1"],
+  pin24: ["SH2"],
+  pin25: ["P9"],
+  pin26: ["P10"],
 } as const
 
 const leftPorts = [
