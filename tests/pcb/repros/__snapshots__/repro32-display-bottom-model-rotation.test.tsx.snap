@@ -1,0 +1,54 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`pcb repro32 bottom display shows its back instead of its screen 1`] = `
+[
+  {
+    "exportedModel": 
+"(model "C7465999.step"
+  (offset
+    (xyz 0.000025400000026820635 0.0050800000001345325 8.480405999999999)
+  )
+  (rotate
+    (xyz 0 0 0)
+  )
+)"
+,
+    "inputCadPosition": {
+      "x": 0,
+      "y": 2,
+      "z": 0.7,
+    },
+    "inputCadRotation": {
+      "x": 0,
+      "y": 0,
+      "z": 180,
+    },
+    "layer": "top",
+    "pcbRotation": 180,
+  },
+  {
+    "exportedModel": 
+"(model "C7465999.step"
+  (offset
+    (xyz 0.000025400000026820635 0.0050800000001345325 8.480405999999999)
+  )
+  (rotate
+    (xyz 0 180 0)
+  )
+)"
+,
+    "inputCadPosition": {
+      "x": 0,
+      "y": 2,
+      "z": -0.7,
+    },
+    "inputCadRotation": {
+      "x": 0,
+      "y": 180,
+      "z": 180,
+    },
+    "layer": "bottom",
+    "pcbRotation": 180,
+  },
+]
+`;
