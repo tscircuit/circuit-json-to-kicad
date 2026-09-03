@@ -11,3 +11,18 @@ exports[`pcb repro31 OBJ-only USB-C keeps pads but drops its 3D model 1`] = `
   "modelDownloads": [],
 }
 `;
+
+exports[`pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C 1`] = `
+{
+  "exportedFootprints": 1,
+  "exportedModelPath": "\${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/C165948.step",
+  "exportedModels": 1,
+  "exportedPads": 22,
+  "inputHasObj": true,
+  "inputHasStep": false,
+  "inputHasWrl": false,
+  "modelDownloads": [
+    "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step",
+  ],
+}
+`;

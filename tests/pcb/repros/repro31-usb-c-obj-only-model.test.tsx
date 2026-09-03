@@ -1,4 +1,7 @@
 import { expect, test } from "bun:test"
+import { createHash } from "node:crypto"
+import { resolve } from "node:path"
+import { gunzipSync } from "node:zlib"
 import sharp from "sharp"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib"
@@ -6,9 +9,7 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { SmdUsbC } from "./assets/smd-usb-c-obj-only"
 
-// Characterization repro: passing means the model omission was reproduced,
-// not that export is correct. See repro31-usb-c-obj-only-model.md.
-test("pcb repro31 OBJ-only USB-C keeps pads but drops its 3D model", async () => {
+test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="20mm" height="20mm" routingDisabled>
@@ -47,9 +48,13 @@ test("pcb repro31 OBJ-only USB-C keeps pads but drops its 3D model", async () =>
   const pcb = converter.getOutput()
   expect(pcb.footprints).toHaveLength(1)
   expect(pcb.footprints[0]!.fpPads).toHaveLength(22)
-  expect(pcb.footprints[0]!.models).toHaveLength(0)
-  expect(converter.getModel3dSourcePaths()).toEqual([])
-  expect(converter.getOutputString()).not.toContain("(model ")
+  expect(pcb.footprints[0]!.models).toHaveLength(1)
+  const stepUrl =
+    "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step"
+  expect(converter.getModel3dSourcePaths()).toEqual([stepUrl])
+  expect(converter.getOutputString()).toContain(
+    "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/C165948.step",
+  )
   expect({
     inputHasObj: Boolean(cad.model_obj_url),
     inputHasStep: Boolean(cad.model_step_url),
@@ -57,22 +62,27 @@ test("pcb repro31 OBJ-only USB-C keeps pads but drops its 3D model", async () =>
     exportedFootprints: pcb.footprints.length,
     exportedPads: pcb.footprints[0]!.fpPads.length,
     exportedModels: pcb.footprints[0]!.models.length,
+    exportedModelPath: pcb.footprints[0]!.models[0]!.path,
     modelDownloads: converter.getModel3dSourcePaths(),
   }).toMatchSnapshot()
 
-  await Bun.write(
-    "debug-output/repro31-usb-c-obj-only.circuit.json",
-    JSON.stringify(circuitJson, null, 2),
+  const compressed = await Bun.file(
+    resolve(import.meta.dir, "assets/C165948.step.gz"),
+  ).arrayBuffer()
+  const step = gunzipSync(Buffer.from(compressed))
+  expect(createHash("sha256").update(step).digest("hex")).toBe(
+    "3806dacd6082a75cfb24d3ba4b86b3d0c96213134c67e1385eb1599a89b2c461",
   )
-  await Bun.write(
-    "debug-output/repro31-usb-c-obj-only.kicad_pcb",
-    converter.getOutputString(),
-  )
+  const projectDir = resolve("debug-output/repro31")
+  const modelDir = resolve(projectDir, "3dmodels/tscircuit_builtin.3dshapes")
+  await Bun.write(resolve(modelDir, "C165948.step"), step)
+  const pcbPath = resolve(projectDir, "usb-c-obj-only.kicad_pcb")
+  await Bun.write(pcbPath, converter.getOutputString())
   await expect(
     await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
   ).toMatchPngSnapshot(import.meta.path, "repro31-usb-c-input-pcb")
   const rendered = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutputString(),
+    kicadFilePath: pcbPath,
     kicadFileType: "3d",
   })
   await expect(
@@ -82,5 +92,5 @@ test("pcb repro31 OBJ-only USB-C keeps pads but drops its 3D model", async () =>
       .blur(1)
       .png()
       .toBuffer(),
-  ).toMatchPngSnapshot(import.meta.path, "repro31-usb-c-kicad-3d-missing-model")
+  ).toMatchPngSnapshot(import.meta.path, "repro31-usb-c-kicad-3d-model")
 }, 120_000)

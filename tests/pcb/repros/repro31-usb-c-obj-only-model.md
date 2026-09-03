@@ -1,100 +1,58 @@
-# Repro 31: OBJ-only USB-C model omitted from KiCad export
+# Repro 31: export an EasyEDA OBJ-only USB-C model to KiCad
 
 ## Problem and motivation
 
-The `seveibar/smd-usb-c` connector body is visible in tscircuit, but the
-exported KiCad board contains only the connector footprint. A board can therefore
-appear to have exported successfully while losing a component's mechanical
-representation. This repro isolates that model-format limitation so maintainers
-can choose between adding a supported model to the component, implementing
-conversion, or reporting unsupported model formats explicitly.
+`seveibar/smd-usb-c` supplies an OBJ URL from `modelcdn.tscircuit.com`, but no
+STEP or WRL URL. KiCad export previously kept the footprint and all pads while
+silently omitting the connector body. A board could therefore look complete in
+tscircuit and lose mechanical geometry in KiCad.
 
-## Fixture and isolation
+## Fix
 
-`assets/smd-usb-c-obj-only.tsx` is a vendored, formatting-normalized copy of
-`seveibar/smd-usb-c` version 0.0.2, release
-`a2a7a2e5-1cf5-4a6d-ac90-6ff691e94b1d`, retrieved on 2026-09-03:
+For OBJ URLs recognized as tscircuit EasyEDA model-CDN URLs, the PCB converter
+derives the matching `.step` asset URL. Both supported URL forms are handled:
 
-[Registry source](https://api.tscircuit.com/package_files/get?package_release_id=a2a7a2e5-1cf5-4a6d-ac90-6ff691e94b1d&file_path=index.tsx)
+- `/easyeda_models/assets/<part>.obj?uuid=...`
+- legacy `/easyeda_models/download?uuid=...&pn=<part>`
 
-The fixture retains the original footprint, pin aliases, model URL, and model
-offsets. Compatibility edits use unparameterized `ChipProps`, remove redundant
-unsupported plated-hole `height` properties, and provide `holeWidth`/`holeHeight`
-with the same values as legacy `innerWidth`/`innerHeight`. Vendoring avoids a
-mutable registry import or a new package dependency.
-The test generates Circuit JSON using `Circuit`; it does not invent input JSON
-or strip a STEP URL from an otherwise supported component.
+The fallback is intentionally restricted to `modelcdn.tscircuit.com`. Arbitrary
+OBJ URLs are not relabeled as STEP files. An explicitly supplied STEP model
+still has priority, followed by WRL, before this fallback.
 
-The board has only one top-side connector. GND and VBUS contacts have their
-respective net assignments. Routing is disabled because it is unrelated to
-model export. No display, bottom-side transform, downloaded STEP file, or
-external model search path is involved. `includeBuiltin3dModels: true` ensures
-the omission is not caused by disabling model packaging.
+The existing model download and project packaging flow then writes the derived
+STEP asset under `3dmodels/tscircuit_builtin.3dshapes/`, matching the model path
+stored in the generated KiCad PCB.
+
+## Regression test
+
+The test uses a formatting-normalized copy of `seveibar/smd-usb-c` version
+0.0.2 (release `a2a7a2e5-1cf5-4a6d-ac90-6ff691e94b1d`). It generates Circuit
+JSON through `Circuit` and verifies that the input truly contains an OBJ URL
+without STEP, WRL, or a builtin-footprinter fallback.
+
+It then verifies:
+
+- the footprint and all 22 pad/hole entries remain present;
+- one KiCad model is emitted;
+- `C165948.step` is included in the model download list;
+- the PCB refers to its packaged `${KIPRJMOD}` path;
+- KiCad loads and renders the actual STEP model.
+
+The compressed STEP fixture is the exact CDN asset used for offline rendering.
+Its decompressed SHA-256 is checked before use:
+`3806dacd6082a75cfb24d3ba4b86b3d0c96213134c67e1385eb1599a89b2c461`.
 
 ## Run
-
-From the repository root, with dependencies installed and KiCad CLI 10 on PATH:
 
 ```sh
 bun test tests/pcb/repros/repro31-usb-c-obj-only-model.test.tsx
 ```
 
-The test writes these inspectable artifacts into ignored `debug-output/`:
+The test writes a manually inspectable board and model to
+`debug-output/repro31/`. The PNG snapshot is an actual KiCad 3D render,
+normalized only for stable image comparison.
 
-- `repro31-usb-c-obj-only.circuit.json`
-- `repro31-usb-c-obj-only.kicad_pcb`
+## Provenance
 
-Open the latter in KiCad's 3D Viewer to inspect the missing connector body.
-The original OBJ is not fetched to produce the KiCad snapshot: the exporter
-does not request any model download in this case.
-
-## Evidence and expected behavior
-
-The test asserts that the generated CAD component has the original OBJ URL,
-no STEP/WRL URL, and no builtin footprinter fallback. The converter exports
-one footprint, 22 pad entries (16 SMT contacts, four plated mounting holes,
-and two non-plated holes), zero model entries, and an empty model download list.
-The serialized PCB also has no model entry.
-
-The cause is `create3DModelsFromCadComponent`: it selects `model_step_url` or
-`model_wrl_url`, returning no models when both are absent. This connector has
-only `model_obj_url`. Thus this is an omitted model, not a failed download or
-a KiCad viewer visibility setting.
-
-Desired user-facing behavior is a corresponding supported connector model in
-KiCad, or an explicit explanation that the supplied model cannot be exported.
-Adding a matching STEP model to the component is the direct component-level
-remedy; exporter-side OBJ conversion or diagnostics are separate design choices.
-
-**This is a characterization test of the current omission.** It passes while
-the limitation exists. It must be revised to assert the chosen supported
-behavior when a fix is introduced; its zero-model assertions are not the desired
-long-term export contract.
-
-## Snapshots
-
-Generated directly from the reduced test:
-
-![Input PCB footprint](./__snapshots__/repro31-usb-c-input-pcb.snap.png)
-
-The input image is a 2D PCB snapshot, not a tscircuit 3D rendering. It establishes
-the footprint geometry. The input OBJ URL is verified structurally by the test.
-
-![Actual KiCad 3D output: pads remain, connector body absent](./__snapshots__/repro31-usb-c-kicad-3d-missing-model.snap.png)
-
-`repro31-usb-c-obj-only-model.test.tsx.snap` records the input model formats,
-exported footprint/pad/model counts, and download list.
-
-The KiCad render is flattened onto white, resized to 400 × 300, and lightly
-blurred (sigma 1) before image comparison to stabilize raytraced edge variation.
-The structural assertions, rather than image comparison alone, establish the
-missing model. No model geometry is added or removed by this normalization.
-
-## Verification environment
-
-Verified locally with Bun 1.3.14, tscircuit 0.0.2046, circuit-json-to-kicad
-0.0.201, and KiCad CLI 10.0.5. Both PNGs were visually inspected.
-
-Validation: the repro and existing STEP-model export tests passed together
-(three tests, 24 assertions); repository TypeScript checking passed. The repro
-was also rerun independently against the saved snapshots without update mode.
+- [Component source](https://api.tscircuit.com/package_files/get?package_release_id=a2a7a2e5-1cf5-4a6d-ac90-6ff691e94b1d&file_path=index.tsx)
+- [STEP asset](https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step)
