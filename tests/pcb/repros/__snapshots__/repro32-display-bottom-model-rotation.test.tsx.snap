@@ -3,16 +3,16 @@
 exports[`pcb repro32 bottom display shows its back instead of its screen 1`] = `
 [
   {
-    "exportedModel": 
-"(model "C7465999.step"
-  (offset
-    (xyz 0.000025400000026820635 0.0050800000001345325 8.480405999999999)
-  )
-  (rotate
-    (xyz 0 0 0)
-  )
-)"
-,
+    "exportedModel": [
+      "(model "C7465999.step"",
+      "  (offset",
+      "    (xyz 0.000025400000026820635 0.0050800000001345325 8.480405999999999)",
+      "  )",
+      "  (rotate",
+      "    (xyz 0 0 0)",
+      "  )",
+      ")",
+    ],
     "inputCadPosition": {
       "x": 0,
       "y": 2,
@@ -27,16 +27,16 @@ exports[`pcb repro32 bottom display shows its back instead of its screen 1`] = `
     "pcbRotation": 180,
   },
   {
-    "exportedModel": 
-"(model "C7465999.step"
-  (offset
-    (xyz 0.000025400000026820635 0.0050800000001345325 8.480405999999999)
-  )
-  (rotate
-    (xyz 0 180 0)
-  )
-)"
-,
+    "exportedModel": [
+      "(model "C7465999.step"",
+      "  (offset",
+      "    (xyz 0.000025400000026820635 0.0050800000001345325 8.480405999999999)",
+      "  )",
+      "  (rotate",
+      "    (xyz 0 180 0)",
+      "  )",
+      ")",
+    ],
     "inputCadPosition": {
       "x": 0,
       "y": 2,

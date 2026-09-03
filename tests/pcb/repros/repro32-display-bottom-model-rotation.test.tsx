@@ -60,7 +60,7 @@ test("pcb repro32 bottom display shows its back instead of its screen", async ()
       pcbRotation: component.rotation,
       inputCadRotation: cad.rotation,
       inputCadPosition: cad.position,
-      exportedModel: model.getString(),
+      exportedModel: model.getString().split("\n"),
     })
     const stem = resolve(`debug-output/repro32/display-${layer}`)
     await Bun.write(
