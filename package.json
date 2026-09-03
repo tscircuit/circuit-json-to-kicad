@@ -10,7 +10,7 @@
   "files": [
     "dist"
   ],
-  "trustedDependencies": ["kicad-to-circuit-json", "kicadts"],
+  "trustedDependencies": ["kicad-to-circuit-json", "kicadts", "sharp"],
   "scripts": {
     "build": "tsup-node lib/index.ts --format esm --dts",
     "build:site": "bun build ./site/index.html --outdir site-build",
