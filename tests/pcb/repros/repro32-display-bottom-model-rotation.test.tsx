@@ -9,7 +9,6 @@ import { CircuitJsonToKicadPcbConverter } from "lib"
 import { HS154L03W2C01 } from "./assets/hs154l03w2c01"
 
 // Characterization repro: the bottom snapshot intentionally records the defect.
-// See repro32-display-bottom-model-rotation.md for expected behavior/provenance.
 test("pcb repro32 bottom display shows its back instead of its screen", async () => {
   const compressed = await Bun.file(
     resolve(import.meta.dir, "assets/C7465999.step.gz"),
