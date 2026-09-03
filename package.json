@@ -10,6 +10,7 @@
   "files": [
     "dist"
   ],
+  "trustedDependencies": ["kicad-to-circuit-json", "kicadts"],
   "scripts": {
     "build": "tsup-node lib/index.ts --format esm --dts",
     "build:site": "bun build ./site/index.html --outdir site-build",
@@ -31,8 +32,8 @@
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
     "jszip": "^3.10.1",
-    "kicad-to-circuit-json": "github:tscircuit/kicad-to-circuit-json#b3247f338e048415e19411edb6a8d3205162effd",
-    "kicadts": "github:tscircuit/kicadts#f7115b86bbb7cb779ee31c60d77ec1c4fac83c1b",
+    "kicad-to-circuit-json": "github:tscircuit/kicad-to-circuit-json#83aa46c25951ccecb2d72fe2317ce09ed095fea2",
+    "kicadts": "github:tscircuit/kicadts#f3ea106bdc65ca901e9b23255ad3be0bd2a624ab",
     "polygon-clipping": "^0.15.7",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
