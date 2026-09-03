@@ -8,6 +8,10 @@ test("round-trips the open-source Pi Switcher Plus KiCad board", async () => {
   })
 
   expect(result.roundTripCounts).toEqual(result.sourceCounts)
+  expect(result.sourceFabricationPathSegmentCount).toBeGreaterThan(350)
+  expect(result.roundTripFabricationLineCount).toBe(
+    result.sourceFabricationPathSegmentCount,
+  )
   expect(result.roundTripNetNames).toEqual(result.sourceNetNames)
   expect(result.sourceWarnings).toEqual([])
   expect(result.roundTripWarnings).toEqual([])

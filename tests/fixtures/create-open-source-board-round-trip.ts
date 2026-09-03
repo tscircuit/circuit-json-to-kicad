@@ -83,6 +83,16 @@ export async function createOpenSourceBoardRoundTrip({
     (sum, count) => sum + count,
     0,
   )
+  const sourceFabricationPathSegmentCount = sourceCircuitJson
+    .filter((element) => element.type === "pcb_fabrication_note_path")
+    .reduce((count, path) => count + Math.max(0, path.route.length - 1), 0)
+  const roundTripFabricationLineCount = roundTripPcb.footprints.reduce(
+    (count, footprint) =>
+      count +
+      footprint.fpLines.filter((line) => String(line.layer).includes(".Fab"))
+        .length,
+    0,
+  )
 
   const [sourceSnapshot, roundTripSnapshot] = await Promise.all([
     takeKicadSnapshot({
@@ -105,9 +115,11 @@ export async function createOpenSourceBoardRoundTrip({
       roundTripSnapshot.generatedFileContent["temp_file.png"]!,
     ]),
     roundTripCounts,
+    roundTripFabricationLineCount,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
     sourceCounts,
+    sourceFabricationPathSegmentCount,
     sourceNetNames,
     sourcePrimitiveTotal,
     sourceWarnings: sourceConverter.getWarnings(),
