@@ -50,7 +50,7 @@ test("pcb repro18 rotated chip pill plated hole", async () => {
   const footprint = kicadPcb.footprints[0]
   const pad = footprint?.fpPads.find((candidate) => candidate.number === "13")
 
-  expect(outputString).toBe(expectedKicadPcb)
+  expect(outputString).toBe(expectedKicadPcb.trimEnd())
   expect(pad?.at?.angle).toBe(270)
 
   const kicadSnapshot = await takeKicadSnapshot({

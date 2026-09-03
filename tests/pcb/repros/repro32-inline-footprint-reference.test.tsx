@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import { CircuitJsonToKicadModConverter } from "lib/footprint/CircuitJsonToKicadModConverter"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -6,7 +7,7 @@ import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapsh
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 test(
-  "pcb repro32 inline footprint omits reference designator (issue #227)",
+  "pcb repro32 inline footprint gets reference designator (issue #227)",
   async () => {
     const circuit = new Circuit()
     circuit.add(
@@ -55,6 +56,12 @@ test(
         (text) => text.type === "reference",
       )?.text,
     }).toMatchSnapshot()
+
+    const footprintConverter = new CircuitJsonToKicadModConverter(circuitJson)
+    footprintConverter.runUntilFinished()
+    expect(footprintConverter.getOutputString()).toMatch(
+      /\(fp_text\s+reference\s+"REF\*\*"/,
+    )
 
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: converter.getOutputString(),
