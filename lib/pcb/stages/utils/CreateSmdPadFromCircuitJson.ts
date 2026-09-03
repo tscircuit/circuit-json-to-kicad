@@ -40,7 +40,12 @@ export function createSmdPadFromCircuitJson({
   let padX: number
   let padY: number
 
-  if ("x" in pcbPad && "y" in pcbPad) {
+  if (
+    "x" in pcbPad &&
+    "y" in pcbPad &&
+    Number.isFinite(pcbPad.x) &&
+    Number.isFinite(pcbPad.y)
+  ) {
     padX = pcbPad.x
     padY = pcbPad.y
   } else if ("points" in pcbPad && Array.isArray(pcbPad.points)) {
@@ -49,7 +54,9 @@ export function createSmdPadFromCircuitJson({
     padX = points.reduce((sum, p) => sum + p.x, 0) / points.length
     padY = points.reduce((sum, p) => sum + p.y, 0) / points.length
   } else {
-    throw new Error("Pad must have either x/y coordinates or points array")
+    throw new Error(
+      "Pad must have either finite x/y coordinates or points array",
+    )
   }
 
   const cj2kicadMatrix = compose(
