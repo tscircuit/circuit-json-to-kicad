@@ -53,6 +53,12 @@ test("renders every sheet of the open-source EBAZ4205 KiCad schematic", async ()
     return svg
   })
   for (const svg of svgs) expect(svg).toContain("<svg")
+  for (const svg of svgs) {
+    const convertedViewBox = svg.match(
+      /<svg data-comparison="converted"[\s\S]*?viewBox="([^"]+)"/u,
+    )?.[1]
+    expect(convertedViewBox).toBe("0.0000 0.0000 419.9890 297.0022")
+  }
   for (const [index, svg] of svgs.entries()) {
     await expectOpenSourceSchematicSvgSnapshot(
       svg,

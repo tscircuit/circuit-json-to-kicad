@@ -1,4 +1,5 @@
 import { expect, test } from "bun:test"
+import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 
@@ -139,4 +140,45 @@ test("component-level KiCad artwork is preserved without generic symbol overlays
   })
   expect(schematic.polylines).toHaveLength(1)
   expect(schematic.polylines[0]?.stroke?.type).toBe("dash")
+})
+
+test("component-level source geometry determines the schematic paper size", () => {
+  const circuitJson = [
+    {
+      type: "source_component",
+      source_component_id: "source_component_1",
+      name: "asymmetric-multi-unit-symbol",
+      ftype: "simple_chip",
+    },
+    {
+      type: "schematic_component",
+      schematic_component_id: "schematic_component_1",
+      source_component_id: "source_component_1",
+      center: { x: 0, y: 0 },
+      // A KiCad unit's anchor may be near one end of the body. Treating this
+      // size as centered would incorrectly require an A2 sheet.
+      size: { width: 20, height: 18 },
+      is_box_with_pins: false,
+    },
+    {
+      type: "schematic_path",
+      schematic_path_id: "schematic_path_1",
+      schematic_component_id: "schematic_component_1",
+      points: [
+        { x: -10, y: 0 },
+        { x: 10, y: 0 },
+        { x: 10, y: -16 },
+        { x: -10, y: -16 },
+        { x: -10, y: 0 },
+      ],
+      is_filled: false,
+      is_dashed: false,
+    },
+  ] satisfies CircuitJson
+
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
+  converter.runUntilFinished()
+
+  const schematic = parseKicadSch(converter.getOutputString())
+  expect(schematic.paper?.size).toBe("A3")
 })

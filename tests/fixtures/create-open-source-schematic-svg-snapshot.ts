@@ -1,17 +1,7 @@
 import { expect } from "bun:test"
 import { existsSync } from "node:fs"
-import {
-  copyFile,
-  mkdir,
-  mkdtemp,
-  readdir,
-  readFile,
-  rm,
-  writeFile,
-} from "node:fs/promises"
-import { tmpdir } from "node:os"
+import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { basename, dirname, join, resolve } from "node:path"
-import { $ } from "bun"
 import type { CircuitJson } from "circuit-json"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
 import looksSame from "looks-same"
@@ -49,29 +39,7 @@ function normalizeSchematicSvgForSnapshot(svg: string): string {
 async function createConvertedSchematicSvg(
   schematicPath: string,
 ): Promise<string> {
-  const tempDir = await mkdtemp(join(tmpdir(), "kicad-sch-upgrade-"))
-
-  let sourceContent: string
-  try {
-    const schematicDir = dirname(schematicPath)
-    const siblingFilenames = await readdir(schematicDir)
-    await Promise.all(
-      siblingFilenames
-        .filter((siblingFilename) => siblingFilename.endsWith(".kicad_sch"))
-        .map((siblingFilename) =>
-          copyFile(
-            join(schematicDir, siblingFilename),
-            join(tempDir, siblingFilename),
-          ),
-        ),
-    )
-
-    const upgradedSchematicPath = join(tempDir, basename(schematicPath))
-    await $`kicad-cli sch upgrade ${upgradedSchematicPath}`.quiet()
-    sourceContent = await readFile(upgradedSchematicPath, "utf8")
-  } finally {
-    await rm(tempDir, { force: true, recursive: true })
-  }
+  const sourceContent = await readFile(schematicPath, "utf8")
 
   const sourceConverter = new KicadToCircuitJsonConverter()
   sourceConverter.addFile(basename(schematicPath), sourceContent)
