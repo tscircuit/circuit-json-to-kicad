@@ -1,7 +1,7 @@
 {
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
-  "version": "0.0.202",
+  "version": "0.0.203",
   "repository": {
     "type": "git",
     "url": "https://github.com/tscircuit/circuit-json-to-kicad"
@@ -10,7 +10,11 @@
   "files": [
     "dist"
   ],
-  "trustedDependencies": ["kicad-to-circuit-json", "kicadts", "sharp"],
+  "trustedDependencies": [
+    "kicad-to-circuit-json",
+    "kicadts",
+    "sharp"
+  ],
   "scripts": {
     "build": "tsup-node lib/index.ts --format esm --dts",
     "build:site": "bun build ./site/index.html --outdir site-build",
