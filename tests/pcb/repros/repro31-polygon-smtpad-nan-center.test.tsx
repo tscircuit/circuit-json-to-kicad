@@ -3,6 +3,7 @@ import { transformPCBElement } from "@tscircuit/circuit-json-util"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { identity } from "transformation-matrix"
 import { Circuit } from "tscircuit"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 
 const Repro31PolygonSmtpadNanCenter = () => (
   <board width="12mm" height="10mm" routingDisabled>
@@ -53,6 +54,11 @@ test("pcb repro31 exports NaN coordinates for a polygon SMT pad", async () => {
   ).toBe(true)
   expect(pad).toHaveProperty("x", Number.NaN)
   expect(pad).toHaveProperty("y", Number.NaN)
+
+  // Input preview only: native KiCad cannot render the invalid output below.
+  expect(
+    await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
+  ).toMatchPngSnapshot(import.meta.path, "polygon-pad-circuit-json")
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
