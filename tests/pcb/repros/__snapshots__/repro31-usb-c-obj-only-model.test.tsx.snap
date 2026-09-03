@@ -1,0 +1,13 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`pcb repro31 OBJ-only USB-C keeps pads but drops its 3D model 1`] = `
+{
+  "exportedFootprints": 1,
+  "exportedModels": 0,
+  "exportedPads": 22,
+  "inputHasObj": true,
+  "inputHasStep": false,
+  "inputHasWrl": false,
+  "modelDownloads": [],
+}
+`;
