@@ -6,7 +6,7 @@ import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapsh
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 test(
-  "pcb repro31 inline footprint omits reference designator (issue #227)",
+  "pcb repro32 inline footprint omits reference designator (issue #227)",
   async () => {
     const circuit = new Circuit()
     circuit.add(

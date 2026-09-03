@@ -1,6 +1,6 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`pcb repro31 inline footprint omits reference designator (issue #227) 1`] = `
+exports[`pcb repro32 inline footprint omits reference designator (issue #227) 1`] = `
 {
   "referenceProperty": "U1",
   "referenceText": undefined,
