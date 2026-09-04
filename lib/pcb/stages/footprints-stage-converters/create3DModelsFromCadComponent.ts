@@ -1,5 +1,6 @@
 import type { CadComponent } from "circuit-json"
 import { FootprintModel } from "kicadts"
+import { getLocalCadModelTransform } from "./getLocalCadModelTransform"
 
 const getEasyedaModelCdnStepUrl = (objUrl?: string): string | undefined => {
   if (!objUrl) return undefined
@@ -30,7 +31,11 @@ const getEasyedaModelCdnStepUrl = (objUrl?: string): string | undefined => {
 export function create3DModelsFromCadComponent(
   cadComponent: CadComponent,
   componentCenter: { x: number; y: number },
-  options?: { boardLayerZOffset?: number; footprintRotation?: number },
+  options?: {
+    boardLayerZOffset?: number
+    footprintRotation?: number
+    isBottom?: boolean
+  },
 ): FootprintModel[] {
   const models: FootprintModel[] = []
 
@@ -42,40 +47,22 @@ export function create3DModelsFromCadComponent(
 
   const model = new FootprintModel(modelUrl)
 
-  if (cadComponent.position) {
-    // circuit-json position.z includes boardThickness/2 to place the component
-    // at the PCB surface in tscircuit's coordinate system (PCB center = z=0).
-    // KiCad model offsets are relative to the PCB surface, so we subtract
-    // the layer z offset (boardThickness/2 for top, -boardThickness/2 for bottom).
-    // NOTE: unlike 2D footprint geometry, KiCad 3D model Y offsets map directly
-    // from circuit-json local footprint Y. Do not mirror Y here.
-    const boardLayerZOffset = options?.boardLayerZOffset ?? 0
-    const modelOriginPosition = cadComponent.model_origin_position
-    model.offset = {
-      x:
-        (cadComponent.position.x || 0) -
-        componentCenter.x -
-        (modelOriginPosition?.x || 0),
-      y:
-        (cadComponent.position.y || 0) -
-        componentCenter.y -
-        (modelOriginPosition?.y || 0),
-      z:
-        (cadComponent.position.z || 0) -
-        boardLayerZOffset -
-        (modelOriginPosition?.z || 0),
-    }
-  }
-
-  if (cadComponent.rotation) {
-    const footprintRotation = options?.footprintRotation ?? 0
-
-    model.rotate = {
-      x: cadComponent.rotation.x || 0,
-      y: cadComponent.rotation.y || 0,
-      z: (cadComponent.rotation.z || 0) - footprintRotation,
-    }
-  }
+  const isBottom = options?.isBottom ?? false
+  const boardLayerZOffset = options?.boardLayerZOffset ?? 0
+  const transform = getLocalCadModelTransform({
+    position: cadComponent.position ?? {
+      ...componentCenter,
+      z: boardLayerZOffset,
+    },
+    rotation: cadComponent.rotation ?? { x: isBottom ? 180 : 0, y: 0, z: 0 },
+    origin: cadComponent.model_origin_position ?? { x: 0, y: 0, z: 0 },
+    componentCenter,
+    footprintRotation: options?.footprintRotation ?? 0,
+    boardLayerZOffset,
+    isBottom,
+  })
+  model.offset = transform.offset
+  model.rotate = transform.rotation
 
   if (cadComponent.model_unit_to_mm_scale_factor) {
     const scale = cadComponent.model_unit_to_mm_scale_factor

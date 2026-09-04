@@ -4,12 +4,17 @@ import { createHash } from "node:crypto"
 import { resolve } from "node:path"
 import { gunzipSync } from "node:zlib"
 import sharp from "sharp"
+import looksSame from "looks-same"
+import {
+  convertCircuitJsonToGltf,
+  getBestCameraPosition,
+} from "circuit-json-to-gltf"
+import { renderGLTFToPNGFromGLB } from "poppygl"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib"
 import { HS154L03W2C01 } from "./assets/hs154l03w2c01"
 
-// Characterization repro: the bottom snapshot intentionally records the defect.
-test("pcb repro32 bottom display shows its back instead of its screen", async () => {
+test("pcb repro32 display screen faces outward on both board sides", async () => {
   const compressed = await Bun.file(
     resolve(import.meta.dir, "assets/C7465999.step.gz"),
   ).arrayBuffer()
@@ -82,6 +87,85 @@ test("pcb repro32 bottom display shows its back instead of its screen", async ()
       import.meta.path,
       `repro32-display-${layer}-3d`,
     )
+    if (layer === "bottom") {
+      const obj = gunzipSync(
+        Buffer.from(
+          await Bun.file(
+            resolve(import.meta.dir, "assets/C7465999.obj.gz"),
+          ).arrayBuffer(),
+        ),
+      )
+      expect(createHash("sha256").update(obj).digest("hex")).toBe(
+        "ce0b0ecc6fef408bdcbec0eac616edd09fd2cec2a45f9e6939de632fe9af2ab8",
+      )
+      // Serve the original model offline; only its URL changes in the copy.
+      const server = Bun.serve({
+        hostname: "127.0.0.1",
+        port: 0,
+        fetch: () =>
+          new Response(obj, { headers: { "Content-Type": "text/plain" } }),
+      })
+      let reference: Buffer
+      try {
+        const renderJson = structuredClone(circuitJson)
+        renderJson.find((e) => e.type === "cad_component")!.model_obj_url =
+          `${server.url}display.obj`
+        const glb = await convertCircuitJsonToGltf(renderJson, {
+          format: "glb",
+          includeModels: true,
+          showBoundingBoxes: false,
+          boardTextureResolution: 1024,
+        })
+        const camera = getBestCameraPosition(renderJson, {
+          preset: "bottom_up",
+          ortho: true,
+          aspectRatio: 4 / 3,
+        })
+        const png = await renderGLTFToPNGFromGLB(glb as Uint8Array, {
+          width: 800,
+          height: 600,
+          ...camera,
+          backgroundColor: [255, 255, 255],
+          grid: false,
+        })
+        reference = await sharp(png).resize(400, 300).blur(1).png().toBuffer()
+      } finally {
+        server.stop(true)
+      }
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="664" viewBox="0 0 400 664">
+<rect width="400" height="664" fill="white"/>
+<g font-family="sans-serif" font-size="18" fill="black">
+<text x="12" y="23">Circuit JSON — bottom view</text>
+<text x="12" y="355">KiCad — bottom view</text>
+</g>
+<image x="0" y="32" width="400" height="300" href="data:image/png;base64,${reference.toString("base64")}"/>
+<image x="0" y="364" width="400" height="300" href="data:image/png;base64,${image.toString("base64")}"/>
+</svg>`
+      await Bun.write(
+        resolve("debug-output/repro32/display-bottom-comparison.svg"),
+        svg,
+      )
+      const snapshot = Bun.file(
+        resolve(
+          import.meta.dir,
+          "__snapshots__/repro32-display-bottom-comparison.snap.svg",
+        ),
+      )
+      if (process.env.BUN_UPDATE_SNAPSHOTS || !(await snapshot.exists())) {
+        await Bun.write(snapshot, svg)
+      } else {
+        const expected = await sharp(Buffer.from(await snapshot.text()))
+          .png()
+          .toBuffer()
+        const received = await sharp(Buffer.from(svg)).png().toBuffer()
+        const comparison = await looksSame(expected, received, {
+          strict: false,
+          tolerance: 5,
+          antialiasingTolerance: 4,
+        })
+        expect(comparison.equal).toBe(true)
+      }
+    }
   }
   expect(observations).toMatchSnapshot()
 }, 120_000)

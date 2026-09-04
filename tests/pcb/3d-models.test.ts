@@ -58,12 +58,13 @@ test("footprint includes 3D model from cad_component", () => {
   expect(output).toContain("(model")
   expect(output).toContain("chip.step")
   expect(output).toContain("(offset")
-  expect(output).toContain(`(offset
-        (xyz 0.25 -1.5 1.5)
-      )`)
+  const offset = converter.getOutput().footprints[0]!.models[0]!.offset!
+  expect(offset.x).toBeCloseTo(0.25)
+  expect(offset.y).toBeCloseTo(-1.5)
+  expect(offset.z).toBeCloseTo(1.5)
   expect(output).toContain("(rotate")
   expect(output).toContain("(at 100 100 -90)")
   expect(output).toContain(`(rotate
-        (xyz 0 0 360)
+        (xyz 0 0 0)
       )`)
 })
