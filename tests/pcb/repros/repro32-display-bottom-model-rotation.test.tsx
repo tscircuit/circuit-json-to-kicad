@@ -15,6 +15,9 @@ import { CircuitJsonToKicadPcbConverter } from "lib"
 import { HS154L03W2C01 } from "./assets/hs154l03w2c01"
 
 test("pcb repro32 display screen faces outward on both board sides", async () => {
+  // C7465999.step.gz and C7465999.obj.gz are losslessly compressed originals
+  // from the modelcdn.tscircuit.com URLs (including asset UUID) in
+  // assets/hs154l03w2c01.tsx. SHA-256 assertions below verify decompressed bytes.
   const compressed = await Bun.file(
     resolve(import.meta.dir, "assets/C7465999.step.gz"),
   ).arrayBuffer()
@@ -52,6 +55,14 @@ test("pcb repro32 display screen faces outward on both board sides", async () =>
     expect(footprint.fpPads).toHaveLength(8)
     expect(footprint.models).toHaveLength(1)
     const model = footprint.models[0]!
+    // For this display, top placement cancels the footprint's 180° rotation.
+    // Bottom placement additionally needs a local 180° Z rotation to undo
+    // KiCad's back-side flip. It reverses the origin's X/Y offset signs.
+    expect(model.rotate).toEqual({ x: 0, y: 0, z: layer === "top" ? 0 : -180 })
+    const offsetSign = layer === "top" ? 1 : -1
+    expect(model.offset!.x).toBeCloseTo(offsetSign * 0.0000254, 10)
+    expect(model.offset!.y).toBeCloseTo(offsetSign * 0.00508, 10)
+    expect(model.offset!.z).toBeCloseTo(8.480406, 10)
     expect(footprint.layer?.getString()).toContain(
       layer === "top" ? "F.Cu" : "B.Cu",
     )
