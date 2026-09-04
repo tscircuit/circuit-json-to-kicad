@@ -92,5 +92,5 @@ test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C"
       .blur(1)
       .png()
       .toBuffer(),
-  ).toMatchPngSnapshot(import.meta.path, "repro31-usb-c-kicad-3d-model")
+  ).toMatchPngSnapshot(import.meta.path, "repro31-usb-c-kicad-3d-missing-model")
 }, 120_000)
