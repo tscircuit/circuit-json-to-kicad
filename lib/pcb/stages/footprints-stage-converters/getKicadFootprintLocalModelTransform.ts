@@ -11,28 +11,28 @@ function rotate(point: Point3, axis: "x" | "y" | "z", degrees: number): Point3 {
   return { x: c * x - s * y, y: s * x + c * y, z }
 }
 
-export function getLocalCadModelTransform({
+export function getKicadFootprintLocalModelTransform({
   position,
   rotation,
   origin,
   componentCenter,
   footprintRotation,
-  boardLayerZOffset,
-  isBottom,
+  boardSurfaceZ,
+  footprintSide,
 }: {
   position: Point3
   rotation: Point3
   origin: Point3
   componentCenter: { x: number; y: number }
   footprintRotation: number
-  boardLayerZOffset: number
-  isBottom: boolean
+  boardSurfaceZ: number
+  footprintSide: "top" | "bottom"
 }): { offset: Point3; rotation: Point3 } {
   // KiCad applies Rz(footprintRotation), then Ry(180) Rz(180) on B.Cu.
   // The latter is Rx(180). Undo these to express CAD placement locally.
   const toLocal = (point: Point3): Point3 => {
     const p = rotate(point, "z", -footprintRotation)
-    return isBottom ? { x: p.x, y: -p.y, z: -p.z } : p
+    return footprintSide === "bottom" ? { x: p.x, y: -p.y, z: -p.z } : p
   }
   // The renderer maps Circuit JSON Y/Z axes to scene Z/Y. Expressed back
   // in board coordinates, its rotation is Ry(-y) Rx(-x) Rz(z), so rotations
@@ -63,7 +63,7 @@ export function getLocalCadModelTransform({
   const localPosition = toLocal({
     x: position.x - componentCenter.x,
     y: position.y - componentCenter.y,
-    z: position.z - boardLayerZOffset,
+    z: position.z - boardSurfaceZ,
   })
   // The origin is subtracted before CAD rotation, not in world coordinates.
   const localOrigin = modelToLocal(origin)

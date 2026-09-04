@@ -1,6 +1,6 @@
 import type { CadComponent } from "circuit-json"
 import { FootprintModel } from "kicadts"
-import { getLocalCadModelTransform } from "./getLocalCadModelTransform"
+import { getKicadFootprintLocalModelTransform } from "./getKicadFootprintLocalModelTransform"
 
 const getEasyedaModelCdnStepUrl = (objUrl?: string): string | undefined => {
   if (!objUrl) return undefined
@@ -31,10 +31,10 @@ const getEasyedaModelCdnStepUrl = (objUrl?: string): string | undefined => {
 export function create3DModelsFromCadComponent(
   cadComponent: CadComponent,
   componentCenter: { x: number; y: number },
-  options?: {
-    boardLayerZOffset?: number
-    footprintRotation?: number
-    isBottom?: boolean
+  options: {
+    boardSurfaceZ: number
+    footprintRotation: number
+    footprintSide: "top" | "bottom"
   },
 ): FootprintModel[] {
   const models: FootprintModel[] = []
@@ -47,19 +47,21 @@ export function create3DModelsFromCadComponent(
 
   const model = new FootprintModel(modelUrl)
 
-  const isBottom = options?.isBottom ?? false
-  const boardLayerZOffset = options?.boardLayerZOffset ?? 0
-  const transform = getLocalCadModelTransform({
+  const transform = getKicadFootprintLocalModelTransform({
     position: cadComponent.position ?? {
       ...componentCenter,
-      z: boardLayerZOffset,
+      z: options.boardSurfaceZ,
     },
-    rotation: cadComponent.rotation ?? { x: isBottom ? 180 : 0, y: 0, z: 0 },
+    rotation: cadComponent.rotation ?? {
+      x: options.footprintSide === "bottom" ? 180 : 0,
+      y: 0,
+      z: 0,
+    },
     origin: cadComponent.model_origin_position ?? { x: 0, y: 0, z: 0 },
     componentCenter,
-    footprintRotation: options?.footprintRotation ?? 0,
-    boardLayerZOffset,
-    isBottom,
+    footprintRotation: options.footprintRotation,
+    boardSurfaceZ: options.boardSurfaceZ,
+    footprintSide: options.footprintSide,
   })
   model.offset = transform.offset
   model.rotate = transform.rotation
