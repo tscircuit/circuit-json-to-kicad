@@ -3,7 +3,7 @@
   (generator circuit-json-to-kicad)
   (generator_version 0.0.1)
   (general
-    (thickness 1.6)
+    (thickness 1.4)
   )
   (paper
     A4
