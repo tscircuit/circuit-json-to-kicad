@@ -29,6 +29,9 @@ test("exported models preserve world placement on both footprint sides", async (
       for (const rotationOffset of [
         { x: 0, y: 0, z: 0 },
         { x: 23, y: -31, z: 17 },
+        { x: 23, y: 0, z: 0 },
+        { x: 0, y: -31, z: 0 },
+        { x: 0, y: 0, z: 17 },
         { x: 0, y: 90, z: 0 },
         { x: 0, y: -90, z: 0 },
         { x: 0, y: 89.999999, z: 0 },
@@ -64,6 +67,29 @@ test("exported models preserve world placement on both footprint sides", async (
         const rotation = model.rotate!
         const offset = model.offset!
         expect(model.scale).toEqual({ x: 2, y: 2, z: 2 })
+        if (layer === "top" && pcbRotation === 0) {
+          if (
+            rotationOffset.x === 23 &&
+            rotationOffset.y === 0 &&
+            rotationOffset.z === 0
+          ) {
+            expect(rotation).toEqual({ x: 23, y: 0, z: 0 })
+          }
+          if (
+            rotationOffset.x === 0 &&
+            rotationOffset.y === -31 &&
+            rotationOffset.z === 0
+          ) {
+            expect(rotation).toEqual({ x: 0, y: -31, z: 0 })
+          }
+          if (
+            rotationOffset.x === 0 &&
+            rotationOffset.y === 0 &&
+            rotationOffset.z === 17
+          ) {
+            expect(rotation).toEqual({ x: 0, y: 0, z: -17 })
+          }
+        }
 
         for (const vertex of [
           [0, 0, 0],
@@ -72,15 +98,16 @@ test("exported models preserve world placement on both footprint sides", async (
           [0, 0, 3],
         ] as Vector[]) {
           const origin = cad.model_origin_position!
-          // The viewer subtracts model origin before intrinsic XYZ rotation.
+          // Circuit-to-scene axis remapping produces Ry(-y) Rx(-x) Rz(z)
+          // when expressed in board coordinates.
           let expected: Vector = [
             vertex[0] * 2 - origin.x,
             vertex[1] * 2 - origin.y,
             vertex[2] * 2 - origin.z,
           ]
           expected = turn(expected, Z, cad.rotation!.z)
-          expected = turn(expected, Y, cad.rotation!.y)
-          expected = turn(expected, X, cad.rotation!.x)
+          expected = turn(expected, X, -cad.rotation!.x)
+          expected = turn(expected, Y, -cad.rotation!.y)
           expected = [
             expected[0] + cad.position.x,
             expected[1] + cad.position.y,

@@ -34,13 +34,15 @@ export function getLocalCadModelTransform({
     const p = rotate(point, "z", -footprintRotation)
     return isBottom ? { x: p.x, y: -p.y, z: -p.z } : p
   }
-  // Circuit JSON uses the viewer's intrinsic XYZ Euler convention.
+  // The renderer maps Circuit JSON Y/Z axes to scene Z/Y. Expressed back
+  // in board coordinates, its rotation is Ry(-y) Rx(-x) Rz(z), so rotations
+  // are applied to a point in Z, X, Y order before removing footprint placement.
   const modelToLocal = (point: Point3): Point3 =>
     toLocal(
       rotate(
-        rotate(rotate(point, "z", rotation.z), "y", rotation.y),
-        "x",
-        rotation.x,
+        rotate(rotate(point, "z", rotation.z), "x", -rotation.x),
+        "y",
+        -rotation.y,
       ),
     )
 
