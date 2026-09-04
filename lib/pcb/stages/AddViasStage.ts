@@ -1,15 +1,12 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Via, ViaNet } from "kicadts"
-import {
-  ConverterStage,
-  type ConverterContext,
-  type PcbNetInfo,
-} from "../../types"
+import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import {
   getKicadLayer,
+  getKicadCopperLayerIndex,
   getViaLayers,
   getViaLayerSpan,
 } from "../utils/layerMapping"
@@ -40,10 +37,14 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private collectPcbVias(): ViaLike[] {
-    const standaloneVias = (this.ctx.db.pcb_via?.list() || []) as ViaLike[]
-    const seenViaKeys = new Set(
-      standaloneVias.map((via) => this.getViaDedupeKey(via)),
-    )
+    const seenViaKeys = new Set<string>()
+    const physicalVias = this.ctx.db.pcb_via.list()
+    const standaloneVias = physicalVias.filter((via) => {
+      const viaKey = this.getViaDedupeKey(via)
+      if (seenViaKeys.has(viaKey)) return false
+      seenViaKeys.add(viaKey)
+      return true
+    })
 
     const routeDefinedVias = (this.ctx.db.pcb_trace?.list() || []).flatMap(
       (trace: any) =>
@@ -64,6 +65,23 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             }),
           )
           .filter((via: ViaLike) => {
+            // A route transition can use only part of an existing barrel.
+            // The physical pcb_via is authoritative for that trace's drill.
+            if (
+              physicalVias.some(
+                (physicalVia) =>
+                  physicalVia.x === via.x &&
+                  physicalVia.y === via.y &&
+                  physicalVia.pcb_trace_id === via.pcb_trace_id &&
+                  (via.outer_diameter === undefined ||
+                    via.outer_diameter === physicalVia.outer_diameter) &&
+                  (via.hole_diameter === undefined ||
+                    via.hole_diameter === physicalVia.hole_diameter) &&
+                  this.viaSpanContains(physicalVia, via),
+              )
+            ) {
+              return false
+            }
             const viaKey = this.getViaDedupeKey(via)
             if (seenViaKeys.has(viaKey)) {
               return false
@@ -77,13 +95,56 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getViaDedupeKey(via: ViaLike): string {
-    // A via is identified by its position and its layer span. `pcb_trace_id` and
-    // the raw layer list are intentionally excluded: the same physical via is
-    // represented both as a standalone `pcb_via` (with the full traversed-layer
-    // list) and as a trace `route` via-point (with only from/to layers), and
-    // those must dedupe to one via.
+    // Preserve co-located vias with different physical spans, sizes, or nets.
     const span = [...this.getKicadViaLayers(via)].sort().join(",")
-    return `${via.x}:${via.y}:${span}`
+    const connectivityKey = this.getViaConnectivityKey(via) ?? ""
+    return `${via.x}:${via.y}:${span}:${via.outer_diameter ?? 0.8}:${via.hole_diameter ?? 0.4}:${connectivityKey}`
+  }
+
+  private viaSpanContains(physicalVia: ViaLike, routeVia: ViaLike): boolean {
+    const numLayers = this.ctx.db.pcb_board.list()[0]?.num_layers ?? 2
+    const [firstLayer, lastLayer] = this.getKicadViaLayers(physicalVia)
+    const firstIndex = getKicadCopperLayerIndex(firstLayer!, numLayers)
+    const lastIndex = getKicadCopperLayerIndex(lastLayer!, numLayers)
+    return this.getKicadViaLayers(routeVia).every((layer) => {
+      const layerIndex = getKicadCopperLayerIndex(layer, numLayers)
+      return layerIndex >= firstIndex && layerIndex <= lastIndex
+    })
+  }
+
+  private getViaConnectivityKey(via: ViaLike): string | undefined {
+    if (via.subcircuit_connectivity_map_key) {
+      return via.subcircuit_connectivity_map_key
+    }
+    const trace = via.pcb_trace_id
+      ? this.ctx.db.pcb_trace.get(via.pcb_trace_id)
+      : undefined
+    if (
+      trace &&
+      "subcircuit_connectivity_map_key" in trace &&
+      typeof trace.subcircuit_connectivity_map_key === "string"
+    ) {
+      return trace.subcircuit_connectivity_map_key
+    }
+    const sourceTrace = trace?.source_trace_id
+      ? this.ctx.db.source_trace.get(trace.source_trace_id)
+      : undefined
+    if (sourceTrace?.subcircuit_connectivity_map_key) {
+      return sourceTrace.subcircuit_connectivity_map_key
+    }
+    for (const netId of sourceTrace?.connected_source_net_ids ?? []) {
+      const net = this.ctx.db.source_net.get(netId)
+      if (net?.subcircuit_connectivity_map_key) {
+        return net.subcircuit_connectivity_map_key
+      }
+    }
+    for (const netId of [trace?.source_trace_id, via.connection_name]) {
+      const net = netId ? this.ctx.db.source_net.get(netId) : undefined
+      if (net?.subcircuit_connectivity_map_key) {
+        return net.subcircuit_connectivity_map_key
+      }
+    }
+    return undefined
   }
 
   private getRawViaLayers(via: ViaLike): string[] {
@@ -98,7 +159,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
 
   private getKicadViaLayers(via: ViaLike): string[] {
     const rawLayers = this.getRawViaLayers(via)
-    const numLayers = this.ctx.numLayers ?? 2
+    const numLayers =
+      this.ctx.numLayers ?? this.ctx.db.pcb_board.list()[0]?.num_layers ?? 2
     const kicadLayers =
       rawLayers.length > 0
         ? rawLayers.map((layer) => getKicadLayer(layer))
@@ -137,64 +199,10 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       y: via.y,
     })
 
-    let netInfo: PcbNetInfo | undefined
-    if (pcbNetMap) {
-      let connectivityKey: string | undefined =
-        via.subcircuit_connectivity_map_key
-
-      if (!connectivityKey && via.pcb_trace_id) {
-        const pcbTrace = this.ctx.db.pcb_trace?.get(via.pcb_trace_id)
-        if (pcbTrace) {
-          if ("subcircuit_connectivity_map_key" in pcbTrace) {
-            connectivityKey = (pcbTrace as any).subcircuit_connectivity_map_key
-          }
-          if (!connectivityKey && pcbTrace.source_trace_id) {
-            const sourceTrace = this.ctx.db.source_trace?.get(
-              pcbTrace.source_trace_id,
-            )
-            if (sourceTrace) {
-              if ("subcircuit_connectivity_map_key" in sourceTrace) {
-                connectivityKey = (sourceTrace as any)
-                  .subcircuit_connectivity_map_key
-              }
-              if (
-                !connectivityKey &&
-                sourceTrace.connected_source_net_ids?.length
-              ) {
-                for (const sourceNetId of sourceTrace.connected_source_net_ids) {
-                  const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
-                  if (sourceNet?.subcircuit_connectivity_map_key) {
-                    connectivityKey = sourceNet.subcircuit_connectivity_map_key
-                    break
-                  }
-                }
-              }
-            }
-            // Bug 1 fix: source_trace_id may actually be a source_net ID
-            // (capacity-autorouter sets it this way)
-            if (!connectivityKey) {
-              const sourceNet = this.ctx.db.source_net?.get(
-                pcbTrace.source_trace_id,
-              )
-              if (sourceNet?.subcircuit_connectivity_map_key) {
-                connectivityKey = sourceNet.subcircuit_connectivity_map_key
-              }
-            }
-          }
-        }
-      }
-
-      if (!connectivityKey && via.connection_name) {
-        const sourceNet = this.ctx.db.source_net?.get(via.connection_name)
-        if (sourceNet?.subcircuit_connectivity_map_key) {
-          connectivityKey = sourceNet.subcircuit_connectivity_map_key
-        }
-      }
-
-      if (connectivityKey) {
-        netInfo = pcbNetMap.get(connectivityKey)
-      }
-    }
+    const connectivityKey = this.getViaConnectivityKey(via)
+    const netInfo = connectivityKey
+      ? pcbNetMap?.get(connectivityKey)
+      : undefined
 
     // Get via layers based on board layer count
     // For through-hole vias, span all copper layers
@@ -205,7 +213,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const viaDrill = via.hole_diameter ?? 0.4
 
     // Create a via with deterministic UUID
-    const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}`
+    const isThroughVia = viaLayers[0] === "F.Cu" && viaLayers[1] === "B.Cu"
+    const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}${isThroughVia ? "" : `:${viaLayers.join(",")}`}`
     const kicadVia = new Via({
       at: [transformedPos.x, transformedPos.y],
       size: viaSize,

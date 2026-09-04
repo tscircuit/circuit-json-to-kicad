@@ -37,7 +37,7 @@ export class InitializePcbStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Add general section with board thickness
     const general = new PcbGeneral()
-    general.thickness = 1.6 // Standard PCB thickness in mm
+    general.thickness = pcbBoard?.thickness ?? 1.6
     kicadPcb.general = general
 
     // Add setup section with basic design rules

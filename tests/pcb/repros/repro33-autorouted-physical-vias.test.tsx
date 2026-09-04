@@ -3,8 +3,7 @@ import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbCon
 import { createAutoroutedInnerLayerVias } from "../../fixtures/create-autorouted-inner-layer-vias"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-// Asserts correct behavior; remove .failing when the stacked exporter fix lands.
-test.failing("exports one physical via per autorouted inner-layer escape", async () => {
+test("exports one physical via per autorouted inner-layer escape", async () => {
   const circuitJson = await createAutoroutedInnerLayerVias()
   const physicalVias = circuitJson.filter((e) => e.type === "pcb_via")
   expect(physicalVias).toHaveLength(2)

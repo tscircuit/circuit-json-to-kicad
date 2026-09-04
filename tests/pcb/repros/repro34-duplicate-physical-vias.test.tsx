@@ -2,8 +2,7 @@ import { expect, test } from "bun:test"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { createAutoroutedInnerLayerVias } from "../../fixtures/create-autorouted-inner-layer-vias"
 
-// Asserts correct behavior; remove .failing when the stacked exporter fix lands.
-test.failing("deduplicates identical physical vias without merging distinct spans or nets", async () => {
+test("deduplicates identical physical vias without merging distinct spans or nets", async () => {
   const circuitJson = await createAutoroutedInnerLayerVias()
   const via = circuitJson.find((e) => e.type === "pcb_via")!
   const duplicate = { ...via, pcb_via_id: `${via.pcb_via_id}_duplicate` }
