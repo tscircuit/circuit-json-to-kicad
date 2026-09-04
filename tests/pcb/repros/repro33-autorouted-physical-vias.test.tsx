@@ -12,6 +12,16 @@ test("exports one physical via per autorouted inner-layer escape", async () => {
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   const pcb = converter.getOutput()
+  const snapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
+  })
+  expect(snapshot.exitCode).toBe(0)
+  await expect(
+    snapshot.generatedFileContent["temp_file.png"]!,
+  ).toMatchPngSnapshot(import.meta.path)
+
   expect(pcb.vias).toHaveLength(physicalVias.length)
   for (const [index, via] of pcb.vias.entries()) {
     expect(via.layers?.names).toEqual(["F.Cu", "B.Cu"])
@@ -19,14 +29,4 @@ test("exports one physical via per autorouted inner-layer escape", async () => {
     expect(via.drill).toBe(physicalVias[index]!.hole_diameter)
   }
   expect(pcb.general?.thickness).toBe(0.8)
-
-  const snapshot = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutputString(),
-    kicadFileType: "pcb",
-    pcbDrillHoleColor: "white",
-  })
-  expect(snapshot.exitCode).toBe(0)
-  expect(snapshot.generatedFileContent["temp_file.png"]!).toMatchPngSnapshot(
-    import.meta.path,
-  )
 })
