@@ -17,11 +17,17 @@ function rotatePointAroundAxis(
   return { x: c * x - s * y, y: s * x + c * y, z }
 }
 
+function applyCadRotationToPoint(point: Point3, rotation: Point3): Point3 {
+  const rotatedAroundZ = rotatePointAroundAxis(point, "z", rotation.z)
+  const rotatedAroundX = rotatePointAroundAxis(rotatedAroundZ, "x", -rotation.x)
+  return rotatePointAroundAxis(rotatedAroundX, "y", -rotation.y)
+}
+
 interface KicadFootprintTransformOptions {
   componentCenter: { x: number; y: number }
   footprintRotation: number
   boardSurfaceZ: number
-  footprintSide: "top" | "bottom"
+  layer: "top" | "bottom"
 }
 
 export function getKicadFootprintLocalModelTransform(
@@ -30,12 +36,12 @@ export function getKicadFootprintLocalModelTransform(
     componentCenter,
     footprintRotation,
     boardSurfaceZ,
-    footprintSide,
+    layer,
   }: KicadFootprintTransformOptions,
 ): { offset: Point3; rotation: Point3 } {
   const position = cadComponent.position
   const rotation = cadComponent.rotation ?? {
-    x: footprintSide === "bottom" ? 180 : 0,
+    x: layer === "bottom" ? 180 : 0,
     y: 0,
     z: 0,
   }
@@ -45,23 +51,13 @@ export function getKicadFootprintLocalModelTransform(
   // The latter is Rx(180). Undo these to express CAD placement locally.
   const toLocal = (point: Point3): Point3 => {
     const p = rotatePointAroundAxis(point, "z", -footprintRotation)
-    return footprintSide === "bottom" ? { x: p.x, y: -p.y, z: -p.z } : p
+    return layer === "bottom" ? { x: p.x, y: -p.y, z: -p.z } : p
   }
   // The renderer maps Circuit JSON Y/Z axes to scene Z/Y. Expressed back
   // in board coordinates, its rotation is Ry(-y) Rx(-x) Rz(z), so rotations
   // are applied to a point in Z, X, Y order before removing footprint placement.
   const modelToLocal = (point: Point3): Point3 =>
-    toLocal(
-      rotatePointAroundAxis(
-        rotatePointAroundAxis(
-          rotatePointAroundAxis(point, "z", rotation.z),
-          "x",
-          -rotation.x,
-        ),
-        "y",
-        -rotation.y,
-      ),
-    )
+    toLocal(applyCadRotationToPoint(point, rotation))
 
   const x = modelToLocal({ x: 1, y: 0, z: 0 })
   const y = modelToLocal({ x: 0, y: 1, z: 0 })

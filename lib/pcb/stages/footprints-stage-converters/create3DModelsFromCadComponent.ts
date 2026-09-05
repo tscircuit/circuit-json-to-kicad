@@ -34,7 +34,7 @@ export function create3DModelsFromCadComponent(
   options: {
     boardSurfaceZ: number
     footprintRotation: number
-    footprintSide: "top" | "bottom"
+    layer: "top" | "bottom"
   },
 ): FootprintModel[] {
   const models: FootprintModel[] = []
@@ -51,7 +51,7 @@ export function create3DModelsFromCadComponent(
     componentCenter,
     footprintRotation: options.footprintRotation,
     boardSurfaceZ: options.boardSurfaceZ,
-    footprintSide: options.footprintSide,
+    layer: options.layer,
   })
   model.offset = transform.offset
   model.rotate = transform.rotation
