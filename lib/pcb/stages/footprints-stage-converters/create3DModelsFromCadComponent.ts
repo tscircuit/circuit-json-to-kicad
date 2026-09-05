@@ -47,17 +47,7 @@ export function create3DModelsFromCadComponent(
 
   const model = new FootprintModel(modelUrl)
 
-  const transform = getKicadFootprintLocalModelTransform({
-    position: cadComponent.position ?? {
-      ...componentCenter,
-      z: options.boardSurfaceZ,
-    },
-    rotation: cadComponent.rotation ?? {
-      x: options.footprintSide === "bottom" ? 180 : 0,
-      y: 0,
-      z: 0,
-    },
-    origin: cadComponent.model_origin_position ?? { x: 0, y: 0, z: 0 },
+  const transform = getKicadFootprintLocalModelTransform(cadComponent, {
     componentCenter,
     footprintRotation: options.footprintRotation,
     boardSurfaceZ: options.boardSurfaceZ,

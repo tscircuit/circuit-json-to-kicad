@@ -1,37 +1,50 @@
+import type { CadComponent } from "circuit-json"
+
 type Point3 = { x: number; y: number; z: number }
 
-const radians = (degrees: number) => (degrees * Math.PI) / 180
+const degreesToRadians = (degrees: number) => (degrees * Math.PI) / 180
 
-function rotate(point: Point3, axis: "x" | "y" | "z", degrees: number): Point3 {
-  const c = Math.cos(radians(degrees))
-  const s = Math.sin(radians(degrees))
+function rotatePointAroundAxis(
+  point: Point3,
+  axis: "x" | "y" | "z",
+  degrees: number,
+): Point3 {
+  const c = Math.cos(degreesToRadians(degrees))
+  const s = Math.sin(degreesToRadians(degrees))
   const { x, y, z } = point
   if (axis === "x") return { x, y: c * y - s * z, z: s * y + c * z }
   if (axis === "y") return { x: c * x + s * z, y, z: -s * x + c * z }
   return { x: c * x - s * y, y: s * x + c * y, z }
 }
 
-export function getKicadFootprintLocalModelTransform({
-  position,
-  rotation,
-  origin,
-  componentCenter,
-  footprintRotation,
-  boardSurfaceZ,
-  footprintSide,
-}: {
-  position: Point3
-  rotation: Point3
-  origin: Point3
+interface KicadFootprintTransformOptions {
   componentCenter: { x: number; y: number }
   footprintRotation: number
   boardSurfaceZ: number
   footprintSide: "top" | "bottom"
-}): { offset: Point3; rotation: Point3 } {
+}
+
+export function getKicadFootprintLocalModelTransform(
+  cadComponent: CadComponent,
+  {
+    componentCenter,
+    footprintRotation,
+    boardSurfaceZ,
+    footprintSide,
+  }: KicadFootprintTransformOptions,
+): { offset: Point3; rotation: Point3 } {
+  const position = cadComponent.position
+  const rotation = cadComponent.rotation ?? {
+    x: footprintSide === "bottom" ? 180 : 0,
+    y: 0,
+    z: 0,
+  }
+  const origin = cadComponent.model_origin_position ?? { x: 0, y: 0, z: 0 }
+
   // KiCad applies Rz(footprintRotation), then Ry(180) Rz(180) on B.Cu.
   // The latter is Rx(180). Undo these to express CAD placement locally.
   const toLocal = (point: Point3): Point3 => {
-    const p = rotate(point, "z", -footprintRotation)
+    const p = rotatePointAroundAxis(point, "z", -footprintRotation)
     return footprintSide === "bottom" ? { x: p.x, y: -p.y, z: -p.z } : p
   }
   // The renderer maps Circuit JSON Y/Z axes to scene Z/Y. Expressed back
@@ -39,8 +52,12 @@ export function getKicadFootprintLocalModelTransform({
   // are applied to a point in Z, X, Y order before removing footprint placement.
   const modelToLocal = (point: Point3): Point3 =>
     toLocal(
-      rotate(
-        rotate(rotate(point, "z", rotation.z), "x", -rotation.x),
+      rotatePointAroundAxis(
+        rotatePointAroundAxis(
+          rotatePointAroundAxis(point, "z", rotation.z),
+          "x",
+          -rotation.x,
+        ),
         "y",
         -rotation.y,
       ),
