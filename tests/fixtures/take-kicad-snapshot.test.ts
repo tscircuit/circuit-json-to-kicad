@@ -1,6 +1,7 @@
 import { test, expect } from "bun:test"
 import { join } from "node:path"
 import {
+  getZoneFilledPolygonCountsByLayer,
   normalizePcbSvgForSnapshot,
   takeKicadSnapshot,
 } from "./take-kicad-snapshot"
@@ -63,6 +64,38 @@ test("normalizePcbSvgForSnapshot fades only the last zone-filled paths", () => {
   expect(
     normalizedSvg.match(/fill:#C83434; fill-opacity:1\.0000;/g)?.length ?? 0,
   ).toBe(1)
+})
+
+test("counts filled polygons on each layer of a multilayer zone", () => {
+  const kicadPcbContent = `(kicad_pcb
+    (version 20241229)
+    (generator pcbnew)
+    (layers
+      (0 "F.Cu" signal)
+      (31 "B.Cu" signal)
+    )
+    (zone
+      (net 0)
+      (net_name "")
+      (layers "F.Cu" "B.Cu")
+      (hatch edge 0.5)
+      (filled_polygon
+        (layer "F.Cu")
+        (pts (xy 0 0) (xy 1 0) (xy 1 1))
+      )
+      (filled_polygon
+        (layer "B.Cu")
+        (pts (xy 0 0) (xy 1 0) (xy 1 1))
+      )
+    )
+  )`
+
+  expect(getZoneFilledPolygonCountsByLayer(kicadPcbContent)).toEqual(
+    new Map([
+      ["F.Cu", 1],
+      ["B.Cu", 1],
+    ]),
+  )
 })
 
 test("takeKicadSnapshot - schematic export", async () => {

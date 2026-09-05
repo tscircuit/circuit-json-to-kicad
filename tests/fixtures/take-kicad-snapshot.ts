@@ -64,7 +64,7 @@ const MINIMAL_PCB_TEMPLATE = `(kicad_pcb
 )
 `
 
-const getZoneFilledPolygonCountsByLayer = (
+export const getZoneFilledPolygonCountsByLayer = (
   kicadPcbContent: string,
 ): Map<string, number> => {
   const zoneFilledPolygonCountsByLayer = new Map<string, number>()
@@ -73,14 +73,15 @@ const getZoneFilledPolygonCountsByLayer = (
     const pcb = parseKicadPcb(kicadPcbContent)
 
     for (const zone of pcb.zones) {
-      const layerName = zone.layer?.names[0]
-      if (!layerName || zone.filledPolygons.length === 0) continue
+      for (const filledPolygon of zone.filledPolygons) {
+        const layerName = filledPolygon.layer?.names[0] ?? zone.layer?.names[0]
+        if (!layerName) continue
 
-      zoneFilledPolygonCountsByLayer.set(
-        layerName,
-        (zoneFilledPolygonCountsByLayer.get(layerName) ?? 0) +
-          zone.filledPolygons.length,
-      )
+        zoneFilledPolygonCountsByLayer.set(
+          layerName,
+          (zoneFilledPolygonCountsByLayer.get(layerName) ?? 0) + 1,
+        )
+      }
     }
   } catch {
     // Snapshot styling is best-effort only.
