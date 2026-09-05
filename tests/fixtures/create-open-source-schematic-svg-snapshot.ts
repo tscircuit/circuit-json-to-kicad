@@ -4,11 +4,40 @@ import { mkdir, readFile, writeFile } from "node:fs/promises"
 import { basename, dirname, join, resolve } from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
+import { type Paper, parseKicadSch } from "kicadts"
 import looksSame from "looks-same"
 import sharp from "sharp"
 import { CircuitJsonToKicadSchConverter } from "../../lib"
 import { createSideBySideSvg } from "./create-side-by-side-svg"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
+
+const KICAD_PAPER_DIMENSIONS_MM: Record<
+  string,
+  { height: number; width: number }
+> = {
+  A0: { height: 841, width: 1189 },
+  A1: { height: 594, width: 841 },
+  A2: { height: 420, width: 594 },
+  A3: { height: 297, width: 420 },
+  A4: { height: 210, width: 297 },
+  A5: { height: 148, width: 210 },
+  USLegal: { height: 215.9, width: 355.6 },
+  USLetter: { height: 215.9, width: 279.4 },
+  USLedger: { height: 279.4, width: 431.8 },
+}
+
+function getPaperDimensions(paper: Paper | undefined) {
+  if (!paper) return undefined
+  const dimensions =
+    paper.customSize ??
+    (paper.size ? KICAD_PAPER_DIMENSIONS_MM[paper.size] : undefined)
+  if (!dimensions) return undefined
+  return {
+    height: paper.isPortrait ? dimensions.width : dimensions.height,
+    name: paper.size ?? "User",
+    width: paper.isPortrait ? dimensions.height : dimensions.width,
+  }
+}
 
 function normalizeSchematicSvgForSnapshot(svg: string): string {
   const dimensions = svg.match(/\bwidth="([\d.]+)mm"\s+height="([\d.]+)mm"/u)
@@ -45,8 +74,25 @@ async function createConvertedSchematicSvg(
   sourceConverter.addFile(basename(schematicPath), sourceContent)
   sourceConverter.runUntilFinished()
 
+  const sourceSchematic = parseKicadSch(sourceContent)
+  const sourceTitleBlock = sourceSchematic.titleBlock
   const converter = new CircuitJsonToKicadSchConverter(
     sourceConverter.getOutput() as CircuitJson,
+    {
+      paperSize: getPaperDimensions(sourceSchematic.paper),
+      titleBlock: sourceTitleBlock
+        ? {
+            company: sourceTitleBlock.company,
+            comments: sourceTitleBlock.comments.map((comment) => ({
+              index: comment.index,
+              text: comment.value,
+            })),
+            date: sourceTitleBlock.date,
+            revision: sourceTitleBlock.rev,
+            title: sourceTitleBlock.title,
+          }
+        : undefined,
+    },
   )
   converter.runUntilFinished()
   const convertedSnapshot = await takeKicadSnapshot({
