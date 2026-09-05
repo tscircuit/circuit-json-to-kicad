@@ -3,7 +3,7 @@ export type PaperSize = "A0" | "A1" | "A2" | "A3" | "A4" | "A5"
 export interface PaperDimensions {
   width: number // in mm
   height: number // in mm
-  name: PaperSize
+  name: PaperSize | string
 }
 
 /**
