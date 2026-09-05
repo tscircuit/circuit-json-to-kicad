@@ -8,11 +8,16 @@ import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
 import { getSchematicPageLayout } from "./getSchematicPageLayout"
 import { partitionCircuitJsonBySheet } from "./partitionCircuitJsonBySheet"
 import {
+  createKicadSchematicTitleBlock,
+  type KicadSchematicTitleBlockMetadata,
+} from "./createKicadSchematicTitleBlock"
+import {
   buildSchematicSheetPlan,
   type SchematicSheetPlan,
   type SchematicSheetPlanEntry,
 } from "./buildSchematicSheetPlan"
 import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
+import type { PaperDimensions } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
 import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
@@ -23,6 +28,7 @@ import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
 const COMPACT_LARGE_SHEET_MARGIN_MM = 15
+const TITLE_BLOCK_CONTENT_OFFSET_MM = 5
 
 const getSingleSheetSchematicLayout = (db: ReturnType<typeof cju>) => {
   let measurement = getSchematicBoundsAndCenter(db)
@@ -72,6 +78,11 @@ export interface KicadSchFileOutputOptions {
   schematicFilename: string
 }
 
+export interface CircuitJsonToKicadSchConverterOptions {
+  paperSize?: PaperDimensions
+  titleBlock?: KicadSchematicTitleBlockMetadata
+}
+
 interface BuiltSheetFile {
   entry: SchematicSheetPlanEntry
   kicadSch: KicadSch
@@ -103,20 +114,30 @@ export class CircuitJsonToKicadSchConverter {
   schematicSheetPlan: SchematicSheetPlan
   private files: BuiltSheetFile[] = []
   private built = false
+  private readonly options: CircuitJsonToKicadSchConverterOptions
 
   get currentStage() {
     return this.pipeline[this.currentStageIndex]
   }
 
-  constructor(circuitJson: CircuitJson) {
+  constructor(
+    circuitJson: CircuitJson,
+    options: CircuitJsonToKicadSchConverterOptions = {},
+  ) {
     this.circuitJson = circuitJson
+    this.options = options
     this.schematicSheetPlan = buildSchematicSheetPlan(circuitJson)
 
     const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
 
     const db = cju(circuitJson)
 
-    const { center, paperSize } = getSingleSheetSchematicLayout(db)
+    const { center, paperSize: fittedPaperSize } =
+      getSingleSheetSchematicLayout(db)
+    const paperSize = options.paperSize ?? fittedPaperSize
+    const titleBlockContentOffsetMm = options.titleBlock
+      ? TITLE_BLOCK_CONTENT_OFFSET_MM
+      : 0
 
     this.ctx = {
       db,
@@ -124,11 +145,15 @@ export class CircuitJsonToKicadSchConverter {
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
+        titleBlock: createKicadSchematicTitleBlock(options.titleBlock),
       }),
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
       c2kMatSch: compose(
-        translate(paperSize.width / 2, paperSize.height / 2),
+        translate(
+          paperSize.width / 2,
+          paperSize.height / 2 - titleBlockContentOffsetMm,
+        ),
         scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
         translate(-center.x, -center.y),
       ),
@@ -277,11 +302,19 @@ export class CircuitJsonToKicadSchConverter {
       (bounds.maxX - bounds.minX) * kicadSchematicScaleFactor
     const schematicHeightMm =
       (bounds.maxY - bounds.minY) * kicadSchematicScaleFactor
-    const { paperSize, contentCenter } = getSchematicPageLayout({
-      contentWidthMm: schematicWidthMm,
-      contentHeightMm: schematicHeightMm,
-      extraPaperExtentMm,
-    })
+    const { paperSize: fittedPaperSize, contentCenter: fittedContentCenter } =
+      getSchematicPageLayout({
+        contentWidthMm: schematicWidthMm,
+        contentHeightMm: schematicHeightMm,
+        extraPaperExtentMm,
+      })
+    const paperSize = this.options.paperSize ?? fittedPaperSize
+    const contentCenter = this.options.paperSize
+      ? { x: paperSize.width / 2, y: paperSize.height / 2 }
+      : fittedContentCenter
+    if (this.options.titleBlock) {
+      contentCenter.y -= TITLE_BLOCK_CONTENT_OFFSET_MM
+    }
 
     const ctx: ConverterContext = {
       db,
@@ -289,6 +322,7 @@ export class CircuitJsonToKicadSchConverter {
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
+        titleBlock: createKicadSchematicTitleBlock(this.options.titleBlock),
       }),
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
