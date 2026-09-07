@@ -26,6 +26,10 @@ const KICAD_PAPER_DIMENSIONS_MM: Record<
   USLedger: { height: 279.4, width: 431.8 },
 }
 
+// kicad-to-circuit-json maps this KiCad page point to Circuit JSON (0, 0).
+// Supplying the inverse placement keeps imported content at its source location.
+const KICAD_TO_CIRCUIT_JSON_ORIGIN_MM = { x: 105, y: 148.5 }
+
 function getPaperDimensions(paper: Paper | undefined) {
   if (!paper) return undefined
   const customSize = paper.customSize
@@ -83,6 +87,7 @@ async function createConvertedSchematicSvg(
     sourceConverter.getOutput() as CircuitJson,
     {
       paperSize: getPaperDimensions(sourceSchematic.paper),
+      schematicSheets: [{ circuitOrigin: KICAD_TO_CIRCUIT_JSON_ORIGIN_MM }],
       titleBlock: sourceTitleBlock
         ? {
             company: sourceTitleBlock.company,
