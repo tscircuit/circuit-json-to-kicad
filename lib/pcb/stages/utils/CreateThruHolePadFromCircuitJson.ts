@@ -1,4 +1,13 @@
-import { FootprintPad, PadDrill, PadNet } from "kicadts"
+import {
+  FootprintPad,
+  PadDrill,
+  PadNet,
+  PadOptions,
+  PadPrimitiveGrPoly,
+  PadPrimitives,
+  Pts,
+  Xy,
+} from "kicadts"
 import type { PcbPlatedHole } from "circuit-json"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
@@ -38,10 +47,12 @@ export function createThruHolePadFromCircuitJson({
   })
 
   // Determine pad shape based on plated hole shape
-  let padShape: "circle" | "oval" | "rect" = "circle"
+  let padShape: "circle" | "oval" | "rect" | "custom" = "circle"
   let padSize: [number, number]
   let drill: PadDrill
   let rotation = 0
+  let padOptions: PadOptions | undefined
+  let padPrimitives: PadPrimitives | undefined
 
   const hasHoleOffset =
     "hole_offset_x" in platedHole || "hole_offset_y" in platedHole
@@ -115,6 +126,49 @@ export function createThruHolePadFromCircuitJson({
       offset: drillOffset,
     })
     rotation = platedHole.rect_ccw_rotation || 0
+  } else if (platedHole.shape === "hole_with_polygon_pad") {
+    // Custom pad: the copper is the pad_outline polygon (relative to the hole
+    // position, rotated by ccw_rotation), emitted as a gr_poly primitive around
+    // a circular anchor the size of the drill so the anchor never exceeds the copper.
+    const outlineRotationMatrix = rotate(
+      ((platedHole.ccw_rotation ?? 0) * Math.PI) / 180,
+    )
+    const relativePoints = platedHole.pad_outline.map((point) => {
+      const rotated = applyToPoint(outlineRotationMatrix, point)
+      return new Xy(rotated.x, -rotated.y) // KiCad Y axis points down
+    })
+
+    const grPoly = new PadPrimitiveGrPoly()
+    grPoly.contours = [new Pts(relativePoints)]
+    grPoly.width = 0
+    grPoly.filled = true
+
+    padPrimitives = new PadPrimitives()
+    padPrimitives.addGraphic(grPoly)
+
+    padShape = "custom"
+    padOptions = new PadOptions()
+    padOptions.anchor = "circle"
+
+    const isRoundDrill =
+      platedHole.hole_shape === "circle" ||
+      typeof platedHole.hole_diameter === "number"
+    if (isRoundDrill) {
+      const holeDiameter = platedHole.hole_diameter ?? 0
+      drill = new PadDrill({ diameter: holeDiameter, offset: drillOffset })
+      padSize = [holeDiameter, holeDiameter]
+    } else {
+      const holeWidth = platedHole.hole_width ?? 0
+      const holeHeight = platedHole.hole_height ?? 0
+      drill = new PadDrill({
+        oval: true,
+        diameter: holeWidth,
+        width: holeHeight,
+        offset: drillOffset,
+      })
+      const anchorSize = Math.max(holeWidth, holeHeight)
+      padSize = [anchorSize, anchorSize]
+    }
   } else {
     // Default fallback
     padShape = "circle"
@@ -135,6 +189,13 @@ export function createThruHolePadFromCircuitJson({
     removeUnusedLayers: false,
     uuid: generateDeterministicUuid(padData),
   })
+
+  if (padOptions) {
+    pad.options = padOptions
+  }
+  if (padPrimitives) {
+    pad.primitives = padPrimitives
+  }
 
   if (netInfo) {
     pad.net = new PadNet(netInfo.id, netInfo.name)
