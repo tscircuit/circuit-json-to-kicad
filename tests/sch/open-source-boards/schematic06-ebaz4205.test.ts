@@ -43,6 +43,15 @@ const sheets = [
   },
 ]
 
+const titleBlockLabels = [
+  "Date: 2021-02-15",
+  "Rev: V004",
+  "Title: EBAZ4205 Schematic rebuild.",
+  "Some schematic symbols have been eeditted to clear DRC errors",
+  "Extra PWR_FLAGS have been added to clear DRC errors",
+  "Kicad does not allow refs like RxxxA some some devices have been renumbered",
+]
+
 test("renders every sheet of the open-source EBAZ4205 KiCad schematic", async () => {
   const exports = await createOpenSourceSchematicSvgSnapshots(
     "ebaz4205.kicad_sch",
@@ -66,14 +75,20 @@ test("renders every sheet of the open-source EBAZ4205 KiCad schematic", async ()
     expect(convertedViewBox).toBe("0.0000 0.0000 419.9890 297.0022")
   }
   for (const [index, svg] of svgs.entries()) {
+    const sourcePanel = svg.match(
+      /<svg data-comparison="source"[\s\S]*?(?=<svg data-comparison="converted")/u,
+    )?.[0]
+    const convertedPanel = svg.match(
+      /<svg data-comparison="converted"[\s\S]*$/u,
+    )?.[0]
+    expect(sourcePanel).toBeDefined()
+    expect(convertedPanel).toBeDefined()
+    for (const titleBlockLabel of titleBlockLabels) {
+      expect(sourcePanel).toContain(titleBlockLabel)
+      expect(convertedPanel).toContain(titleBlockLabel)
+    }
     if (index > 0) {
       const expectedPageLabel = `Id: ${sheets[index]!.pageNumber}/${sheets.length}`
-      const sourcePanel = svg.match(
-        /<svg data-comparison="source"[\s\S]*?(?=<svg data-comparison="converted")/u,
-      )?.[0]
-      const convertedPanel = svg.match(
-        /<svg data-comparison="converted"[\s\S]*$/u,
-      )?.[0]
       expect(sourcePanel).toContain(expectedPageLabel)
       expect(convertedPanel).toContain(expectedPageLabel)
     }

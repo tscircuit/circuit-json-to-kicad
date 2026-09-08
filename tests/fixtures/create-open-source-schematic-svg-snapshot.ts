@@ -5,7 +5,7 @@ import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
-import { type Paper, parseKicadSch } from "kicadts"
+import { type Paper, parseKicadSch, type TitleBlock } from "kicadts"
 import looksSame from "looks-same"
 import sharp from "sharp"
 import {
@@ -50,6 +50,20 @@ function getPaperDimensions(paper: Paper | undefined) {
   }
 }
 
+function getTitleBlockMetadata(sourceTitleBlock: TitleBlock | undefined) {
+  if (!sourceTitleBlock) return undefined
+  return {
+    company: sourceTitleBlock.company,
+    comments: sourceTitleBlock.comments.map((comment) => ({
+      index: comment.index,
+      text: comment.value,
+    })),
+    date: sourceTitleBlock.date,
+    revision: sourceTitleBlock.rev,
+    title: sourceTitleBlock.title,
+  }
+}
+
 function normalizeSchematicSvgForSnapshot(svg: string): string {
   const dimensions = svg.match(/\bwidth="([\d.]+)mm"\s+height="([\d.]+)mm"/u)
   let normalizedSvg = svg.replace(
@@ -86,24 +100,12 @@ async function createConvertedSchematicSvg(
   sourceConverter.runUntilFinished()
 
   const sourceSchematic = parseKicadSch(sourceContent)
-  const sourceTitleBlock = sourceSchematic.titleBlock
   const converter = new CircuitJsonToKicadSchConverter(
     sourceConverter.getOutput() as CircuitJson,
     {
       paperSize: getPaperDimensions(sourceSchematic.paper),
       schematicSheets: [{ circuitOrigin: KICAD_TO_CIRCUIT_JSON_ORIGIN_MM }],
-      titleBlock: sourceTitleBlock
-        ? {
-            company: sourceTitleBlock.company,
-            comments: sourceTitleBlock.comments.map((comment) => ({
-              index: comment.index,
-              text: comment.value,
-            })),
-            date: sourceTitleBlock.date,
-            revision: sourceTitleBlock.rev,
-            title: sourceTitleBlock.title,
-          }
-        : undefined,
+      titleBlock: getTitleBlockMetadata(sourceSchematic.titleBlock),
     },
   )
   converter.runUntilFinished()
@@ -261,6 +263,7 @@ async function createConvertedSchematicSvgs({
     {
       paperSize: getPaperDimensions(rootSchematic.paper),
       schematicSheets,
+      titleBlock: getTitleBlockMetadata(rootSchematic.titleBlock),
     },
   )
   converter.runUntilFinished()
