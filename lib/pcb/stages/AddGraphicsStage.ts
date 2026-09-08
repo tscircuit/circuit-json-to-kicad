@@ -12,6 +12,7 @@ import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
 import polygonClipping, { type Geom } from "polygon-clipping"
+import { convertStandaloneFabricationNotePaths } from "./graphics-stage-converters/convertStandaloneFabricationNotePaths"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -166,6 +167,12 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         kicadPcb.graphicTexts = graphicTexts
       }
     }
+
+    const fabricationLines = convertStandaloneFabricationNotePaths({
+      fabricationNotePaths: this.ctx.db.pcb_fabrication_note_path.list(),
+      c2kMatPcb,
+    })
+    for (const line of fabricationLines) appendGraphicLine(kicadPcb, line)
 
     // Add fabrication note text elements
     const fabricationNoteTexts =
