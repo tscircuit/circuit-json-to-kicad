@@ -88,11 +88,30 @@ test("pcb repro28 fiducial without pcb_solder_paste omits F.Paste", async () => 
   )
 
   expect(resistorFootprint).toBeDefined()
+  const resistorCopperPads = resistorFootprint!.fpPads.filter((pad) =>
+    pad.layers?.layers.includes("F.Cu"),
+  )
+  const resistorPastePads = resistorFootprint!.fpPads.filter((pad) =>
+    pad.layers?.layers.includes("F.Paste"),
+  )
+  expect(resistorCopperPads).toHaveLength(2)
+  expect(resistorPastePads).toHaveLength(pcbSolderPastes.length)
+  for (const pad of resistorCopperPads) {
+    expect(pad.layers?.layers).toEqual(["F.Cu", "F.Mask"])
+  }
+  for (const pad of resistorPastePads) {
+    expect(pad.layers?.layers).toEqual(["F.Paste"])
+    expect(pad.number).toBe("")
+    expect(pad.net).toBeUndefined()
+  }
+  const expectedApertureSizes = pcbSolderPastes.map((paste) =>
+    paste.shape === "circle"
+      ? [paste.radius * 2, paste.radius * 2]
+      : [paste.width, paste.height],
+  )
   expect(
-    resistorFootprint!.fpPads.every((pad) =>
-      pad.layers?.layers.includes("F.Paste"),
-    ),
-  ).toBe(true)
+    resistorPastePads.map((pad) => [pad.size?.width, pad.size?.height]),
+  ).toEqual(expectedApertureSizes)
   expect(fiducialFootprint).toBeDefined()
   expect(fiducialFootprint!.fpPads[0]!.layers?.layers).toEqual([
     "F.Cu",

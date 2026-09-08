@@ -56,6 +56,9 @@ export function convertSmdPads(
       componentRotation,
       netInfo,
       componentId,
+      // Explicit paste records describe the stencil, including absent paste on
+      // other pads (for example fiducials). Do not add a second full-pad aperture.
+      includeSolderPaste: ctx.db.pcb_solder_paste.list().length === 0,
     })
     pads.push(pad)
     padNumber++

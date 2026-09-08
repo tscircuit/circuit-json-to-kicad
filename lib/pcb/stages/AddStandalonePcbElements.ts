@@ -7,21 +7,28 @@ import type {
   PcbHoleCircularWithRectPad,
   PcbHoleRotatedPillWithRectPad,
   PcbSmtPad,
+  PcbSolderPaste,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Footprint } from "kicadts"
+import { Footprint, FootprintAttr } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
+import {
+  convertSolderPastes,
+  getSolderPasteComponentId,
+} from "./footprints-stage-converters/convertSolderPastes"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
 > {
-  private unprocessedElements: Array<PcbHole | PcbPlatedHole | PcbSmtPad> = []
+  private unprocessedElements: Array<
+    PcbHole | PcbPlatedHole | PcbSmtPad | PcbSolderPaste
+  > = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
@@ -35,6 +42,9 @@ export class AddStandalonePcbElements extends ConverterStage<
       ...(this.ctx.db.pcb_smtpad.list() as PcbSmtPad[]).filter(
         (pad) => !pad.pcb_component_id,
       ),
+      ...this.ctx.db.pcb_solder_paste
+        .list()
+        .filter((paste) => !getSolderPasteComponentId(paste, this.ctx)),
     ]
   }
 
@@ -75,8 +85,30 @@ export class AddStandalonePcbElements extends ConverterStage<
           padNumber: 1,
           componentRotation: 0,
           componentId: pcbPad.pcb_smtpad_id,
+          includeSolderPaste: this.ctx.db.pcb_solder_paste.list().length === 0,
         }),
       ]
+      const footprints = kicadPcb.footprints
+      footprints.push(footprint)
+      kicadPcb.footprints = footprints
+    } else if (elm.type === "pcb_solder_paste") {
+      const kicadPos = applyToPoint(c2kMatPcb, elm)
+      const footprint = new Footprint({
+        libraryLink: "tscircuit:solder_paste",
+        layer: elm.layer === "bottom" ? "B.Cu" : "F.Cu",
+        at: [kicadPos.x, kicadPos.y, 0],
+        uuid: generateDeterministicUuid(
+          `standalone_solder_paste:${elm.pcb_solder_paste_id}`,
+        ),
+      })
+      footprint.fpPads = convertSolderPastes({
+        solderPastes: [elm],
+        componentCenter: { x: elm.x, y: elm.y },
+      })
+      footprint.attr = new FootprintAttr()
+      footprint.attr.boardOnly = true
+      footprint.attr.excludeFromBom = true
+      footprint.attr.excludeFromPosFiles = true
       const footprints = kicadPcb.footprints
       footprints.push(footprint)
       kicadPcb.footprints = footprints
