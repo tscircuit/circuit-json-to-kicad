@@ -1,15 +1,20 @@
-import type { PcbComponent, PcbCourtyardCircle } from "circuit-json"
+import type { PcbCourtyardCircle } from "circuit-json"
 import { FpCircle, Stroke } from "kicadts"
+import { applyToPoint, rotate } from "transformation-matrix"
 
 export function convertCourtyardCircles(
   courtyardCircles: PcbCourtyardCircle[],
   componentCenter: { x: number; y: number },
+  componentRotation = 0,
 ): FpCircle[] {
   const fpCircles: FpCircle[] = []
+  const rotation = rotate((componentRotation * Math.PI) / 180)
 
   for (const circle of courtyardCircles) {
-    const relX = circle.center.x - componentCenter.x
-    const relY = -(circle.center.y - componentCenter.y)
+    const { x: relX, y: relY } = applyToPoint(rotation, {
+      x: circle.center.x - componentCenter.x,
+      y: -(circle.center.y - componentCenter.y),
+    })
 
     const layerMap: Record<string, string> = {
       top: "F.CrtYd",
