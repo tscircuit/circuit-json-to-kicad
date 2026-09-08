@@ -194,20 +194,20 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (at -3.175 -0.7000000000000002 0)
         (size 2.5 1.2)
         (layers F.Cu F.Paste F.Mask)
-        (uuid 633a4dec-1f37-b14c-24ca-eb5468cd87f4)
+        (uuid 6c13b4b2-1e45-c3f2-2f88-2cce7d561d8e)
       )
       (pad "2" smd rect
         (at 3.1750000000000003 -3.24 0)
         (size 2.5 1.2)
         (layers F.Cu F.Paste F.Mask)
-        (uuid 07e0ff52-4be3-9bf2-7019-c76e2c172ace)
+        (uuid 4b8dd6ca-66a4-3876-18d6-47b634f7a90a)
       )
       (pad "" np_thru_hole circle
         (at 0.6350000000000002 1.8399999999999999 0)
         (size 4 4)
         (drill 4)
         (layers *.Cu *.Mask)
-        (uuid 51b679a0-2a9d-c901-0385-18622393983d)
+        (uuid 537d4e40-172c-56ff-2524-a04261759783)
       )
     )"
   `)
