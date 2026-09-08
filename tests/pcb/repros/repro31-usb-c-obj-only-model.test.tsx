@@ -50,7 +50,7 @@ test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C"
   expect(pcb.footprints[0]!.fpPads).toHaveLength(22)
   expect(pcb.footprints[0]!.models).toHaveLength(1)
   const stepUrl =
-    "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step"
+    "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step?uuid=2a4bc2358b36497d9ab2a66ab6419ba3"
   expect(converter.getModel3dSourcePaths()).toEqual([stepUrl])
   expect(converter.getOutputString()).toContain(
     "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/C165948.step",
