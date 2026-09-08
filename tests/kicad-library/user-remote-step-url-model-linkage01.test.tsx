@@ -55,7 +55,7 @@ test("kicad-library includes stepUrl user model in model3dSourcePaths", async ()
     [
       "https://modelcdn.tscircuit.com/jscad_models/0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
-      "https://modelcdn.tscircuit.com/jscad_models/soic8.step",
+      "https://modelcdn.tscircuit.com/jscad_models/soic8.step?cachebust_origin=",
     ]
   `)
 

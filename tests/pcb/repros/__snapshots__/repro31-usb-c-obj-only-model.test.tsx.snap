@@ -22,7 +22,7 @@ exports[`pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB
   "inputHasStep": false,
   "inputHasWrl": false,
   "modelDownloads": [
-    "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step",
+    "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step?uuid=2a4bc2358b36497d9ab2a66ab6419ba3",
   ],
 }
 `;
