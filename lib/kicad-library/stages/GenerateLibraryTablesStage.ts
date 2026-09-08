@@ -1,4 +1,6 @@
 import type { CircuitJson } from "circuit-json"
+import { resolveKicad3dModelPaths } from "../../utils/resolveKicad3dModelPaths"
+import { resolveFootprintModelPaths } from "../kicad-library-converter-utils/resolveFootprintModelPaths"
 import {
   ConverterStage,
   type ConverterContext,
@@ -26,6 +28,11 @@ export class GenerateLibraryTablesStage extends ConverterStage<
         model3dSourcePathsSet.add(modelPath)
       }
     }
+
+    resolveFootprintModelPaths(
+      footprintEntries,
+      resolveKicad3dModelPaths([...model3dSourcePathsSet], fpLibraryName),
+    )
 
     // Generate library tables
     const fpLibTableString = this.generateFpLibTable(fpLibraryName)
