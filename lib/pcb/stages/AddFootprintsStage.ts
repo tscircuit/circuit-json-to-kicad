@@ -374,8 +374,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
             if (model.offset) newModel.offset = model.offset
             if (model.scale) newModel.scale = model.scale
             if (model.rotate) newModel.rotate = model.rotate
-            // Track original source URL for the CLI to download (strip query params)
-            const sourcePath = model.path?.split("?")[0]
+            // Keep the download URL intact: its query may select or authorize the model.
+            const sourcePath = model.path
             if (
               sourcePath &&
               !this.ctx.pcbModel3dSourcePaths?.includes(sourcePath)
