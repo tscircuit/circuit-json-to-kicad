@@ -80,7 +80,16 @@ function classifySymbolsForComponent({
     | KicadSymbolMetadata
     | undefined
 
+  // Footprint classification renames only the first custom footprint.
+  const firstCustomFootprintName = customFootprintNames.values().next().value
   for (const kicadSymbol of kicadSymbols) {
+    const footprintRef = getSymbolFootprintRef(kicadSymbol)
+    const customFootprintTarget =
+      footprintRef != null && customFootprintNames.has(footprintRef)
+        ? footprintRef === firstCustomFootprintName
+          ? tscircuitComponentName
+          : footprintRef
+        : null
     if (!kicadSymbol.isBuiltin) {
       // Custom symbol → user library
       // Use the symbol's actual name (from JSX <symbol name="...">) for deduplication
@@ -96,11 +105,11 @@ function classifySymbolsForComponent({
       addedSymbolNames.add(symbolName)
 
       // Update footprint reference if this component has a custom footprint
-      if (hasCustomFootprint) {
+      if (customFootprintTarget) {
         updateKicadSymbolFootprint({
           kicadSymbol,
           kicadLibraryName: ctx.kicadLibraryName,
-          kicadFootprintName: tscircuitComponentName,
+          kicadFootprintName: customFootprintTarget,
           isPcm: ctx.isPcm,
         })
       }
@@ -108,24 +117,22 @@ function classifySymbolsForComponent({
         ? applyKicadSymbolMetadata(kicadSymbol, metadata)
         : kicadSymbol
       addUserSymbol({ ctx, kicadSymbol: updatedSymbol })
-    } else if (hasCustomFootprint && !hasAddedUserSymbol) {
+    } else if (hasCustomFootprint) {
       // Builtin symbol + custom footprint exists on this component.
       // Only use this symbol for the user library if it actually references
       // a custom footprint (not a builtin one like resistor_0402).
-      const footprintRef = getSymbolFootprintRef(kicadSymbol)
-      const symbolMatchesCustomFootprint =
-        footprintRef != null && customFootprintNames.has(footprintRef)
-
-      if (symbolMatchesCustomFootprint) {
+      if (customFootprintTarget) {
+        const renamedSymbol = hasAddedUserSymbol
+          ? kicadSymbol
+          : renameKicadSymbol({
+              kicadSymbol,
+              newKicadSymbolName: tscircuitComponentName,
+            })
         hasAddedUserSymbol = true
-        const renamedSymbol = renameKicadSymbol({
-          kicadSymbol,
-          newKicadSymbolName: tscircuitComponentName,
-        })
         updateKicadSymbolFootprint({
           kicadSymbol: renamedSymbol,
           kicadLibraryName: ctx.kicadLibraryName,
-          kicadFootprintName: tscircuitComponentName,
+          kicadFootprintName: customFootprintTarget,
           isPcm: ctx.isPcm,
         })
         const updatedSymbol = metadata
@@ -140,7 +147,7 @@ function classifySymbolsForComponent({
         addBuiltinSymbol({ ctx, kicadSymbol: updatedSymbol })
       }
     } else {
-      // Builtin symbol → builtin library (no custom footprint, or already added user symbol)
+      // Builtin symbol → builtin library (no custom footprint).
       const updatedSymbol = updateBuiltinKicadSymbolFootprint(kicadSymbol, {
         isPcm: ctx.isPcm,
       })
