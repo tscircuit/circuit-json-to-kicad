@@ -40,6 +40,7 @@ import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
+import { createFpTextFromCircuitJson } from "./utils/CreateFpTextFromCircuitJson"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -164,6 +165,19 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentRotation: component.rotation || 0,
       }),
     )
+
+    const fabricationNoteTexts = this.ctx.db.pcb_fabrication_note_text
+      .list()
+      .filter((text) => text.pcb_component_id === component.pcb_component_id)
+
+    for (const textElement of fabricationNoteTexts) {
+      const fpText = createFpTextFromCircuitJson({
+        textElement,
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      })
+      if (fpText) fpTexts.push(fpText)
+    }
 
     footprint.fpTexts = fpTexts
 
