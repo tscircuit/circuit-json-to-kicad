@@ -1,13 +1,17 @@
 import { expect } from "bun:test"
 import { existsSync } from "node:fs"
-import { mkdir, readFile, writeFile } from "node:fs/promises"
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { basename, dirname, join, resolve } from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
 import { type Paper, parseKicadSch } from "kicadts"
 import looksSame from "looks-same"
 import sharp from "sharp"
-import { CircuitJsonToKicadSchConverter } from "../../lib"
+import {
+  CircuitJsonToKicadSchConverter,
+  type KicadSchematicSheetOptions,
+} from "../../lib"
 import { createSideBySideSvg } from "./create-side-by-side-svg"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
 
@@ -119,6 +123,174 @@ async function createConvertedSchematicSvg(
   return normalizeSchematicSvgForSnapshot(convertedSvg.toString("utf8"))
 }
 
+function namespaceCircuitJson(
+  circuitJson: CircuitJson,
+  namespace: string,
+  schematicSheetId?: string,
+): CircuitJson {
+  const ids = new Set<string>()
+  for (const element of circuitJson as Record<string, unknown>[]) {
+    for (const [key, value] of Object.entries(element)) {
+      if (key.endsWith("_id") && typeof value === "string") ids.add(value)
+    }
+  }
+
+  const namespaceValue = (value: unknown): unknown => {
+    if (typeof value === "string" && ids.has(value)) {
+      return `${namespace}_${value}`
+    }
+    if (Array.isArray(value)) return value.map(namespaceValue)
+    if (value && typeof value === "object") {
+      return Object.fromEntries(
+        Object.entries(value).map(([key, nestedValue]) => [
+          key,
+          namespaceValue(nestedValue),
+        ]),
+      )
+    }
+    return value
+  }
+
+  return (circuitJson as Record<string, unknown>[]).map((element) => {
+    const namespacedElement = namespaceValue(element) as Record<string, unknown>
+    if (
+      schematicSheetId &&
+      typeof namespacedElement.type === "string" &&
+      namespacedElement.type.startsWith("schematic_") &&
+      namespacedElement.type !== "schematic_symbol"
+    ) {
+      namespacedElement.schematic_sheet_id = schematicSheetId
+    }
+    return namespacedElement
+  }) as CircuitJson
+}
+
+async function createConvertedSchematicSvgs({
+  rootSchematicPath,
+  sourceFilesBySvgName,
+}: {
+  rootSchematicPath: string
+  sourceFilesBySvgName: Map<string, string>
+}): Promise<Record<string, string>> {
+  if (sourceFilesBySvgName.size === 1) {
+    const outputFilename = sourceFilesBySvgName.keys().next().value
+    if (!outputFilename) throw new Error("Missing source schematic SVG name")
+    return {
+      [outputFilename]: await createConvertedSchematicSvg(rootSchematicPath),
+    }
+  }
+
+  const rootFilename = basename(rootSchematicPath)
+  const rootSvgFilename = rootFilename.replace(/\.kicad_sch$/u, ".svg")
+  const rootContent = await readFile(rootSchematicPath, "utf8")
+  const rootSourceConverter = new KicadToCircuitJsonConverter()
+  rootSourceConverter.addFile(rootFilename, rootContent)
+  rootSourceConverter.runUntilFinished()
+
+  const rootSchematic = parseKicadSch(rootContent)
+  const circuitJson: Record<string, unknown>[] = [
+    ...(namespaceCircuitJson(
+      rootSourceConverter.getOutput() as CircuitJson,
+      "root",
+    ) as Record<string, unknown>[]),
+  ]
+  const schematicSheets: KicadSchematicSheetOptions[] = [
+    { circuitOrigin: KICAD_TO_CIRCUIT_JSON_ORIGIN_MM },
+  ]
+
+  const sourcePageByFilename = new Map<string, number>()
+  const sourceSheetInstances = rootSchematic.sheetInstances[0]
+  for (const sheet of rootSchematic.sheets) {
+    const sourceFilename = sheet.properties.find(
+      (property) => property.key === "Sheet file",
+    )?.value
+    const sheetUuid = sheet.uuid?.value
+    const pageNumber = Number(
+      sourceSheetInstances?.paths.find(
+        (path) => path.value === `/${sheetUuid}/`,
+      )?.pages[0]?.value,
+    )
+    if (sourceFilename && Number.isFinite(pageNumber)) {
+      sourcePageByFilename.set(sourceFilename, pageNumber)
+    }
+  }
+
+  const childSourceFiles = [...sourceFilesBySvgName.entries()]
+    .filter(([outputFilename]) => outputFilename !== rootSvgFilename)
+    .sort(
+      ([, leftFilename], [, rightFilename]) =>
+        (sourcePageByFilename.get(leftFilename) ?? Number.MAX_SAFE_INTEGER) -
+        (sourcePageByFilename.get(rightFilename) ?? Number.MAX_SAFE_INTEGER),
+    )
+
+  let sheetIndex = 0
+  for (const [outputFilename, sourceFilename] of childSourceFiles) {
+    const schematicSheetId = `schematic_sheet_${sheetIndex}`
+    const displayName = outputFilename
+      .replace(`${rootSvgFilename.replace(/\.svg$/u, "")}-`, "")
+      .replace(/\.svg$/u, "")
+    circuitJson.push({
+      type: "schematic_sheet",
+      schematic_sheet_id: schematicSheetId,
+      name: sourceFilename.replace(/\.kicad_sch$/u, ""),
+      display_name: displayName,
+      sheet_index: sheetIndex,
+    })
+
+    const childPath = resolve(dirname(rootSchematicPath), sourceFilename)
+    const childContent = await readFile(childPath, "utf8")
+    const childSourceConverter = new KicadToCircuitJsonConverter()
+    childSourceConverter.addFile(sourceFilename, childContent)
+    childSourceConverter.runUntilFinished()
+    circuitJson.push(
+      ...(namespaceCircuitJson(
+        childSourceConverter.getOutput() as CircuitJson,
+        `sheet_${sheetIndex}`,
+        schematicSheetId,
+      ) as Record<string, unknown>[]),
+    )
+    schematicSheets.push({
+      circuitOrigin: KICAD_TO_CIRCUIT_JSON_ORIGIN_MM,
+      schematicSheetId,
+    })
+    sheetIndex += 1
+  }
+
+  const converter = new CircuitJsonToKicadSchConverter(
+    circuitJson as CircuitJson,
+    {
+      paperSize: getPaperDimensions(rootSchematic.paper),
+      schematicSheets,
+    },
+  )
+  converter.runUntilFinished()
+
+  const tempDir = await mkdtemp(join(tmpdir(), "converted-kicad-hierarchy-"))
+  try {
+    const outputFiles = converter.getOutputFiles({
+      schematicFilename: rootFilename,
+    })
+    for (const file of outputFiles) {
+      await writeFile(join(tempDir, file.filename), file.content)
+    }
+    const snapshot = await takeKicadSnapshot({
+      generatePng: false,
+      kicadFilePath: join(tempDir, rootFilename),
+      kicadFileType: "sch",
+    })
+    return Object.fromEntries(
+      Object.entries(snapshot.generatedFileContent).map(
+        ([outputFilename, svg]) => [
+          outputFilename,
+          normalizeSchematicSvgForSnapshot(svg.toString("utf8")),
+        ],
+      ),
+    )
+  } finally {
+    await rm(tempDir, { force: true, recursive: true })
+  }
+}
+
 export async function createOpenSourceSchematicSvgSnapshots(
   filename: string,
   sourceFilenameByOutputFilename: Record<string, string> = {},
@@ -145,6 +317,10 @@ export async function createOpenSourceSchematicSvgSnapshots(
   const sourceSvgEntries = Object.entries(snapshot.generatedFileContent).filter(
     ([outputFilename]) => outputFilename.endsWith(".svg"),
   )
+  const convertedSvgs = await createConvertedSchematicSvgs({
+    rootSchematicPath: schematicPath,
+    sourceFilesBySvgName,
+  })
 
   return Object.fromEntries(
     await Promise.all(
@@ -155,11 +331,12 @@ export async function createOpenSourceSchematicSvgSnapshots(
             `Could not map KiCad SVG ${outputFilename} to a source schematic file`,
           )
         }
-        const sourcePath =
-          sourceFilename === filename
-            ? schematicPath
-            : resolve(dirname(schematicPath), sourceFilename)
-        const convertedSvg = await createConvertedSchematicSvg(sourcePath)
+        const convertedSvg = convertedSvgs[outputFilename]
+        if (!convertedSvg) {
+          throw new Error(
+            `Converted KiCad hierarchy did not export ${outputFilename}`,
+          )
+        }
         return [
           outputFilename,
           createSideBySideSvg(
