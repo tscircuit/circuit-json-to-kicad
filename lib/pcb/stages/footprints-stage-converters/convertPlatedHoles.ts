@@ -11,6 +11,7 @@ export function convertPlatedHoles(
     componentId,
     startPadNumber,
     getNetInfo,
+    usedPadNumbers,
   }: {
     platedHoles: PcbPlatedHole[]
     componentCenter: { x: number; y: number }
@@ -18,11 +19,13 @@ export function convertPlatedHoles(
     componentId: string
     startPadNumber: number
     getNetInfo: (pcbPortId?: string) => PcbNetInfo | undefined
+    usedPadNumbers?: Set<string>
   },
   ctx: ConverterContext,
 ): { pads: FootprintPad[]; nextPadNumber: number } {
   const pads: FootprintPad[] = []
   let padNumber = startPadNumber
+  const seen = usedPadNumbers ?? new Set<string>()
 
   for (const platedHole of platedHoles) {
     const netInfo = getNetInfo(platedHole.pcb_port_id)
@@ -30,6 +33,13 @@ export function convertPlatedHoles(
     // Preserve source pin identity — not pad array index — as the KiCad pad
     // number (see issue #212). Walk pcb_port -> source_port.pin_number; fall
     // back to pin-like port_hints, then to the sequential counter.
+    //
+    // A hint-derived number is only trusted if it doesn't collide with a
+    // number already assigned to another pad in this footprint: an
+    // auto-generated internal port hint (e.g. "1") can coincidentally look
+    // like a real pin number and collide with the actual pin 1, which would
+    // otherwise produce two unconnected pads sharing the same KiCad pad
+    // number.
     const pcbPort = platedHole.pcb_port_id
       ? ctx.db.pcb_port?.get(platedHole.pcb_port_id)
       : undefined
@@ -42,12 +52,15 @@ export function convertPlatedHoles(
     const gridHint = platedHole.port_hints?.find((h) =>
       /^[A-Za-z]?\d+[A-Za-z0-9_]*$/.test(h),
     )
-    const resolvedPadNumber =
+    const hintedPadNumber =
       sourcePort?.pin_number != null
         ? String(sourcePort.pin_number)
-        : pinHint
-          ? pinHint.replace(/^pin/i, "")
-          : (gridHint ?? String(padNumber))
+        : (pinHint?.replace(/^pin/i, "") ?? gridHint)
+
+    const resolvedPadNumber =
+      hintedPadNumber != null && !seen.has(hintedPadNumber)
+        ? hintedPadNumber
+        : String(padNumber)
 
     const pad = createThruHolePadFromCircuitJson({
       platedHole,
@@ -58,6 +71,7 @@ export function convertPlatedHoles(
       componentId,
     })
     if (pad) {
+      seen.add(resolvedPadNumber)
       pads.push(pad)
       padNumber++
     }
