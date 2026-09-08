@@ -36,10 +36,10 @@ const KICAD_FP_GENERATOR_VERSION = "8.0"
  * Browser-compatible basename extraction (handles both / and \ separators)
  */
 export function getBasename(filePath: string): string {
-  const parts = filePath.split(/[/\\]/)
-  const base = parts[parts.length - 1] || filePath
-  // Strip URL query parameters (e.g. ?cachebust_origin= added by tscircuit)
-  return base.split("?")[0] || base
+  // URL suffixes may themselves contain slashes, so remove them first.
+  const pathWithoutSuffix = filePath.split(/[?#]/)[0] || filePath
+  const parts = pathWithoutSuffix.split(/[/\\]/)
+  return parts[parts.length - 1] || pathWithoutSuffix
 }
 
 /**
