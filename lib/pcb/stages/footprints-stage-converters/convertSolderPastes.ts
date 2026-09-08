@@ -75,7 +75,9 @@ export function convertSolderPastes({
       size,
       layers: [paste.layer === "bottom" ? "B.Paste" : "F.Paste"],
       roundrectRatio: isPill
-        ? paste.radius / Math.min(paste.width, paste.height)
+        ? paste.radius == null
+          ? 0.5 // Older generators omit radius for semicircular pill ends.
+          : paste.radius / Math.min(paste.width, paste.height)
         : undefined,
       uuid: generateDeterministicUuid(
         `solder_paste:${paste.pcb_solder_paste_id}`,

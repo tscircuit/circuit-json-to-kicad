@@ -52,7 +52,9 @@ Bun.write("output.kicad_pcb", kicadPcbContent)
 Explicit `pcb_solder_paste` records are exported as unnumbered, paste-only
 apertures on `F.Paste` or `B.Paste`. Their dimensions and positions are preserved,
 so a continuous copper pad can have several separate stencil openings. Apertures
-without a component are excluded from the BOM and pick-and-place files.
+without a component are excluded from the BOM, pick-and-place files, and
+component libraries. Pill apertures from older inputs that omit a radius use
+semicircular ends.
 
 When any explicit paste records are present, that list defines the complete
 stencil, including which pads have no paste. Copper pads do not also generate

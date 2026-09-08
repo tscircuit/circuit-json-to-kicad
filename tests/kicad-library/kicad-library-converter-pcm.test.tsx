@@ -343,13 +343,13 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
       (pad "1" smd rect
         (at -3.175 -0.7000000000000002 0)
         (size 2.5 1.2)
-        (layers F.Cu F.Paste F.Mask)
+        (layers F.Cu F.Mask)
         (uuid 633a4dec-1f37-b14c-24ca-eb5468cd87f4)
       )
       (pad "2" smd rect
         (at 3.1750000000000003 -3.24 0)
         (size 2.5 1.2)
-        (layers F.Cu F.Paste F.Mask)
+        (layers F.Cu F.Mask)
         (uuid 07e0ff52-4be3-9bf2-7019-c76e2c172ace)
       )
       (pad "" np_thru_hole circle
@@ -357,7 +357,19 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (size 4 4)
         (drill 4)
         (layers *.Cu *.Mask)
-        (uuid 51b679a0-2a9d-c901-0385-18622393983d)
+        (uuid 1b648220-4888-4b7f-75ac-14de5d3021c3)
+      )
+      (pad "" smd rect
+        (at -3.175 -0.7000000000000002 0)
+        (size 1.75 0.84)
+        (layers F.Paste)
+        (uuid 5e15c340-30f1-f9e1-03ce-3082295598dd)
+      )
+      (pad "" smd rect
+        (at 3.1750000000000003 -3.24 0)
+        (size 1.75 0.84)
+        (layers F.Paste)
+        (uuid 286ff760-5593-c0bf-7d48-75e25024ac83)
       )
       (model "\${KICAD_3RD_PARTY}/3dmodels/com_tscircuit_author_my-keyboard-library/my-keyboard-library.3dshapes/SW_Push_1P1T_NO_CK_KMR2.step"
         (offset

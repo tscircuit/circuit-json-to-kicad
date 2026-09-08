@@ -42,10 +42,28 @@ test("pcb repro32 bottom display shows its back instead of its screen", async ()
     const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
     converter.runUntilFinished()
     const pcb = converter.getOutput()
-    expect(pcb.footprints).toHaveLength(1)
-    const footprint = pcb.footprints[0]!
+    const componentFootprints = pcb.footprints.filter(
+      (fp) => fp.models.length > 0,
+    )
+    expect(componentFootprints).toHaveLength(1)
+    const footprint = componentFootprints[0]!
     expect(footprint.fpPads).toHaveLength(8)
     expect(footprint.models).toHaveLength(1)
+    const pasteFootprints = pcb.footprints.filter((fp) => fp !== footprint)
+    expect(pasteFootprints).toHaveLength(8)
+    for (const pasteFootprint of pasteFootprints) {
+      expect(pasteFootprint.attr?.boardOnly).toBe(true)
+      expect(pasteFootprint.attr?.excludeFromBom).toBe(true)
+      expect(pasteFootprint.attr?.excludeFromPosFiles).toBe(true)
+      expect(pasteFootprint.models).toHaveLength(0)
+      expect(pasteFootprint.fpPads).toHaveLength(1)
+      const aperture = pasteFootprint.fpPads[0]!
+      expect(aperture.layers?.layers).toHaveLength(1)
+      expect(["F.Paste", "B.Paste"]).toContain(aperture.layers!.layers[0]!)
+      expect(aperture.number).toBe("")
+      expect(aperture.net).toBeUndefined()
+      expect(aperture.drill).toBeUndefined()
+    }
     const model = footprint.models[0]!
     expect(footprint.layer?.getString()).toContain(
       layer === "top" ? "F.Cu" : "B.Cu",
