@@ -142,7 +142,9 @@ test("footprint rectangles retain world corners and layers under rotation", asyn
       return applyToPoint(localToBoard, { x: point.x, y: point.y })
     })
     const sourceAngle =
-      "ccw_rotation" in source ? (source.ccw_rotation ?? 0) : 0
+      "ccw_rotation" in source
+        ? (source.ccw_rotation ?? component.rotation)
+        : component.rotation
     const sourceToBoard = compose(
       translate(source.center.x, source.center.y),
       rotateDEG(sourceAngle),

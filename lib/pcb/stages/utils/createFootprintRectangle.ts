@@ -34,7 +34,9 @@ export function createFootprintRectangle({
   layer: string
   strokeWidth: number
 }): FootprintRectangle {
-  const rectangleRotation = rectangle.ccw_rotation ?? 0
+  // Legacy fabrication/note rectangles have no explicit angle and inherit
+  // the footprint orientation. Preserve that behavior while correcting centers.
+  const rectangleRotation = rectangle.ccw_rotation ?? componentRotation
   const rectangleToFootprint = compose(
     rotateDEG(componentRotation),
     scale(1, -1),
