@@ -51,7 +51,7 @@
         )
       )
     )
-    (property "Value" ""
+    (property "Value" "U1"
       (at 0 3 0)
       (layer F.Fab)
       (hide yes)
