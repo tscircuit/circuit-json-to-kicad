@@ -130,7 +130,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
       (at 0 0 0)
       (descr "")
       (tags "")
-      (attr through_hole)
+      (attr smd)
       (embedded_fonts no)
       (property "Reference" "REF**"
         (at 0 -4.34 0)

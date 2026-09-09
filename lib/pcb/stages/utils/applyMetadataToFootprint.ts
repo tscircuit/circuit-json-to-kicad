@@ -10,6 +10,7 @@ import {
 import type { KicadFootprintMetadata, KicadEffects } from "@tscircuit/props"
 import type { kicadComponentProperty } from "./getKicadComponentProperty"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
+import { getFootprintTypeFromPads } from "./getFootprintTypeFromPads"
 
 interface ApplyMetadataToFootprintParams {
   footprint: Footprint
@@ -173,6 +174,15 @@ export function applyMetadataToFootprint({
     if (metadata.attributes.exclude_from_bom !== undefined) {
       footprint.attr.excludeFromBom = metadata.attributes.exclude_from_bom
     }
+  }
+
+  // KiCad reads a footprint with no type as through-hole, so every SMD
+  // footprint is mistyped and trips its "footprint type doesn't match pads"
+  // DRC check. The pads already say which it is.
+  const derivedType = getFootprintTypeFromPads(footprint)
+  if (derivedType && !footprint.attr?.type) {
+    footprint.attr ??= new FootprintAttr()
+    footprint.attr.type = derivedType
   }
   // Apply footprintName if provided (modifies libraryLink)
 
