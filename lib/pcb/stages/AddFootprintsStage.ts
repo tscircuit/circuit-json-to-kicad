@@ -272,7 +272,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const fpCircles = footprint.fpCircles ?? []
     fpCircles.push(
-      ...convertSilkscreenCircles(pcbSilkscreenCircles, component.center),
+      ...convertSilkscreenCircles(pcbSilkscreenCircles, {
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
     )
 
     const pcbCourtyardCircles =
