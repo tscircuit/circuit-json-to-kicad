@@ -19,6 +19,10 @@ export const runGeneratedSystemRepro = async (params: {
   expectedSheetNames: string[]
   snapshotPath: string
   debugOutputName: string
+  sheetComparisonLayout?: "horizontal" | "vertical"
+  assertKicadSchematicFiles?: (
+    files: { filename: string; content: string }[],
+  ) => void | Promise<void>
 }) => {
   const circuitJson = JSON.parse(
     await readFile(params.fixtureUrl, "utf8"),
@@ -44,11 +48,13 @@ export const runGeneratedSystemRepro = async (params: {
     params.rootFilename,
     ...sourceSheets.map((sheet) => `${String(sheet.name)}.kicad_sch`),
   ])
+  await params.assertKicadSchematicFiles?.(kicadSchematicFiles)
 
   const { stackedPng, svgFiles, svgNames } = await takeSchematicSheetsSnapshot({
     circuitJson,
     files: kicadSchematicFiles,
     rootFilename: params.rootFilename,
+    sheetComparisonLayout: params.sheetComparisonLayout,
   })
   const rootSchematicName = basename(params.rootFilename, ".kicad_sch")
   expect(svgNames).toEqual([

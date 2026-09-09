@@ -7,6 +7,7 @@ import {
 import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
 import { createPolylineFromPoints } from "./createPolylineFromPoints"
+import { createRectangleFromPrimitive } from "./createRectangleFromPrimitive"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
 
 export function createDrawingSubsymbol({
@@ -38,22 +39,30 @@ export function createDrawingSubsymbol({
         createArcFromPrimitive({
           primitive,
           transform,
+          scale: symbolScale,
         }),
       )
     } else if (primitive.type === "path" && primitive.points) {
-      let fillType: "none" | "background" | "outline" = "none"
-      if (primitive.fill) {
-        fillType = "background"
-        if (primitive.kicadFillType === "outline") {
-          fillType = "outline"
-        }
-      }
       const polyline = createPolylineFromPoints({
         points: primitive.points,
         transform,
-        fillType,
+        isFilled: primitive.fill ?? false,
+        fillColor: primitive.fillColor,
+        fallbackFillType:
+          primitive.kicadFillType === "outline" ? "outline" : "background",
+        strokeWidth: primitive.strokeWidth,
+        isDashed: primitive.isDashed,
+        scale: symbolScale,
       })
       drawingSymbol.polylines.push(polyline)
+    } else if (primitive.type === "rectangle") {
+      drawingSymbol.rectangles.push(
+        createRectangleFromPrimitive({
+          primitive,
+          transform,
+          scale: symbolScale,
+        }),
+      )
     } else if (primitive.type === "circle") {
       const circle = createCircleFromPrimitive({
         primitive,

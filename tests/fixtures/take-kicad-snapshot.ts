@@ -1,7 +1,7 @@
-import { $ } from "bun"
-import { tmpdir } from "node:os"
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
+import { tmpdir } from "node:os"
 import { join } from "node:path"
+import { $ } from "bun"
 import { At, parseKicadMod, parseKicadPcb } from "kicadts"
 import sharp from "sharp"
 
@@ -64,7 +64,7 @@ const MINIMAL_PCB_TEMPLATE = `(kicad_pcb
 )
 `
 
-const getZoneFilledPolygonCountsByLayer = (
+export const getZoneFilledPolygonCountsByLayer = (
   kicadPcbContent: string,
 ): Map<string, number> => {
   const zoneFilledPolygonCountsByLayer = new Map<string, number>()
@@ -73,14 +73,15 @@ const getZoneFilledPolygonCountsByLayer = (
     const pcb = parseKicadPcb(kicadPcbContent)
 
     for (const zone of pcb.zones) {
-      const layerName = zone.layer?.names[0]
-      if (!layerName || zone.filledPolygons.length === 0) continue
+      for (const filledPolygon of zone.filledPolygons) {
+        const layerName = filledPolygon.layer?.names[0] ?? zone.layer?.names[0]
+        if (!layerName) continue
 
-      zoneFilledPolygonCountsByLayer.set(
-        layerName,
-        (zoneFilledPolygonCountsByLayer.get(layerName) ?? 0) +
-          zone.filledPolygons.length,
-      )
+        zoneFilledPolygonCountsByLayer.set(
+          layerName,
+          (zoneFilledPolygonCountsByLayer.get(layerName) ?? 0) + 1,
+        )
+      }
     }
   } catch {
     // Snapshot styling is best-effort only.
@@ -215,6 +216,7 @@ export const takeKicadSnapshot = async (params: {
   kicadFileContent?: string
   kicadFileType: "sch" | "pcb" | "3d" | "mod"
   includeSchematicDrawingSheet?: boolean
+  generatePng?: boolean
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
 }): Promise<KicadOutput> => {
@@ -223,6 +225,7 @@ export const takeKicadSnapshot = async (params: {
     kicadFileContent,
     kicadFileType,
     includeSchematicDrawingSheet = false,
+    generatePng = true,
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
   } = params
@@ -339,6 +342,11 @@ export const takeKicadSnapshot = async (params: {
             }),
           )
         : rawSvgBuffer
+      const relativeSvgPath = svgFilePath.replace(`${outputDir}/`, "")
+      if (!generatePng) {
+        generatedFileContent[relativeSvgPath] = normalizedSvgBuffer
+        continue
+      }
       let pngProcessor = sharp(normalizedSvgBuffer, { density: 100 })
 
       // For PCB files, scale 3x and add black background
@@ -369,9 +377,7 @@ export const takeKicadSnapshot = async (params: {
 
       const pngBuffer = await pngProcessor.png().toBuffer()
 
-      const relativePath = svgFilePath
-        .replace(`${outputDir}/`, "")
-        .replace(".svg", ".png")
+      const relativePath = relativeSvgPath.replace(".svg", ".png")
       generatedFileContent[relativePath] = pngBuffer
     }
 

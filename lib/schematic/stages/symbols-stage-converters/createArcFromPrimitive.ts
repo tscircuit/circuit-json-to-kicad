@@ -4,14 +4,17 @@ import { applyToPoint, type Matrix } from "transformation-matrix"
 export function createArcFromPrimitive({
   primitive,
   transform,
+  scale,
 }: {
   primitive: {
     start: { x: number; y: number }
     mid: { x: number; y: number }
     end: { x: number; y: number }
     isDashed?: boolean
+    strokeWidth?: number | null
   }
   transform: Matrix
+  scale: number
 }): SymbolArc {
   const start = applyToPoint(transform, primitive.start)
   const mid = applyToPoint(transform, primitive.mid)
@@ -23,7 +26,10 @@ export function createArcFromPrimitive({
     ["end", end.x, end.y],
     [
       "stroke",
-      ["width", 0.254],
+      [
+        "width",
+        primitive.strokeWidth == null ? 0.254 : primitive.strokeWidth * scale,
+      ],
       ["type", primitive.isDashed ? "dash" : "default"],
     ],
     ["fill", ["type", "none"]],

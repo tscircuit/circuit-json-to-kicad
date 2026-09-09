@@ -22,7 +22,12 @@ export class InitializeSchematicStage extends ConverterStage<
 
     // Set paper size from context (dynamically selected based on content)
     const paper = new Paper()
-    paper.size = schematicPaperSize?.name ?? "A4"
+    if (schematicPaperSize?.customSize) {
+      paper.customSize = schematicPaperSize.customSize
+    } else {
+      paper.size = schematicPaperSize?.name ?? "A4"
+    }
+    paper.isPortrait = schematicPaperSize?.isPortrait ?? false
     kicadSch.paper = paper
 
     // Use the provided file UUID (shared across the sheet hierarchy) or

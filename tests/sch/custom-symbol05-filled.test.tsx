@@ -82,9 +82,10 @@ test("custom-symbol05: filled path with isFilled=true", async () => {
     kicadOutput,
   )
 
-  // Verify the output contains "(fill (type background))" for the filled shape
+  // Verify the output preserves the explicit fill color.
   expect(kicadOutput).toContain("(fill")
-  expect(kicadOutput).toContain("(type background)")
+  expect(kicadOutput).toContain("(type color)")
+  expect(kicadOutput).toContain("(color 255 85 0 1)")
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: kicadOutput,

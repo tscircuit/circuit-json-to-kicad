@@ -3,6 +3,7 @@ import type {
   CadComponent,
   SourceComponentBase,
   PcbHole,
+  PcbFabricationNotePath,
   PcbSilkscreenPath,
 } from "circuit-json"
 import {
@@ -38,6 +39,7 @@ import { create3DModelsFromCadComponent } from "./footprints-stage-converters/cr
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
+import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -180,6 +182,21 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentRotation: component.rotation || 0,
       }),
     )
+
+    const fabricationNotePaths =
+      this.ctx.db.pcb_fabrication_note_path
+        ?.list()
+        .filter(
+          (path: PcbFabricationNotePath) =>
+            path.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    fpLines.push(
+      ...convertFabricationNotePaths(fabricationNotePaths, {
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
+    )
     footprint.fpLines = fpLines
 
     // Convert pads
@@ -255,7 +272,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const fpCircles = footprint.fpCircles ?? []
     fpCircles.push(
-      ...convertSilkscreenCircles(pcbSilkscreenCircles, component.center),
+      ...convertSilkscreenCircles(pcbSilkscreenCircles, {
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
     )
 
     const pcbCourtyardCircles =

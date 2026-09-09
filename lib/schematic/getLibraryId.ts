@@ -1,14 +1,14 @@
 import type {
-  SourceComponentBase,
-  SchematicComponent,
   CadComponent,
+  SchematicComponent,
+  SourceComponentBase,
   SourceSimplePinHeader,
 } from "circuit-json"
+import { symbols } from "schematic-symbols"
 import {
   getKicadCompatibleComponentName,
   getReferencePrefixForComponent,
 } from "../utils/getKicadCompatibleComponentName"
-import { symbols } from "schematic-symbols"
 
 /**
  * Checks if a symbol name is a known builtin symbol from schematic-symbols package.
@@ -85,4 +85,12 @@ export function getLibraryId(
 
   // Combine prefix with ergonomic name for the library ID
   return `Device:${refPrefix}_${ergonomicName}`
+}
+
+export function getComponentLevelLibraryId(
+  sourceComp: SourceComponentBase,
+  schematicComp: SchematicComponent,
+  cadComponent?: CadComponent | null,
+): string {
+  return `${getLibraryId(sourceComp, schematicComp, cadComponent)}_${sanitizeLibraryIdentifierPart(schematicComp.schematic_component_id)}`
 }

@@ -1,9 +1,15 @@
 export type PaperSize = "A0" | "A1" | "A2" | "A3" | "A4" | "A5"
 
 export interface PaperDimensions {
-  width: number // in mm
-  height: number // in mm
-  name: PaperSize
+  /** Effective page width after orientation, in millimeters. */
+  width: number
+  /** Effective page height after orientation, in millimeters. */
+  height: number
+  name: PaperSize | string
+  /** Raw custom dimensions written to KiCad's `(paper width height)` form. */
+  customSize?: { width: number; height: number }
+  /** Whether KiCad writes the page with its `portrait` flag. */
+  isPortrait?: boolean
 }
 
 /**

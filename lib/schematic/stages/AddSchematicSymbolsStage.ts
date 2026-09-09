@@ -28,12 +28,13 @@ import {
   getKicadCompatibleCustomSymbolName,
   getReferenceDesignator,
 } from "../../utils/getKicadCompatibleComponentName"
-import { getLibraryId } from "../getLibraryId"
+import { getComponentLevelLibraryId, getLibraryId } from "../getLibraryId"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import {
   getTextJustificationFromAnchor,
   type TextJustification,
 } from "./utils/getTextJustificationFromAnchor"
+import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -106,7 +107,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
             (el.type === "schematic_line" ||
               el.type === "schematic_circle" ||
               el.type === "schematic_arc" ||
-              el.type === "schematic_path") &&
+              el.type === "schematic_path" ||
+              el.type === "schematic_rect") &&
             el.schematic_component_id ===
               schematicComponent.schematic_component_id &&
             el.schematic_symbol_id,
@@ -134,12 +136,23 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       }
 
       // Get the appropriate library ID based on component type
-      const libId = getLibraryId(
-        sourceComponent,
-        schematicComponent,
-        cadComponent,
-        schematicSymbolName,
-      )
+      const usesComponentLevelSymbolPrimitives =
+        hasComponentLevelSymbolPrimitives(
+          this.ctx.circuitJson,
+          schematicComponent,
+        )
+      const libId = usesComponentLevelSymbolPrimitives
+        ? getComponentLevelLibraryId(
+            sourceComponent,
+            schematicComponent,
+            cadComponent,
+          )
+        : getLibraryId(
+            sourceComponent,
+            schematicComponent,
+            cadComponent,
+            schematicSymbolName,
+          )
       const symLibId = new SymbolLibId(libId)
       ;(symbol as any)._sxLibId = symLibId
 
@@ -175,7 +188,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
-      const hideGeneratedCustomReference = Boolean(schematicSymbolId)
+      const hideGeneratedCustomReference =
+        Boolean(schematicSymbolId) || usesComponentLevelSymbolPrimitives
       const referenceProperty = new SymbolProperty({
         key: "Reference",
         value: refMeta?.value ?? reference,
@@ -192,6 +206,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       const hideValue =
         Boolean(schematicSymbolId) ||
+        usesComponentLevelSymbolPrimitives ||
         (sourceComponent.ftype === "simple_chip" &&
           !hasManufacturerValueForValuePlacement) ||
         (sourceComponent.ftype === "simple_diode" &&
@@ -579,7 +594,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         (el.type === "schematic_line" ||
           el.type === "schematic_circle" ||
           el.type === "schematic_arc" ||
-          el.type === "schematic_path") &&
+          el.type === "schematic_path" ||
+          el.type === "schematic_rect") &&
         el.schematic_component_id === componentId &&
         el.schematic_symbol_id,
     )
