@@ -4,6 +4,9 @@ import {
   Property,
   TextEffects,
   TextEffectsFont,
+  EmbeddedFonts,
+  FootprintAttr,
+  FootprintModel,
 } from "kicadts"
 import type { KicadFootprintMetadata, KicadEffects } from "@tscircuit/props"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
@@ -57,11 +60,6 @@ export function applyKicadFootprintMetadata(
     }
     if (metadata.generatorVersion !== undefined) {
       footprint.generatorVersion = String(metadata.generatorVersion)
-    }
-
-    // Apply embedded fonts setting
-    if (metadata.embeddedFonts !== undefined) {
-      // The footprint already has embeddedFonts set, we just update the value
     }
 
     // Apply properties if provided
@@ -160,7 +158,11 @@ export function applyKicadFootprintMetadata(
     }
 
     // Apply attributes if provided
-    if (metadata.attributes && footprint.attr) {
+    if (metadata.attributes) {
+      if (!footprint.attr) {
+        footprint.attr = new FootprintAttr()
+      }
+
       if (metadata.attributes.through_hole) {
         footprint.attr.type = "through_hole"
       } else if (metadata.attributes.smd) {
@@ -173,6 +175,50 @@ export function applyKicadFootprintMetadata(
       if (metadata.attributes.exclude_from_bom !== undefined) {
         footprint.attr.excludeFromBom = metadata.attributes.exclude_from_bom
       }
+    }
+
+    // Apply footprint name if provided
+    if (metadata.footprintName) {
+      footprint.libraryLink = metadata.footprintName
+    }
+
+    // Apply footprint layer if provided
+    if (metadata.layer) {
+      footprint.layer = metadata.layer
+    }
+
+    // Apply embedded fonts setting
+    if (metadata.embeddedFonts !== undefined) {
+      footprint.embeddedFonts = new EmbeddedFonts(metadata.embeddedFonts)
+    }
+
+    // Apply model if provided. Prepend it so explicit metadata wins over
+    // auto-derived models from the intermediate PCB conversion.
+    if (metadata.model) {
+      const model = new FootprintModel(metadata.model.path)
+      if (metadata.model.offset) {
+        model.offset = {
+          x: Number(metadata.model.offset.x),
+          y: Number(metadata.model.offset.y),
+          z: Number(metadata.model.offset.z),
+        }
+      }
+      if (metadata.model.scale) {
+        model.scale = {
+          x: Number(metadata.model.scale.x),
+          y: Number(metadata.model.scale.y),
+          z: Number(metadata.model.scale.z),
+        }
+      }
+      if (metadata.model.rotate) {
+        model.rotate = {
+          x: Number(metadata.model.rotate.x),
+          y: Number(metadata.model.rotate.y),
+          z: Number(metadata.model.rotate.z),
+        }
+      }
+      const existingModels = footprint.models || []
+      footprint.models = [model, ...existingModels]
     }
 
     return footprint.getString()

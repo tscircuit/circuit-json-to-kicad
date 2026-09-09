@@ -81,6 +81,68 @@ async function renderSimpleLedCircuit(): Promise<CircuitJson> {
   return circuit.getCircuitJson() as CircuitJson
 }
 
+const MetadataKeySocket = () => (
+  <chip
+    name="REF**"
+    kicadFootprintMetadata={{
+      footprintName: "MX_HotSwap_Custom",
+      layer: "B.Cu",
+      embeddedFonts: true,
+      attributes: {
+        through_hole: true,
+        exclude_from_bom: true,
+        exclude_from_pos_files: true,
+      },
+      model: {
+        path: "${KIPRJMOD}/3dmodels/MetadataSocket.step",
+        offset: { x: 0, y: 0, z: 0.5 },
+        scale: { x: 1, y: 1, z: 1 },
+        rotate: { x: 0, y: 0, z: 90 },
+      },
+    }}
+    footprint={
+      <footprint>
+        <smtpad
+          shape="rect"
+          width="2.5mm"
+          height="1.2mm"
+          portHints={["pin1"]}
+          pcbX={-3.81}
+          pcbY={2.54}
+        />
+        <smtpad
+          shape="rect"
+          width="2.5mm"
+          height="1.2mm"
+          portHints={["pin2"]}
+          pcbX={2.54}
+          pcbY={5.08}
+        />
+        <hole pcbX={0} pcbY={0} diameter="4mm" />
+        <silkscreentext text="SW" pcbY={8} fontSize="1mm" />
+      </footprint>
+    }
+    cadModel={{
+      stlUrl: "/path/to/CherryMxSwitch.step",
+      rotationOffset: { x: 0, y: 0, z: 0 },
+    }}
+    pinLabels={{ pin1: "1", pin2: "2" }}
+  />
+)
+
+const MetadataKeyHotSocket = () => (
+  <board width="20mm" height="20mm">
+    <MetadataKeySocket />
+  </board>
+)
+
+async function renderMetadataKeyHotSocket(): Promise<CircuitJson> {
+  const circuit = new Circuit()
+  circuit.add(<MetadataKeyHotSocket />)
+  await circuit.renderUntilSettled()
+  return circuit.getCircuitJson() as CircuitJson
+}
+
 test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   const mockExports: Record<string, string[]> = {
     "lib/my-keyboard-library.ts": ["KeyHotSocket", "SimpleLedCircuit"],
@@ -255,4 +317,41 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
   if (symbolsFile) {
     expect(String(symbolsFile)).toContain("KeyHotSocket")
   }
+})
+
+test("KicadLibraryConverter applies metadata parity fields to custom .kicad_mod output", async () => {
+  const circuitJson = await renderMetadataKeyHotSocket()
+
+  const converter = new KicadLibraryConverter({
+    kicadLibraryName: "my-meta-library",
+    entrypoint: "lib/my-meta-library.ts",
+    getExportsFromTsxFile: async () => ["MetadataKeyHotSocket"],
+    buildFileToCircuitJson: async () => circuitJson,
+    includeBuiltins: true,
+  })
+
+  await converter.run()
+  const output = converter.getOutput()
+
+  const footprintPath =
+    "footprints/my-meta-library.pretty/MX_HotSwap_Custom.kicad_mod"
+
+  expect(Object.keys(output.kicadProjectFsMap)).toContain(footprintPath)
+  expect(Object.keys(output.kicadProjectFsMap)).not.toContain(
+    "footprints/my-meta-library.pretty/MetadataKeyHotSocket.kicad_mod",
+  )
+
+  const footprintStr = String(output.kicadProjectFsMap[footprintPath])
+  expect(footprintStr).toContain('"MX_HotSwap_Custom"')
+  expect(footprintStr).toContain("(layer B.Cu)")
+  expect(footprintStr).toContain("(embedded_fonts yes)")
+  expect(footprintStr).toContain("(attr through_hole")
+  expect(footprintStr).toContain("exclude_from_bom")
+  expect(footprintStr).toContain("exclude_from_pos_files")
+  expect(footprintStr).toContain(
+    '"../../3dmodels/my-meta-library.3dshapes/MetadataSocket.step"',
+  )
+  expect(footprintStr).toContain("(xyz 0 0 0.5)")
+  expect(footprintStr).toContain("(xyz 1 1 1)")
+  expect(footprintStr).toContain("(xyz 0 0 90)")
 })
