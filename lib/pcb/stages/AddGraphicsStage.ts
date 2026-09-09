@@ -39,7 +39,7 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
   return dedupedCorners
 }
 
-const EDGE_CUTS_WIDTH = 0.1
+const DEFAULT_EDGE_CUTS_STROKE_WIDTH = 0.1
 
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
@@ -95,6 +95,8 @@ const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
 export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
   override _step(): void {
     const { kicadPcb, c2kMatPcb } = this.ctx
+    const edgeCutsStrokeWidth =
+      this.ctx.edgeCutsStrokeWidth ?? DEFAULT_EDGE_CUTS_STROKE_WIDTH
 
     if (!kicadPcb) {
       throw new Error("KicadPcb instance not initialized in context")
@@ -253,7 +255,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
               start: { x: start.x, y: start.y },
               end: { x: end.x, y: end.y },
               layer: "Edge.Cuts",
-              width: EDGE_CUTS_WIDTH,
+              width: edgeCutsStrokeWidth,
             })
 
             appendGraphicLine(kicadPcb, edgeLine)
@@ -285,7 +287,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
               start: transformedStart,
               end: transformedEnd,
               layer: "Edge.Cuts",
-              width: EDGE_CUTS_WIDTH,
+              width: edgeCutsStrokeWidth,
             }),
           )
         }
