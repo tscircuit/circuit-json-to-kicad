@@ -8,6 +8,7 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { finiteOr } from "./utils/finiteOr"
 import {
   getKicadLayer,
   getViaLayers,
@@ -201,8 +202,11 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const viaLayers = this.getKicadViaLayers(via)
 
     // Preserve explicit Circuit JSON via dimensions; only fall back when absent.
-    const viaSize = via.outer_diameter ?? 0.8
-    const viaDrill = via.hole_diameter ?? 0.4
+    // `??` alone is not enough: an unparseable user value (e.g. holeDiameter="abc")
+    // arrives here as NaN, not null/undefined, and would be written straight into
+    // the .kicad_pcb as `(drill NaN)`, which KiCad refuses to open.
+    const viaSize = finiteOr(via.outer_diameter, 0.8, "pcb_via.outer_diameter")
+    const viaDrill = finiteOr(via.hole_diameter, 0.4, "pcb_via.hole_diameter")
 
     // Create a via with deterministic UUID
     const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}`

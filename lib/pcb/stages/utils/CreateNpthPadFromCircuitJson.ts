@@ -1,6 +1,9 @@
 import { FootprintPad, PadDrill } from "kicadts"
 import type { PcbHole } from "circuit-json"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
+import { finiteOr } from "./finiteOr"
+
+const DEFAULT_HOLE_DIMENSION_MM = 1.0
 
 export function createNpthPadFromCircuitJson({
   pcbHole,
@@ -38,7 +41,11 @@ export function createNpthPadFromCircuitJson({
   if (pcbHole.hole_shape === "circle") {
     // Circular non-plated hole
     padShape = "circle"
-    const diameter = pcbHole.hole_diameter
+    const diameter = finiteOr(
+      pcbHole.hole_diameter,
+      DEFAULT_HOLE_DIMENSION_MM,
+      "pcb_hole.hole_diameter",
+    )
     padSize = [diameter, diameter]
     drill = new PadDrill({
       diameter: diameter,
@@ -46,8 +53,16 @@ export function createNpthPadFromCircuitJson({
   } else if (pcbHole.hole_shape === "oval" || pcbHole.hole_shape === "pill") {
     // Oval or Pill-shaped non-plated hole
     padShape = "oval"
-    const width = pcbHole.hole_width
-    const height = pcbHole.hole_height
+    const width = finiteOr(
+      pcbHole.hole_width,
+      DEFAULT_HOLE_DIMENSION_MM,
+      "pcb_hole.hole_width",
+    )
+    const height = finiteOr(
+      pcbHole.hole_height,
+      DEFAULT_HOLE_DIMENSION_MM,
+      "pcb_hole.hole_height",
+    )
     padSize = [width, height]
     drill = new PadDrill({
       oval: true,
@@ -57,8 +72,16 @@ export function createNpthPadFromCircuitJson({
   } else if (pcbHole.hole_shape === "rotated_pill") {
     // Rotated pill-shaped non-plated hole
     padShape = "oval"
-    const width = pcbHole.hole_width
-    const height = pcbHole.hole_height
+    const width = finiteOr(
+      pcbHole.hole_width,
+      DEFAULT_HOLE_DIMENSION_MM,
+      "pcb_hole.hole_width",
+    )
+    const height = finiteOr(
+      pcbHole.hole_height,
+      DEFAULT_HOLE_DIMENSION_MM,
+      "pcb_hole.hole_height",
+    )
     padSize = [width, height]
     drill = new PadDrill({
       oval: true,
@@ -69,7 +92,11 @@ export function createNpthPadFromCircuitJson({
   } else {
     // Default fallback for unknown shapes
     padShape = "circle"
-    const diameter = "hole_diameter" in pcbHole ? pcbHole.hole_diameter : 1.0
+    const diameter = finiteOr(
+      "hole_diameter" in pcbHole ? pcbHole.hole_diameter : undefined,
+      DEFAULT_HOLE_DIMENSION_MM,
+      "pcb_hole.hole_diameter",
+    )
     padSize = [diameter, diameter]
     drill = new PadDrill({ diameter: diameter })
   }
