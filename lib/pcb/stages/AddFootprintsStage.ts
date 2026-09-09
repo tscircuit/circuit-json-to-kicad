@@ -11,7 +11,7 @@ import {
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FootprintModel } from "kicadts"
+import { Footprint, FootprintModel, FpRect, type FpPoly } from "kicadts"
 import {
   MODEL_CDN_BASE_URL,
   getBasename,
@@ -299,7 +299,15 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     const fpRects = footprint.fpRects ?? []
-    fpRects.push(...convertFabricationNoteRects(pcbFabRects, component.center))
+    const rectanglePolys: FpPoly[] = []
+    const rectanglePlacement = {
+      componentCenter: component.center,
+      componentRotation: component.rotation || 0,
+    }
+    const fabricationRectangles = convertFabricationNoteRects(
+      pcbFabRects,
+      rectanglePlacement,
+    )
 
     const pcbNoteRects =
       this.ctx.db.pcb_note_rect
@@ -308,7 +316,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertNoteRects(pcbNoteRects, component.center))
+    const noteRectangles = convertNoteRects(pcbNoteRects, rectanglePlacement)
 
     const pcbCourtyardRects =
       this.ctx.db.pcb_courtyard_rect
@@ -317,7 +325,18 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertCourtyardRects(pcbCourtyardRects, component.center))
+    const courtyardRectangles = convertCourtyardRects(
+      pcbCourtyardRects,
+      rectanglePlacement,
+    )
+    for (const rectangle of [
+      ...fabricationRectangles,
+      ...noteRectangles,
+      ...courtyardRectangles,
+    ]) {
+      if (rectangle instanceof FpRect) fpRects.push(rectangle)
+      else rectanglePolys.push(rectangle)
+    }
     footprint.fpRects = fpRects
 
     // Convert polygons
@@ -335,8 +354,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentRotation: component.rotation || 0,
     })
 
-    if (fpPolys.length > 0) {
-      footprint.fpPolys = fpPolys
+    if (fpPolys.length > 0 || rectanglePolys.length > 0) {
+      footprint.fpPolys = [...rectanglePolys, ...fpPolys]
     }
 
     // Add 3D models
