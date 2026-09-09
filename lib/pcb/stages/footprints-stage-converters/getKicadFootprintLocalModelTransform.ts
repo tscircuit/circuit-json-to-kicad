@@ -26,7 +26,7 @@ function applyCadRotationToPoint(point: Point3, rotation: Point3): Point3 {
 interface KicadFootprintTransformOptions {
   componentCenter: { x: number; y: number }
   footprintRotation: number
-  boardSurfaceZ: number
+  boardLayerZOffset: number
   layer: "top" | "bottom"
 }
 
@@ -35,7 +35,7 @@ export function getKicadFootprintLocalModelTransform(
   {
     componentCenter,
     footprintRotation,
-    boardSurfaceZ,
+    boardLayerZOffset,
     layer,
   }: KicadFootprintTransformOptions,
 ): { offset: Point3; rotation: Point3 } {
@@ -76,7 +76,7 @@ export function getKicadFootprintLocalModelTransform(
   const localPosition = toLocal({
     x: position.x - componentCenter.x,
     y: position.y - componentCenter.y,
-    z: position.z - boardSurfaceZ,
+    z: position.z - boardLayerZOffset,
   })
   // The origin is subtracted before CAD rotation, not in world coordinates.
   const localOrigin = modelToLocal(origin)

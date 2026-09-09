@@ -32,7 +32,7 @@ export function create3DModelsFromCadComponent(
   cadComponent: CadComponent,
   componentCenter: { x: number; y: number },
   options: {
-    boardSurfaceZ: number
+    boardLayerZOffset?: number
     footprintRotation: number
     layer: "top" | "bottom"
   },
@@ -47,10 +47,11 @@ export function create3DModelsFromCadComponent(
 
   const model = new FootprintModel(modelUrl)
 
+  const boardLayerZOffset = options.boardLayerZOffset ?? 0
   const transform = getKicadFootprintLocalModelTransform(cadComponent, {
     componentCenter,
     footprintRotation: options.footprintRotation,
-    boardSurfaceZ: options.boardSurfaceZ,
+    boardLayerZOffset,
     layer: options.layer,
   })
   model.offset = transform.offset

@@ -342,7 +342,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       // model offsets are relative to the surface containing the footprint.
       const pcbBoard = this.ctx.db.pcb_board?.list()[0]
       const boardThickness = pcbBoard?.thickness ?? 0
-      const boardSurfaceZ =
+      const boardLayerZOffset =
         component.layer === "bottom"
           ? -(boardThickness / 2)
           : boardThickness / 2
@@ -350,7 +350,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         cadComponent,
         component.center,
         {
-          boardSurfaceZ,
+          boardLayerZOffset,
           footprintRotation: component.rotation || 0,
           layer: component.layer,
         },
