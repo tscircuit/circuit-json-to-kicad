@@ -201,6 +201,14 @@ async function createConvertedSchematicSvgs({
   ]
 
   const sourcePageByFilename = new Map<string, number>()
+  const sourceSheetByFilename = new Map(
+    rootSchematic.sheets.flatMap((sheet) => {
+      const sourceFilename = sheet.properties.find(
+        (property) => property.key === "Sheet file",
+      )?.value
+      return sourceFilename ? [[sourceFilename, sheet] as const] : []
+    }),
+  )
   const sourceSheetInstances = rootSchematic.sheetInstances[0]
   for (const sheet of rootSchematic.sheets) {
     const sourceFilename = sheet.properties.find(
@@ -251,8 +259,22 @@ async function createConvertedSchematicSvgs({
         schematicSheetId,
       ) as Record<string, unknown>[]),
     )
+    const sourceSheet = sourceSheetByFilename.get(sourceFilename)
+    const sourceSheetPosition = sourceSheet?.position
+    const sourceSheetSize = sourceSheet?.size
     schematicSheets.push({
       circuitOrigin: KICAD_TO_CIRCUIT_JSON_ORIGIN_MM,
+      ...(sourceSheetPosition && sourceSheetSize
+        ? {
+            hierarchyNode: {
+              position: {
+                x: sourceSheetPosition.x,
+                y: sourceSheetPosition.y,
+              },
+              size: sourceSheetSize,
+            },
+          }
+        : {}),
       schematicSheetId,
     })
     sheetIndex += 1
