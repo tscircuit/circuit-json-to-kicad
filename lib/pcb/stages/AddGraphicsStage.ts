@@ -6,6 +6,7 @@ import type {
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { GrCircle, GrLine, GrPoly } from "kicadts"
+import { convertStandaloneFabricationNotePaths } from "./graphics-stage-converters/convertStandaloneFabricationNotePaths"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint, rotate } from "transformation-matrix"
@@ -182,6 +183,12 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         kicadPcb.graphicTexts = graphicTexts
       }
     }
+
+    const fabricationLines = convertStandaloneFabricationNotePaths({
+      fabricationNotePaths: this.ctx.db.pcb_fabrication_note_path.list(),
+      c2kMatPcb,
+    })
+    for (const line of fabricationLines) appendGraphicLine(kicadPcb, line)
 
     // Add board outline from pcb_board
     const pcbBoards = this.ctx.db.pcb_board?.list() || []
