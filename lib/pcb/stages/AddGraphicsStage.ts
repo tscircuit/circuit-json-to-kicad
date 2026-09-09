@@ -12,6 +12,7 @@ import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
 import polygonClipping, { type Geom } from "polygon-clipping"
+import { convertStandaloneSilkscreenPrimitives } from "./graphics-stage-converters/convertStandaloneSilkscreenPrimitives"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -103,6 +104,15 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (!c2kMatPcb) {
       throw new Error("PCB transformation matrix not initialized in context")
     }
+
+    const { graphicLines, graphicCircles } =
+      convertStandaloneSilkscreenPrimitives({
+        silkscreenLines: this.ctx.db.pcb_silkscreen_line.list(),
+        silkscreenCircles: this.ctx.db.pcb_silkscreen_circle.list(),
+        c2kMatPcb,
+      })
+    kicadPcb.graphicLines = [...kicadPcb.graphicLines, ...graphicLines]
+    kicadPcb.graphicCircles = [...kicadPcb.graphicCircles, ...graphicCircles]
 
     // Get PCB board silkscreen paths if they exist
     const pcbSilkscreenPaths =

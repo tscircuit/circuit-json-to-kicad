@@ -8,7 +8,10 @@ interface ConvertSilkscreenPathsOptions {
 }
 
 export function convertSilkscreenPaths(
-  silkscreenPaths: PcbSilkscreenPath[],
+  silkscreenPaths: Pick<
+    PcbSilkscreenPath,
+    "route" | "layer" | "stroke_width"
+  >[],
   { componentCenter, componentRotation = 0 }: ConvertSilkscreenPathsOptions,
 ): FpLine[] {
   const fpLines: FpLine[] = []
