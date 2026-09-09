@@ -167,9 +167,11 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add fabrication note text elements
+    // Component-owned fabrication notes are emitted inside their footprints.
     const fabricationNoteTexts =
-      this.ctx.db.pcb_fabrication_note_text?.list() || []
+      this.ctx.db.pcb_fabrication_note_text
+        ?.list()
+        .filter((text) => !text.pcb_component_id) || []
 
     for (const textElement of fabricationNoteTexts) {
       const grText = createFabricationNoteTextFromCircuitJson({

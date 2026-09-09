@@ -1,17 +1,20 @@
-import type { PcbSilkscreenText } from "circuit-json"
+import type { PcbFabricationNoteText, PcbSilkscreenText } from "circuit-json"
 import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 import { createPcbTextJustify } from "./CreatePcbTextJustify"
 
 /**
- * Creates a KiCad fp_text (footprint text) element from a circuit JSON pcb_silkscreen_text
+ * Creates footprint-local KiCad text from board-space silkscreen or fabrication
+ * text. Positions are in mm: Circuit JSON has +X right and +Y up; KiCad has +X
+ * right and +Y down. Undo the parent placement rotation for the local anchor;
+ * KiCad text angles retain the board-space CCW rotation in degrees.
  */
 export function createFpTextFromCircuitJson({
   textElement,
   componentCenter,
   componentRotation = 0,
 }: {
-  textElement: PcbSilkscreenText
+  textElement: PcbSilkscreenText | PcbFabricationNoteText
   componentCenter: { x: number; y: number }
   componentRotation?: number
 }): FpText | null {
@@ -41,10 +44,10 @@ export function createFpTextFromCircuitJson({
   }
 
   // Map circuit JSON layer names to KiCad layer names
-  const layerMap: Record<string, string> = {
-    top: "F.SilkS",
-    bottom: "B.SilkS",
-  }
+  const isFabricationNote = textElement.type === "pcb_fabrication_note_text"
+  const layerMap: Record<string, string> = isFabricationNote
+    ? { top: "F.Fab", bottom: "B.Fab" }
+    : { top: "F.SilkS", bottom: "B.SilkS" }
   const kicadLayer =
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
 
@@ -58,7 +61,8 @@ export function createFpTextFromCircuitJson({
   const justify = createPcbTextJustify({
     anchorAlignment: textElement.anchor_alignment,
     kicadLayer,
-    isMirrored: textElement.is_mirrored,
+    // Fabrication notes retain the existing readable, unmirrored convention.
+    isMirrored: isFabricationNote ? false : textElement.is_mirrored,
   })
   if (justify) {
     textEffects.justify = justify
