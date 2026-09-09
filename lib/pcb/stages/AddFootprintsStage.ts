@@ -11,7 +11,13 @@ import {
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FootprintModel } from "kicadts"
+import {
+  Footprint,
+  FootprintModel,
+  FpText,
+  TextEffects,
+  TextEffectsFont,
+} from "kicadts"
 import {
   MODEL_CDN_BASE_URL,
   getBasename,
@@ -40,6 +46,42 @@ import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
+import { createPcbTextJustify } from "./utils/CreatePcbTextJustify"
+
+const REFERENCE_FONT_SIZE = 0.4
+const REFERENCE_TEXT_CLEARANCE = 0.7
+
+function createFallbackReferenceText({
+  reference,
+  componentHeight,
+  layer,
+}: {
+  reference: string
+  componentHeight: number
+  layer: "F.SilkS" | "B.SilkS"
+}): FpText {
+  const font = new TextEffectsFont()
+  font.size = { width: REFERENCE_FONT_SIZE, height: REFERENCE_FONT_SIZE }
+  font.thickness = 0.15
+
+  const effects = new TextEffects({ font })
+  effects.justify = createPcbTextJustify({ kicadLayer: layer })
+
+  return new FpText({
+    type: "reference",
+    text: reference,
+    position: {
+      x: 0,
+      y: -(
+        componentHeight / 2 +
+        REFERENCE_TEXT_CLEARANCE +
+        REFERENCE_FONT_SIZE / 2
+      ),
+    },
+    layer,
+    effects,
+  })
+}
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -164,6 +206,30 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentRotation: component.rotation || 0,
       }),
     )
+
+    const componentName =
+      typeof component.name === "string" ? component.name.trim() : ""
+    const reference =
+      componentName ||
+      (sourceComponent ? getReferenceDesignator(sourceComponent) : "")
+
+    if (reference) {
+      const referenceText = fpTexts.find((text) => text.type === "reference")
+
+      if (referenceText) {
+        if (!referenceText.text.trim()) {
+          referenceText.text = reference
+        }
+      } else {
+        fpTexts.push(
+          createFallbackReferenceText({
+            reference,
+            componentHeight: component.height,
+            layer: component.layer === "bottom" ? "B.SilkS" : "F.SilkS",
+          }),
+        )
+      }
+    }
 
     footprint.fpTexts = fpTexts
 

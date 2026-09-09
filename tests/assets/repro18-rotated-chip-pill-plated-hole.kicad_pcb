@@ -99,6 +99,18 @@
         )
       )
     )
+    (fp_text
+      reference
+      "U1"
+      (at 0 -1.8999979999999999)
+      (layer F.SilkS)
+      (effects
+        (font
+          (size 0.4 0.4)
+          (thickness 0.15)
+        )
+      )
+    )
     (pad "13" thru_hole oval
       (at 0 0 270)
       (size 1.0999978 1.999996)

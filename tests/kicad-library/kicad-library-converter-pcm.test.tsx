@@ -340,6 +340,18 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           )
         )
       )
+      (fp_text
+        reference
+        "REF**"
+        (at 0 -4.74)
+        (layer F.SilkS)
+        (effects
+          (font
+            (size 0.4 0.4)
+            (thickness 0.15)
+          )
+        )
+      )
       (pad "1" smd rect
         (at -3.175 -0.7000000000000002 0)
         (size 2.5 1.2)
