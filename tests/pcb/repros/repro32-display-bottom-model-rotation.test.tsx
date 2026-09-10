@@ -4,7 +4,6 @@ import { createHash } from "node:crypto"
 import { resolve } from "node:path"
 import { gunzipSync } from "node:zlib"
 import sharp from "sharp"
-import looksSame from "looks-same"
 import {
   convertCircuitJsonToGltf,
   getBestCameraPosition,
@@ -12,6 +11,7 @@ import {
 import { renderGLTFToPNGFromGLB } from "poppygl"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { HS154L03W2C01 } from "./assets/hs154l03w2c01"
 
 test("pcb repro32 display screen faces outward on both board sides", async () => {
@@ -143,39 +143,15 @@ test("pcb repro32 display screen faces outward on both board sides", async () =>
       } finally {
         server.stop(true)
       }
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="664" viewBox="0 0 400 664">
-<rect width="400" height="664" fill="white"/>
-<g font-family="sans-serif" font-size="18" fill="black">
-<text x="12" y="23">Circuit JSON — bottom view</text>
-<text x="12" y="355">KiCad — bottom view</text>
-</g>
-<image x="0" y="32" width="400" height="300" href="data:image/png;base64,${reference.toString("base64")}"/>
-<image x="0" y="364" width="400" height="300" href="data:image/png;base64,${image.toString("base64")}"/>
-</svg>`
+      const comparisonPng = await stackCircuitJsonKicadPngs(reference, image)
       await Bun.write(
-        resolve("debug-output/repro32/display-bottom-comparison.svg"),
-        svg,
+        resolve("debug-output/repro32/display-bottom-comparison.png"),
+        comparisonPng,
       )
-      const snapshot = Bun.file(
-        resolve(
-          import.meta.dir,
-          "__snapshots__/repro32-display-bottom-comparison.snap.svg",
-        ),
+      await expect(comparisonPng).toMatchPngSnapshot(
+        import.meta.path,
+        "repro32-display-bottom-comparison",
       )
-      if (process.env.BUN_UPDATE_SNAPSHOTS || !(await snapshot.exists())) {
-        await Bun.write(snapshot, svg)
-      } else {
-        const expected = await sharp(Buffer.from(await snapshot.text()))
-          .png()
-          .toBuffer()
-        const received = await sharp(Buffer.from(svg)).png().toBuffer()
-        const comparison = await looksSame(expected, received, {
-          strict: false,
-          tolerance: 5,
-          antialiasingTolerance: 4,
-        })
-        expect(comparison.equal).toBe(true)
-      }
     }
   }
   expect(observations).toMatchSnapshot()
