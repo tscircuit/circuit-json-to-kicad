@@ -60,6 +60,9 @@ export interface ConverterContext {
   /** Circuit JSON to KiCad PCB transformation matrix */
   c2kMatPcb?: Matrix
 
+  /** Stroke width written for board and cutout geometry on Edge.Cuts. */
+  edgeCutsStrokeWidth?: number
+
   /** Selected paper size for schematic */
   schematicPaperSize?: PaperDimensions
 
