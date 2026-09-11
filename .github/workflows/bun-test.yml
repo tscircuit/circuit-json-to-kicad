@@ -57,5 +57,6 @@ jobs:
             tests/**/__snapshots__/*.snap.png
             tests/**/__snapshots__/*.snap.svg
             tests/**/__snapshots__/*.received.svg
+            tests/**/__snapshots__/*.received.png
             tests/**/__snapshots__/*.diff.png
           if-no-files-found: ignore
