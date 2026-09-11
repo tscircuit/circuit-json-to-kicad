@@ -11,7 +11,10 @@ import {
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FootprintModel } from "kicadts"
+import { Footprint, FootprintModel, FpPoly } from "kicadts"
+import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
+import { createSilkscreenTextPolygons } from "./utils/createSilkscreenTextPolygons"
+import { compose, rotate, scale, translate } from "transformation-matrix"
 import {
   MODEL_CDN_BASE_URL,
   getBasename,
@@ -32,7 +35,6 @@ import { convertFabricationNoteRects } from "./footprints-stage-converters/conve
 import { convertNoteRects } from "./footprints-stage-converters/convertNoteRects"
 import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
-import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
 import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
@@ -141,14 +143,22 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (text: any) => text.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpTexts.push(
-      ...convertSilkscreenTexts({
-        silkscreenTexts: pcbSilkscreenTexts,
-        componentCenter: component.center,
-        componentRotation: component.rotation || 0,
-        sourceComponentName: sourceComponent?.name,
-      }),
-    )
+    // Reference designators must remain editable for KiCad annotation and
+    // library REF** substitution; only user lettering becomes outlines.
+    {
+      fpTexts.push(
+        ...convertSilkscreenTexts({
+          silkscreenTexts: pcbSilkscreenTexts.filter(
+            (text) =>
+              this.ctx.silkscreenTextMode === "native" ||
+              text.text === sourceComponent?.name,
+          ),
+          componentCenter: component.center,
+          componentRotation: component.rotation || 0,
+          sourceComponentName: sourceComponent?.name,
+        }),
+      )
+    }
 
     const pcbNoteTexts =
       this.ctx.db.pcb_note_text
@@ -334,6 +344,33 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentCenter: component.center,
       componentRotation: component.rotation || 0,
     })
+
+    const textTransform = compose(
+      rotate(((component.rotation || 0) * Math.PI) / 180),
+      scale(1, -1),
+      translate(-component.center.x, -component.center.y),
+    )
+    for (const text of this.ctx.silkscreenTextMode === "native"
+      ? []
+      : pcbSilkscreenTexts.filter(
+          (text) => text.text !== sourceComponent?.name,
+        )) {
+      createSilkscreenTextPolygons(text, textTransform).forEach(
+        (points, index) => {
+          fpPolys.push(
+            new FpPoly({
+              points,
+              layer: text.layer === "bottom" ? "B.SilkS" : "F.SilkS",
+              width: 0,
+              fill: true,
+              uuid: generateDeterministicUuid(
+                `${text.pcb_silkscreen_text_id}:glyph:${index}`,
+              ),
+            }),
+          )
+        },
+      )
+    }
 
     if (fpPolys.length > 0) {
       footprint.fpPolys = fpPolys

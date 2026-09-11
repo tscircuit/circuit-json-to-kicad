@@ -77,7 +77,9 @@ test(
   async () => {
     const circuitJson = await createRepro26CircuitJson()
 
-    const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+    const converter = new CircuitJsonToKicadPcbConverter(circuitJson, {
+      silkscreenTextMode: "native",
+    })
     converter.runUntilFinished()
 
     const outputString = converter.getOutputString()

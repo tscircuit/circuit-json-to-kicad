@@ -46,6 +46,7 @@ export interface KicadLibraryOutput {
 }
 
 export interface ConverterContext {
+  silkscreenTextMode?: "outline" | "native"
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
   kicadSch?: KicadSch

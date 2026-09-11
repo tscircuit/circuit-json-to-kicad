@@ -1,3 +1,4 @@
+import { summarizeFootprintSilkscreen } from "../fixtures/summarize-footprint-silkscreen"
 import { test, expect } from "bun:test"
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
@@ -155,7 +156,7 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
     )
 
     // Snapshot the KeyHotSocket footprint with metadata
-    expect(footprintStr).toMatchInlineSnapshot(`
+    expect(summarizeFootprintSilkscreen(footprintStr)).toMatchInlineSnapshot(`
       "(footprint
         "KeyHotSocket"
         (version 20240108)
@@ -213,18 +214,6 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
             )
           )
         )
-        (fp_text
-          user
-          "SW"
-          (at 0.6350000000000002 -6.16 0)
-          (layer F.SilkS)
-          (effects
-            (font
-              (size 1 0.43530150753768837)
-              (thickness 0.125)
-            )
-          )
-        )
         (pad "1" smd rect
           (at -3.175 -0.7000000000000002 0)
           (size 2.5 1.2)
@@ -244,7 +233,9 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           (layers *.Cu *.Mask)
           (uuid 51b679a0-2a9d-c901-0385-18622393983d)
         )
-      )"
+      )
+      Silkscreen polygons: 220
+      Silkscreen geometry SHA256: b0592b11a4ec4370758ed0e7361ffe586385d49ba8cae89e8771020ab923117b"
     `)
   }
 

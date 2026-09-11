@@ -237,20 +237,34 @@ Some interoperability test artifacts are generated from assets by KiCad. See [Ki
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
 
-### Silkscreen text metrics
+### Silkscreen font specification
 
-Silkscreen exports use editable native KiCad stroke text, which differs from the
-Arial/sans-serif text used in the PCB SVG preview. For plain printable ASCII,
-export fits each line within the source's estimated `0.6 * font_size` allocation
-per character, using measured KiCad stroke-font advances and bounding-box pen
-allowance. It only reduces horizontal size; the requested text height is retained.
-Stroke thickness scales with height (`font_size / 8`, or 0.10 mm at 0.8 mm height).
-This applies to both standalone and footprint silkscreen text.
+By default, silkscreen text is exported as filled polygons using the compiled
+`TscircuitAlphabet` font bundled in `@tscircuit/alphabet`. `font_size` is the font's
+em size in millimetres, not a forced cap height or character width. Glyph shapes,
+advance widths, counters, and line spacing come from the font itself; both axes
+are scaled equally. Export never compresses lettering to an estimated allocation.
+The same geometry is used for standalone and footprint user lettering, including
+rotation, anchors, and explicit mirroring. Reference designators remain native
+text so KiCad annotation and library `REF**` substitution continue to work.
+Unsupported characters use the font's
+missing-glyph outline, and KiCad markup is rendered literally.
 
-This is an approximate layout match, not preservation of the SVG glyph outlines.
-Unicode, tabs, and KiCad markup/variables retain native width because their metrics
-are not covered by the ASCII table. Multiline text retains KiCad's native line
-spacing. Review those cases in KiCad. No DRC rules are changed or suppressed.
+This makes output independent of installed fonts and KiCad stroke-width clamping.
+Lettering remains graphics in KiCad: edit the source text and re-export to change
+it. As with any outlined text, native text-height/thickness DRC checks do not apply;
+graphic clearance checks still apply. No DRC rules are changed. Font weight is
+preserved from the bundled font, not increased to satisfy a manufacturing limit.
 
-The optional native metrics regression test uses Python's `pcbnew` module; set
+Exact preview/export agreement requires the preview to use this same compiled
+font and layout. Older `circuit-to-svg` versions use Arial/sans-serif and will
+still differ; their preview is not a reliable geometry reference for this mode.
+
+For editable text, use `new CircuitJsonToKicadPcbConverter(circuitJson, {
+silkscreenTextMode: "native" })`. Native mode preserves equal horizontal/vertical
+size and retains the previous 0.15 mm stroke (capped at one quarter of the size
+for small text), without width fitting.
+Its font metrics differ from the bundled font and must be reviewed in KiCad.
+
+The optional native geometry regression uses Python's `pcbnew` module. Set
 `KICAD_PYTHON` if it is installed under a different Python executable.

@@ -65,7 +65,7 @@ const createRepro27CircuitJson = async () => {
 }
 
 test(
-  "pcb repro27 preserves text height and fits silkscreen width",
+  "pcb repro27 preserves silkscreen outlines and native fabrication text",
   async () => {
     const circuitJson = await createRepro27CircuitJson()
 
@@ -74,12 +74,10 @@ test(
 
     const outputString = converter.getOutputString()
 
-    expect(outputString).toMatch(
-      /\(gr_text\s+"REV A 2026-07"[\s\S]*?\(size 0\.8 0\.[0-7][0-9]*\)[\s\S]*?\(thickness 0\.1\)/,
-    )
-    expect(outputString).toMatch(
-      /\(fp_text\s+user\s+"FOOTPRINT SILK"[\s\S]*?\(size 0\.8 0\.[0-7][0-9]*\)[\s\S]*?\(thickness 0\.1\)/,
-    )
+    expect(outputString).toContain("(gr_poly")
+    expect(outputString).toContain("(fp_poly")
+    expect(outputString).not.toMatch(/\(gr_text\s+"REV A 2026-07"/)
+    expect(outputString).not.toMatch(/\(fp_text\s+user\s+"FOOTPRINT SILK"/)
     expect(outputString).toMatch(
       /\(gr_text\s+"FAB NOTE"[\s\S]*?\(layer F\.Fab\)[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
     )

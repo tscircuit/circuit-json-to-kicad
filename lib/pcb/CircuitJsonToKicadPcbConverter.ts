@@ -14,6 +14,8 @@ import { AddStandalonePcbElements } from "./stages/AddStandalonePcbElements"
 import { AddGraphicsStage } from "./stages/AddGraphicsStage"
 
 interface CircuitJsonToKicadPcbOptions {
+  /** Preserve bundled glyph outlines (default), or use editable native KiCad text. */
+  silkscreenTextMode?: "outline" | "native"
   /**
    * Set to true to embed "${KIPRJMOD}/3dmodels" 3D model references for
    * builtin footprints. Enable this in the CLI zip export.
@@ -61,6 +63,7 @@ export class CircuitJsonToKicadPcbConverter {
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
       projectName: options?.projectName,
+      silkscreenTextMode: options?.silkscreenTextMode ?? "outline",
       pcbModel3dSourcePaths: [],
     }
 

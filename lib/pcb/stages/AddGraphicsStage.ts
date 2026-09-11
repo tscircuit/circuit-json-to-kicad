@@ -10,6 +10,8 @@ import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
+import { createSilkscreenTextPolygons } from "./utils/createSilkscreenTextPolygons"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { circleToPolygon } from "./utils/circleToPolygon"
 import polygonClipping, { type Geom } from "polygon-clipping"
 
@@ -156,15 +158,26 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         .filter((text: any) => !text.pcb_component_id) || []
 
     for (const textElement of standaloneSilkscreenTexts) {
-      const grText = createGrTextFromCircuitJson({
-        textElement,
-        c2kMatPcb,
-      })
-      if (grText) {
-        const graphicTexts = kicadPcb.graphicTexts
-        graphicTexts.push(grText)
-        kicadPcb.graphicTexts = graphicTexts
+      if (this.ctx.silkscreenTextMode === "native") {
+        const text = createGrTextFromCircuitJson({ textElement, c2kMatPcb })
+        if (text) kicadPcb.graphicTexts = [...kicadPcb.graphicTexts, text]
+        continue
       }
+      const polygons = createSilkscreenTextPolygons(textElement, c2kMatPcb)
+      polygons.forEach((points, index) =>
+        appendGraphicPoly(
+          kicadPcb,
+          new GrPoly({
+            points,
+            layer: textElement.layer === "bottom" ? "B.SilkS" : "F.SilkS",
+            width: 0,
+            fill: true,
+            uuid: generateDeterministicUuid(
+              `${textElement.pcb_silkscreen_text_id}:glyph:${index}`,
+            ),
+          }),
+        ),
+      )
     }
 
     // Add fabrication note text elements
