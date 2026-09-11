@@ -87,6 +87,11 @@ export interface CircuitJsonToKicadSchConverterOptions {
 export interface KicadSchematicSheetOptions {
   /** Position of Circuit JSON (0, 0) on the KiCad page, in millimeters. */
   circuitOrigin: Point
+  /** Geometry of this child sheet's hierarchy node on the root page. */
+  hierarchyNode?: {
+    position: Point
+    size: { height: number; width: number }
+  }
   /** Omit for a standalone schematic or the root sheet. */
   schematicSheetId?: string
 }
@@ -298,6 +303,7 @@ export class CircuitJsonToKicadSchConverter {
     const { nodes: childSheetNodes, extentMm } = buildChildSheetNodes(
       children,
       rootUuid,
+      this.options.schematicSheets,
     )
     const rootSch = this.buildSheetFile({
       circuitJson: partitionCircuitJsonBySheet(this.circuitJson, null),

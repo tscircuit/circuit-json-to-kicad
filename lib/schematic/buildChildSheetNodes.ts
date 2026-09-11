@@ -15,6 +15,7 @@ import {
   TextEffectsJustify,
 } from "kicadts"
 import type { ChildSchematicSheetPlanEntry } from "./buildSchematicSheetPlan"
+import type { KicadSchematicSheetOptions } from "./CircuitJsonToKicadSchConverter"
 
 // Sheet box + grid layout constants (millimeters)
 const BOX_WIDTH = 40
@@ -39,6 +40,8 @@ function buildSheetNode(
   rootUuid: string,
   x: number,
   y: number,
+  width: number,
+  height: number,
 ): Sheet {
   const stroke = new Stroke()
   stroke.width = SHEET_BORDER_WIDTH
@@ -59,7 +62,7 @@ function buildSheetNode(
     key: "Sheetfile",
     value: entry.filename,
     id: 1,
-    at: At.from([x, y + BOX_HEIGHT + 0.7, 0]),
+    at: At.from([x, y + height + 0.7, 0]),
     effects: createSheetPropertyEffects("top"),
   })
 
@@ -75,7 +78,7 @@ function buildSheetNode(
 
   return new Sheet({
     position: [x, y],
-    size: new SheetSize(BOX_WIDTH, BOX_HEIGHT),
+    size: new SheetSize(width, height),
     excludeFromSim: false,
     inBom: true,
     onBoard: true,
@@ -97,28 +100,38 @@ function buildSheetNode(
 export function buildChildSheetNodes(
   children: ChildSchematicSheetPlanEntry[],
   rootUuid: string,
+  schematicSheetOptions: KicadSchematicSheetOptions[] = [],
 ): { nodes: Sheet[]; extentMm: { width: number; height: number } } {
   const count = children.length
   const cols = Math.max(1, Math.ceil(Math.sqrt(count)))
   const rows = Math.max(1, Math.ceil(count / cols))
 
   const nodes: Sheet[] = []
+  let maximumRight = 0
+  let maximumBottom = 0
   for (let index = 0; index < children.length; index++) {
     const col = index % cols
     const row = Math.floor(index / cols)
-    const x = MARGIN + col * (BOX_WIDTH + GUTTER_X)
-    const y = MARGIN + row * (BOX_HEIGHT + GUTTER_Y)
-    nodes.push(buildSheetNode(children[index]!, rootUuid, x, y))
+    const child = children[index]!
+    const hierarchyNode = schematicSheetOptions.find(
+      (sheetOptions) =>
+        sheetOptions.schematicSheetId === child.schematicSheetId,
+    )?.hierarchyNode
+    const x = hierarchyNode?.position.x ?? MARGIN + col * (BOX_WIDTH + GUTTER_X)
+    const y =
+      hierarchyNode?.position.y ?? MARGIN + row * (BOX_HEIGHT + GUTTER_Y)
+    const width = hierarchyNode?.size.width ?? BOX_WIDTH
+    const height = hierarchyNode?.size.height ?? BOX_HEIGHT
+    nodes.push(buildSheetNode(child, rootUuid, x, y, width, height))
+    maximumRight = Math.max(maximumRight, x + width)
+    maximumBottom = Math.max(maximumBottom, y + height)
   }
-
-  const spanW = cols * BOX_WIDTH + (cols - 1) * GUTTER_X
-  const spanH = rows * BOX_HEIGHT + (rows - 1) * GUTTER_Y
 
   return {
     nodes,
     extentMm: {
-      width: 2 * MARGIN + spanW,
-      height: 2 * MARGIN + spanH,
+      width: maximumRight + MARGIN,
+      height: maximumBottom + MARGIN,
     },
   }
 }
