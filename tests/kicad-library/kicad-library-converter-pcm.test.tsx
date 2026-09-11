@@ -335,8 +335,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (layer F.SilkS)
         (effects
           (font
-            (size 1 1)
-            (thickness 0.15)
+            (size 1 0.43530150753768837)
+            (thickness 0.125)
           )
         )
       )
