@@ -236,3 +236,21 @@ Some interoperability test artifacts are generated from assets by KiCad. See [Ki
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
+
+### Silkscreen text metrics
+
+Silkscreen exports use editable native KiCad stroke text, which differs from the
+Arial/sans-serif text used in the PCB SVG preview. For plain printable ASCII,
+export fits each line within the source's estimated `0.6 * font_size` allocation
+per character, using measured KiCad stroke-font advances and bounding-box pen
+allowance. It only reduces horizontal size; the requested text height is retained.
+Stroke thickness scales with height (`font_size / 8`, or 0.10 mm at 0.8 mm height).
+This applies to both standalone and footprint silkscreen text.
+
+This is an approximate layout match, not preservation of the SVG glyph outlines.
+Unicode, tabs, and KiCad markup/variables retain native width because their metrics
+are not covered by the ASCII table. Multiline text retains KiCad's native line
+spacing. Review those cases in KiCad. No DRC rules are changed or suppressed.
+
+The optional native metrics regression test uses Python's `pcbnew` module; set
+`KICAD_PYTHON` if it is installed under a different Python executable.
