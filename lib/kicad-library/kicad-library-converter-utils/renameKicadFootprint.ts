@@ -1,3 +1,4 @@
+import { embedAlphabetFont } from "../../fonts/embedAlphabetFont"
 import type { FootprintEntry } from "../../types"
 import { parseKicadMod } from "kicadts"
 
@@ -53,6 +54,7 @@ export function renameKicadFootprint(params: {
     }
   }
 
+  embedAlphabetFont(footprint)
   return {
     footprintName: newKicadFootprintName,
     kicadModString: footprint.getString(),

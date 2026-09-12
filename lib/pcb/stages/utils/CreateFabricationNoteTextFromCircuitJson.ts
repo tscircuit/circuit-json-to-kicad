@@ -1,3 +1,4 @@
+import { getAlphabetFontFace } from "../../../fonts/embedAlphabetFont"
 import type { PcbFabricationNoteText } from "circuit-json"
 import {
   At,
@@ -65,6 +66,7 @@ export function createFabricationNoteTextFromCircuitJson({
   }
 
   const font = new TextEffectsFont()
+  font.face = getAlphabetFontFace(textElement.font)
   font.size = {
     width: textElement.font_size || 1,
     height: textElement.font_size || 1,

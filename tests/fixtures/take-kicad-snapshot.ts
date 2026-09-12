@@ -1,3 +1,4 @@
+import { embedAlphabetFont } from "lib/fonts/embedAlphabetFont"
 import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
@@ -196,6 +197,7 @@ function wrapKicadModInTemporaryPcb(kicadModContent: string): string {
   footprint.generator = undefined
   footprint.generatorVersion = undefined
   footprint.position = At.from([100, 100, 0])
+  embedAlphabetFont(footprint)
   footprint.placed = true
   footprint.libraryLink = `snapshot:${footprint.libraryLink ?? "footprint"}`
 
