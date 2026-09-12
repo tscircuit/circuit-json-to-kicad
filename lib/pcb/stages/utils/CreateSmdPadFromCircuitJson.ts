@@ -28,6 +28,7 @@ export function createSmdPadFromCircuitJson({
   componentRotation = 0,
   netInfo,
   componentId,
+  includeSolderPaste = true,
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
@@ -35,6 +36,8 @@ export function createSmdPadFromCircuitJson({
   componentRotation?: number
   netInfo?: PcbNetInfo
   componentId?: string
+  /** False when explicit pcb_solder_paste geometry supplies the stencil. */
+  includeSolderPaste?: boolean
 }): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
@@ -157,7 +160,7 @@ export function createSmdPadFromCircuitJson({
     size: padSize,
     layers: [
       `${padLayer}`,
-      ...(pcbPad.is_covered_with_solder_mask
+      ...(!includeSolderPaste || pcbPad.is_covered_with_solder_mask
         ? []
         : [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]),
       `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,

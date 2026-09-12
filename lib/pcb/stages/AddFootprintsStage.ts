@@ -37,6 +37,10 @@ import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSil
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
+import {
+  convertSolderPastes,
+  getSolderPasteComponentId,
+} from "./footprints-stage-converters/convertSolderPastes"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
@@ -258,6 +262,20 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentRotation: component.rotation || 0,
     })
     fpPads.push(...npthPads)
+
+    fpPads.push(
+      ...convertSolderPastes({
+        solderPastes: this.ctx.db.pcb_solder_paste
+          .list()
+          .filter(
+            (paste) =>
+              getSolderPasteComponentId(paste, this.ctx) ===
+              component.pcb_component_id,
+          ),
+        componentCenter: component.center,
+        componentRotation: component.rotation || 0,
+      }),
+    )
 
     footprint.fpPads = fpPads
 
