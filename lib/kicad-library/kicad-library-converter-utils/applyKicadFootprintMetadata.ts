@@ -1,32 +1,21 @@
-import {
-  parseKicadSexpr,
-  Footprint,
-  Property,
-  TextEffects,
-  TextEffectsFont,
-} from "kicadts"
+import { createCircuitJsonTextFont } from "../../utils/create-circuit-json-text-font"
+import { parseKicadSexpr, Footprint, Property, TextEffects } from "kicadts"
 import type { KicadFootprintMetadata, KicadEffects } from "@tscircuit/props"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
 
 /**
  * Creates TextEffects from metadata effects, falling back to defaults.
  */
-function createTextEffects(metadataEffects?: KicadEffects): TextEffects {
-  const font = new TextEffectsFont()
-  if (metadataEffects?.font?.size) {
-    font.size = {
-      width: Number(metadataEffects.font.size.x),
-      height: Number(metadataEffects.font.size.y),
-    }
-  } else {
-    font.size = { width: 1.27, height: 1.27 }
-  }
-  if (metadataEffects?.font?.thickness !== undefined) {
-    font.thickness = Number(metadataEffects.font.thickness)
-  } else {
-    font.thickness = 0.15
-  }
-  return new TextEffects({ font })
+function createTextEffects(
+  metadataEffects?: KicadEffects,
+  text = "",
+): TextEffects {
+  return new TextEffects({
+    font: createCircuitJsonTextFont(
+      { text, font_size: 1.27 },
+      metadataEffects?.font,
+    ),
+  })
 }
 
 /**
@@ -85,7 +74,10 @@ export function applyKicadFootprintMetadata(
           uuid:
             refMeta?.uuid ??
             generateDeterministicUuid(`${footprintName}-property-Reference`),
-          effects: createTextEffects(refMeta?.effects),
+          effects: createTextEffects(
+            refMeta?.effects,
+            refMeta?.value ?? "REF**",
+          ),
           hidden: refMeta?.hide,
         }),
       )
@@ -107,7 +99,10 @@ export function applyKicadFootprintMetadata(
           uuid:
             valMeta?.uuid ??
             generateDeterministicUuid(`${footprintName}-property-Value`),
-          effects: createTextEffects(valMeta?.effects),
+          effects: createTextEffects(
+            valMeta?.effects,
+            valMeta?.value ?? "Val**",
+          ),
           hidden: valMeta?.hide,
         }),
       )
@@ -129,7 +124,7 @@ export function applyKicadFootprintMetadata(
           uuid:
             dsMeta?.uuid ??
             generateDeterministicUuid(`${footprintName}-property-Datasheet`),
-          effects: createTextEffects(dsMeta?.effects),
+          effects: createTextEffects(dsMeta?.effects, dsMeta?.value ?? ""),
           hidden: dsMeta?.hide ?? true,
         }),
       )
@@ -151,7 +146,7 @@ export function applyKicadFootprintMetadata(
           uuid:
             descMeta?.uuid ??
             generateDeterministicUuid(`${footprintName}-property-Description`),
-          effects: createTextEffects(descMeta?.effects),
+          effects: createTextEffects(descMeta?.effects, descMeta?.value ?? ""),
           hidden: descMeta?.hide ?? true,
         }),
       )

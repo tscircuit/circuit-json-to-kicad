@@ -4,7 +4,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
-import { createSilkscreenTextFont } from "lib/pcb/stages/utils/CreateSilkscreenTextFont"
+import { createCircuitJsonTextFont } from "lib/utils/create-circuit-json-text-font"
 import { createGrTextFromCircuitJson } from "lib/pcb/stages/utils/CreateGrTextFromCircuitJson"
 import { createFpTextFromCircuitJson } from "lib/pcb/stages/utils/CreateFpTextFromCircuitJson"
 import { At } from "kicadts"
@@ -24,28 +24,28 @@ const text = (value = label): PcbSilkscreenText => ({
 })
 
 test("fits the issue #4719 label without reducing native text height", () => {
-  const font = createSilkscreenTextFont(text())
+  const font = createCircuitJsonTextFont(text())
   expect(font.size?.height).toBe(0.8)
   expect(font.size?.width).toBeCloseTo(0.489157, 5)
   expect(font.thickness).toBe(0.08)
 })
 
 test("accounts for glyph widths, multiline text and stroke limits", () => {
-  const wide = createSilkscreenTextFont(text("WWW"))
-  const narrow = createSilkscreenTextFont(text("iii"))
+  const wide = createCircuitJsonTextFont(text("WWW"))
+  const narrow = createCircuitJsonTextFont(text("iii"))
   expect(wide.size!.width).toBeLessThan(narrow.size!.width!)
   expect(narrow.size!.width).toBe(0.8)
-  expect(createSilkscreenTextFont(text(`iii\n${label}`)).size).toEqual(
-    createSilkscreenTextFont(text()).size,
+  expect(createCircuitJsonTextFont(text(`iii\n${label}`)).size).toEqual(
+    createCircuitJsonTextFont(text()).size,
   )
   for (const value of ["W", "A", "R1", "10kΩ", "µF", "日本語", "", "\n"]) {
-    const font = createSilkscreenTextFont(text(value))
+    const font = createCircuitJsonTextFont(text(value))
     expect(font.size!.width).toBeGreaterThan(0)
     expect(font.size!.height).toBe(0.8)
     expect(font.thickness).toBeLessThanOrEqual(font.size!.width! / 4)
     expect(font.thickness).toBeLessThanOrEqual(0.1)
   }
-  const small = createSilkscreenTextFont({ ...text(), font_size: 0.2 })
+  const small = createCircuitJsonTextFont({ ...text(), font_size: 0.2 })
   expect(small.size!.height).toBe(0.2)
   expect(small.thickness).toBe(0.02)
 })
@@ -68,7 +68,7 @@ test("board and footprint text share font metrics and preserve mirror/anchor/rot
   })!
   for (const element of [boardText, footprintText]) {
     expect(element.effects!.font!.size).toEqual(
-      createSilkscreenTextFont(input).size,
+      createCircuitJsonTextFont(input).size,
     )
     expect(element.effects!.justify!.mirror).toBe(true)
     expect(element.effects!.justify!.horizontal).toBe("left")

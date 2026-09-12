@@ -1,4 +1,3 @@
-import type { PcbSilkscreenText } from "circuit-json"
 import { TextEffectsFont } from "kicadts"
 import { kicadStrokeFontAdvances as advanceRuns } from "./kicad-stroke-font-advances"
 
@@ -40,19 +39,34 @@ function getLineAdvance(line: string): number {
   return advance
 }
 
+export type NativeTextFont = {
+  size?: { x: number | string; y: number | string }
+  thickness?: number | string
+}
+
 /**
  * Keep editable native KiCad text at the requested height, fitting its width
  * to the source's 0.6-em-per-character allocation. This is not glyph-identical
- * to the SVG's Arial/sans-serif font. See README's silkscreen text section.
+ * to the SVG's Arial/sans-serif font. See README's text conversion section.
  */
-export function createSilkscreenTextFont(
-  textElement: PcbSilkscreenText,
+export function createCircuitJsonTextFont(
+  textElement: { text?: string; font_size?: number },
+  nativeFont?: NativeTextFont,
 ): TextEffectsFont {
   const height = textElement.font_size || 1
+  // Explicit KiCad font metadata is already expressed in native units.
+  if (nativeFont) {
+    const font = new TextEffectsFont()
+    font.size = nativeFont.size
+      ? { width: Number(nativeFont.size.x), height: Number(nativeFont.size.y) }
+      : { width: height, height }
+    font.thickness = Number(nativeFont.thickness ?? 0.15)
+    return font
+  }
   // Do not give tiny labels the same heavy 0.15 mm stroke as large labels.
   const baseStroke = Math.min(0.1, height / 10)
   // A tab occupies four source columns; native tab stops are measured below.
-  const lines = textElement.text.split("\n")
+  const lines = (textElement.text ?? "").split("\n")
   const columns = Math.max(
     ...lines.map((line) => Array.from(line.replaceAll("\t", "    ")).length),
   )

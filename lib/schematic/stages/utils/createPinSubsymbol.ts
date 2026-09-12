@@ -1,3 +1,4 @@
+import { createCircuitJsonTextFont } from "../../../utils/create-circuit-json-text-font"
 import type { SchematicComponent, SchematicPort } from "circuit-json"
 import {
   SchematicSymbol,
@@ -5,7 +6,6 @@ import {
   SymbolPinName,
   SymbolPinNumber,
   TextEffects,
-  TextEffectsFont,
 } from "kicadts"
 import { calculatePinPosition } from "./calculatePinPosition"
 
@@ -54,16 +54,17 @@ export function createPinSubsymbol({
     pin.at = [x, y, angle]
     pin.length = isChip ? CHIP_PIN_LENGTH : CUSTOM_SYMBOL_PIN_LENGTH
 
-    const nameFont = new TextEffectsFont()
-    nameFont.size = { height: 1.27, width: 1.27 }
-    const nameEffects = new TextEffects({ font: nameFont })
     const pinName = port.labels?.[0] || "~"
+    const nameFont = createCircuitJsonTextFont({
+      text: pinName,
+      font_size: 1.27,
+    })
+    const nameEffects = new TextEffects({ font: nameFont })
     pin._sxName = new SymbolPinName({ value: pinName, effects: nameEffects })
 
-    const numFont = new TextEffectsFont()
-    numFont.size = { height: 1.27, width: 1.27 }
-    const numEffects = new TextEffects({ font: numFont })
     const pinNum = port.pinNumber?.toString() || `${i + 1}`
+    const numFont = createCircuitJsonTextFont({ text: pinNum, font_size: 1.27 })
+    const numEffects = new TextEffects({ font: numFont })
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,

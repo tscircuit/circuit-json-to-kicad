@@ -1,10 +1,10 @@
+import { createCircuitJsonTextFont } from "../../utils/create-circuit-json-text-font"
 import {
   EmbeddedFonts,
   SymbolPinNames,
   SymbolPinNumbers,
   SymbolProperty,
   TextEffects,
-  TextEffectsFont,
   TextEffectsJustify,
 } from "kicadts"
 import type {
@@ -29,7 +29,8 @@ const toNumber = (
 
 const createTextEffects = (
   effectsMeta: KicadSymbolEffects | undefined,
-  fallback?: TextEffects,
+  fallback: TextEffects | undefined,
+  text: string,
 ): TextEffects | undefined => {
   if (!effectsMeta) return fallback
 
@@ -40,9 +41,10 @@ const createTextEffects = (
   })
 
   if (!effects.font) {
-    const defaultFont = new TextEffectsFont()
-    defaultFont.size = { width: DEFAULT_TEXT_SIZE, height: DEFAULT_TEXT_SIZE }
-    effects.font = defaultFont
+    effects.font = createCircuitJsonTextFont({
+      text,
+      font_size: DEFAULT_TEXT_SIZE,
+    })
   }
 
   if (effectsMeta.font?.size) {
@@ -122,9 +124,25 @@ const applySymbolProperty = (
       ] as [number, number, number])
     : existingProperty?.at
 
+  const fallbackEffects = existingProperty?.effects
+  // Changing a generated property value also changes its measured advance.
+  // Keep explicit native font metadata authoritative.
+  const resizedEffects =
+    propertyMeta.value !== existingProperty?.value &&
+    !propertyMeta.effects?.font
+      ? new TextEffects({
+          font: createCircuitJsonTextFont({
+            text: propertyMeta.value,
+            font_size: fallbackEffects?.font?.size?.height ?? DEFAULT_TEXT_SIZE,
+          }),
+          justify: fallbackEffects?.justify,
+          hiddenText: fallbackEffects?.hiddenText ?? false,
+        })
+      : fallbackEffects
   const nextEffects = createTextEffects(
     propertyMeta.effects,
-    existingProperty?.effects,
+    resizedEffects,
+    propertyMeta.value,
   )
 
   if (existingProperty) {

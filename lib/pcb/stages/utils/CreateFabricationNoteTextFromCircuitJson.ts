@@ -1,11 +1,7 @@
-import type { PcbFabricationNoteText } from "circuit-json"
-import {
-  At,
-  GrText,
-  TextEffects,
-  TextEffectsFont,
-  TextEffectsJustify,
-} from "kicadts"
+import { createCircuitJsonTextFont } from "../../../utils/create-circuit-json-text-font"
+import { createPcbTextJustify } from "./CreatePcbTextJustify"
+import type { PcbFabricationNoteText, PcbNoteText } from "circuit-json"
+import { At, GrText, TextEffects } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
@@ -17,7 +13,7 @@ export function createFabricationNoteTextFromCircuitJson({
   textElement,
   c2kMatPcb,
 }: {
-  textElement: PcbFabricationNoteText
+  textElement: PcbFabricationNoteText | PcbNoteText
   c2kMatPcb: Matrix
 }): GrText | null {
   if (!textElement.text || !textElement.anchor_position) {
@@ -37,49 +33,21 @@ export function createFabricationNoteTextFromCircuitJson({
   }
   const kicadLayer = layerMap[textElement.layer] || textElement.layer || "F.Fab"
 
-  // Map anchor_alignment to KiCad justify
-  const justify = new TextEffectsJustify()
-  const anchorAlignment = textElement.anchor_alignment || "center"
-
-  // Map circuit JSON anchor_alignment to KiCad horizontal/vertical justify
-  switch (anchorAlignment) {
-    case "top_left":
-      justify.horizontal = "left"
-      justify.vertical = "top"
-      break
-    case "top_right":
-      justify.horizontal = "right"
-      justify.vertical = "top"
-      break
-    case "bottom_left":
-      justify.horizontal = "left"
-      justify.vertical = "bottom"
-      break
-    case "bottom_right":
-      justify.horizontal = "right"
-      justify.vertical = "bottom"
-      break
-    case "center":
-      // Default is center, no justify needed
-      break
-  }
-
-  const font = new TextEffectsFont()
-  font.size = {
-    width: textElement.font_size || 1,
-    height: textElement.font_size || 1,
-  }
-  font.thickness = 0.15
-  const textEffects = new TextEffects({ font })
-
-  // Only add justify if it's not center alignment
-  if (anchorAlignment !== "center") {
-    textEffects.justify = justify
-  }
-
-  // Create position object (At constructor expects an array: [x, y, angle])
-  // Fabrication notes don't have a rotation property in the interface
-  const position = new At([transformedPos.x, transformedPos.y, 0])
+  const font = createCircuitJsonTextFont(textElement)
+  const justify = createPcbTextJustify({
+    anchorAlignment: textElement.anchor_alignment,
+    kicadLayer,
+    isMirrored:
+      "is_mirrored_from_top_view" in textElement
+        ? textElement.is_mirrored_from_top_view
+        : undefined,
+  })
+  const textEffects = new TextEffects({ font, justify })
+  const position = new At([
+    transformedPos.x,
+    transformedPos.y,
+    "ccw_rotation" in textElement ? (textElement.ccw_rotation ?? 0) : 0,
+  ])
 
   // Create a graphics text element
   const grText = new GrText({
@@ -87,7 +55,9 @@ export function createFabricationNoteTextFromCircuitJson({
     layer: kicadLayer,
     effects: textEffects,
     uuid: generateDeterministicUuid(
-      textElement.pcb_fabrication_note_text_id ?? textElement.text,
+      textElement.type === "pcb_fabrication_note_text"
+        ? textElement.pcb_fabrication_note_text_id
+        : textElement.pcb_note_text_id,
     ),
   })
   grText.position = position

@@ -1,5 +1,7 @@
+import { createCircuitJsonTextFont } from "../../../utils/create-circuit-json-text-font"
+import { createPcbTextJustify } from "../utils/CreatePcbTextJustify"
 import type { PcbNoteText } from "circuit-json"
-import { FpText, TextEffects, TextEffectsFont } from "kicadts"
+import { FpText, TextEffects } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 
 export function convertNoteTexts(params: {
@@ -21,16 +23,22 @@ export function convertNoteTexts(params: {
 
     const rotatedPos = applyToPoint(rotationMatrix, { x: relX, y: relY })
 
-    const fontSize = textElement.font_size || 1
-    const font = new TextEffectsFont()
-    font.size = { width: fontSize, height: fontSize }
-    const textEffects = new TextEffects({ font })
+    const layer = textElement.layer === "bottom" ? "B.Fab" : "F.Fab"
+    const font = createCircuitJsonTextFont(textElement)
+    const textEffects = new TextEffects({
+      font,
+      justify: createPcbTextJustify({
+        anchorAlignment: textElement.anchor_alignment,
+        kicadLayer: layer,
+        isMirrored: textElement.is_mirrored_from_top_view,
+      }),
+    })
 
     const fpText = new FpText({
       type: "user",
       text: textElement.text,
       position: { x: rotatedPos.x, y: rotatedPos.y, angle: 0 },
-      layer: "F.Fab",
+      layer,
       effects: textEffects,
     })
     fpTexts.push(fpText)

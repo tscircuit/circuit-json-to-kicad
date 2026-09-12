@@ -138,8 +138,8 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (uuid 521fe180-3a89-2d01-38cd-c47e53db4a03)
         (effects
           (font
-            (size 1.27 1.27)
-            (thickness 0.15)
+            (size 1.27 0.8590909090909091)
+            (thickness 0.1)
           )
         )
       )
@@ -149,8 +149,8 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (uuid 59786640-408c-b2ff-256e-33c27496e57d)
         (effects
           (font
-            (size 1.27 1.27)
-            (thickness 0.15)
+            (size 1.27 0.9724274406332454)
+            (thickness 0.1)
           )
         )
       )
@@ -162,7 +162,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (effects
           (font
             (size 1.27 1.27)
-            (thickness 0.15)
+            (thickness 0.1)
           )
         )
       )
@@ -174,7 +174,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (effects
           (font
             (size 1.27 1.27)
-            (thickness 0.15)
+            (thickness 0.1)
           )
         )
       )

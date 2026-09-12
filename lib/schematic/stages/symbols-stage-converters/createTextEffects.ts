@@ -1,11 +1,13 @@
-import { TextEffects, TextEffectsFont } from "kicadts"
+import { TextEffects } from "kicadts"
+import { createCircuitJsonTextFont } from "../../../utils/create-circuit-json-text-font"
 
-export function createTextEffects(size: number, hide: boolean): TextEffects {
-  const font = new TextEffectsFont()
-  font.size = { height: size, width: size }
-
+export function createTextEffects(
+  size: number,
+  hide: boolean,
+  text = "",
+): TextEffects {
   return new TextEffects({
-    font: font,
+    font: createCircuitJsonTextFont({ text, font_size: size }),
     hiddenText: hide,
   })
 }

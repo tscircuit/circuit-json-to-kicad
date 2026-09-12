@@ -28,7 +28,7 @@ for codepoint in range(32, 0x10000):
     else:
         runs.append([codepoint, advance])
 
-output = Path("lib/pcb/stages/utils/kicad-stroke-font-advances.ts")
+output = Path("lib/utils/kicad-stroke-font-advances.ts")
 encoded = [f"{end}:{advance}" for end, advance in runs]
 lines = [" ".join(encoded[i:i + 12]) for i in range(0, len(encoded), 12)]
 output.write_text(

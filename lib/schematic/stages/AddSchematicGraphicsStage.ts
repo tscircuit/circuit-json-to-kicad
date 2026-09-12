@@ -1,3 +1,4 @@
+import { createCircuitJsonTextFont } from "../../utils/create-circuit-json-text-font"
 import type {
   CircuitJson,
   SchematicArc as CircuitSchematicArc,
@@ -17,7 +18,6 @@ import {
   SymbolArcFill,
   SymbolRectangleFill,
   TextEffects,
-  TextEffectsFont,
   TextEffectsJustify,
   Uuid,
   Xy,
@@ -263,14 +263,16 @@ export class AddSchematicGraphicsStage extends ConverterStage<
           y: sourceY,
         })
 
-        const font = new TextEffectsFont()
         const fontSize = preserveText
           ? Math.max(
               0.01,
               text.font_size * (this.ctx.kicadSchematicScaleFactor ?? 1),
             )
           : DEFAULT_SECTION_TEXT_SIZE_MM
-        font.size = { height: fontSize, width: fontSize }
+        const font = createCircuitJsonTextFont({
+          text: text.text,
+          font_size: fontSize,
+        })
         font.color = preserveText
           ? (parseColor(text.color) ?? DEFAULT_SECTION_TEXT_COLOR)
           : DEFAULT_SECTION_TEXT_COLOR
