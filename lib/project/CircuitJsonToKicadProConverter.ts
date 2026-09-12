@@ -246,6 +246,7 @@ export class CircuitJsonToKicadProConverter {
         },
         design_settings: {
           rules: {
+            min_copper_edge_clearance: pcbBoard?.min_board_edge_clearance,
             min_via_annular_width: minViaAnnularWidth,
             min_hole_clearance: minTraceToPadClearance,
             min_via_diameter: minViaDiameter,
