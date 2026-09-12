@@ -1,7 +1,8 @@
 import type { PcbSilkscreenText } from "circuit-json"
-import { GrText, TextEffects, TextEffectsFont, At } from "kicadts"
+import { GrText, TextEffects, At } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
+import { createCircuitJsonTextFont } from "../../../utils/create-circuit-json-text-font"
 import { createPcbTextJustify } from "./CreatePcbTextJustify"
 
 /**
@@ -33,12 +34,7 @@ export function createGrTextFromCircuitJson({
   const kicadLayer =
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
 
-  const font = new TextEffectsFont()
-  font.size = {
-    width: textElement.font_size || 1,
-    height: textElement.font_size || 1,
-  }
-  font.thickness = 0.15
+  const font = createCircuitJsonTextFont(textElement)
   const textEffects = new TextEffects({ font })
 
   const justify = createPcbTextJustify({

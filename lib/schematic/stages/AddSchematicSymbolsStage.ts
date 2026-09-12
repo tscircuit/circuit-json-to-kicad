@@ -1,3 +1,4 @@
+import { createCircuitJsonTextFont } from "../../utils/create-circuit-json-text-font"
 import type { KicadSymbolMetadata } from "@tscircuit/props"
 import type {
   CircuitJson,
@@ -294,6 +295,22 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           }),
         })
         symbol.properties.push(fpFiltersProperty)
+      }
+
+      for (const property of symbol.properties) {
+        const propertyMeta =
+          symbolMetadata?.properties?.[
+            property.key as keyof NonNullable<typeof symbolMetadata.properties>
+          ]
+        if (property.effects) {
+          property.effects.font = createCircuitJsonTextFont(
+            {
+              text: property.value,
+              font_size: property.effects.font?.size?.height ?? 1.27,
+            },
+            propertyMeta?.effects?.font,
+          )
+        }
       }
 
       // Apply additional symbol metadata fields

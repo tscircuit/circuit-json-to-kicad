@@ -231,6 +231,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     y: text.position?.y ?? 0,
     fontSize: text.font_size ?? 0.2,
     anchor: text.anchor ?? "center",
+    rotation: text.rotation ?? 0,
   }))
 
   // Convert schematic_port to ports

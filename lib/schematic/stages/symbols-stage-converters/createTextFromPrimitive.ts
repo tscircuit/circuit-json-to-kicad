@@ -1,4 +1,6 @@
-import { SymbolText, TextEffects, TextEffectsFont } from "kicadts"
+import { createCircuitJsonTextFont } from "../../../utils/create-circuit-json-text-font"
+import { getTextJustificationFromAnchor } from "../utils/getTextJustificationFromAnchor"
+import { SymbolText, TextEffects, TextEffectsJustify } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 
 export function createTextFromPrimitive({
@@ -12,6 +14,7 @@ export function createTextFromPrimitive({
     y: number
     fontSize: number
     anchor?: string
+    rotation?: number
   }
   transform: Matrix
   scale: number
@@ -21,13 +24,19 @@ export function createTextFromPrimitive({
   const scaledPos = applyToPoint(transform, { x: schText.x, y: schText.y })
 
   symbolText.value = schText.text
-  symbolText.at = [scaledPos.x, scaledPos.y, 0]
+  symbolText.at = [scaledPos.x, scaledPos.y, schText.rotation ?? 0]
 
   // Scale font size to match symbol scaling
   const scaledFontSize = schText.fontSize * scale
-  const font = new TextEffectsFont()
-  font.size = { height: scaledFontSize, width: scaledFontSize }
-  symbolText.effects = new TextEffects({ font })
+  const font = createCircuitJsonTextFont({
+    text: schText.text,
+    font_size: scaledFontSize,
+  })
+  const justify = getTextJustificationFromAnchor(schText.anchor)
+  symbolText.effects = new TextEffects({
+    font,
+    justify: justify ? new TextEffectsJustify(justify) : undefined,
+  })
 
   return symbolText
 }

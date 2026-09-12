@@ -183,6 +183,16 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    // Component notes are emitted as fp_text by convertNoteTexts.
+    for (const textElement of this.ctx.db.pcb_note_text.list()) {
+      if (textElement.pcb_component_id) continue
+      const grText = createFabricationNoteTextFromCircuitJson({
+        textElement,
+        c2kMatPcb,
+      })
+      if (grText) kicadPcb.graphicTexts = [...kicadPcb.graphicTexts, grText]
+    }
+
     // Add board outline from pcb_board
     const pcbBoards = this.ctx.db.pcb_board?.list() || []
 

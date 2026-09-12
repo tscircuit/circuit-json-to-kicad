@@ -1,3 +1,4 @@
+import { createCircuitJsonTextFont } from "../../utils/create-circuit-json-text-font"
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
@@ -9,7 +10,6 @@ import {
   SymbolInstancesProject,
   SymbolInstancePath,
   TextEffects,
-  TextEffectsFont,
   TextEffectsJustify,
   GlobalLabel,
 } from "kicadts"
@@ -152,7 +152,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       value: labelText, // Use the label text as the reference
       id: 0,
       at: [x, y + referenceOffset, 0],
-      effects: this.createTextEffects(1.27, false),
+      effects: this.createTextEffects(labelText, 1.27, false),
     })
 
     const valueProperty = new SymbolProperty({
@@ -160,7 +160,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       value: labelText,
       id: 1,
       at: [x, y + valueOffset, 0],
-      effects: this.createTextEffects(1.27, true),
+      effects: this.createTextEffects(labelText, 1.27, true),
     })
 
     const footprintProperty = new SymbolProperty({
@@ -168,7 +168,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       value: "",
       id: 2,
       at: [x - 1.778, y, 90],
-      effects: this.createTextEffects(1.27, true),
+      effects: this.createTextEffects("", 1.27, true),
     })
 
     const datasheetProperty = new SymbolProperty({
@@ -176,7 +176,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       value: "~",
       id: 3,
       at: [x, y, 0],
-      effects: this.createTextEffects(1.27, true),
+      effects: this.createTextEffects("~", 1.27, true),
     })
 
     const descriptionProperty = new SymbolProperty({
@@ -184,7 +184,11 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       value: `Power/Net symbol: ${labelText}`,
       id: 4,
       at: [x, y, 0],
-      effects: this.createTextEffects(1.27, true),
+      effects: this.createTextEffects(
+        `Power/Net symbol: ${labelText}`,
+        1.27,
+        true,
+      ),
     })
 
     symbol.properties.push(
@@ -272,7 +276,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const orientation = orientationMap[anchorSide] || orientationMap["left"]!
 
     // Create text effects with justify
-    const effects = this.createTextEffects(1.27, false)
+    const effects = this.createTextEffects(labelText, 1.27, false)
     if (Object.keys(orientation.justify).length > 0) {
       effects.justify = new TextEffectsJustify(orientation.justify)
     }
@@ -294,9 +298,12 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
   /**
    * Creates text effects for properties and labels
    */
-  private createTextEffects(size: number, hide = false): TextEffects {
-    const font = new TextEffectsFont()
-    font.size = { height: size, width: size }
+  private createTextEffects(
+    text: string,
+    size: number,
+    hide = false,
+  ): TextEffects {
+    const font = createCircuitJsonTextFont({ text, font_size: size })
 
     return new TextEffects({
       font: font,

@@ -173,8 +173,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           (uuid 6afcc420-5595-061f-402d-481e2ac58a1d)
           (effects
             (font
-              (size 1.27 1.27)
-              (thickness 0.15)
+              (size 1.27 0.8037325905292482)
+              (thickness 0.1)
             )
           )
         )
@@ -184,8 +184,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           (uuid 1ac8a4e0-3e4b-4e9f-61cd-f85e7aaf5de3)
           (effects
             (font
-              (size 1.27 1.27)
-              (thickness 0.15)
+              (size 1.27 0.8158649289099524)
+              (thickness 0.1)
             )
           )
         )
@@ -196,8 +196,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           (uuid 22fa2ee0-0d92-70df-07d5-4d221d3d0b23)
           (effects
             (font
-              (size 1.27 1.27)
-              (thickness 0.15)
+              (size 1.27 0.9148094688221708)
+              (thickness 0.1)
             )
           )
         )
@@ -208,8 +208,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           (uuid 212cce00-7b9d-0be1-29f2-b63e307d87a3)
           (effects
             (font
-              (size 1.27 1.27)
-              (thickness 0.15)
+              (size 1.27 0.920951485520872)
+              (thickness 0.1)
             )
           )
         )
@@ -220,8 +220,8 @@ test("KicadLibraryConverter with kicadFootprintMetadata callback", async () => {
           (layer F.SilkS)
           (effects
             (font
-              (size 1 1)
-              (thickness 0.15)
+              (size 1 0.4748743718592965)
+              (thickness 0.1)
             )
           )
         )

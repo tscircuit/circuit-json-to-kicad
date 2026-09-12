@@ -129,7 +129,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           (at 2.032 0 90)
           (effects
             (font
-              (size 1.27 1.27)
+              (size 1.27 0.5450561797752808)
+              (thickness 0.1)
             )
           )
         )
@@ -138,7 +139,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           (at 0 0 90)
           (effects
             (font
-              (size 1.27 1.27)
+              (size 1.27 0.5450561797752808)
+              (thickness 0.1)
             )
           )
         )
@@ -147,7 +149,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           (at -1.778 0 90)
           (effects
             (font
-              (size 1.27 1.27)
+              (size 1.27 1.0843027888446213)
+              (thickness 0.1)
             )
             (hide yes)
           )
@@ -157,7 +160,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           (at 0 0 0)
           (effects
             (font
-              (size 1.27 1.27)
+              (size 1.27 0.8983333333333333)
+              (thickness 0.1)
             )
             (hide yes)
           )
@@ -167,7 +171,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           (at 0 0 0)
           (effects
             (font
-              (size 1.27 1.27)
+              (size 1.27 1.0289846603360115)
+              (thickness 0.1)
             )
             (hide yes)
           )
@@ -177,7 +182,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           (at 0 0 0)
           (effects
             (font
-              (size 1.27 1.27)
+              (size 1.27 0.938133514986376)
+              (thickness 0.1)
             )
             (hide yes)
           )
@@ -187,7 +193,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           (at 0 0 0)
           (effects
             (font
-              (size 1.27 1.27)
+              (size 1.27 0.8222033898305084)
+              (thickness 0.1)
             )
             (hide yes)
           )
@@ -217,14 +224,16 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
             (name "1"
               (effects
                 (font
-                  (size 1.27 1.27)
+                  (size 1.27 0.6140506329113924)
+                  (thickness 0.1)
                 )
               )
             )
             (number "1"
               (effects
                 (font
-                  (size 1.27 1.27)
+                  (size 1.27 0.6140506329113924)
+                  (thickness 0.1)
                 )
               )
             )
@@ -235,14 +244,16 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
             (name "2"
               (effects
                 (font
-                  (size 1.27 1.27)
+                  (size 1.27 0.6140506329113924)
+                  (thickness 0.1)
                 )
               )
             )
             (number "2"
               (effects
                 (font
-                  (size 1.27 1.27)
+                  (size 1.27 0.6140506329113924)
+                  (thickness 0.1)
                 )
               )
             )
@@ -288,8 +299,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (uuid 521fe180-3a89-2d01-38cd-c47e53db4a03)
         (effects
           (font
-            (size 1.27 1.27)
-            (thickness 0.15)
+            (size 1.27 0.8590909090909091)
+            (thickness 0.1)
           )
         )
       )
@@ -299,8 +310,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (uuid 59786640-408c-b2ff-256e-33c27496e57d)
         (effects
           (font
-            (size 1.27 1.27)
-            (thickness 0.15)
+            (size 1.27 0.9724274406332454)
+            (thickness 0.1)
           )
         )
       )
@@ -312,7 +323,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (effects
           (font
             (size 1.27 1.27)
-            (thickness 0.15)
+            (thickness 0.1)
           )
         )
       )
@@ -324,7 +335,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (effects
           (font
             (size 1.27 1.27)
-            (thickness 0.15)
+            (thickness 0.1)
           )
         )
       )
@@ -335,8 +346,8 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (layer F.SilkS)
         (effects
           (font
-            (size 1 1)
-            (thickness 0.15)
+            (size 1 0.4748743718592965)
+            (thickness 0.1)
           )
         )
       )

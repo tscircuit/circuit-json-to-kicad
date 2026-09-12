@@ -122,7 +122,7 @@ test("component-level KiCad artwork is preserved without generic symbol overlays
 
   expect(schematic.texts).toHaveLength(1)
   expect(schematic.texts[0]?.effects?.font?.size).toEqual({
-    width: 1.5,
+    width: 0.8559782608695651,
     height: 1.5,
   })
   expect(schematic.texts[0]?.effects?.font?.color).toEqual({

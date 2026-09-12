@@ -236,3 +236,36 @@ Some interoperability test artifacts are generated from assets by KiCad. See [Ki
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
+
+### Text font substitution
+
+Exported labels remain editable native KiCad text. KiCad's built-in
+stroke font differs from the Arial/sans-serif font used by the SVG preview;
+exporting the same numeric size on both axes does not preserve the text width.
+
+The exporter preserves the requested native text height and fits the horizontal
+size to a `0.6 * font_size` allocation per character on the longest line. It
+uses measured KiCad 10 stroke-font advances, including the text box's stroke
+margins, and never stretches a label wider than its original native size. The
+stroke is capped at 0.10 mm, scales down with small text, and respects KiCad's
+limit of one quarter of the smaller size axis. A shared helper applies this policy to standalone and footprint silkscreen,
+fabrication notes, PCB notes, schematic text (including symbol primitives), net
+labels, pins, sheet titles and generated reference/value/property text. Existing
+schematic scaling and default-height policies still determine the native height.
+Explicit KiCad font metadata bypasses the fitting step and retains its native
+size and thickness. Imported native symbols keep their own font settings.
+
+This covers the supported text conversion paths; it does not add exporters for
+the currently unsupported `pcb_copper_text` or legacy `pcb_text` records.
+
+This is a fit to the source's width estimate, not preservation of the SVG glyph
+outlines or exact Arial metrics. Short lines, multiline spacing, native markup, text variables
+expanded inside KiCad, and native font shapes can still differ from the preview.
+Keep checking native DRC for fabrication clearances. No text-height rules are
+lowered and no DRC warnings are suppressed.
+
+The numeric advance table is bundled so conversion works without a KiCad
+installation. To regenerate it, run `scripts/measure-kicad-stroke-font.py` with
+KiCad 10's Python (`pcbnew` must be importable). The native regression tests in
+`tests/pcb/silkscreen-text-metrics.test.ts` require `kicad-cli` and verify both
+board-edge clipping and adjacent-label overlap against the old settings.

@@ -1,3 +1,4 @@
+import { createCircuitJsonTextFont } from "../../utils/create-circuit-json-text-font"
 import type {
   CircuitJson,
   CadComponent,
@@ -14,7 +15,6 @@ import {
   FootprintAttr,
   Property,
   TextEffects,
-  TextEffectsFont,
 } from "kicadts"
 import {
   ConverterStage,
@@ -204,10 +204,10 @@ export class ExtractFootprintsStage extends ConverterStage<
     footprint.path = undefined
     footprint.sheetfile = undefined
     footprint.sheetname = undefined
-    const defaultFont = new TextEffectsFont()
-    defaultFont.size = { width: 1.27, height: 1.27 }
-    defaultFont.thickness = 0.15
-    const defaultEffects = new TextEffects({ font: defaultFont })
+    const defaultEffects = (text: string) =>
+      new TextEffects({
+        font: createCircuitJsonTextFont({ text, font_size: 1.27 }),
+      })
 
     // Calculate pad bounding box to position reference/value labels
     const fpPads = footprint.fpPads ?? []
@@ -237,7 +237,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         position: [0, refY, 0],
         layer: "F.SilkS",
         uuid: generateDeterministicUuid(`${footprintName}-property-Reference`),
-        effects: defaultEffects,
+        effects: defaultEffects("REF**"),
       }),
       new Property({
         key: "Value",
@@ -245,7 +245,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         position: [0, valY, 0],
         layer: "F.Fab",
         uuid: generateDeterministicUuid(`${footprintName}-property-Value`),
-        effects: defaultEffects,
+        effects: defaultEffects("Val**"),
       }),
       new Property({
         key: "Datasheet",
@@ -254,7 +254,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         layer: "F.Fab",
         hidden: true,
         uuid: generateDeterministicUuid(`${footprintName}-property-Datasheet`),
-        effects: defaultEffects,
+        effects: defaultEffects(""),
       }),
       new Property({
         key: "Description",
@@ -265,7 +265,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         uuid: generateDeterministicUuid(
           `${footprintName}-property-Description`,
         ),
-        effects: defaultEffects,
+        effects: defaultEffects(""),
       }),
     ]
 
@@ -275,6 +275,12 @@ export class ExtractFootprintsStage extends ConverterStage<
       text.uuid = undefined
       if (text.type === "reference") {
         text.text = "REF**"
+        if (text.effects) {
+          text.effects.font = createCircuitJsonTextFont({
+            text: text.text,
+            font_size: text.effects.font?.size?.height ?? 1,
+          })
+        }
       } else if (text.type === "value" && text.text.trim().length === 0) {
         text.text = footprintName
       }

@@ -76,7 +76,7 @@ export function addSymbolProperties({
         value: prop.value,
         id: prop.id,
         at: prop.at as [number, number, number],
-        effects: createTextEffects(1.27, prop.hide),
+        effects: createTextEffects(1.27, prop.hide, prop.value),
       }),
     )
   }

@@ -1,8 +1,8 @@
+import { createCircuitJsonTextFont } from "../../../utils/create-circuit-json-text-font"
 import {
   Footprint,
   Property,
   TextEffects,
-  TextEffectsFont,
   EmbeddedFonts,
   FootprintModel,
   FootprintAttr,
@@ -20,22 +20,16 @@ interface ApplyMetadataToFootprintParams {
 /**
  * Creates TextEffects from metadata effects, falling back to defaults.
  */
-function createTextEffects(metadataEffects?: KicadEffects): TextEffects {
-  const font = new TextEffectsFont()
-  if (metadataEffects?.font?.size) {
-    font.size = {
-      width: Number(metadataEffects.font.size.x),
-      height: Number(metadataEffects.font.size.y),
-    }
-  } else {
-    font.size = { width: 1.27, height: 1.27 }
-  }
-  if (metadataEffects?.font?.thickness !== undefined) {
-    font.thickness = Number(metadataEffects.font.thickness)
-  } else {
-    font.thickness = 0.15
-  }
-  return new TextEffects({ font })
+function createTextEffects(
+  metadataEffects?: KicadEffects,
+  text = "",
+): TextEffects {
+  return new TextEffects({
+    font: createCircuitJsonTextFont(
+      { text, font_size: 1.27 },
+      metadataEffects?.font,
+    ),
+  })
 }
 
 /**
@@ -65,7 +59,10 @@ export function applyMetadataToFootprint({
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Reference`,
       ),
-      effects: createTextEffects(refMeta?.effects),
+      effects: createTextEffects(
+        refMeta?.effects,
+        refMeta?.value ?? componentProperty.reference,
+      ),
       hidden: refMeta?.hide ?? true,
     }),
   )
@@ -88,7 +85,7 @@ export function applyMetadataToFootprint({
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Value`,
       ),
-      effects: createTextEffects(valMeta?.effects),
+      effects: createTextEffects(valMeta?.effects, valueText),
       hidden: valMeta?.hide ?? true,
     }),
   )
@@ -110,7 +107,7 @@ export function applyMetadataToFootprint({
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Datasheet`,
       ),
-      effects: createTextEffects(dsMeta?.effects),
+      effects: createTextEffects(dsMeta?.effects, dsMeta?.value ?? ""),
       hidden: dsMeta?.hide ?? true,
     }),
   )
@@ -132,7 +129,7 @@ export function applyMetadataToFootprint({
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Description`,
       ),
-      effects: createTextEffects(descMeta?.effects),
+      effects: createTextEffects(descMeta?.effects, descMeta?.value ?? ""),
       hidden: descMeta?.hide ?? true,
     }),
   )
@@ -147,7 +144,10 @@ export function applyMetadataToFootprint({
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-SupplierPartNumber`,
       ),
-      effects: createTextEffects(),
+      effects: createTextEffects(
+        undefined,
+        componentProperty.supplierPartNumber,
+      ),
       hidden: true,
     }),
   )

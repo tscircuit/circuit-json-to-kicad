@@ -1,3 +1,4 @@
+import { createCircuitJsonTextFont } from "../utils/create-circuit-json-text-font"
 import {
   At,
   Color,
@@ -11,7 +12,6 @@ import {
   SheetSize,
   Stroke,
   TextEffects,
-  TextEffectsFont,
   TextEffectsJustify,
 } from "kicadts"
 import type { ChildSchematicSheetPlanEntry } from "./buildSchematicSheetPlan"
@@ -26,9 +26,14 @@ const MARGIN = 25.4
 const PROPERTY_FONT_SIZE = 1.524
 const SHEET_BORDER_WIDTH = 0.1524
 
-function createSheetPropertyEffects(vertical: "top" | "bottom"): TextEffects {
-  const font = new TextEffectsFont()
-  font.size = { height: PROPERTY_FONT_SIZE, width: PROPERTY_FONT_SIZE }
+function createSheetPropertyEffects(
+  text: string,
+  vertical: "top" | "bottom",
+): TextEffects {
+  const font = createCircuitJsonTextFont({
+    text,
+    font_size: PROPERTY_FONT_SIZE,
+  })
   return new TextEffects({
     font,
     justify: new TextEffectsJustify({ horizontal: "left", vertical }),
@@ -55,7 +60,7 @@ function buildSheetNode(
     value: entry.sheetName,
     id: 0,
     at: At.from([x, y - 0.7, 0]),
-    effects: createSheetPropertyEffects("bottom"),
+    effects: createSheetPropertyEffects(entry.sheetName, "bottom"),
   })
 
   const sheetfileProperty = new SheetProperty({
@@ -63,7 +68,7 @@ function buildSheetNode(
     value: entry.filename,
     id: 1,
     at: At.from([x, y + height + 0.7, 0]),
-    effects: createSheetPropertyEffects("top"),
+    effects: createSheetPropertyEffects(entry.filename, "top"),
   })
 
   // (instances (project "" (path "/<rootUuid>" (page "<n>"))))
