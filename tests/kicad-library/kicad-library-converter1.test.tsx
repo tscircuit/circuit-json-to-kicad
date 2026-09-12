@@ -119,7 +119,9 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
   expect(
     output.kicadProjectFsMap[
       "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod"
-    ],
+    ]
+      ?.toString()
+      .replace(/\(data \|[\s\S]*?\|\)/g, "(data |<embedded font>|)"),
   ).toMatchInlineSnapshot(`
     "(footprint
       "KeyHotSocket"
@@ -131,7 +133,15 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
       (descr "")
       (tags "")
       (attr through_hole)
-      (embedded_fonts no)
+      (embedded_fonts yes)
+      (embedded_files
+        (file
+          (name "TscircuitAlphabet.ttf")
+          (type font)
+          (checksum "07cb004c65037170cff8b51a3d95114df3a8273a39ddc86ecbbee8140a878521")
+          (data |<embedded font>|)
+        )
+      )
       (property "Reference" "REF**"
         (at 0 -4.34 0)
         (layer F.SilkS)
@@ -185,6 +195,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (layer F.SilkS)
         (effects
           (font
+            (face "TscircuitAlphabet")
             (size 1 1)
             (thickness 0.15)
           )

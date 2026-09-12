@@ -1,3 +1,4 @@
+import { getAlphabetFontFace } from "../../../fonts/embedAlphabetFont"
 import type { PcbSilkscreenText } from "circuit-json"
 import { GrText, TextEffects, TextEffectsFont, At } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
@@ -34,6 +35,7 @@ export function createGrTextFromCircuitJson({
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
 
   const font = new TextEffectsFont()
+  font.face = getAlphabetFontFace(textElement.font)
   font.size = {
     width: textElement.font_size || 1,
     height: textElement.font_size || 1,

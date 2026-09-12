@@ -1,3 +1,4 @@
+import { embedAlphabetFont } from "../../fonts/embedAlphabetFont"
 import type {
   CircuitJson,
   CadComponent,
@@ -333,6 +334,7 @@ export class ExtractFootprintsStage extends ConverterStage<
     }
 
     footprint.models = updatedModels
+    embedAlphabetFont(footprint)
 
     return {
       footprintName,

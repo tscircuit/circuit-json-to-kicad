@@ -1,3 +1,4 @@
+import { embedAlphabetFont } from "../../fonts/embedAlphabetFont"
 import {
   parseKicadSexpr,
   Footprint,
@@ -175,6 +176,7 @@ export function applyKicadFootprintMetadata(
       }
     }
 
+    embedAlphabetFont(footprint)
     return footprint.getString()
   } catch (error) {
     console.warn(`Failed to apply kicadFootprintMetadata:`, error)

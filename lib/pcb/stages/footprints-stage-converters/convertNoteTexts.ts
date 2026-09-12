@@ -1,3 +1,4 @@
+import { getAlphabetFontFace } from "../../../fonts/embedAlphabetFont"
 import type { PcbNoteText } from "circuit-json"
 import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
@@ -23,6 +24,7 @@ export function convertNoteTexts(params: {
 
     const fontSize = textElement.font_size || 1
     const font = new TextEffectsFont()
+    font.face = getAlphabetFontFace(textElement.font)
     font.size = { width: fontSize, height: fontSize }
     const textEffects = new TextEffects({ font })
 
