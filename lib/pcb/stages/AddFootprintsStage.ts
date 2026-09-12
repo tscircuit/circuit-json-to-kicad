@@ -1,45 +1,43 @@
+import type { KicadFootprintMetadata } from "@tscircuit/props"
 import type {
-  CircuitJson,
   CadComponent,
-  SourceComponentBase,
-  PcbHole,
+  CircuitJson,
   PcbFabricationNotePath,
+  PcbHole,
   PcbSilkscreenPath,
+  SourceComponentBase,
 } from "circuit-json"
-import {
-  getReferenceDesignator,
-  getKicadCompatibleComponentName,
-} from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FootprintModel } from "kicadts"
+import { applyToPoint } from "transformation-matrix"
 import {
-  MODEL_CDN_BASE_URL,
   getBasename,
+  MODEL_CDN_BASE_URL,
 } from "../../kicad-library/stages/ExtractFootprintsStage"
 import {
-  ConverterStage,
   type ConverterContext,
+  ConverterStage,
   type PcbNetInfo,
 } from "../../types"
-import { applyToPoint } from "transformation-matrix"
-import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
-import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
-import { getkicadComponentProperty } from "./utils/getKicadComponentProperty"
-import type { KicadFootprintMetadata } from "@tscircuit/props"
-import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
+import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import { flipFootprintToBack } from "../utils/flipFootprintToBack"
 import { convertCourtyardCircles } from "./footprints-stage-converters/convertCourtyardCircles"
+import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
+import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
+import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
 import { convertFabricationNoteRects } from "./footprints-stage-converters/convertFabricationNoteRects"
 import { convertNoteRects } from "./footprints-stage-converters/convertNoteRects"
-import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
-import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
-import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
-import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
-import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
-import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
-import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
-import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
+import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
+import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
+import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
+import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
+import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
+import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
+import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { getkicadComponentProperty } from "./utils/getKicadComponentProperty"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -420,6 +418,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         metadata: footprintMetadata,
         componentProperty: kicadComponentProperty,
       })
+    }
+
+    if (component.layer === "bottom") {
+      flipFootprintToBack(footprint)
     }
 
     const footprints = kicadPcb.footprints
