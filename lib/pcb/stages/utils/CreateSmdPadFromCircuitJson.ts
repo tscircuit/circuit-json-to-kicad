@@ -160,7 +160,9 @@ export function createSmdPadFromCircuitJson({
       ...(pcbPad.is_covered_with_solder_mask
         ? []
         : [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]),
-      `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
+      ...(pcbPad.is_covered_with_solder_mask
+        ? []
+        : [`${padLayer === "F.Cu" ? "F" : "B"}.Mask`]),
     ],
     solderMaskMargin: pcbPad.soldermask_margin,
     roundrectRatio: roundrect_rratio,
