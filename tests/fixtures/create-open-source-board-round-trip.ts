@@ -4,7 +4,11 @@ import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
 import { parseKicadPcb, type KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "../../lib"
 import { stackPngsHorizontally } from "./stackPngsHorizontally"
+import { stackPngsVertically } from "./stackPngsVertically"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
+
+const TOP_INSPECTION_LAYERS = ["F.Cu", "F.SilkS", "Edge.Cuts"]
+const BOTTOM_INSPECTION_LAYERS = ["B.Cu", "B.SilkS", "Edge.Cuts"]
 
 type OpenSourceBoardRoundTripOptions = {
   boardName: string
@@ -94,26 +98,55 @@ export async function createOpenSourceBoardRoundTrip({
     0,
   )
 
-  const [sourceSnapshot, roundTripSnapshot] = await Promise.all([
+  const [
+    sourceTopSnapshot,
+    roundTripTopSnapshot,
+    sourceBottomSnapshot,
+    roundTripBottomSnapshot,
+  ] = await Promise.all([
     takeKicadSnapshot({
       kicadFilePath: sourcePath,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
       pcbCopperPourOpacity: 0.35,
+      pcbLayers: TOP_INSPECTION_LAYERS,
     }),
     takeKicadSnapshot({
       kicadFileContent: roundTripText,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
       pcbCopperPourOpacity: 0.35,
+      pcbLayers: TOP_INSPECTION_LAYERS,
+    }),
+    takeKicadSnapshot({
+      kicadFilePath: sourcePath,
+      kicadFileType: "pcb",
+      pcbDrillHoleColor: "white",
+      pcbCopperPourOpacity: 0.35,
+      pcbLayers: BOTTOM_INSPECTION_LAYERS,
+      pcbMirror: true,
+    }),
+    takeKicadSnapshot({
+      kicadFileContent: roundTripText,
+      kicadFileType: "pcb",
+      pcbDrillHoleColor: "white",
+      pcbCopperPourOpacity: 0.35,
+      pcbLayers: BOTTOM_INSPECTION_LAYERS,
+      pcbMirror: true,
     }),
   ])
 
+  const topComparison = await stackPngsHorizontally([
+    sourceTopSnapshot.generatedFileContent["temp_file.png"]!,
+    roundTripTopSnapshot.generatedFileContent["temp_file.png"]!,
+  ])
+  const bottomComparison = await stackPngsHorizontally([
+    sourceBottomSnapshot.generatedFileContent["temp_file.png"]!,
+    roundTripBottomSnapshot.generatedFileContent["temp_file.png"]!,
+  ])
+
   return {
-    comparisonPng: await stackPngsHorizontally([
-      sourceSnapshot.generatedFileContent["temp_file.png"]!,
-      roundTripSnapshot.generatedFileContent["temp_file.png"]!,
-    ]),
+    comparisonPng: await stackPngsVertically([topComparison, bottomComparison]),
     roundTripCounts,
     roundTripFabricationLineCount,
     roundTripNetNames,
