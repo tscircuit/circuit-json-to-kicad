@@ -1,3 +1,4 @@
+import { getAlphabetFontFace } from "../../../fonts/embedAlphabetFont"
 import type { PcbSilkscreenText } from "circuit-json"
 import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
@@ -49,6 +50,7 @@ export function createFpTextFromCircuitJson({
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
 
   const font = new TextEffectsFont()
+  font.face = getAlphabetFontFace(textElement.font)
   font.size = {
     width: textElement.font_size || 1,
     height: textElement.font_size || 1,

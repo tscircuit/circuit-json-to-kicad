@@ -1,3 +1,4 @@
+import { embedAlphabetFont } from "../../fonts/embedAlphabetFont"
 import type { KicadFootprintMetadata } from "@tscircuit/props"
 import type { PcbComponent } from "circuit-json"
 import type { FootprintEntry } from "../../types"
@@ -146,6 +147,7 @@ function updateBuiltinFootprintModelPaths({
     }
   }
 
+  embedAlphabetFont(footprint)
   return {
     footprintName: kicadFootprint.footprintName,
     kicadModString: footprint.getString(),

@@ -1,3 +1,4 @@
+import { EmbedAlphabetFontStage } from "./stages/EmbedAlphabetFontStage"
 import type { CircuitJson } from "circuit-json"
 import { ConverterStage, type ConverterContext } from "../types"
 import { KicadPcb } from "kicadts"
@@ -76,6 +77,7 @@ export class CircuitJsonToKicadPcbConverter {
       new AddKeepoutsStage(circuitJson, this.ctx),
       new AddStandalonePcbElements(circuitJson, this.ctx),
       new AddGraphicsStage(circuitJson, this.ctx),
+      new EmbedAlphabetFontStage(circuitJson, this.ctx),
     ]
   }
 

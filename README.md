@@ -236,3 +236,15 @@ Some interoperability test artifacts are generated from assets by KiCad. See [Ki
 ## Contributing
 
 Contributions are welcome! Please feel free to submit issues or pull requests.
+
+## Embedded PCB fonts
+
+PCB silkscreen and note text using Circuit JSON's `tscircuit2024` font (including
+its default when omitted) is exported as editable `TscircuitAlphabet` text. The
+exporter embeds the font from `@tscircuit/alphabet` once in each board that uses
+it, so KiCad 9/10 can open it without installing a system font. Standalone
+`.kicad_mod` exports also include the font when needed.
+
+The precompressed font is bundled with the exporter; conversion does not fetch
+fonts or require a compression API at runtime. When updating the pinned alphabet
+dependency, run `bun run generate:embedded-font` and commit the regenerated data.
