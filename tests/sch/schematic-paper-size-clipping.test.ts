@@ -50,7 +50,7 @@ test("CircuitJsonToKicadSchConverter exports tall schematic on A0 portrait with 
   // Multiplied by DEFAULT_SCHEMATIC_SCALE_FACTOR (15):
   // 50 * 15 = 750 mm width, 70 * 15 = 1050 mm height.
   // Including default padding, requires 790 mm x 1090 mm, fitting A0 portrait (841 x 1189 mm).
-  const circuitJson: CircuitJson = [
+  const circuitJson = [
     { type: "source_component", source_component_id: "U_TOP", name: "U_TOP" },
     {
       type: "schematic_component",
@@ -71,7 +71,7 @@ test("CircuitJsonToKicadSchConverter exports tall schematic on A0 portrait with 
       edges: [{ from: { x: 0, y: 35 }, to: { x: 0, y: -35 } }],
       junctions: [],
     },
-  ]
+  ] as any as CircuitJson
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson, {
     assertWithinBounds: true,
@@ -97,7 +97,7 @@ test("CircuitJsonToKicadSchConverter exports tall schematic on A0 portrait with 
 
 test("assertSchematicWithinBounds throws explicit diagnostic when elements exceed paper boundaries", () => {
   // Construct a small A4 schematic and artificially place an element outside the 297 x 210 mm sheet
-  const circuitJson: CircuitJson = [
+  const circuitJson = [
     { type: "source_component", source_component_id: "R1", name: "R1" },
     {
       type: "schematic_component",
@@ -105,7 +105,7 @@ test("assertSchematicWithinBounds throws explicit diagnostic when elements excee
       source_component_id: "R1",
       center: { x: 0, y: 0 },
     },
-  ]
+  ] as any as CircuitJson
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
