@@ -3,6 +3,7 @@ import type { CircuitJson, Point } from "circuit-json"
 import { KicadSch, type Sheet } from "kicadts"
 import { compose, scale, translate } from "transformation-matrix"
 import type { ConverterContext, ConverterStage } from "../types"
+import { assertSchematicWithinBounds } from "./assertSchematicWithinBounds"
 import { buildChildSheetNodes } from "./buildChildSheetNodes"
 import {
   buildSchematicSheetPlan,
@@ -82,6 +83,8 @@ export interface CircuitJsonToKicadSchConverterOptions {
   paperSize?: PaperDimensions
   schematicSheets?: KicadSchematicSheetOptions[]
   titleBlock?: KicadSchematicTitleBlockMetadata
+  /** Asserts all schematic items remain within the sheet paper bounds after conversion. */
+  assertWithinBounds?: boolean
 }
 
 export interface KicadSchematicSheetOptions {
@@ -246,6 +249,17 @@ export class CircuitJsonToKicadSchConverter {
     while (!this.finished) {
       this.step()
     }
+    if (this.options.assertWithinBounds) {
+      this.assertWithinBounds()
+    }
+  }
+
+  /**
+   * Asserts that all converted elements in the schematic lie strictly within
+   * the selected page/paper bounds, throwing an Error if any items clip outside.
+   */
+  assertWithinBounds(options?: { toleranceMm?: number }): void {
+    assertSchematicWithinBounds(this.getOutput(), options)
   }
 
   getOutput(): KicadSch {
