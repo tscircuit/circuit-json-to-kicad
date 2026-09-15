@@ -65,7 +65,7 @@ const createRepro27CircuitJson = async () => {
 }
 
 test(
-  "pcb repro27 preserves text font size and writes explicit thickness",
+  "pcb repro27 preserves native text height while fitting silkscreen width",
   async () => {
     const circuitJson = await createRepro27CircuitJson()
 
@@ -75,10 +75,10 @@ test(
     const outputString = converter.getOutputString()
 
     expect(outputString).toMatch(
-      /\(gr_text\s+"REV A 2026-07"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
+      /\(gr_text\s+"REV A 2026-07"[\s\S]*?\(size 0\.8 0\.\d+\)[\s\S]*?\(thickness 0\.08\)/,
     )
     expect(outputString).toMatch(
-      /\(fp_text\s+user\s+"FOOTPRINT SILK"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
+      /\(fp_text\s+user\s+"FOOTPRINT SILK"[\s\S]*?\(size 0\.8 0\.\d+\)[\s\S]*?\(thickness 0\.08\)/,
     )
     expect(outputString).toMatch(
       /\(gr_text\s+"FAB NOTE"[\s\S]*?\(layer F\.Fab\)[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
