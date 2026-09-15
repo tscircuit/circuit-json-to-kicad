@@ -92,7 +92,15 @@ export function checkSchematicWithinBounds(
     for (const wire of sch.wires) {
       if (wire.points?.points) {
         for (const pt of wire.points.points) {
-          checkPoint(pt.x, pt.y, "Wire")
+          if (
+            pt &&
+            "x" in pt &&
+            "y" in pt &&
+            typeof (pt as any).x === "number" &&
+            typeof (pt as any).y === "number"
+          ) {
+            checkPoint((pt as any).x, (pt as any).y, "Wire")
+          }
         }
       }
     }
@@ -124,8 +132,8 @@ export function checkSchematicWithinBounds(
   }
   if (sch.textBoxes) {
     for (const tb of sch.textBoxes) {
-      if (tb.at) {
-        checkPoint(tb.at.x, tb.at.y, "TextBox")
+      if ((tb as any)?.at) {
+        checkPoint((tb as any).at.x, (tb as any).at.y, "TextBox")
       }
     }
   }
@@ -142,8 +150,8 @@ export function checkSchematicWithinBounds(
   // Check hierarchical child sheets
   if (sch.sheets) {
     for (const sheet of sch.sheets) {
-      if (sheet.at) {
-        checkPoint(sheet.at.x, sheet.at.y, "Sheet")
+      if ((sheet as any)?.at) {
+        checkPoint((sheet as any).at.x, (sheet as any).at.y, "Sheet")
       }
     }
   }
