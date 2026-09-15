@@ -13,7 +13,9 @@ import { AddViasStage } from "./stages/AddViasStage"
 import { AddStandalonePcbElements } from "./stages/AddStandalonePcbElements"
 import { AddGraphicsStage } from "./stages/AddGraphicsStage"
 
-interface CircuitJsonToKicadPcbOptions {
+export interface CircuitJsonToKicadPcbOptions {
+  /** Stroke width, in millimeters, for generated Edge.Cuts geometry. */
+  edgeCutsStrokeWidth?: number
   /**
    * Set to true to embed "${KIPRJMOD}/3dmodels" 3D model references for
    * builtin footprints. Enable this in the CLI zip export.
@@ -60,6 +62,7 @@ export class CircuitJsonToKicadPcbConverter {
         translate(KICAD_PCB_CENTER_X, KICAD_PCB_CENTER_Y),
         scale(CIRCUIT_JSON_TO_MM_SCALE, -CIRCUIT_JSON_TO_MM_SCALE),
       ),
+      edgeCutsStrokeWidth: options?.edgeCutsStrokeWidth,
       projectName: options?.projectName,
       pcbModel3dSourcePaths: [],
     }

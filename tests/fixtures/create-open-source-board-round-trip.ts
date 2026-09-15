@@ -19,6 +19,24 @@ type SupportedBoardCounts = {
   vias: number
 }
 
+function getEdgeCutsStrokeWidths(pcb: KicadPcb): number[] {
+  const graphics = [
+    ...pcb.graphicLines,
+    ...pcb.graphicArcs,
+    ...pcb.graphicCircles,
+    ...pcb.graphicRects,
+  ]
+
+  return [
+    ...new Set(
+      graphics
+        .filter((graphic) => String(graphic.layer).includes("Edge.Cuts"))
+        .map((graphic) => graphic.width)
+        .filter((width): width is number => typeof width === "number"),
+    ),
+  ].sort((left, right) => left - right)
+}
+
 function getNativeCounts(
   pcb: KicadPcb,
   copperPours: number,
@@ -53,10 +71,17 @@ export async function createOpenSourceBoardRoundTrip({
   sourceConverter.addFile(filename, sourceText)
   sourceConverter.runUntilFinished()
   const sourceCircuitJson = sourceConverter.getOutput()
+  const sourceEdgeCutsStrokeWidths = getEdgeCutsStrokeWidths(sourcePcb)
 
   const converter = new CircuitJsonToKicadPcbConverter(
     sourceCircuitJson as any,
-    { projectName: boardName },
+    {
+      edgeCutsStrokeWidth:
+        sourceEdgeCutsStrokeWidths.length === 1
+          ? sourceEdgeCutsStrokeWidths[0]
+          : undefined,
+      projectName: boardName,
+    },
   )
   converter.runUntilFinished()
   const roundTripText = converter.getOutputString()
@@ -114,11 +139,13 @@ export async function createOpenSourceBoardRoundTrip({
       sourceSnapshot.generatedFileContent["temp_file.png"]!,
       roundTripSnapshot.generatedFileContent["temp_file.png"]!,
     ]),
+    roundTripEdgeCutsStrokeWidths: getEdgeCutsStrokeWidths(roundTripPcb),
     roundTripCounts,
     roundTripFabricationLineCount,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
     sourceCounts,
+    sourceEdgeCutsStrokeWidths,
     sourceFabricationPathSegmentCount,
     sourceNetNames,
     sourcePrimitiveTotal,
