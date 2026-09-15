@@ -79,6 +79,15 @@ export async function createOpenSourceBoardRoundTrip({
       .map((net) => net.name),
   ].sort()
   const roundTripNetNames = roundTripPcb.nets.map((net) => net.name).sort()
+  const sourceCopperPourNetNames = sourceCircuitJson
+    .filter((element) => element.type === "pcb_copper_pour")
+    .map((copperPour) => Reflect.get(copperPour, "net_name"))
+    .filter((netName): netName is string => typeof netName === "string")
+    .sort()
+  const roundTripCopperPourNetNames = roundTripPcb.zones
+    .map((zone) => zone.netName)
+    .filter((netName): netName is string => typeof netName === "string")
+    .sort()
   const sourcePrimitiveTotal = Object.values(sourceCounts).reduce(
     (sum, count) => sum + count,
     0,
@@ -114,11 +123,13 @@ export async function createOpenSourceBoardRoundTrip({
       sourceSnapshot.generatedFileContent["temp_file.png"]!,
       roundTripSnapshot.generatedFileContent["temp_file.png"]!,
     ]),
+    roundTripCopperPourNetNames,
     roundTripCounts,
     roundTripFabricationLineCount,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
     sourceCounts,
+    sourceCopperPourNetNames,
     sourceFabricationPathSegmentCount,
     sourceNetNames,
     sourcePrimitiveTotal,

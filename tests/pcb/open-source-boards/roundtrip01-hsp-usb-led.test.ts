@@ -8,6 +8,10 @@ test("round-trips the open-source HSP USB LED KiCad board", async () => {
   })
 
   expect(result.roundTripCounts).toEqual(result.sourceCounts)
+  expect(result.roundTripCopperPourNetNames).toEqual(
+    result.sourceCopperPourNetNames,
+  )
+  expect(result.sourceCopperPourNetNames).toEqual(["GND", "GND", "GND", "GND"])
   expect(result.roundTripNetNames).toEqual(result.sourceNetNames)
   expect(result.sourceWarnings).toEqual([])
   expect(result.roundTripWarnings).toEqual([])

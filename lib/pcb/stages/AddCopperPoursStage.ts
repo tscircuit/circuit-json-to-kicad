@@ -52,7 +52,16 @@ const getCopperPourNetInfo = (
       sourceNet?.subcircuit_connectivity_map_key || sourceNet?.source_net_id
   }
 
-  if (!connectivityKey) return undefined
+  if (!connectivityKey) {
+    const importedNetName = Reflect.get(pour, "net_name")
+    if (typeof importedNetName !== "string" || !importedNetName) {
+      return undefined
+    }
+
+    return [...(ctx.pcbNetMap?.values() ?? [])].find(
+      (netInfo) => netInfo.name === importedNetName,
+    )
+  }
 
   return ctx.pcbNetMap?.get(connectivityKey)
 }
