@@ -7,8 +7,12 @@ function readSvgSize(svg: string): SvgSize {
   const rootTag = svg.match(/<svg\b[^>]*>/u)?.[0]
   if (!rootTag) throw new Error("Expected an SVG root element")
 
-  const width = Number(rootTag.match(/\bwidth=["']([\d.]+)["']/u)?.[1])
-  const height = Number(rootTag.match(/\bheight=["']([\d.]+)["']/u)?.[1])
+  const width = Number(
+    rootTag.match(/\bwidth=["']([\d.]+)(?:[a-z]+)?["']/iu)?.[1],
+  )
+  const height = Number(
+    rootTag.match(/\bheight=["']([\d.]+)(?:[a-z]+)?["']/iu)?.[1],
+  )
   if (!(width > 0) || !(height > 0)) {
     throw new Error("Expected positive numeric SVG width and height")
   }
