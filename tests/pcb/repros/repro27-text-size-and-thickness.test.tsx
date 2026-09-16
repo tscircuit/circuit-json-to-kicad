@@ -75,7 +75,7 @@ test(
     const outputString = converter.getOutputString()
 
     expect(outputString).toMatch(
-      /\(gr_text\s+"REV A 2026-07"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
+      /\(gr_text\s+"REV A 2026-07"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.2\)/,
     )
     expect(outputString).toMatch(
       /\(fp_text\s+user\s+"FOOTPRINT SILK"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,

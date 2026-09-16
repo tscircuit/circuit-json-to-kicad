@@ -37,11 +37,12 @@ export function createGrTextFromCircuitJson({
     : kicadLayer
 
   const font = new TextEffectsFont()
+  const fontSize = textElement.font_size || 1
   font.size = {
-    width: textElement.font_size || 1,
-    height: textElement.font_size || 1,
+    width: fontSize,
+    height: fontSize,
   }
-  font.thickness = 0.15
+  font.thickness = Math.min(0.3, Math.max(0.2, fontSize * 0.2))
   const textEffects = new TextEffects({ font })
 
   const justify = createPcbTextJustify({

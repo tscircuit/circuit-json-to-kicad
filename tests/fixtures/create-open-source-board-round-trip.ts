@@ -5,6 +5,7 @@ import { parseKicadPcb, type KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "../../lib"
 import { stackPngsHorizontally } from "./stackPngsHorizontally"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
+import { createSideBySideSvg } from "./create-side-by-side-svg"
 
 type OpenSourceBoardRoundTripOptions = {
   boardName: string
@@ -114,6 +115,12 @@ export async function createOpenSourceBoardRoundTrip({
       sourceSnapshot.generatedFileContent["temp_file.png"]!,
       roundTripSnapshot.generatedFileContent["temp_file.png"]!,
     ]),
+    comparisonSvg: createSideBySideSvg(
+      sourceSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
+      roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString(
+        "utf8",
+      ),
+    ),
     roundTripCounts,
     roundTripFabricationLineCount,
     roundTripNetNames,
