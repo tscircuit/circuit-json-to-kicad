@@ -48,40 +48,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
-  private sourcePortNets?: Map<string, Map<number, PcbNetInfo>>
-
-  private getSourcePortNets() {
-    if (this.sourcePortNets) return this.sourcePortNets
-    this.sourcePortNets = new Map()
-
-    // Imported ports can lack connectivity keys while their source traces
-    // retain explicit net membership. Index by port ID so every physical land
-    // of a terminal gets its net without relying on pad coordinates.
-    for (const trace of this.ctx.db.source_trace.list()) {
-      const keys = [trace.subcircuit_connectivity_map_key]
-      for (const sourceNetId of trace.connected_source_net_ids ?? []) {
-        const sourceNet = this.ctx.db.source_net.get(sourceNetId)
-        if (sourceNet) {
-          keys.push(
-            sourceNet.subcircuit_connectivity_map_key ||
-              sourceNet.source_net_id,
-          )
-        }
-      }
-
-      for (const sourcePortId of trace.connected_source_port_ids ?? []) {
-        const nets =
-          this.sourcePortNets.get(sourcePortId) ?? new Map<number, PcbNetInfo>()
-        for (const key of keys) {
-          const netInfo = key ? this.ctx.pcbNetMap?.get(key) : undefined
-          if (netInfo) nets.set(netInfo.id, netInfo)
-        }
-        this.sourcePortNets.set(sourcePortId, nets)
-      }
-    }
-
-    return this.sourcePortNets
-  }
+  private sourcePortNetKeys = new Map<string, Set<string>>()
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
     if (!pcbPortId) return undefined
@@ -94,13 +61,15 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const sourcePort = this.ctx.db.source_port?.get(sourcePortId)
     if (!sourcePort) return undefined
 
-    const nets = new Map(this.getSourcePortNets().get(sourcePortId))
-    const connectivityKey = sourcePort.subcircuit_connectivity_map_key
-    const directNet = connectivityKey
-      ? this.ctx.pcbNetMap?.get(connectivityKey)
-      : undefined
-    if (directNet) nets.set(directNet.id, directNet)
-
+    const keys = [
+      ...(this.sourcePortNetKeys.get(sourcePortId) ?? []),
+      sourcePort.subcircuit_connectivity_map_key,
+    ]
+    const nets = new Map<number, PcbNetInfo>()
+    for (const key of keys) {
+      const net = key ? this.ctx.pcbNetMap?.get(key) : undefined
+      if (net) nets.set(net.id, net)
+    }
     if (nets.size > 1) {
       const component = sourcePort.source_component_id
         ? this.ctx.db.source_component.get(sourcePort.source_component_id)
@@ -109,12 +78,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         component?.name ||
         sourcePort.source_component_id ||
         pcbPort.pcb_component_id
-      const padNumber = sourcePort.pin_number ?? sourcePort.name
       throw new Error(
-        `Cannot export ${reference} pad ${padNumber}: source port ${sourcePortId} resolves to multiple KiCad nets (${[...nets.values()].map((net) => `${net.name} [${net.id}]`).join(", ")})`,
+        `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${[...nets.values()].map((net) => net.name).join(", ")})`,
       )
     }
-
     return nets.values().next().value
   }
 
@@ -135,6 +102,23 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     super(input, ctx)
     this.pcbComponents = this.ctx.db.pcb_component.list()
     this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
+
+    // Imported ports may have trace membership without connectivity keys.
+    for (const trace of ctx.db.source_trace.list()) {
+      const keys = [
+        trace.subcircuit_connectivity_map_key,
+        ...(trace.connected_source_net_ids ?? []).map((id) => {
+          const net = ctx.db.source_net.get(id)
+          return net?.subcircuit_connectivity_map_key || net?.source_net_id
+        }),
+      ].filter((key): key is string => Boolean(key))
+      for (const portId of trace.connected_source_port_ids ?? []) {
+        this.sourcePortNetKeys.set(
+          portId,
+          new Set([...(this.sourcePortNetKeys.get(portId) ?? []), ...keys]),
+        )
+      }
+    }
   }
 
   override _step(): void {
