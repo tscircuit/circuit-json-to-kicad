@@ -15,8 +15,5 @@ test("round-trips the open-source soil moisture sensor KiCad board", async () =>
   expect(result.roundTripWarnings).toEqual([])
   expect(result.sourcePrimitiveTotal).toBeGreaterThan(250)
   expect(result.comparisonPng).toMatchPngSnapshot(import.meta.path)
-  await expectOpenSourceSvgSnapshot(
-    result.comparisonSvg,
-    import.meta.path,
-  )
+  await expectOpenSourceSvgSnapshot(result.comparisonSvg, import.meta.path)
 })
