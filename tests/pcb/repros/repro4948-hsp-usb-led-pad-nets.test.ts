@@ -31,8 +31,10 @@ test("repro4948: HSP USB LED preserves pad nets on export", async () => {
         )
       })
       .sort(([a], [b]) => a.localeCompare(b))
-  const sourcePads = getPadNets(parseKicadPcb(source))
-  const outputPads = getPadNets(parseKicadPcb(output))
+  const sourcePcb = parseKicadPcb(source)
+  const outputPcb = parseKicadPcb(output)
+  const sourcePads = getPadNets(sourcePcb)
+  const outputPads = getPadNets(outputPcb)
   expect(sourcePads).toHaveLength(22)
   expect(sourcePads.every(([, net]) => net !== null)).toBe(true)
   // KiCad net names are normalized by the importer.
@@ -96,9 +98,23 @@ test("repro4948: HSP USB LED preserves pad nets on export", async () => {
       )
     }),
   )
-  const comparison = createSideBySideSvg(sourceSvg!, outputSvg!).replace(
-    /(<svg[^>]*>)/u,
-    '$1<rect width="100%" height="100%" fill="#101820"/>',
-  )
-  await expectOpenSourceSvgSnapshot(comparison, import.meta.path)
+  const comparison = createSideBySideSvg(sourceSvg!, outputSvg!)
+  const height = Number(comparison.match(/height="([\d.]+)"/u)![1])
+  const sourceAssigned = sourcePads.filter(([, net]) => net !== null).length
+  const outputAssigned = outputPads.filter(([, net]) => net !== null).length
+  const outputColor =
+    outputAssigned === outputPads.length ? "#8fd6a7" : "#ff9b9b"
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${height + 90}" viewBox="0 0 1200 ${height + 90}">
+<rect width="100%" height="100%" fill="#101820"/>
+<g font-family="sans-serif">
+<text x="18" y="28" fill="white" font-size="20">HSP USB LED — original KiCad</text>
+<text x="618" y="28" fill="white" font-size="20">Fixed KiCad round trip</text>
+<text x="18" y="52" fill="#8fd6a7" font-size="16">${sourceAssigned}/${sourcePads.length} physical pads have assigned nets</text>
+<text x="618" y="52" fill="${outputColor}" font-size="16">${outputAssigned}/${outputPads.length} physical pads have assigned nets</text>
+<text x="18" y="74" fill="#b8c5d0" font-size="14">${sourcePcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
+<text x="618" y="74" fill="#b8c5d0" font-size="14">${outputPcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
+</g>
+${comparison.replace("<svg", '<svg x="0" y="90"')}
+</svg>`
+  await expectOpenSourceSvgSnapshot(svg, import.meta.path)
 }, 120000)
