@@ -1,9 +1,10 @@
 import { expect, test } from "bun:test"
-import { CircuitJsonToKicadPcbConverter } from "../../../lib/pcb/CircuitJsonToKicadPcbConverter"
 import { readFileSync } from "node:fs"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
+import { parseKicadPcb } from "kicadts"
+import { CircuitJsonToKicadPcbConverter } from "../../../lib/pcb/CircuitJsonToKicadPcbConverter"
 
-test("a terminal without net membership stays unassigned beside a connected contact", () => {
+test("repro4948: captures current loss of a connected neighbor's net", () => {
   const importer = new KicadToCircuitJsonConverter()
   importer.addFile(
     "usb-c-pad-identities.kicad_pcb",
@@ -14,22 +15,50 @@ test("a terminal without net membership stays unassigned beside a connected cont
   )
   importer.runUntilFinished()
   const circuitJson = importer.getOutput()
-  const port = circuitJson.find(
-    (e) => e.type === "source_port" && e.name === "B6",
-  )!
-  if (port.type !== "source_port") throw new Error("Missing B6")
-  for (const element of circuitJson) {
-    if (element.type === "source_trace") {
-      element.connected_source_port_ids =
-        element.connected_source_port_ids.filter(
-          (id) => id !== port.source_port_id,
-        )
-    }
+  const sourcePorts = circuitJson.filter((e) => e.type === "source_port")
+  const port = sourcePorts.find((port) => port.name === "B6")!
+  const traces = circuitJson.filter((e) => e.type === "source_trace")
+  for (const trace of traces) {
+    trace.connected_source_port_ids = trace.connected_source_port_ids.filter(
+      (id) => id !== port.source_port_id,
+    )
   }
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
-  const pads = converter.getOutput().footprints.flatMap((fp) => fp.fpPads)
-  expect(pads.find((pad) => pad.number === "B6")?.net).toBeUndefined()
-  expect(pads.find((pad) => pad.number === "A6")?.net?.name).toBe("USB_DP")
+  const pads = parseKicadPcb(converter.getOutputString()).footprints.flatMap(
+    (fp) => fp.fpPads,
+  )
+  // B6 is intentionally unassigned; the bug also removes A6's USB_DP membership.
+  expect(
+    ["A6", "B6"].map((name) => {
+      const sourcePort = sourcePorts.find((port) => port.name === name)!
+      const pad = pads.find((pad) => pad.number === name)!
+      return {
+        pad: pad.number,
+        inputNets: traces
+          .filter((trace) =>
+            trace.connected_source_port_ids.includes(sourcePort.source_port_id),
+          )
+          .map((trace) => trace.display_name)
+          .sort(),
+        exportedNet: pad.net?.name ?? null,
+      }
+    }),
+  ).toMatchInlineSnapshot(`
+    [
+      {
+        "exportedNet": null,
+        "inputNets": [
+          "USB_DP",
+        ],
+        "pad": "A6",
+      },
+      {
+        "exportedNet": null,
+        "inputNets": [],
+        "pad": "B6",
+      },
+    ]
+  `)
 })
