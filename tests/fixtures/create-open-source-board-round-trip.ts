@@ -97,12 +97,14 @@ export async function createOpenSourceBoardRoundTrip({
 
   const [sourceSnapshot, roundTripSnapshot] = await Promise.all([
     takeKicadSnapshot({
+      includeSvg: true,
       kicadFilePath: sourcePath,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
       pcbCopperPourOpacity: 0.35,
     }),
     takeKicadSnapshot({
+      includeSvg: true,
       kicadFileContent: roundTripText,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
@@ -117,9 +119,7 @@ export async function createOpenSourceBoardRoundTrip({
     ]),
     comparisonSvg: createSideBySideSvg(
       sourceSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
-      roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString(
-        "utf8",
-      ),
+      roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
     ),
     roundTripCounts,
     roundTripFabricationLineCount,

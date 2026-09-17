@@ -42,7 +42,7 @@ export function createGrTextFromCircuitJson({
     width: fontSize,
     height: fontSize,
   }
-  font.thickness = Math.min(0.3, Math.max(0.2, fontSize * 0.2))
+  font.thickness = fontSize > 1 ? Math.min(0.3, fontSize * 0.2) : 0.15
   const textEffects = new TextEffects({ font })
 
   const justify = createPcbTextJustify({

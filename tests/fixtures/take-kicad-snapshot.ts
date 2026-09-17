@@ -216,6 +216,7 @@ export const takeKicadSnapshot = async (params: {
   kicadFileContent?: string
   kicadFileType: "sch" | "pcb" | "3d" | "mod"
   generatePng?: boolean
+  includeSvg?: boolean
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
 }): Promise<KicadOutput> => {
@@ -224,6 +225,7 @@ export const takeKicadSnapshot = async (params: {
     kicadFileContent,
     kicadFileType,
     generatePng = true,
+    includeSvg = false,
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
   } = params
@@ -339,7 +341,9 @@ export const takeKicadSnapshot = async (params: {
           )
         : rawSvgBuffer
       const relativeSvgPath = svgFilePath.replace(`${outputDir}/`, "")
-      generatedFileContent[relativeSvgPath] = normalizedSvgBuffer
+      if (!generatePng || includeSvg) {
+        generatedFileContent[relativeSvgPath] = normalizedSvgBuffer
+      }
       if (!generatePng) {
         continue
       }
