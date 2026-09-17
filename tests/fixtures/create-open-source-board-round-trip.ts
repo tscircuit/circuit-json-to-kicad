@@ -36,6 +36,28 @@ function getNativeCounts(
   }
 }
 
+type EdgeGraphic = {
+  getString(): string
+  stroke?: { width?: number }
+  width?: number
+}
+
+function getEdgeCutsWidth(pcb: KicadPcb): number | undefined {
+  const graphics: EdgeGraphic[] = [
+    ...pcb.graphicArcs,
+    ...pcb.graphicCircles,
+    ...pcb.graphicCurves,
+    ...pcb.graphicLines,
+    ...pcb.graphicRects,
+  ]
+  for (const graphic of graphics) {
+    if (!graphic.getString().includes("(layer Edge.Cuts)")) continue
+    const width = graphic.stroke?.width ?? graphic.width
+    if (width !== undefined && Number.isFinite(width)) return width
+  }
+  return undefined
+}
+
 export async function createOpenSourceBoardRoundTrip({
   boardName,
   filename,
@@ -49,6 +71,7 @@ export async function createOpenSourceBoardRoundTrip({
   )
   const sourceText = await readFile(sourcePath, "utf8")
   const sourcePcb = parseKicadPcb(sourceText)
+  const sourceEdgeCutsWidth = getEdgeCutsWidth(sourcePcb)
 
   const sourceConverter = new KicadToCircuitJsonConverter()
   sourceConverter.addFile(filename, sourceText)
@@ -57,11 +80,15 @@ export async function createOpenSourceBoardRoundTrip({
 
   const converter = new CircuitJsonToKicadPcbConverter(
     sourceCircuitJson as any,
-    { projectName: boardName },
+    {
+      edgeCutsWidth: sourceEdgeCutsWidth,
+      projectName: boardName,
+    },
   )
   converter.runUntilFinished()
   const roundTripText = converter.getOutputString()
   const roundTripPcb = parseKicadPcb(roundTripText)
+  const roundTripEdgeCutsWidth = getEdgeCutsWidth(roundTripPcb)
 
   const roundTripConverter = new KicadToCircuitJsonConverter()
   roundTripConverter.addFile(filename, roundTripText)
@@ -122,10 +149,12 @@ export async function createOpenSourceBoardRoundTrip({
       roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
     ),
     roundTripCounts,
+    roundTripEdgeCutsWidth,
     roundTripFabricationLineCount,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
     sourceCounts,
+    sourceEdgeCutsWidth,
     sourceFabricationPathSegmentCount,
     sourceNetNames,
     sourcePrimitiveTotal,

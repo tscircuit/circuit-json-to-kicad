@@ -9,6 +9,7 @@ test("round-trips the open-source soil moisture sensor KiCad board", async () =>
   })
 
   expect(result.roundTripCounts).toEqual(result.sourceCounts)
+  expect(result.roundTripEdgeCutsWidth).toBe(result.sourceEdgeCutsWidth)
   expect(result.roundTripNetNames).toEqual(result.sourceNetNames)
   expect(result.sourceWarnings).toEqual([])
   expect(result.roundTripWarnings).toEqual([])
