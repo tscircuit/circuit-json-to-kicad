@@ -5,6 +5,7 @@ import { parseKicadPcb, type KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "../../lib"
 import { stackPngsHorizontally } from "./stackPngsHorizontally"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
+import { createSideBySideSvg } from "./create-side-by-side-svg"
 
 type OpenSourceBoardRoundTripOptions = {
   boardName: string
@@ -35,6 +36,28 @@ function getNativeCounts(
   }
 }
 
+type EdgeGraphic = {
+  getString(): string
+  stroke?: { width?: number }
+  width?: number
+}
+
+function getEdgeCutsWidth(pcb: KicadPcb): number | undefined {
+  const graphics: EdgeGraphic[] = [
+    ...pcb.graphicArcs,
+    ...pcb.graphicCircles,
+    ...pcb.graphicCurves,
+    ...pcb.graphicLines,
+    ...pcb.graphicRects,
+  ]
+  for (const graphic of graphics) {
+    if (!graphic.getString().includes("(layer Edge.Cuts)")) continue
+    const width = graphic.stroke?.width ?? graphic.width
+    if (width !== undefined && Number.isFinite(width)) return width
+  }
+  return undefined
+}
+
 export async function createOpenSourceBoardRoundTrip({
   boardName,
   filename,
@@ -48,6 +71,7 @@ export async function createOpenSourceBoardRoundTrip({
   )
   const sourceText = await readFile(sourcePath, "utf8")
   const sourcePcb = parseKicadPcb(sourceText)
+  const sourceEdgeCutsWidth = getEdgeCutsWidth(sourcePcb)
 
   const sourceConverter = new KicadToCircuitJsonConverter()
   sourceConverter.addFile(filename, sourceText)
@@ -56,11 +80,15 @@ export async function createOpenSourceBoardRoundTrip({
 
   const converter = new CircuitJsonToKicadPcbConverter(
     sourceCircuitJson as any,
-    { projectName: boardName },
+    {
+      edgeCutsWidth: sourceEdgeCutsWidth,
+      projectName: boardName,
+    },
   )
   converter.runUntilFinished()
   const roundTripText = converter.getOutputString()
   const roundTripPcb = parseKicadPcb(roundTripText)
+  const roundTripEdgeCutsWidth = getEdgeCutsWidth(roundTripPcb)
 
   const roundTripConverter = new KicadToCircuitJsonConverter()
   roundTripConverter.addFile(filename, roundTripText)
@@ -96,12 +124,14 @@ export async function createOpenSourceBoardRoundTrip({
 
   const [sourceSnapshot, roundTripSnapshot] = await Promise.all([
     takeKicadSnapshot({
+      includeSvg: true,
       kicadFilePath: sourcePath,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
       pcbCopperPourOpacity: 0.35,
     }),
     takeKicadSnapshot({
+      includeSvg: true,
       kicadFileContent: roundTripText,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
@@ -114,11 +144,17 @@ export async function createOpenSourceBoardRoundTrip({
       sourceSnapshot.generatedFileContent["temp_file.png"]!,
       roundTripSnapshot.generatedFileContent["temp_file.png"]!,
     ]),
+    comparisonSvg: createSideBySideSvg(
+      sourceSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
+      roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
+    ),
     roundTripCounts,
+    roundTripEdgeCutsWidth,
     roundTripFabricationLineCount,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
     sourceCounts,
+    sourceEdgeCutsWidth,
     sourceFabricationPathSegmentCount,
     sourceNetNames,
     sourcePrimitiveTotal,

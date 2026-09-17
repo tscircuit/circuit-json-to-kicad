@@ -386,7 +386,7 @@ export async function createOpenSourceSchematicSvgSnapshot(
   return svg
 }
 
-export async function expectOpenSourceSchematicSvgSnapshot(
+export async function expectOpenSourceSvgSnapshot(
   svg: string,
   testPathOriginal: string,
   snapshotName?: string,
@@ -462,3 +462,5 @@ export async function expectOpenSourceSchematicSvgSnapshot(
     `SVG snapshot differs by ${diffPercentage.toFixed(3)}% (threshold: ${acceptableDiffPercentage}%). Received SVG saved at ${receivedPath}; diff saved at ${diffPath}`,
   )
 }
+
+export const expectOpenSourceSchematicSvgSnapshot = expectOpenSourceSvgSnapshot
