@@ -48,7 +48,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
-  private sourcePortNetKeys = new Map<string, Set<string>>()
+  private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
     if (!pcbPortId) return undefined
@@ -62,15 +62,17 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (!sourcePort) return undefined
 
     const keys = [
-      ...(this.sourcePortNetKeys.get(sourcePortId) ?? []),
+      ...(this.sourcePortNetKeys[sourcePortId] ?? []),
       sourcePort.subcircuit_connectivity_map_key,
     ]
-    const nets = new Map<number, PcbNetInfo>()
+    const nets: PcbNetInfo[] = []
     for (const key of keys) {
       const net = key ? this.ctx.pcbNetMap?.get(key) : undefined
-      if (net) nets.set(net.id, net)
+      if (net && !nets.some((existing) => existing.id === net.id)) {
+        nets.push(net)
+      }
     }
-    if (nets.size > 1) {
+    if (nets.length > 1) {
       const component = sourcePort.source_component_id
         ? this.ctx.db.source_component.get(sourcePort.source_component_id)
         : undefined
@@ -79,10 +81,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         sourcePort.source_component_id ||
         pcbPort.pcb_component_id
       throw new Error(
-        `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${[...nets.values()].map((net) => net.name).join(", ")})`,
+        `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${nets.map((net) => net.name).join(", ")})`,
       )
     }
-    return nets.values().next().value
+    return nets[0]
   }
 
   private getCadComponentForPcbComponent(
@@ -113,10 +115,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         }),
       ].filter((key): key is string => Boolean(key))
       for (const portId of trace.connected_source_port_ids ?? []) {
-        this.sourcePortNetKeys.set(
-          portId,
-          new Set([...(this.sourcePortNetKeys.get(portId) ?? []), ...keys]),
-        )
+        this.sourcePortNetKeys[portId] ??= []
+        this.sourcePortNetKeys[portId].push(...keys)
       }
     }
   }
