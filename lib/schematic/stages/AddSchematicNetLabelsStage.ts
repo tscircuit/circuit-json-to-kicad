@@ -17,6 +17,7 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
+import { getInlineTraceNetLabels } from "../getInlineTraceNetLabels"
 
 /**
  * Adds schematic net labels to the schematic
@@ -33,7 +34,10 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const { kicadSch, db } = this.ctx
 
     // Get all schematic net labels
-    const netLabels = db.schematic_net_label?.list?.() || []
+    const netLabels = [
+      ...(db.schematic_net_label?.list?.() || []),
+      ...getInlineTraceNetLabels(this.ctx.circuitJson).labels,
+    ]
 
     if (netLabels.length === 0) {
       this.finished = true
