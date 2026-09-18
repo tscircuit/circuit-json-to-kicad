@@ -48,6 +48,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
+  private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
     if (!pcbPortId) return undefined
@@ -60,10 +61,30 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const sourcePort = this.ctx.db.source_port?.get(sourcePortId)
     if (!sourcePort) return undefined
 
-    const connectivityKey = sourcePort.subcircuit_connectivity_map_key
-    if (!connectivityKey) return undefined
-
-    return this.ctx.pcbNetMap?.get(connectivityKey)
+    const keys = [
+      ...(this.sourcePortNetKeys[sourcePortId] ?? []),
+      sourcePort.subcircuit_connectivity_map_key,
+    ]
+    const nets: PcbNetInfo[] = []
+    for (const key of keys) {
+      const net = key ? this.ctx.pcbNetMap?.get(key) : undefined
+      if (net && !nets.some((existing) => existing.id === net.id)) {
+        nets.push(net)
+      }
+    }
+    if (nets.length > 1) {
+      const component = sourcePort.source_component_id
+        ? this.ctx.db.source_component.get(sourcePort.source_component_id)
+        : undefined
+      const reference =
+        component?.name ||
+        sourcePort.source_component_id ||
+        pcbPort.pcb_component_id
+      throw new Error(
+        `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${nets.map((net) => net.name).join(", ")})`,
+      )
+    }
+    return nets[0]
   }
 
   private getCadComponentForPcbComponent(
@@ -83,6 +104,21 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     super(input, ctx)
     this.pcbComponents = this.ctx.db.pcb_component.list()
     this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
+
+    // Imported ports may have trace membership without connectivity keys.
+    for (const trace of ctx.db.source_trace.list()) {
+      const keys = [
+        trace.subcircuit_connectivity_map_key,
+        ...(trace.connected_source_net_ids ?? []).map((id) => {
+          const net = ctx.db.source_net.get(id)
+          return net?.subcircuit_connectivity_map_key || net?.source_net_id
+        }),
+      ].filter((key): key is string => Boolean(key))
+      for (const portId of trace.connected_source_port_ids ?? []) {
+        this.sourcePortNetKeys[portId] ??= []
+        this.sourcePortNetKeys[portId].push(...keys)
+      }
+    }
   }
 
   override _step(): void {

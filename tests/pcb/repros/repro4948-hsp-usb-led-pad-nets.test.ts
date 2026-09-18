@@ -6,7 +6,7 @@ import { createSideBySideSvg } from "../../fixtures/create-side-by-side-svg"
 import { expectOpenSourceSvgSnapshot } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro4948: HSP USB LED loses pad nets on export", async () => {
+test("repro4948: HSP USB LED preserves pad nets on export", async () => {
   const source = await Bun.file(
     new URL("../../../references/hsp-usb-led.kicad_pcb", import.meta.url),
   ).text()
@@ -37,7 +37,41 @@ test("repro4948: HSP USB LED loses pad nets on export", async () => {
   const outputPads = getPadNets(outputPcb)
   expect(sourcePads).toHaveLength(22)
   expect(sourcePads.every(([, net]) => net !== null)).toBe(true)
-  expect(outputPads).toEqual(sourcePads.map(([pad]) => [pad, null]))
+  // KiCad net names are normalized by the importer.
+  const netNames: Record<string, string> = {
+    GND: "GND",
+    "Net-(D1-A)": "Net_D1_A",
+    "Net-(J1-CC1)": "Net_J1_CC1",
+    "Net-(J1-CC2)": "Net_J1_CC2",
+    "Net-(J1-VBUS-PadA9)": "Net_J1_VBUS_PadA9",
+    "Net-(R1-Pad1)": "Net_R1_Pad1",
+  }
+  const expectedPads = sourcePads.map(
+    ([pad, net]) => [pad, netNames[net!]!] as const,
+  )
+  expect(outputPads).toEqual(expectedPads)
+
+  const cc1Port = circuitJson
+    .filter((e) => e.type === "source_port")
+    .find((port) => port.name === "A5")!
+  const traces = circuitJson.filter((e) => e.type === "source_trace")
+  traces
+    .find((trace) => trace.display_name === "GND")!
+    .connected_source_port_ids.push(cc1Port.source_port_id)
+  expect(() =>
+    new CircuitJsonToKicadPcbConverter(circuitJson).runUntilFinished(),
+  ).toThrow(/J1 pad A5: multiple KiCad nets \((?=.*GND)(?=.*Net_J1_CC1)/)
+
+  for (const trace of traces) {
+    trace.connected_source_port_ids = trace.connected_source_port_ids.filter(
+      (id) => id !== cc1Port.source_port_id,
+    )
+  }
+  const unassigned = new CircuitJsonToKicadPcbConverter(circuitJson)
+  unassigned.runUntilFinished()
+  expect(getPadNets(parseKicadPcb(unassigned.getOutputString()))).toEqual(
+    expectedPads.map(([pad, net]) => [pad, pad === "J1.A5" ? null : net]),
+  )
 
   const [sourceSvg, outputSvg] = await Promise.all(
     [source, output].map(async (kicadFileContent) => {
@@ -74,7 +108,7 @@ test("repro4948: HSP USB LED loses pad nets on export", async () => {
 <rect width="100%" height="100%" fill="#101820"/>
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">HSP USB LED — original KiCad</text>
-<text x="618" y="28" fill="white" font-size="20">Current KiCad round trip</text>
+<text x="618" y="28" fill="white" font-size="20">Fixed KiCad round trip</text>
 <text x="18" y="52" fill="#8fd6a7" font-size="16">${sourceAssigned}/${sourcePads.length} physical pads have assigned nets</text>
 <text x="618" y="52" fill="${outputColor}" font-size="16">${outputAssigned}/${outputPads.length} physical pads have assigned nets</text>
 <text x="18" y="74" fill="#b8c5d0" font-size="14">${sourcePcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
