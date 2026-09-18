@@ -74,7 +74,11 @@ export function createPinSubsymbol({
       : port.labels?.find((l: string) => /^\d+$/.test(String(l)))
 
     const pinNum =
-      numericLabel ?? (port.pinNumber ? String(port.pinNumber) : `${i + 1}`)
+      (port.pinNumber !== undefined && port.pinNumber !== null
+        ? String(port.pinNumber)
+        : undefined) ??
+      numericLabel ??
+      `${i + 1}`
 
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,

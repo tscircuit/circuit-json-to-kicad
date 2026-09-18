@@ -148,3 +148,44 @@ test("repro579: chip symbols with explicit pin numbers preserve their pin number
   expect(pinMap.get("TX")).toBe("3")
   expect(pinMap.get("RX")).toBe("4")
 })
+
+test("repro579: chip symbols with D0/D1 pin labels preserve explicit pin numbers", async () => {
+  const circuit = new Circuit()
+
+  circuit.add(
+    <board width="30mm" height="30mm">
+      <chip
+        name="U1"
+        pinLabels={{
+          pin1: "D0",
+          pin2: "D1",
+        }}
+        pcbX={0}
+        pcbY={0}
+      />
+    </board>,
+  )
+
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
+  converter.runUntilFinished()
+  const sch = converter.getOutputString()
+
+  const pinBlocks =
+    sch.match(/\(pin passive line[\s\S]*?\(number "[^"]+"[\s\S]*?\)\s*\)/g) ??
+    []
+  expect(pinBlocks.length).toBeGreaterThanOrEqual(2)
+
+  const pinMap = new Map<string, string>()
+  for (const block of pinBlocks) {
+    const nameMatch = block.match(/\(name "([^"]+)"/)
+    const numMatch = block.match(/\(number "([^"]+)"/)
+    if (nameMatch?.[1] && numMatch?.[1]) {
+      pinMap.set(nameMatch[1], numMatch[1])
+    }
+  }
+
+  expect(pinMap.get("D0")).toBe("1")
+  expect(pinMap.get("D1")).toBe("2")
+})
