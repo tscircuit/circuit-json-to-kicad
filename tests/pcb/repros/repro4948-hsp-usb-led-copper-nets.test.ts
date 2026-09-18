@@ -6,7 +6,7 @@ import { createSideBySideSvg } from "../../fixtures/create-side-by-side-svg"
 import { expectOpenSourceSvgSnapshot } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro4948: HSP USB LED preserves pad nets on export", async () => {
+test("repro4948: HSP USB LED preserves pad nets and loses trace and via nets on export", async () => {
   const source = await Bun.file(
     new URL("../../../references/hsp-usb-led.kicad_pcb", import.meta.url),
   ).text()
@@ -50,6 +50,51 @@ test("repro4948: HSP USB LED preserves pad nets on export", async () => {
     ([pad, net]) => [pad, netNames[net!]!] as const,
   )
   expect(outputPads).toEqual(expectedPads)
+
+  const getCopperNets = (pcb: KicadPcb) => {
+    const origin = pcb.footprints.find((footprint) =>
+      footprint.properties.some(
+        (property) => property.key === "Reference" && property.value === "J1",
+      ),
+    )!.position!
+    // Compare relative geometry to 0.000001 mm across board translations.
+    const point = ({ x, y }: { x: number; y: number }) =>
+      [x - origin.x, y - origin.y].map((value) => Number(value.toFixed(6)))
+    const netName = (id: number | undefined) =>
+      pcb.nets.find((net) => net.id === id)?.name || null
+    const segments = pcb.segments.map((segment) => ({
+      geometry: JSON.stringify([
+        [point(segment.start!), point(segment.end!)].sort(),
+        segment.width,
+        segment.layer?.names,
+      ]),
+      net: netName(segment.net?.id),
+    }))
+    const vias = pcb.vias.map((via) => ({
+      geometry: JSON.stringify([
+        point(via.at!),
+        via.size,
+        via.drill,
+        via.layers?.names,
+      ]),
+      net: netName(via.net?.id),
+    }))
+    return {
+      segments: segments.sort((a, b) => a.geometry.localeCompare(b.geometry)),
+      vias: vias.sort((a, b) => a.geometry.localeCompare(b.geometry)),
+    }
+  }
+  const sourceCopper = getCopperNets(sourcePcb)
+  const outputCopper = getCopperNets(outputPcb)
+  expect(sourceCopper.segments).toHaveLength(41)
+  expect(sourceCopper.vias).toHaveLength(6)
+  for (const kind of ["segments", "vias"] as const) {
+    expect(sourceCopper[kind].every(({ net }) => net !== null)).toBe(true)
+    // Current bug: geometry survives, but every copper item becomes net 0.
+    expect(outputCopper[kind]).toEqual(
+      sourceCopper[kind].map((item) => ({ ...item, net: null })),
+    )
+  }
 
   const cc1Port = circuitJson
     .filter((e) => e.type === "source_port")
@@ -100,21 +145,42 @@ test("repro4948: HSP USB LED preserves pad nets on export", async () => {
   )
   const comparison = createSideBySideSvg(sourceSvg!, outputSvg!)
   const height = Number(comparison.match(/height="([\d.]+)"/u)![1])
-  const sourceAssigned = sourcePads.filter(([, net]) => net !== null).length
-  const outputAssigned = outputPads.filter(([, net]) => net !== null).length
-  const outputColor =
-    outputAssigned === outputPads.length ? "#8fd6a7" : "#ff9b9b"
-  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${height + 90}" viewBox="0 0 1200 ${height + 90}">
+  const rows = [
+    [
+      "physical pads",
+      sourcePads.map(([, net]) => net),
+      outputPads.map(([, net]) => net),
+    ],
+    [
+      "trace segments",
+      sourceCopper.segments.map(({ net }) => net),
+      outputCopper.segments.map(({ net }) => net),
+    ],
+    [
+      "vias",
+      sourceCopper.vias.map(({ net }) => net),
+      outputCopper.vias.map(({ net }) => net),
+    ],
+  ] as const
+  const counts = rows
+    .flatMap(([label, sourceNets, outputNets], row) =>
+      [sourceNets, outputNets].map((nets, column) => {
+        const assigned = nets.filter((net) => net !== null).length
+        const color = assigned === nets.length ? "#8fd6a7" : "#ff9b9b"
+        return `<text x="${18 + column * 600}" y="${52 + row * 22}" fill="${color}" font-size="16">${assigned}/${nets.length} ${label} have assigned nets</text>`
+      }),
+    )
+    .join("\n")
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="${height + 134}" viewBox="0 0 1200 ${height + 134}">
 <rect width="100%" height="100%" fill="#101820"/>
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">HSP USB LED — original KiCad</text>
-<text x="618" y="28" fill="white" font-size="20">Fixed KiCad round trip</text>
-<text x="18" y="52" fill="#8fd6a7" font-size="16">${sourceAssigned}/${sourcePads.length} physical pads have assigned nets</text>
-<text x="618" y="52" fill="${outputColor}" font-size="16">${outputAssigned}/${outputPads.length} physical pads have assigned nets</text>
-<text x="18" y="74" fill="#b8c5d0" font-size="14">${sourcePcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
-<text x="618" y="74" fill="#b8c5d0" font-size="14">${outputPcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
+<text x="618" y="28" fill="white" font-size="20">Current KiCad round trip</text>
+${counts}
+<text x="18" y="118" fill="#b8c5d0" font-size="14">${sourcePcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
+<text x="618" y="118" fill="#b8c5d0" font-size="14">${outputPcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
 </g>
-${comparison.replace("<svg", '<svg x="0" y="90"')}
+${comparison.replace("<svg", '<svg x="0" y="134"')}
 </svg>`
   await expectOpenSourceSvgSnapshot(svg, import.meta.path)
 }, 120000)
