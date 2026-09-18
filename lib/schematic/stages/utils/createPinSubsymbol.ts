@@ -63,7 +63,23 @@ export function createPinSubsymbol({
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
-    const pinNum = port.pinNumber?.toString() || `${i + 1}`
+
+    // A library-drawn symbol (such as crystal_4pin, potentiometer, spdt, etc.) gets its
+    // ports in library definition order where port.pinNumber is undefined.
+    // The port's numeric label (e.g. "1", "2", "3", "4") specifies the actual
+    // circuit/footprint pin number. Because KiCad links schematic symbol pins to footprint
+    // pads strictly by pin NUMBER, a numeric label takes precedence over the loop index fallback.
+    const numericLabel = /^\d+$/.test(String(port.labels?.[0] ?? ""))
+      ? String(port.labels![0])
+      : port.labels?.find((l: string) => /^\d+$/.test(String(l)))
+
+    const pinNum =
+      (port.pinNumber !== undefined && port.pinNumber !== null
+        ? String(port.pinNumber)
+        : undefined) ??
+      numericLabel ??
+      `${i + 1}`
+
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,
