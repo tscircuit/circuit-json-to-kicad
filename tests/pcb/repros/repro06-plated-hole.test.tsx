@@ -47,8 +47,30 @@ test("pcb repro06 plated hole", async () => {
 
   const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
 
-  // There are 4 footprints: R1, C1, and 2 standalone plated holes
-  expect(kicadPcb.footprints.length).toBe(4)
+  // R1, C1, and two plated holes remain conductive footprints. The unowned
+  // apertures on both sides of each hole use separate board-only footprints.
+  const conductiveFootprints = kicadPcb.footprints.filter((footprint) =>
+    footprint.fpPads.some((pad) =>
+      pad.layers?.layers.some((layer) => layer.endsWith(".Cu")),
+    ),
+  )
+  expect(conductiveFootprints).toHaveLength(4)
+  const pasteFootprints = kicadPcb.footprints.filter(
+    (footprint) => !conductiveFootprints.includes(footprint),
+  )
+  expect(pasteFootprints).toHaveLength(4)
+  for (const footprint of pasteFootprints) {
+    expect(footprint.attr?.boardOnly).toBe(true)
+    expect(footprint.attr?.excludeFromBom).toBe(true)
+    expect(footprint.attr?.excludeFromPosFiles).toBe(true)
+    expect(footprint.fpPads).toHaveLength(1)
+    const aperture = footprint.fpPads[0]!
+    expect(aperture.layers?.layers).toHaveLength(1)
+    expect(["F.Paste", "B.Paste"]).toContain(aperture.layers!.layers[0]!)
+    expect(aperture.number).toBe("")
+    expect(aperture.net).toBeUndefined()
+    expect(aperture.drill).toBeUndefined()
+  }
 
   const totalHoles = kicadPcb.footprints.reduce(
     (acc, f) => acc + f.fpPads.filter((p) => p.padType === "thru_hole").length,

@@ -2,6 +2,7 @@ import { test, expect } from "bun:test"
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
 import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
+import { parseKicadMod } from "kicadts"
 
 // Mock component: KeyHotSocket - custom footprint with 3D model reference
 async function renderKeyHotSocket(): Promise<CircuitJson> {
@@ -83,6 +84,46 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
 
   await converter.run()
   const output = converter.getOutput()
+  const footprint = parseKicadMod(
+    output.kicadProjectFsMap[
+      "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod"
+    ]!.toString(),
+  )
+  const pastePads = footprint.fpPads.filter((pad) =>
+    pad.layers?.layers.includes("F.Paste"),
+  )
+  expect(pastePads).toHaveLength(2)
+  for (const pad of pastePads) {
+    expect(pad.number).toBe("")
+    expect(pad.layers?.layers).toEqual(["F.Paste"])
+    expect(pad.size?.width).toBe(1.75)
+    expect(pad.size?.height).toBe(0.84)
+    expect(pad.net).toBeUndefined()
+    expect(pad.drill).toBeUndefined()
+  }
+  const padUuids = footprint.fpPads.map((pad) => pad.uuid?.value)
+  expect(padUuids).toHaveLength(5)
+  expect(padUuids.every(Boolean)).toBe(true)
+  expect(new Set(padUuids).size).toBe(padUuids.length)
+  const repeatedConverter = new KicadLibraryConverter({
+    kicadLibraryName: "my-keyboard-library",
+    entrypoint: "lib/my-keyboard-library.ts",
+    getExportsFromTsxFile: async (filePath) => mockExports[filePath] ?? [],
+    buildFileToCircuitJson: async (_filePath, componentName) =>
+      mockCircuitJson[componentName] ?? null,
+    includeBuiltins: true,
+  })
+  await repeatedConverter.run()
+  const repeatedFootprint = parseKicadMod(
+    repeatedConverter
+      .getOutput()
+      .kicadProjectFsMap[
+        "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod"
+      ]!.toString(),
+  )
+  expect(repeatedFootprint.fpPads.map((pad) => pad.uuid?.value)).toEqual(
+    padUuids,
+  )
 
   // Snapshot the output structure
   const outputKeys = Object.keys(output.kicadProjectFsMap).sort()
@@ -193,13 +234,13 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
       (pad "1" smd rect
         (at -3.175 -0.7000000000000002 0)
         (size 2.5 1.2)
-        (layers F.Cu F.Paste F.Mask)
+        (layers F.Cu F.Mask)
         (uuid 633a4dec-1f37-b14c-24ca-eb5468cd87f4)
       )
       (pad "2" smd rect
         (at 3.1750000000000003 -3.24 0)
         (size 2.5 1.2)
-        (layers F.Cu F.Paste F.Mask)
+        (layers F.Cu F.Mask)
         (uuid 07e0ff52-4be3-9bf2-7019-c76e2c172ace)
       )
       (pad "" np_thru_hole circle
@@ -207,7 +248,19 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (size 4 4)
         (drill 4)
         (layers *.Cu *.Mask)
-        (uuid 51b679a0-2a9d-c901-0385-18622393983d)
+        (uuid 1b648220-4888-4b7f-75ac-14de5d3021c3)
+      )
+      (pad "" smd rect
+        (at -3.175 -0.7000000000000002 0)
+        (size 1.75 0.84)
+        (layers F.Paste)
+        (uuid 5e15c340-30f1-f9e1-03ce-3082295598dd)
+      )
+      (pad "" smd rect
+        (at 3.1750000000000003 -3.24 0)
+        (size 1.75 0.84)
+        (layers F.Paste)
+        (uuid 286ff760-5593-c0bf-7d48-75e25024ac83)
       )
     )"
   `)

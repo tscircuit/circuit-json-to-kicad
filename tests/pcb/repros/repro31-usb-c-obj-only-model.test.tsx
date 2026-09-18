@@ -46,9 +46,37 @@ test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C"
   })
   converter.runUntilFinished()
   const pcb = converter.getOutput()
-  expect(pcb.footprints).toHaveLength(1)
-  expect(pcb.footprints[0]!.fpPads).toHaveLength(22)
-  expect(pcb.footprints[0]!.models).toHaveLength(1)
+  const componentFootprints = pcb.footprints.filter(
+    (fp) => fp.models.length > 0,
+  )
+  expect(componentFootprints).toHaveLength(1)
+  const footprint = componentFootprints[0]!
+  const copperPads = footprint.fpPads.filter((pad) =>
+    pad.layers?.layers.some((layer) => layer.endsWith(".Cu")),
+  )
+  expect(copperPads).toHaveLength(22)
+  expect(footprint.models).toHaveLength(1)
+  const pasteFootprints = pcb.footprints.filter((fp) => fp !== footprint)
+  expect(pasteFootprints).toHaveLength(8)
+  for (const pasteFootprint of pasteFootprints) {
+    expect(pasteFootprint.attr?.boardOnly).toBe(true)
+    expect(pasteFootprint.attr?.excludeFromBom).toBe(true)
+    expect(pasteFootprint.attr?.excludeFromPosFiles).toBe(true)
+    expect(pasteFootprint.models).toHaveLength(0)
+    expect(pasteFootprint.fpPads).toHaveLength(1)
+    const aperture = pasteFootprint.fpPads[0]!
+    expect(aperture.layers?.layers).toHaveLength(1)
+    expect(["F.Paste", "B.Paste"]).toContain(aperture.layers!.layers[0]!)
+    expect(aperture.number).toBe("")
+    expect(aperture.net).toBeUndefined()
+    expect(aperture.drill).toBeUndefined()
+  }
+  const pastePads = pcb.footprints.flatMap((fp) =>
+    fp.fpPads.filter((pad) =>
+      pad.layers?.layers.some((layer) => layer.endsWith(".Paste")),
+    ),
+  )
+  expect(pastePads).toHaveLength(24)
   const stepUrl =
     "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step"
   expect(converter.getModel3dSourcePaths()).toEqual([stepUrl])
@@ -59,10 +87,12 @@ test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C"
     inputHasObj: Boolean(cad.model_obj_url),
     inputHasStep: Boolean(cad.model_step_url),
     inputHasWrl: Boolean(cad.model_wrl_url),
-    exportedFootprints: pcb.footprints.length,
-    exportedPads: pcb.footprints[0]!.fpPads.length,
-    exportedModels: pcb.footprints[0]!.models.length,
-    exportedModelPath: pcb.footprints[0]!.models[0]!.path,
+    exportedComponentFootprints: componentFootprints.length,
+    exportedCopperPads: copperPads.length,
+    exportedPasteApertures: pastePads.length,
+    standalonePasteFootprints: pasteFootprints.length,
+    exportedModels: footprint.models.length,
+    exportedModelPath: footprint.models[0]!.path,
     modelDownloads: converter.getModel3dSourcePaths(),
   }).toMatchSnapshot()
 

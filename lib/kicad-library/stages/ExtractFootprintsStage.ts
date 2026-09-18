@@ -131,6 +131,13 @@ export class ExtractFootprintsStage extends ConverterStage<
 
       const footprints = pcb.footprints ?? []
       for (const footprint of footprints) {
+        // Unowned board apertures are not reusable component footprints.
+        if (
+          footprint.libraryLink === "tscircuit:solder_paste" &&
+          footprint.attr?.boardOnly
+        ) {
+          continue
+        }
         const footprintEntry = this.sanitizeFootprint({
           footprint,
           fpLibraryName,
@@ -287,7 +294,9 @@ export class ExtractFootprintsStage extends ConverterStage<
       const pad = pads[i]
       if (pad) {
         pad.uuid = generateDeterministicUuid(
-          `${footprintName}-pad-${pad.number ?? i}`,
+          pad.number
+            ? `${footprintName}-pad-${pad.number}`
+            : `${footprintName}-unnumbered-pad-${i}`,
         )
         pad.net = undefined
       }
