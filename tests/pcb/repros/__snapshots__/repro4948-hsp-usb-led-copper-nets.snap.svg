@@ -1,14 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="398.57142857142856" viewBox="0 0 1200 398.57142857142856">
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="442.57142857142856" viewBox="0 0 1200 442.57142857142856">
 <rect width="100%" height="100%" fill="#101820"/>
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">HSP USB LED — original KiCad</text>
-<text x="618" y="28" fill="white" font-size="20">Fixed KiCad round trip</text>
+<text x="618" y="28" fill="white" font-size="20">Current KiCad round trip</text>
 <text x="18" y="52" fill="#8fd6a7" font-size="16">22/22 physical pads have assigned nets</text>
 <text x="618" y="52" fill="#8fd6a7" font-size="16">22/22 physical pads have assigned nets</text>
-<text x="18" y="74" fill="#b8c5d0" font-size="14">6 net definitions</text>
-<text x="618" y="74" fill="#b8c5d0" font-size="14">6 net definitions</text>
+<text x="18" y="74" fill="#8fd6a7" font-size="16">41/41 trace segments have assigned nets</text>
+<text x="618" y="74" fill="#ff9b9b" font-size="16">0/41 trace segments have assigned nets</text>
+<text x="18" y="96" fill="#8fd6a7" font-size="16">6/6 vias have assigned nets</text>
+<text x="618" y="96" fill="#ff9b9b" font-size="16">0/6 vias have assigned nets</text>
+<text x="18" y="118" fill="#b8c5d0" font-size="14">6 net definitions</text>
+<text x="618" y="118" fill="#b8c5d0" font-size="14">6 net definitions</text>
 </g>
-<svg x="0" y="90" xmlns="http://www.w3.org/2000/svg" width="1200" height="308.57142857142856" viewBox="0 0 1200 308.57142857142856">
+<svg x="0" y="134" xmlns="http://www.w3.org/2000/svg" width="1200" height="308.57142857142856" viewBox="0 0 1200 308.57142857142856">
 <svg data-comparison="source" x="0" y="0"
   xmlns:svg="http://www.w3.org/2000/svg"
   xmlns="http://www.w3.org/2000/svg"
