@@ -6,7 +6,7 @@ import { createSideBySideSvg } from "../../fixtures/create-side-by-side-svg"
 import { expectOpenSourceSvgSnapshot } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro4948: HSP USB LED preserves pad nets and loses trace and via nets on export", async () => {
+test("repro4948: HSP USB LED preserves pad, trace and via nets on export", async () => {
   const source = await Bun.file(
     new URL("../../../references/hsp-usb-led.kicad_pcb", import.meta.url),
   ).text()
@@ -90,11 +90,27 @@ test("repro4948: HSP USB LED preserves pad nets and loses trace and via nets on 
   expect(sourceCopper.vias).toHaveLength(6)
   for (const kind of ["segments", "vias"] as const) {
     expect(sourceCopper[kind].every(({ net }) => net !== null)).toBe(true)
-    // Current bug: geometry survives, but every copper item becomes net 0.
     expect(outputCopper[kind]).toEqual(
-      sourceCopper[kind].map((item) => ({ ...item, net: null })),
+      sourceCopper[kind].map((item) => ({
+        ...item,
+        net: netNames[item.net!]!,
+      })),
     )
   }
+
+  // Explicit via ownership takes precedence over nearby copper; absent stays net 0.
+  const vias = circuitJson.filter((element) => element.type === "pcb_via")
+  vias[0]!.source_net_id = circuitJson
+    .filter((element) => element.type === "source_net")
+    .find((net) => net.name === "Net_J1_CC1")!.source_net_id
+  delete vias[1]!.source_net_id
+  const changedVias = new CircuitJsonToKicadPcbConverter(circuitJson)
+  changedVias.runUntilFinished()
+  const changedPcb = changedVias.getOutput()
+  expect(
+    changedPcb.nets.find((net) => net.id === changedPcb.vias[0]!.net?.id)?.name,
+  ).toBe("Net_J1_CC1")
+  expect(changedPcb.vias[1]!.net?.id).toBe(0)
 
   const cc1Port = circuitJson
     .filter((e) => e.type === "source_port")
@@ -175,7 +191,7 @@ test("repro4948: HSP USB LED preserves pad nets and loses trace and via nets on 
 <rect width="100%" height="100%" fill="#101820"/>
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">HSP USB LED — original KiCad</text>
-<text x="618" y="28" fill="white" font-size="20">Current KiCad round trip</text>
+<text x="618" y="28" fill="white" font-size="20">Fixed KiCad round trip</text>
 ${counts}
 <text x="18" y="118" fill="#b8c5d0" font-size="14">${sourcePcb.nets.filter((net) => net.id !== 0).length} net definitions</text>
 <text x="618" y="118" fill="#b8c5d0" font-size="14">${outputPcb.nets.filter((net) => net.id !== 0).length} net definitions</text>

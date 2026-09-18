@@ -2,13 +2,13 @@
 <rect width="100%" height="100%" fill="#101820"/>
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">HSP USB LED — original KiCad</text>
-<text x="618" y="28" fill="white" font-size="20">Current KiCad round trip</text>
+<text x="618" y="28" fill="white" font-size="20">Fixed KiCad round trip</text>
 <text x="18" y="52" fill="#8fd6a7" font-size="16">22/22 physical pads have assigned nets</text>
 <text x="618" y="52" fill="#8fd6a7" font-size="16">22/22 physical pads have assigned nets</text>
 <text x="18" y="74" fill="#8fd6a7" font-size="16">41/41 trace segments have assigned nets</text>
-<text x="618" y="74" fill="#ff9b9b" font-size="16">0/41 trace segments have assigned nets</text>
+<text x="618" y="74" fill="#8fd6a7" font-size="16">41/41 trace segments have assigned nets</text>
 <text x="18" y="96" fill="#8fd6a7" font-size="16">6/6 vias have assigned nets</text>
-<text x="618" y="96" fill="#ff9b9b" font-size="16">0/6 vias have assigned nets</text>
+<text x="618" y="96" fill="#8fd6a7" font-size="16">6/6 vias have assigned nets</text>
 <text x="18" y="118" fill="#b8c5d0" font-size="14">6 net definitions</text>
 <text x="618" y="118" fill="#b8c5d0" font-size="14">6 net definitions</text>
 </g>
