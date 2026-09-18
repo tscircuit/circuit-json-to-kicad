@@ -6,7 +6,7 @@ import { createSideBySideSvg } from "../../fixtures/create-side-by-side-svg"
 import { expectOpenSourceSvgSnapshot } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro4948: HSP USB LED preserves trace and via nets on export", async () => {
+test("repro4948: HSP USB LED preserves pad, trace and via nets on export", async () => {
   const source = await Bun.file(
     new URL("../../../references/hsp-usb-led.kicad_pcb", import.meta.url),
   ).text()
