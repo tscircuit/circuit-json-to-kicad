@@ -160,8 +160,10 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
             ) {
               for (const sourceNetId of sourceTrace.connected_source_net_ids) {
                 const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
-                if (sourceNet?.subcircuit_connectivity_map_key) {
-                  connectivityKey = sourceNet.subcircuit_connectivity_map_key
+                if (sourceNet) {
+                  connectivityKey =
+                    sourceNet.subcircuit_connectivity_map_key ||
+                    sourceNet.source_net_id
                   break
                 }
               }
@@ -171,8 +173,10 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
 
         if (!connectivityKey && typeof trace.connection_name === "string") {
           const sourceNet = this.ctx.db.source_net?.get(trace.connection_name)
-          if (sourceNet?.subcircuit_connectivity_map_key) {
-            connectivityKey = sourceNet.subcircuit_connectivity_map_key
+          if (sourceNet) {
+            connectivityKey =
+              sourceNet.subcircuit_connectivity_map_key ||
+              sourceNet.source_net_id
           }
         }
 

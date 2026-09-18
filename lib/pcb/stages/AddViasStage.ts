@@ -23,6 +23,7 @@ type ViaLike = {
   from_layer?: string
   to_layer?: string
   pcb_trace_id?: string
+  source_net_id?: string
   subcircuit_connectivity_map_key?: string
   connection_name?: string
 }
@@ -142,6 +143,14 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       let connectivityKey: string | undefined =
         via.subcircuit_connectivity_map_key
 
+      if (!connectivityKey && via.source_net_id) {
+        const sourceNet = this.ctx.db.source_net?.get(via.source_net_id)
+        if (sourceNet) {
+          connectivityKey =
+            sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
+        }
+      }
+
       if (!connectivityKey && via.pcb_trace_id) {
         const pcbTrace = this.ctx.db.pcb_trace?.get(via.pcb_trace_id)
         if (pcbTrace) {
@@ -163,8 +172,10 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
               ) {
                 for (const sourceNetId of sourceTrace.connected_source_net_ids) {
                   const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
-                  if (sourceNet?.subcircuit_connectivity_map_key) {
-                    connectivityKey = sourceNet.subcircuit_connectivity_map_key
+                  if (sourceNet) {
+                    connectivityKey =
+                      sourceNet.subcircuit_connectivity_map_key ||
+                      sourceNet.source_net_id
                     break
                   }
                 }
@@ -176,8 +187,10 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
               const sourceNet = this.ctx.db.source_net?.get(
                 pcbTrace.source_trace_id,
               )
-              if (sourceNet?.subcircuit_connectivity_map_key) {
-                connectivityKey = sourceNet.subcircuit_connectivity_map_key
+              if (sourceNet) {
+                connectivityKey =
+                  sourceNet.subcircuit_connectivity_map_key ||
+                  sourceNet.source_net_id
               }
             }
           }
@@ -186,8 +199,9 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       if (!connectivityKey && via.connection_name) {
         const sourceNet = this.ctx.db.source_net?.get(via.connection_name)
-        if (sourceNet?.subcircuit_connectivity_map_key) {
-          connectivityKey = sourceNet.subcircuit_connectivity_map_key
+        if (sourceNet) {
+          connectivityKey =
+            sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
         }
       }
 
