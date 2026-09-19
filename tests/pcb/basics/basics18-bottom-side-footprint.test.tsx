@@ -1,6 +1,9 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 // Bottom-side components must sit on B.Cu with no leftover F.* layers
 // (silk/fab/properties included). #412 set the footprint layer; this covers
@@ -18,11 +21,18 @@ test("bottom-side component is emitted on B.Cu", async () => {
         pcbX={3}
         pcbY={0}
       />
+      <pcbnotetext
+        text="R2 = bottom layer (B.Cu)"
+        fontSize={0.7}
+        pcbX={0}
+        pcbY={-3}
+      />
     </board>,
   )
   await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
 
-  const converter = new CircuitJsonToKicadPcbConverter(circuit.getCircuitJson())
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   const pcb = converter.getOutputString()
 
@@ -42,4 +52,18 @@ test("bottom-side component is emitted on B.Cu", async () => {
   const frontLayers = bottom!.match(/\(layers? (F\.[A-Za-z]+)/g)
   expect(frontLayers).toBeNull()
   expect(bottom!).toContain("B.Cu")
-})
+
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: pcb,
+    kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
+  })
+  expect(kicadSnapshot.exitCode).toBe(0)
+
+  expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
+}, 31_000)
