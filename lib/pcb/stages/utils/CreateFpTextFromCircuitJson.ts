@@ -15,6 +15,10 @@ export function createFpTextFromCircuitJson({
   componentCenter: { x: number; y: number }
   componentRotation?: number
 }): FpText | null {
+  if ("is_hidden" in textElement && textElement.is_hidden === true) {
+    return null
+  }
+
   if (!textElement.text || !textElement.anchor_position) {
     return null
   }

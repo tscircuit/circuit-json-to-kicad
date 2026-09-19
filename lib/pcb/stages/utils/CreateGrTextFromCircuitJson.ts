@@ -15,6 +15,10 @@ export function createGrTextFromCircuitJson({
   textElement: PcbSilkscreenText
   c2kMatPcb: Matrix
 }): GrText | null {
+  if ("is_hidden" in textElement && textElement.is_hidden === true) {
+    return null
+  }
+
   if (!textElement.text || !textElement.anchor_position) {
     return null
   }
