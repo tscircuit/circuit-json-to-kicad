@@ -20,6 +20,11 @@ type SupportedBoardCounts = {
   vias: number
 }
 
+type AssemblyExclusionCounts = {
+  excludedFromBom: number
+  excludedFromPositionFiles: number
+}
+
 function getNativeCounts(
   pcb: KicadPcb,
   copperPours: number,
@@ -33,6 +38,17 @@ function getNativeCounts(
     ),
     segments: pcb.segments.length,
     vias: pcb.vias.length,
+  }
+}
+
+function getAssemblyExclusionCounts(pcb: KicadPcb): AssemblyExclusionCounts {
+  return {
+    excludedFromBom: pcb.footprints.filter(
+      (footprint) => footprint.attr?.excludeFromBom,
+    ).length,
+    excludedFromPositionFiles: pcb.footprints.filter(
+      (footprint) => footprint.attr?.excludeFromPosFiles,
+    ).length,
   }
 }
 
@@ -100,6 +116,9 @@ export async function createOpenSourceBoardRoundTrip({
     roundTripPcb,
     roundTripPcb.zones.length,
   )
+  const sourceAssemblyExclusionCounts = getAssemblyExclusionCounts(sourcePcb)
+  const roundTripAssemblyExclusionCounts =
+    getAssemblyExclusionCounts(roundTripPcb)
   const sourceNetNames = [
     "",
     ...sourceCircuitJson
@@ -138,26 +157,31 @@ export async function createOpenSourceBoardRoundTrip({
       pcbCopperPourOpacity: 0.35,
     }),
   ])
+  const sourceSvg =
+    sourceSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8")
+  const roundTripSvg =
+    roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8")
 
   return {
     comparisonPng: await stackPngsHorizontally([
       sourceSnapshot.generatedFileContent["temp_file.png"]!,
       roundTripSnapshot.generatedFileContent["temp_file.png"]!,
     ]),
-    comparisonSvg: createSideBySideSvg(
-      sourceSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
-      roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8"),
-    ),
+    comparisonSvg: createSideBySideSvg(sourceSvg, roundTripSvg),
+    roundTripAssemblyExclusionCounts,
     roundTripCounts,
     roundTripEdgeCutsWidth,
     roundTripFabricationLineCount,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
+    roundTripSvg,
     sourceCounts,
+    sourceAssemblyExclusionCounts,
     sourceEdgeCutsWidth,
     sourceFabricationPathSegmentCount,
     sourceNetNames,
     sourcePrimitiveTotal,
+    sourceSvg,
     sourceWarnings: sourceConverter.getWarnings(),
   }
 }
