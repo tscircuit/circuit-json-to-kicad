@@ -33,7 +33,7 @@ ${body}
 </svg>`
 }
 
-test("repro4948: Pan-Tilt Home Sensor loses assembly exclusions on export", async () => {
+test("repro4948: Pan-Tilt Home Sensor preserves assembly exclusions on export", async () => {
   const result = await createOpenSourceBoardRoundTrip({
     boardName: "Pan-Tilt Home Sensor",
     filename: "pan-tilt-home-sensor.kicad_pcb",
@@ -50,10 +50,9 @@ test("repro4948: Pan-Tilt Home Sensor loses assembly exclusions on export", asyn
     excludedFromBom: 6,
     excludedFromPositionFiles: 4,
   })
-  expect(result.roundTripAssemblyExclusionCounts).toEqual({
-    excludedFromBom: 0,
-    excludedFromPositionFiles: 0,
-  })
+  expect(result.roundTripAssemblyExclusionCounts).toEqual(
+    result.sourceAssemblyExclusionCounts,
+  )
 
   const sourceCounts = result.sourceAssemblyExclusionCounts
   const roundTripCounts = result.roundTripAssemblyExclusionCounts
@@ -62,11 +61,11 @@ test("repro4948: Pan-Tilt Home Sensor loses assembly exclusions on export", asyn
 <line x1="600" y1="0" x2="600" y2="450" stroke="#5d6873" stroke-width="2"/>
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">Pan-Tilt Home Sensor — original KiCad</text>
-<text x="618" y="28" fill="white" font-size="20">Current KiCad round trip</text>
+<text x="618" y="28" fill="white" font-size="20">Fixed KiCad round trip</text>
 <text x="18" y="54" fill="#8fd6a7" font-size="16">${sourceCounts.excludedFromBom} footprints excluded from BOM</text>
-<text x="618" y="54" fill="#ff9b9b" font-size="16">${roundTripCounts.excludedFromBom} footprints excluded from BOM</text>
+<text x="618" y="54" fill="#8fd6a7" font-size="16">${roundTripCounts.excludedFromBom} footprints excluded from BOM</text>
 <text x="18" y="76" fill="#8fd6a7" font-size="16">${sourceCounts.excludedFromPositionFiles} footprints excluded from position files</text>
-<text x="618" y="76" fill="#ff9b9b" font-size="16">${roundTripCounts.excludedFromPositionFiles} footprints excluded from position files</text>
+<text x="618" y="76" fill="#8fd6a7" font-size="16">${roundTripCounts.excludedFromPositionFiles} footprints excluded from position files</text>
 </g>
 ${createRotatedBoardPanel(result.sourceSvg, "source", 0)}
 ${createRotatedBoardPanel(result.roundTripSvg, "converted", 600)}
