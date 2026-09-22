@@ -49,5 +49,8 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@tscircuit/alphabet": "^0.0.27"
   }
 }

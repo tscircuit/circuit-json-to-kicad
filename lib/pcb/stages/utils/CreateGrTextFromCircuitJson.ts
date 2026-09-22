@@ -1,5 +1,6 @@
 import type { PcbSilkscreenText } from "circuit-json"
-import { GrText, TextEffects, TextEffectsFont, At } from "kicadts"
+import { GrText, TextEffects, At } from "kicadts"
+import { createSilkscreenTextFont } from "./CreateSilkscreenTextFont"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 import { createPcbTextJustify } from "./CreatePcbTextJustify"
@@ -36,13 +37,10 @@ export function createGrTextFromCircuitJson({
     ? [kicadLayer, "knockout"]
     : kicadLayer
 
-  const font = new TextEffectsFont()
-  const fontSize = textElement.font_size || 1
-  font.size = {
-    width: fontSize,
-    height: fontSize,
-  }
-  font.thickness = fontSize > 1 ? Math.min(0.3, fontSize * 0.2) : 0.15
+  const font = createSilkscreenTextFont({
+    text: textElement.text,
+    fontSize: textElement.font_size || 1,
+  })
   const textEffects = new TextEffects({ font })
 
   const justify = createPcbTextJustify({

@@ -74,14 +74,16 @@ test(
 
     const outputString = converter.getOutputString()
 
+    // Silkscreen text uses the bundled TscircuitAlphabet metrics:
+    // char width = 0.692052 * font_size, stroke = 0.09 * font_size
     expect(outputString).toMatch(
-      /\(gr_text\s+"REV A 2026-07"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
+      /\(gr_text\s+"REV A 2026-07"[\s\S]*?\(size 0\.8 0\.553642\)[\s\S]*?\(thickness 0\.072\)/,
     )
     expect(outputString).toMatch(
-      /\(fp_text\s+user\s+"FOOTPRINT SILK"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
+      /\(fp_text\s+user\s+"FOOTPRINT SILK"[\s\S]*?\(size 0\.8 0\.553642\)[\s\S]*?\(thickness 0\.072\)/,
     )
     expect(outputString).toMatch(
-      /\(gr_text\s+"FAB NOTE"[\s\S]*?\(layer F\.Fab\)[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
+      /\(gr_text\s+"FAB NOTE"[\s\S]*?\(layer F\.Fab\)[\s\S]*?\(size 0\.8 0\.553642\)[\s\S]*?\(thickness 0\.072\)/,
     )
 
     const kicadSnapshot = await takeKicadSnapshot({
