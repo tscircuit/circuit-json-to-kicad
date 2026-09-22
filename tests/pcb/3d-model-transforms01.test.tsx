@@ -63,7 +63,8 @@ test("exported models preserve world placement on both footprint sides", async (
         const component = json.find((e) => e.type === "pcb_component")!
         const converter = new CircuitJsonToKicadPcbConverter(json)
         converter.runUntilFinished()
-        const model = converter.getOutput().footprints[0]!.models[0]!
+        const footprint = converter.getOutput().footprints[0]!
+        const model = footprint.models[0]!
         const rotation = model.rotate!
         const offset = model.offset!
         expect(model.scale).toEqual({ x: 2, y: 2, z: 2 })
@@ -129,7 +130,11 @@ test("exported models preserve world placement on both footprint sides", async (
             actual = turn(actual, Z, 180)
             actual = turn(actual, Y, 180)
           }
-          actual = turn(actual, Z, component.rotation)
+          const footprintRotation =
+            footprint.position && "angle" in footprint.position
+              ? (footprint.position.angle ?? 0)
+              : 0
+          actual = turn(actual, Z, footprintRotation)
           actual = [
             actual[0] + component.center.x,
             actual[1] + component.center.y,

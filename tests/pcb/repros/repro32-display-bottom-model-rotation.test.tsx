@@ -58,7 +58,7 @@ test("pcb repro32 display screen faces outward on both board sides", async () =>
     // For this display, top placement cancels the footprint's 180° rotation.
     // Bottom placement additionally needs a local 180° Z rotation to undo
     // KiCad's back-side flip. It reverses the origin's X/Y offset signs.
-    expect(model.rotate).toEqual({ x: 0, y: 0, z: layer === "top" ? 0 : -180 })
+    expect(model.rotate).toEqual({ x: 0, y: 0, z: layer === "top" ? 0 : 180 })
     const offsetSign = layer === "top" ? 1 : -1
     expect(model.offset!.x).toBeCloseTo(offsetSign * 0.0000254, 10)
     expect(model.offset!.y).toBeCloseTo(offsetSign * 0.00508, 10)

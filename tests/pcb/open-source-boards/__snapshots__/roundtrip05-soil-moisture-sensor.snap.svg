@@ -4,8 +4,8 @@
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">Soil Moisture Sensor — original KiCad</text>
 <text x="18" y="52" fill="#8fd6a7" font-size="16">14 bottom-side footprints</text>
-<text x="18" y="278" fill="white" font-size="20">Current KiCad round trip</text>
-<text x="18" y="302" fill="#ff9b9b" font-size="16">3 bottom footprint rotations changed</text>
+<text x="18" y="278" fill="white" font-size="20">Fixed KiCad round trip</text>
+<text x="18" y="302" fill="#8fd6a7" font-size="16">0 bottom footprint rotations changed</text>
 </g>
 <svg data-comparison="source" x="0" y="65" width="1200" height="175" viewBox="0.0000 0.0000 185.2930 22.9870" preserveAspectRatio="xMidYMid meet">
 
