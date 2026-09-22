@@ -1,4 +1,4 @@
-import { test } from "bun:test"
+import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -24,19 +24,21 @@ test("repro12 LED schematic snapshot", async () => {
 
   Bun.write("./debug-output/repro12-led-name-sch.kicad_sch", output)
 
+  expect(output).toContain('(property "Reference" "LED_TEMP"')
+  expect(output).toContain('(property "Value" "red"')
+
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
   })
 
-  await Bun.write(
-    "./debug-output/repro12-led-name-sch.stacked.png",
-    await stackCircuitJsonKicadPngs(
+  expect(
+    stackCircuitJsonKicadPngs(
       await takeCircuitJsonSnapshot({
         circuitJson,
         outputType: "schematic",
       }),
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
-  )
+  ).toMatchPngSnapshot(import.meta.path)
 })
