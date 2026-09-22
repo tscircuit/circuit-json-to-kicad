@@ -63,7 +63,16 @@ export function createPinSubsymbol({
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
-    const pinNum = port.pinNumber?.toString() || `${i + 1}`
+    // Library-drawn symbols deliver ports in library order with
+    // pinNumber = index + 1, while a numeric label carries the circuit's pin
+    // number. KiCad mates symbol pins to footprint pads by number, so the
+    // label must win there. Chips carry a real pinNumber and keep it.
+    const numericLabel = /^\d+$/.test(String(port.labels?.[0] ?? ""))
+      ? String(port.labels![0])
+      : undefined
+    const pinNum = isChip
+      ? port.pinNumber?.toString() || numericLabel || `${i + 1}`
+      : numericLabel || port.pinNumber?.toString() || `${i + 1}`
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,
