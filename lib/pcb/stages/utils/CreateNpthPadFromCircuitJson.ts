@@ -1,5 +1,6 @@
 import { FootprintPad, PadDrill } from "kicadts"
 import type { PcbHole } from "circuit-json"
+import { generateDeterministicUuid } from "./generateDeterministicUuid"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 
 export function createNpthPadFromCircuitJson({
@@ -83,6 +84,7 @@ export function createNpthPadFromCircuitJson({
     drill: drill,
     layers: ["*.Cu", "*.Mask"],
     removeUnusedLayers: false,
-    uuid: crypto.randomUUID(),
+    // Use source identity so unchanged holes survive repeat exports and reordering.
+    uuid: generateDeterministicUuid(`npth:${pcbHole.pcb_hole_id}`),
   })
 }
