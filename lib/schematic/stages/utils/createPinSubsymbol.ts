@@ -9,6 +9,101 @@ import {
 } from "kicadts"
 import { calculatePinPosition } from "./calculatePinPosition"
 
+type PortSide = "left" | "right" | "up" | "down"
+type PositionedPort = { x: number; y: number }
+type PositionedSymbolPort = PositionedPort & { index: number }
+type PositionedCircuitPort = PositionedPort & { port: SchematicPort }
+
+function getPortSide(x: number, y: number): PortSide {
+  if (Math.abs(x) > Math.abs(y)) return x < 0 ? "left" : "right"
+  return y < 0 ? "down" : "up"
+}
+
+function hasDuplicatePositions(values: number[]): boolean {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted.some((value, index) => {
+    const previous = sorted[index - 1]
+    return previous !== undefined && Math.abs(value - previous) < 1e-6
+  })
+}
+
+/**
+ * Match symbol artwork ports to the circuit ports drawn on the same side.
+ * Stem lengths can differ, so compare ordering along each side rather than
+ * requiring the coordinates to be equal.
+ */
+function getCircuitPinNumbers({
+  symbolData,
+  schematicComponent,
+  schematicPorts,
+}: {
+  symbolData: any
+  schematicComponent?: SchematicComponent
+  schematicPorts: SchematicPort[]
+}): Map<number, string> {
+  const matches = new Map<number, string>()
+  if (!schematicComponent) return matches
+
+  const symbolCenter = symbolData.center ?? { x: 0, y: 0 }
+  const componentPorts = schematicPorts.filter(
+    (port) =>
+      port.schematic_component_id === schematicComponent.schematic_component_id,
+  )
+
+  for (const side of ["left", "right", "up", "down"] as const) {
+    const symbolPorts: PositionedSymbolPort[] = (symbolData.ports ?? [])
+      .map((port: any, index: number) => ({
+        index,
+        x: (port.x ?? 0) - symbolCenter.x,
+        y: (port.y ?? 0) - symbolCenter.y,
+      }))
+      .filter(
+        (port: { x: number; y: number }) =>
+          getPortSide(port.x, port.y) === side,
+      )
+    const circuitPorts: PositionedCircuitPort[] = componentPorts
+      .map((port) => ({
+        port,
+        x: port.center.x - schematicComponent.center.x,
+        y: port.center.y - schematicComponent.center.y,
+      }))
+      .filter(
+        ({ port, x, y }) =>
+          (port.facing_direction ?? getPortSide(x, y)) === side,
+      )
+
+    if (
+      symbolPorts.length === 0 ||
+      symbolPorts.length !== circuitPorts.length
+    ) {
+      continue
+    }
+
+    const coordinate = (port: PositionedPort) =>
+      side === "left" || side === "right" ? port.y : port.x
+    if (
+      hasDuplicatePositions(symbolPorts.map(coordinate)) ||
+      hasDuplicatePositions(circuitPorts.map(coordinate))
+    ) {
+      continue
+    }
+
+    symbolPorts.sort((a, b) => coordinate(a) - coordinate(b))
+    circuitPorts.sort((a, b) => coordinate(a) - coordinate(b))
+    for (let index = 0; index < symbolPorts.length; index++) {
+      const symbolPort = symbolPorts[index]
+      const circuitPort = circuitPorts[index]
+      if (!symbolPort || !circuitPort) continue
+      const pinNumber = circuitPort.port.pin_number
+      if (pinNumber !== undefined && pinNumber !== null) {
+        matches.set(symbolPort.index, String(pinNumber))
+      }
+    }
+  }
+
+  return matches
+}
+
 /**
  * Create the pin subsymbol for a KiCad library symbol
  */
@@ -34,6 +129,14 @@ export function createPinSubsymbol({
   const CHIP_PIN_LENGTH = 6.0
   // Non-chip artwork already draws the visible lead up to each port.
   const CUSTOM_SYMBOL_PIN_LENGTH = 0.01
+
+  const circuitPinNumbers = isChip
+    ? new Map<number, string>()
+    : getCircuitPinNumbers({
+        symbolData,
+        schematicComponent,
+        schematicPorts,
+      })
 
   for (let i = 0; i < (symbolData.ports?.length || 0); i++) {
     const port = symbolData.ports[i]
@@ -63,14 +166,8 @@ export function createPinSubsymbol({
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
-    // Library-drawn symbols expose their ports in library order, while a
-    // numeric label identifies the circuit pin matched to that position.
-    // KiCad links symbol pins to footprint pads by number, so the circuit pin
-    // label must take precedence over the library-order pin number.
-    const numericLabel = /^\d+$/.test(String(port.labels?.[0] ?? ""))
-      ? String(port.labels[0])
-      : undefined
-    const pinNum = numericLabel || port.pinNumber?.toString() || `${i + 1}`
+    const pinNum =
+      circuitPinNumbers.get(i) || port.pinNumber?.toString() || `${i + 1}`
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,
