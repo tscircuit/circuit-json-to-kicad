@@ -26,7 +26,10 @@ import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converte
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
-import { createPinSubsymbol } from "./utils/createPinSubsymbol"
+import {
+  createPinSubsymbol,
+  pinNumberingByLibId,
+} from "./utils/createPinSubsymbol"
 import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 
 /**
@@ -49,6 +52,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Reset processed symbol names for this run
     this.processedSymbolNames = new Set()
+    pinNumberingByLibId.clear()
 
     // Process schematic components
     const schematicComponents = db.schematic_component.list()
