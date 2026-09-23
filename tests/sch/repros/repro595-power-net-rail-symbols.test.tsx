@@ -1,4 +1,8 @@
+import { mkdtemp } from "node:fs/promises"
+import { tmpdir } from "node:os"
+import { join } from "node:path"
 import { expect, test } from "bun:test"
+import { $ } from "bun"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -81,6 +85,29 @@ test("repro595 power nets emit power: lib symbols with joined nets", async () =>
     kicadFileType: "sch",
   })
   expect(kicadSnapshot.exitCode).toBe(0)
+
+  // The exported netlist must carry the power net names and join the rail
+  // connections into shared nets instead of anonymous Net-(...) splits.
+  const tmpDir = await mkdtemp(join(tmpdir(), "repro595-netlist-"))
+  const schPath = join(tmpDir, "repro595.kicad_sch")
+  const netPath = join(tmpDir, "repro595.net")
+  await Bun.write(schPath, output)
+  const netlistResult =
+    await $`kicad-cli sch export netlist ${schPath} -o ${netPath}`.quiet()
+  expect(netlistResult.exitCode).toBe(0)
+  const netlist = await Bun.file(netPath).text()
+
+  const nodesOnNet = (netName: string) => {
+    const nameIndex = netlist.indexOf(`(name "${netName}")`)
+    if (nameIndex === -1) return []
+    const rest = netlist.slice(nameIndex)
+    const netEnd = rest.slice(1).search(/\n\s*\(net\b/)
+    const netSection = netEnd === -1 ? rest : rest.slice(0, netEnd + 1)
+    return [...netSection.matchAll(/\(ref "([^"]+)"\)/g)].map((m) => m[1])
+  }
+  expect(nodesOnNet("V24").sort()).toEqual(["C1", "C2"])
+  expect(nodesOnNet("GND")).toContain("C2")
+  expect(netlist).not.toContain('(name "Net-(')
 
   const stackedSnapshot = await stackCircuitJsonKicadPngs(
     await takeCircuitJsonSnapshot({
