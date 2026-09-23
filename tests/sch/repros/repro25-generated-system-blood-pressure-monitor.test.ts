@@ -30,9 +30,7 @@ test("repro25: convert the blood pressure monitor multisheet generated system", 
 
       const groundSymbols = parseKicadSch(
         connectorsSheet!.content,
-      ).symbols.filter(
-        (symbol: any) => symbol._sxLibId?.value === "power:GND",
-      )
+      ).symbols.filter((symbol: any) => symbol._sxLibId?.value === "power:GND")
       // One GND symbol belongs to J3 and one to TP7. The unassigned root-page
       // label must not be copied into this child sheet as a second TP7 symbol.
       expect(groundSymbols).toHaveLength(2)
