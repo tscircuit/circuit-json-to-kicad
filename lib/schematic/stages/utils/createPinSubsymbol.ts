@@ -9,7 +9,8 @@ import {
 } from "kicadts"
 import { calculatePinPosition } from "./calculatePinPosition"
 
-const PIN_MATCH_TOLERANCE = 0.05
+/** Largest distance, in units of each port set's RMS radius, still counted as the same pin. */
+const PIN_MATCH_MAX_RESIDUAL = 0.25
 
 /**
  * Pin numbering already emitted for each shared library symbol, so that two instances needing
@@ -17,19 +18,32 @@ const PIN_MATCH_TOLERANCE = 0.05
  */
 export const pinNumberingByLibId = new Map<string, string>()
 
+function normalize(points: { x: number; y: number }[]) {
+  const n = points.length
+  const cx = points.reduce((s, p) => s + p.x, 0) / n
+  const cy = points.reduce((s, p) => s + p.y, 0) / n
+  const rms = Math.sqrt(
+    points.reduce((s, p) => s + (p.x - cx) ** 2 + (p.y - cy) ** 2, 0) / n,
+  )
+  if (rms < 1e-9) return null
+  return points.map((p) => ({ x: (p.x - cx) / rms, y: (p.y - cy) / rms }))
+}
+
 /**
  * KiCad joins a symbol's pins to its footprint pads BY NUMBER, so each pin's number must be the
- * pin_number of the CIRCUIT port that sits at that pin. The symbol's own port order and labels
- * describe the symbol's convention, not the circuit's: library order puts a four-pad crystal's pad 1
- * on pin 3, and a circuit that labels an LED's pin 1 as the cathode (the opposite of the default)
- * gets its polarity reversed if the number is read off the symbol.
+ * pin_number of the CIRCUIT port drawn at that pin. Symbol-library artwork carries no pin
+ * numbers, so the exporter used to fall back to library order, which misnumbers a four-pad
+ * crystal and crosses a polarized capacitor's pins; reading a numeric label instead reverses an
+ * LED whose pin 1 is labelled as the cathode.
  *
- * The circuit's number wins whenever the circuit supplies one. Where it supplies none (no
- * schematic_port for the component, or a matched port without a pin_number) there is nothing to
- * contradict the symbol, so that pin keeps the symbol's own number. What cannot be decided fails
- * loudly instead of choosing: a symbol port with no counterpart when the component does have
- * ports, two symbol ports on one circuit port, a number used twice, or two instances of one shared
- * library symbol needing different numbering. Returns null when nothing is to be overridden.
+ * Only library artwork is matched: ports built from the circuit's own schematic_ports already
+ * carry its pin numbers and are left alone. The symbol ports and the component's circuit ports
+ * are compared after normalizing each set about its centroid, so a symbol drawn at a different
+ * scale from its placement still matches. The circuit's numbers are used only when every symbol
+ * port has exactly one mutually nearest circuit port; anything less clear keeps the symbol's own
+ * numbering, exactly as before. The one hard failure is a conflict the circuit itself states: two
+ * instances of one shared library symbol whose clean matches need different numbering, which a
+ * single definition cannot carry.
  */
 function matchSymbolPortsToCircuit({
   libId,
@@ -43,53 +57,43 @@ function matchSymbolPortsToCircuit({
   schematicPorts: SchematicPort[]
 }): string[] | null {
   const ports: any[] = symbolData.ports || []
-  if (ports.length === 0) return null
+  if (ports.length < 2) return null
+  if (ports.some((p) => p.pinNumber !== undefined && p.pinNumber !== null))
+    return null
   const own = schematicPorts.filter(
     (p) =>
       p.schematic_component_id === schematicComponent.schematic_component_id,
   )
-  // No circuit ports: nothing contradicts the symbol's own numbering.
-  if (own.length === 0) return null
-  const cx = symbolData.center?.x ?? 0
-  const cy = symbolData.center?.y ?? 0
-  const used = new Map<string, number>()
-  const numbers = ports.map((port, i) => {
-    const sx = (port.x ?? 0) - cx
-    const sy = (port.y ?? 0) - cy
-    let best: SchematicPort | null = null
-    let bestDist = Infinity
-    for (const sp of own) {
-      const d = Math.hypot(
-        sp.center.x - schematicComponent.center.x - sx,
-        sp.center.y - schematicComponent.center.y - sy,
-      )
-      if (d < bestDist) {
-        bestDist = d
-        best = sp
+  if (own.length !== ports.length) return null
+  const a = normalize(ports.map((p) => ({ x: p.x ?? 0, y: p.y ?? 0 })))
+  const b = normalize(own.map((p) => ({ x: p.center.x, y: p.center.y })))
+  if (!a || !b) return null
+  const dist = (i: number, j: number) =>
+    Math.hypot(a[i]!.x - b[j]!.x, a[i]!.y - b[j]!.y)
+  const nearest = (count: number, d: (k: number) => number) => {
+    let best = -1
+    let bestD = Infinity
+    for (let k = 0; k < count; k++) {
+      const dk = d(k)
+      if (dk < bestD) {
+        bestD = dk
+        best = k
       }
     }
-    if (!best || bestDist > PIN_MATCH_TOLERANCE) {
-      throw new Error(
-        `${libId}: symbol port ${i} at (${sx.toFixed(3)},${sy.toFixed(3)}) matches no circuit port within ${PIN_MATCH_TOLERANCE}; refusing to guess a pin number`,
-      )
-    }
-    if (used.has(best.schematic_port_id)) {
-      throw new Error(
-        `${libId}: symbol ports ${used.get(best.schematic_port_id)} and ${i} both land on ${best.schematic_port_id}; refusing to guess`,
-      )
-    }
-    used.set(best.schematic_port_id, i)
-    // A matched circuit port without a pin_number has nothing to say; keep the symbol's own number.
-    if (best.pin_number === undefined || best.pin_number === null) {
-      return port.pinNumber?.toString() || `${i + 1}`
-    }
-    return String(best.pin_number)
-  })
-  if (new Set(numbers).size !== numbers.length) {
-    throw new Error(
-      `${libId}: pin numbers ${numbers.join(",")} repeat within one symbol; refusing to guess`,
-    )
+    return { best, bestD }
   }
+  const numbers: string[] = []
+  const used = new Set<number>()
+  for (let i = 0; i < a.length; i++) {
+    const { best: j, bestD } = nearest(b.length, (k) => dist(i, k))
+    const { best: back } = nearest(a.length, (m) => dist(m, j))
+    if (back !== i || bestD > PIN_MATCH_MAX_RESIDUAL || used.has(j)) return null
+    used.add(j)
+    const pinNumber = own[j]!.pin_number
+    if (pinNumber === undefined || pinNumber === null) return null
+    numbers.push(String(pinNumber))
+  }
+  if (new Set(numbers).size !== numbers.length) return null
   const key = numbers.join(",")
   const prior = pinNumberingByLibId.get(libId)
   if (prior !== undefined && prior !== key) {
