@@ -60,10 +60,10 @@ test("repro4948: Soil Moisture Sensor preserves rotated bottom transforms on exp
     const roundTrip = roundTripBottomTransforms.find(
       (candidate) => candidate.reference === source.reference,
     )
+    if (!roundTrip) throw new Error(`Missing footprint ${source.reference}`)
     if (
-      !roundTrip ||
       normalizeRotation(roundTrip.rotation) ===
-        normalizeRotation(source.rotation)
+      normalizeRotation(source.rotation)
     ) {
       return []
     }
