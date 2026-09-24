@@ -3,6 +3,9 @@ import type { PcbPlatedHole } from "circuit-json"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
+import { finiteOr } from "./finiteOr"
+
+const DEFAULT_HOLE_DIMENSION_MM = 1.0
 
 export function createThruHolePadFromCircuitJson({
   platedHole,
@@ -69,9 +72,18 @@ export function createThruHolePadFromCircuitJson({
   if (platedHole.shape === "circle") {
     // Circular plated hole
     padShape = "circle"
-    padSize = [platedHole.outer_diameter, platedHole.outer_diameter]
+    const outerDiameter = finiteOr(
+      platedHole.outer_diameter,
+      DEFAULT_HOLE_DIMENSION_MM,
+      "pcb_plated_hole.outer_diameter",
+    )
+    padSize = [outerDiameter, outerDiameter]
     drill = new PadDrill({
-      diameter: platedHole.hole_diameter,
+      diameter: finiteOr(
+        platedHole.hole_diameter,
+        DEFAULT_HOLE_DIMENSION_MM,
+        "pcb_plated_hole.hole_diameter",
+      ),
       offset: drillOffset,
     })
   } else if (platedHole.shape === "pill" || platedHole.shape === "oval") {
