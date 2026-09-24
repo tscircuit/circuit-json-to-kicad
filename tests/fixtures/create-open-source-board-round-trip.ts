@@ -1,11 +1,11 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
-import { parseKicadPcb, type KicadPcb } from "kicadts"
+import { type KicadPcb, parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "../../lib"
+import { createSideBySideSvg } from "./create-side-by-side-svg"
 import { stackPngsHorizontally } from "./stackPngsHorizontally"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
-import { createSideBySideSvg } from "./create-side-by-side-svg"
 
 type OpenSourceBoardRoundTripOptions = {
   boardName: string
@@ -23,6 +23,12 @@ type SupportedBoardCounts = {
 type AssemblyExclusionCounts = {
   excludedFromBom: number
   excludedFromPositionFiles: number
+}
+
+type FootprintTransform = {
+  layer: "top" | "bottom"
+  reference: string
+  rotation: number
 }
 
 function getNativeCounts(
@@ -50,6 +56,31 @@ function getAssemblyExclusionCounts(pcb: KicadPcb): AssemblyExclusionCounts {
       (footprint) => footprint.attr?.excludeFromPosFiles,
     ).length,
   }
+}
+
+function getFootprintTransforms(pcb: KicadPcb): FootprintTransform[] {
+  return pcb.footprints
+    .flatMap((footprint) => {
+      const reference =
+        footprint.properties.find((property) => property.key === "Reference")
+          ?.value ??
+        footprint.fpTexts.find((text) => text.type === "reference")?.text
+      if (!reference) return []
+
+      return [
+        {
+          layer: footprint.layer?.getString().includes("B.Cu")
+            ? ("bottom" as const)
+            : ("top" as const),
+          reference,
+          rotation:
+            footprint.position && "angle" in footprint.position
+              ? (footprint.position.angle ?? 0)
+              : 0,
+        },
+      ]
+    })
+    .sort((left, right) => left.reference.localeCompare(right.reference))
 }
 
 type EdgeGraphic = {
@@ -119,6 +150,8 @@ export async function createOpenSourceBoardRoundTrip({
   const sourceAssemblyExclusionCounts = getAssemblyExclusionCounts(sourcePcb)
   const roundTripAssemblyExclusionCounts =
     getAssemblyExclusionCounts(roundTripPcb)
+  const sourceFootprintTransforms = getFootprintTransforms(sourcePcb)
+  const roundTripFootprintTransforms = getFootprintTransforms(roundTripPcb)
   const sourceNetNames = [
     "",
     ...sourceCircuitJson
@@ -172,6 +205,7 @@ export async function createOpenSourceBoardRoundTrip({
     roundTripCounts,
     roundTripEdgeCutsWidth,
     roundTripFabricationLineCount,
+    roundTripFootprintTransforms,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
     roundTripSvg,
@@ -179,6 +213,7 @@ export async function createOpenSourceBoardRoundTrip({
     sourceAssemblyExclusionCounts,
     sourceEdgeCutsWidth,
     sourceFabricationPathSegmentCount,
+    sourceFootprintTransforms,
     sourceNetNames,
     sourcePrimitiveTotal,
     sourceSvg,
