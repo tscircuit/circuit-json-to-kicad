@@ -1,3 +1,5 @@
+import { escapeKicadString } from "../../utils/escapeKicadString"
+
 /**
  * Generate sym-lib-table content for KiCad symbol library.
  */
@@ -6,7 +8,8 @@ export function generateSymLibTable(params: {
   includeUser: boolean
   includeBuiltin: boolean
 }): string {
-  const { kicadLibraryName, includeUser, includeBuiltin } = params
+  const { includeUser, includeBuiltin } = params
+  const kicadLibraryName = escapeKicadString(params.kicadLibraryName)
   let content = "(sym_lib_table\n"
   if (includeUser) {
     content += `  (lib (name "${kicadLibraryName}")(type "KiCad")(uri "\${KIPRJMOD}/symbols/${kicadLibraryName}.kicad_sym")(options "")(descr ""))\n`
