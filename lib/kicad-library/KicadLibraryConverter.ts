@@ -1,4 +1,6 @@
 import { CircuitJsonToKicadLibraryConverter } from "./CircuitJsonToKicadLibraryConverter"
+import { resolveKicad3dModelPaths } from "../utils/resolveKicad3dModelPaths"
+import { resolveFootprintModelPaths } from "./kicad-library-converter-utils/resolveFootprintModelPaths"
 import type {
   KicadLibraryConverterOptions,
   KicadLibraryConverterOutput,
@@ -36,6 +38,13 @@ export class KicadLibraryConverter {
 
     // Stage 2: Extract KiCad footprints and symbols from circuit-json
     this.ctx.extractedKicadComponents = this.extractKicadComponents()
+    const modelPaths = resolveKicad3dModelPaths(
+      this.ctx.model3dSourcePaths,
+      this.ctx.kicadLibraryName,
+    )
+    for (const component of this.ctx.extractedKicadComponents) {
+      resolveFootprintModelPaths(component.kicadFootprints, modelPaths)
+    }
 
     // Stage 3: Classify footprints into user/builtin
     classifyKicadFootprints(this.ctx)

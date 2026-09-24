@@ -314,8 +314,7 @@ export class ExtractFootprintsStage extends ConverterStage<
         if (model.rotate) newModel.rotate = model.rotate
 
         updatedModels.push(newModel)
-        // Strip query params (e.g. ?cachebust_origin= added by tscircuit) for clean download URLs
-        modelFiles.push(model.path.split("?")[0] ?? model.path)
+        modelFiles.push(model.path)
       }
     }
     // CDN fallback: if no explicit 3D model and footprint has a footprinter_string,

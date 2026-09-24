@@ -57,13 +57,13 @@ test("pcb converter embeds KIPRJMOD path for remote stepUrl user model", async (
     "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/soic8.step",
   )
 
-  // getModel3dSourcePaths() returns clean source URLs (no query params) for CLI to download
+  // Download sources retain their query parameters; embedded filenames are clean.
   const sourcePaths = converter.getModel3dSourcePaths()
   expect(sourcePaths.sort()).toMatchInlineSnapshot(`
     [
       "https://modelcdn.tscircuit.com/jscad_models/0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
-      "https://modelcdn.tscircuit.com/jscad_models/soic8.step",
+      "https://modelcdn.tscircuit.com/jscad_models/soic8.step?cachebust_origin=",
     ]
   `)
 })
