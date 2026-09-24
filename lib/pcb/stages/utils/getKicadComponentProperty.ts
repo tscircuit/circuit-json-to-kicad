@@ -71,7 +71,9 @@ export function getkicadComponentProperty(
   if (sourceComp.ftype === "simple_chip") {
     return {
       reference,
-      kicadComponentValue: sourceComp?.manufacturer_part_number,
+      // Chips have no display value to fall back on the way a resistor has its
+      // resistance, so use the name rather than leaving KiCad's Value empty.
+      kicadComponentValue: sourceComp?.manufacturer_part_number || name,
       supplierPartNumber,
     }
   }
