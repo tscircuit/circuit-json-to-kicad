@@ -7,6 +7,7 @@ import type {
   PcbHoleCircularWithRectPad,
   PcbHoleRotatedPillWithRectPad,
   PcbSmtPad,
+  PcbHoleWithPolygonPad,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
@@ -180,6 +181,14 @@ export class AddStandalonePcbElements extends ConverterStage<
         link += `_ccwRotation${h.rect_ccw_rotation}deg`
       }
       return link
+    }
+    if (shape === "hole_with_polygon_pad") {
+      const h = hole as PcbHoleWithPolygonPad
+      const drill =
+        typeof h.hole_diameter === "number"
+          ? `holeDiameter${h.hole_diameter}mm`
+          : `holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm`
+      return `tscircuit:platedhole_${shape}_${drill}_${h.pad_outline.length}pts`
     }
     return "tscircuit:platedhole"
   }
