@@ -8,6 +8,7 @@ import { formatSiUnit } from "format-si-unit"
 import type { KicadSch } from "kicadts"
 import {
   EmbeddedFonts,
+  NoConnect,
   SchematicSymbol,
   SymbolInstancePath,
   SymbolInstances,
@@ -55,6 +56,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }
 
     const symbols: SchematicSymbol[] = []
+    const noConnects: NoConnect[] = []
 
     // Place each component on the schematic
     for (const schematicComponent of schematicComponents) {
@@ -368,6 +370,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       schematicPorts.sort(
         (a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0),
       )
+      const libraryPins =
+        kicadSch?.libSymbols?.symbols
+          .find((librarySymbol) => librarySymbol.libraryId === libId)
+          ?.subSymbols.flatMap((subSymbol) => subSymbol.pins) ?? []
+      const instancePinNumbers = new Map<string, string>()
 
       for (let i = 0; i < schematicPorts.length; i++) {
         const port = schematicPorts[i]
@@ -377,6 +384,33 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         pin.numberString = `${port.pin_number || i + 1}`
         pin.uuid = crypto.randomUUID()
         symbol.pins.push(pin)
+        instancePinNumbers.set(port.source_port_id, pin.numberString)
+      }
+
+      for (const sourcePort of db.source_port.list()) {
+        if (
+          !sourcePort.do_not_connect ||
+          sourcePort.source_component_id !== sourceComponent.source_component_id
+        )
+          continue
+        const pinNumber =
+          instancePinNumbers.get(sourcePort.source_port_id) ??
+          db.schematic_port
+            .list()
+            .find((port) => port.source_port_id === sourcePort.source_port_id)
+            ?.pin_number?.toString() ??
+          sourcePort.pin_number?.toString()
+        const libraryPin = libraryPins.find(
+          (candidate) => candidate.numberString === pinNumber,
+        )
+        if (!libraryPin?.at) continue
+        // Symbol instances have zero rotation; their library pins already carry the source orientation.
+        noConnects.push(
+          new NoConnect({
+            at: [x + libraryPin.at.x, y - libraryPin.at.y],
+            uuid: crypto.randomUUID(),
+          }),
+        )
       }
 
       // Add instances section
@@ -396,6 +430,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
     if (kicadSch) {
       kicadSch.symbols = symbols
+      kicadSch.noConnects = [...kicadSch.noConnects, ...noConnects]
     }
 
     this.finished = true
