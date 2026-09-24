@@ -107,6 +107,34 @@
       (uuid 058da760-1af5-6561-305d-236245c4e163)
     )
   )
+  (footprint
+    "tscircuit:solder_paste"
+    (layer F.Cu)
+    (uuid 277caa3e-678b-3722-096c-e77e7a65061e)
+    (at 101.57511755 95.675015 0)
+    (attr board_only exclude_from_pos_files exclude_from_bom)
+    (pad "" smd roundrect
+      (at 0 0 0)
+      (size 1.0999978 1.999996)
+      (layers F.Paste)
+      (roundrect_rratio 0.5)
+      (uuid 6b0daf60-7f8a-929f-6a22-d49e54bb169d)
+    )
+  )
+  (footprint
+    "tscircuit:solder_paste"
+    (layer B.Cu)
+    (uuid 423b3b7c-4ccc-a5e4-242b-78bc6adc68a4)
+    (at 101.57511755 95.675015 0)
+    (attr board_only exclude_from_pos_files exclude_from_bom)
+    (pad "" smd roundrect
+      (at 0 0 0)
+      (size 1.0999978 1.999996)
+      (layers B.Paste)
+      (roundrect_rratio 0.5)
+      (uuid 1d229080-07ba-d27f-0dac-eb822314a983)
+    )
+  )
   (gr_line
     (start 94.5 105.5)
     (end 105.5 105.5)
