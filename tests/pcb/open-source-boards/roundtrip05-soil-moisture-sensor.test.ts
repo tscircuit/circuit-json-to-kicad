@@ -33,7 +33,7 @@ function normalizeRotation(rotation: number): number {
   return ((rotation % 360) + 360) % 360
 }
 
-test("repro4948: Soil Moisture Sensor changes rotated bottom transforms on export", async () => {
+test("repro4948: Soil Moisture Sensor preserves rotated bottom transforms on export", async () => {
   const result = await createOpenSourceBoardRoundTrip({
     boardName: "Capacitive Soil Moisture Sensor",
     filename: "soil-moisture-sensor.kicad_pcb",
@@ -60,10 +60,10 @@ test("repro4948: Soil Moisture Sensor changes rotated bottom transforms on expor
     const roundTrip = roundTripBottomTransforms.find(
       (candidate) => candidate.reference === source.reference,
     )
+    if (!roundTrip) throw new Error(`Missing footprint ${source.reference}`)
     if (
-      !roundTrip ||
       normalizeRotation(roundTrip.rotation) ===
-        normalizeRotation(source.rotation)
+      normalizeRotation(source.rotation)
     ) {
       return []
     }
@@ -75,11 +75,7 @@ test("repro4948: Soil Moisture Sensor changes rotated bottom transforms on expor
       },
     ]
   })
-  expect(changedRotations).toEqual([
-    { reference: "U1", roundTripRotation: -135, sourceRotation: 135 },
-    { reference: "U3", roundTripRotation: -90, sourceRotation: 90 },
-    { reference: "Y1", roundTripRotation: -45, sourceRotation: 45 },
-  ])
+  expect(changedRotations).toEqual([])
 
   const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="500" viewBox="0 0 1200 500">
 <rect width="100%" height="100%" fill="#101820"/>
@@ -87,8 +83,8 @@ test("repro4948: Soil Moisture Sensor changes rotated bottom transforms on expor
 <g font-family="sans-serif">
 <text x="18" y="28" fill="white" font-size="20">Soil Moisture Sensor — original KiCad</text>
 <text x="18" y="52" fill="#8fd6a7" font-size="16">${sourceBottomTransforms.length} bottom-side footprints</text>
-<text x="18" y="278" fill="white" font-size="20">Current KiCad round trip</text>
-<text x="18" y="302" fill="#ff9b9b" font-size="16">${changedRotations.length} bottom footprint rotations changed</text>
+<text x="18" y="278" fill="white" font-size="20">Fixed KiCad round trip</text>
+<text x="18" y="302" fill="#8fd6a7" font-size="16">${changedRotations.length} bottom footprint rotations changed</text>
 </g>
 ${createBoardPanel(result.sourceSvg, "source", 65)}
 ${createBoardPanel(result.roundTripSvg, "converted", 315)}
