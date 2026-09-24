@@ -7,9 +7,14 @@ import {
   TextEffects,
   TextEffectsFont,
 } from "kicadts"
+import type { SchSymbol } from "schematic-symbols"
 import { calculatePinPosition } from "./calculatePinPosition"
 
 type PortSide = "left" | "right" | "up" | "down"
+type SymbolPort = SchSymbol["ports"][number] & {
+  pinNumber?: string | number
+}
+type SymbolData = Omit<SchSymbol, "ports"> & { ports: SymbolPort[] }
 type PositionedPort = { x: number; y: number }
 type PositionedSymbolPort = PositionedPort & { index: number }
 type PositionedCircuitPort = PositionedPort & { port: SchematicPort }
@@ -37,7 +42,7 @@ function getCircuitPinNumbers({
   schematicComponent,
   schematicPorts,
 }: {
-  symbolData: any
+  symbolData: SymbolData
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
 }): Map<number, string> {
@@ -51,8 +56,8 @@ function getCircuitPinNumbers({
   )
 
   for (const side of ["left", "right", "up", "down"] as const) {
-    const symbolPorts: PositionedSymbolPort[] = (symbolData.ports ?? [])
-      .map((port: any, index: number) => ({
+    const symbolPorts: PositionedSymbolPort[] = symbolData.ports
+      .map((port, index) => ({
         index,
         x: (port.x ?? 0) - symbolCenter.x,
         y: (port.y ?? 0) - symbolCenter.y,
@@ -116,7 +121,7 @@ export function createPinSubsymbol({
   c2kMatSchScale,
 }: {
   libId: string
-  symbolData: any
+  symbolData: SymbolData
   isChip: boolean
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
@@ -138,8 +143,7 @@ export function createPinSubsymbol({
         schematicPorts,
       })
 
-  for (let i = 0; i < (symbolData.ports?.length || 0); i++) {
-    const port = symbolData.ports[i]
+  for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
     pin.pinElectricalType = "passive"
     pin.pinGraphicStyle = "line"
