@@ -58,6 +58,7 @@ test(
       expect(pad1).toBeDefined()
       expect(pad2).toBeDefined()
 
+      expect(footprint!.position).toHaveProperty("angle", 45)
       expect(pad1!.at?.x).toBeCloseTo(-0.51, 2)
       expect(pad1!.at?.y).toBeCloseTo(0, 5)
       expect(pad1!.at?.angle).toBe(45)

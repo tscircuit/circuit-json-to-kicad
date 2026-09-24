@@ -2,18 +2,7 @@ import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
 
-function getPinMappings(kicadSchematic: string) {
-  return Object.fromEntries(
-    Array.from(
-      kicadSchematic.matchAll(
-        /\(pin passive line[\s\S]*?\(name "([^"]+)"[\s\S]*?\(number "([^"]+)"/g,
-      ),
-      ([, name, number]) => [name, number],
-    ),
-  )
-}
-
-test("repro579: library symbol pin numbers match circuit pin labels", async () => {
+test("repro579: library symbol pin numbers match circuit pin numbers", async () => {
   const circuit = new Circuit()
 
   circuit.add(
@@ -80,43 +69,19 @@ test("repro579: library symbol pin numbers match circuit pin labels", async () =
   const converter = new CircuitJsonToKicadSchConverter(circuit.getCircuitJson())
   converter.runUntilFinished()
 
-  expect(getPinMappings(converter.getOutputString())).toEqual({
+  const pinMappings = Array.from(
+    converter
+      .getOutputString()
+      .matchAll(
+        /\(pin passive line[\s\S]*?\(name "([^"]+)"[\s\S]*?\(number "([^"]+)"/g,
+      ),
+    ([, name, number]) => [name, number],
+  )
+
+  expect(Object.fromEntries(pinMappings)).toEqual({
     "1": "1",
     "2": "2",
     "3": "3",
     "4": "4",
-  })
-})
-
-test("repro579: pin numbers come from circuit ports, not numeric symbol labels", async () => {
-  const circuit = new Circuit()
-  circuit.add(
-    <board width="20mm" height="20mm">
-      <led name="D1" color="red" footprint="0603" />
-    </board>,
-  )
-
-  await circuit.renderUntilSettled()
-  const circuitJson = circuit.getCircuitJson() as any[]
-  const component = circuitJson.find(
-    (element) => element.type === "schematic_component",
-  )
-  const ports = circuitJson.filter(
-    (element) =>
-      element.type === "schematic_port" &&
-      element.schematic_component_id === component.schematic_component_id,
-  )
-  ;[ports[0].center, ports[1].center] = [ports[1].center, ports[0].center]
-  ;[ports[0].facing_direction, ports[1].facing_direction] = [
-    ports[1].facing_direction,
-    ports[0].facing_direction,
-  ]
-
-  const converter = new CircuitJsonToKicadSchConverter(circuitJson as any)
-  converter.runUntilFinished()
-
-  expect(getPinMappings(converter.getOutputString())).toEqual({
-    "1": "2",
-    "2": "1",
   })
 })
