@@ -17,17 +17,18 @@ import { symbols } from "schematic-symbols"
 import { ConverterStage } from "../../types"
 import {
   getKicadCompatibleComponentName,
-  getKicadCompatibleCustomSymbolName,
   getReferencePrefixForComponent,
 } from "../../utils/getKicadCompatibleComponentName"
-import { getComponentLevelLibraryId, getLibraryId } from "../getLibraryId"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
+import {
+  type ResolvedSchematicComponentSymbol,
+  resolveSchematicComponentSymbol,
+} from "../resolveSchematicComponentSymbol"
 import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converters/buildSymbolDataFromSchematicPrimitives"
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
 import { createPinSubsymbol } from "./utils/createPinSubsymbol"
-import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
@@ -108,52 +109,29 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     if (!sourceComp) return null
 
-    // Get the cad_component for footprinter_string (if available)
-    const cadComponent = db.cad_component
-      ?.list()
-      ?.find(
-        (cad: any) =>
-          cad.source_component_id === sourceComp.source_component_id,
-      )
-
-    // Check if this component has a custom symbol via schematic_symbol_id
-    // First check if schematic_component has it directly
-    let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
-
-    // If not on the component, check if there are primitives linked to this component
-    // that have a schematic_symbol_id (tscircuit links primitives to components this way)
-    if (!schematicSymbolId) {
-      const linkedPrimitive = this.ctx.circuitJson.find(
-        (el: any) =>
-          (el.type === "schematic_line" ||
-            el.type === "schematic_circle" ||
-            el.type === "schematic_arc" ||
-            el.type === "schematic_path" ||
-            el.type === "schematic_rect") &&
-          el.schematic_component_id ===
-            schematicComponent.schematic_component_id &&
-          el.schematic_symbol_id,
-      ) as any
-      if (linkedPrimitive) {
-        schematicSymbolId = linkedPrimitive.schematic_symbol_id
-      }
-    }
+    const symbolContext = resolveSchematicComponentSymbol({
+      circuitJson: this.ctx.circuitJson,
+      schematicComponent,
+      sourceComponent: sourceComp,
+      cadComponents: db.cad_component?.list?.() ?? [],
+    })
+    const {
+      cadComponent,
+      schematicSymbolId,
+      usesComponentLevelSymbolPrimitives,
+      libraryId,
+      isChip,
+    } = symbolContext
 
     if (schematicSymbolId) {
       return this.createLibrarySymbolFromSchematicSymbol(
         schematicComponent,
         sourceComp,
-        cadComponent,
-        schematicSymbolId,
+        symbolContext,
       )
     }
 
-    const hasInnerSymbolPrimitives = hasComponentLevelSymbolPrimitives(
-      this.ctx.circuitJson,
-      schematicComponent,
-    )
-
-    if (hasInnerSymbolPrimitives) {
+    if (usesComponentLevelSymbolPrimitives) {
       const innerSymbolData = buildSymbolDataFromSchematicPrimitives({
         circuitJson: this.ctx.circuitJson,
         schematicComponentId: schematicComponent.schematic_component_id,
@@ -172,11 +150,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
           texts: [],
         }
 
-        const libId = getComponentLevelLibraryId(
-          sourceComp,
-          schematicComponent,
-          cadComponent,
-        )
         const footprintName = getKicadCompatibleComponentName(
           sourceComp,
           cadComponent,
@@ -187,7 +160,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         }
 
         return this.createLibrarySymbol({
-          libId,
+          libId: libraryId,
           symbolData,
           isChip: false,
           hidePinNames: true,
@@ -215,12 +188,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const symbolData = this.getSymbolData(symbolName, schematicComponent)
     if (!symbolData) return null
 
-    const libId = getLibraryId(sourceComp, schematicComponent, cadComponent)
-    const isChip =
-      sourceComp.ftype === "simple_chip" ||
-      sourceComp.ftype === "simple_pin_header" ||
-      sourceComp.ftype === "simple_connector"
-
     // Get footprint name for symbol-footprint linkage using ergonomic naming
     const footprintName = getKicadCompatibleComponentName(
       sourceComp,
@@ -228,7 +195,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     )
 
     return this.createLibrarySymbol({
-      libId,
+      libId: libraryId,
       symbolData,
       isChip,
       schematicComponent,
@@ -254,46 +221,22 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private createLibrarySymbolFromSchematicSymbol(
     schematicComponent: SchematicComponent,
     sourceComp: SourceComponentBase,
-    cadComponent: any,
-    schematicSymbolId: string,
+    symbolContext: ResolvedSchematicComponentSymbol,
   ): SchematicSymbol | null {
-    const { db } = this.ctx
+    const { cadComponent, schematicSymbol, schematicSymbolId, libraryId } =
+      symbolContext
 
-    // Look up the schematic_symbol element
-    // Since this is a new type, access it via the raw circuitJson
-    const schematicSymbol = this.ctx.circuitJson.find(
-      (el: any) =>
-        el.type === "schematic_symbol" &&
-        el.schematic_symbol_id === schematicSymbolId,
-    ) as any
-
-    if (!schematicSymbol) {
+    if (!schematicSymbol || !schematicSymbolId) {
       // Fall back to standard symbol handling if schematic_symbol not found
       return null
     }
 
-    // Determine symbol name using precedence:
-    // 1. schematic_symbol.name
-    // 2. manufacturer_part_number / footprinter_string (via getKicadCompatibleComponentName)
-    // 3. Generated name based on ftype
-    let symbolName: string
-    if (schematicSymbol.name) {
-      symbolName = schematicSymbol.name
-    } else {
-      symbolName = getKicadCompatibleCustomSymbolName(
-        sourceComp,
-        cadComponent,
-        schematicSymbolId,
-      )
-    }
-
     // Check if we've already processed this symbol name
     // If two symbols have the same name, we assume they're the same symbol
-    const libId = `Custom:${symbolName}`
-    if (this.processedSymbolNames.has(libId)) {
+    if (this.processedSymbolNames.has(libraryId)) {
       return null // Skip duplicate symbol definitions
     }
-    this.processedSymbolNames.add(libId)
+    this.processedSymbolNames.add(libraryId)
 
     // Build symbol data from schematic primitives linked to this schematic_symbol
     const symbolData = buildSymbolDataFromSchematicPrimitives({
@@ -312,7 +255,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     )
 
     return this.createLibrarySymbol({
-      libId,
+      libId: libraryId,
       symbolData,
       isChip: false, // Custom symbols are not treated as generic chips
       schematicComponent,
