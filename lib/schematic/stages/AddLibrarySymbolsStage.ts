@@ -12,6 +12,7 @@ import {
   SchematicSymbol,
   SymbolPinNames,
   SymbolPinNumbers,
+  SymbolPower,
 } from "kicadts"
 import { symbols } from "schematic-symbols"
 import { ConverterStage } from "../../types"
@@ -326,7 +327,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   }
 
   /**
-   * Create library symbol for a schematic net label with symbol_name
+   * Create library symbol for a schematic net label with symbol_name.
+   *
+   * Power/ground net labels become real KiCad power symbols keyed by net name
+   * (`power:<netName>`, e.g. `power:GND`): the `(power global)` flag plus the
+   * net name in the Value property is how KiCad joins every instance onto the
+   * same net. One library symbol is emitted per distinct net.
    */
   private createLibrarySymbolForNetLabel({
     netLabel,
@@ -337,29 +343,61 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     isPower: boolean
     isGround: boolean
   }): SchematicSymbol | null {
+    const { db } = this.ctx
     const symbolName = netLabel.symbol_name
     if (!symbolName) return null
 
     const symbolData = symbols[symbolName as keyof typeof symbols]
     if (!symbolData) return null
 
-    const libId = `Custom:${symbolName}`
+    const netName = netLabel.source_net_id
+      ? (db.source_net.get(netLabel.source_net_id)?.name ??
+        netLabel.text ??
+        symbolName)
+      : (netLabel.text ?? symbolName)
 
-    return this.createLibrarySymbol({
+    const libId = `power:${netName}`
+    if (this.processedSymbolNames.has(libId)) return null
+    this.processedSymbolNames.add(libId)
+
+    const symbol = this.createLibrarySymbol({
       libId,
       symbolData,
       isChip: false,
       schematicComponent: undefined,
-      description: isPower
-        ? "Power net label"
-        : isGround
-          ? "Ground net label"
-          : "Net symbol",
-      keywords: isPower ? "power net" : isGround ? "ground net" : "net",
+      description: `Power symbol creates a global label with name "${netName}"`,
+      keywords: "global power",
       fpFilters: "",
-      referencePrefix: libId.split(":")[1]?.[0] || "U",
+      referencePrefix: "#PWR",
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
     })
+
+    symbol._sxPower = new SymbolPower("global")
+    symbol.inPosFiles = true
+    symbol.duplicatePinNumbersAreJumpers = false
+    if (symbol._sxPinNames) symbol._sxPinNames.hide = true
+
+    for (const prop of symbol.properties) {
+      if (prop.key === "Reference") {
+        prop.hidden = true
+      } else if (prop.key === "Value") {
+        prop.value = netName
+      }
+    }
+
+    // The pin carries the net onto the wire; name it after the net so both
+    // pin-name and Value-field net resolution produce the same net.
+    const pinSubsymbol = symbol.subSymbols.find(
+      (sub) => sub.libraryId === `${netName}_1_1`,
+    )
+    const pin = pinSubsymbol?.pins[0]
+    if (pin) {
+      pin.pinElectricalType = "power_in"
+      pin.name = netName
+      pin.length = 0
+    }
+
+    return symbol
   }
 
   /**

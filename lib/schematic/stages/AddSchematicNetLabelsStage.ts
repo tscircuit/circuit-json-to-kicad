@@ -29,6 +29,8 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
+  private powerSymbolCounter = 0
+
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
@@ -100,6 +102,12 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
   ): SchematicSymbol | null {
     if (!this.ctx.c2kMatSch) return null
 
+    const sourceNet = netLabel.source_net_id
+      ? this.ctx.db.source_net.get(netLabel.source_net_id)
+      : undefined
+    const isPowerOrGround = !!(sourceNet?.is_power || sourceNet?.is_ground)
+    const netName = sourceNet?.name ?? labelText
+
     const anchorPoint = {
       x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
@@ -136,10 +144,18 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       fieldsAutoplaced: false,
     })
 
-    // Use Custom library for schematic-symbols symbols
-    const libId = `Custom:${symbolName}`
+    // Power/ground labels instantiate the per-net `power:<netName>` library
+    // symbol; other symbol labels keep the shared Custom:<symbolName> lib.
+    const libId = isPowerOrGround ? `power:${netName}` : `Custom:${symbolName}`
     const symLibId = new SymbolLibId(libId)
     ;(symbol as any)._sxLibId = symLibId
+
+    // KiCad power symbols are referenced with a `#`-prefixed designator that
+    // is exempt from annotation; give each instance a unique `#PWRnn`.
+    const referenceValue = isPowerOrGround
+      ? `#PWR${String(++this.powerSymbolCounter).padStart(2, "0")}`
+      : labelText
+    const valueText = isPowerOrGround ? netName : labelText
 
     const isUpSymbol =
       symbolName.includes("_up") || symbolName.toLowerCase().includes("vcc")
@@ -149,18 +165,20 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     // Add properties
     const referenceProperty = new SymbolProperty({
       key: "Reference",
-      value: labelText, // Use the label text as the reference
+      value: referenceValue,
       id: 0,
       at: [x, y + referenceOffset, 0],
-      effects: this.createTextEffects(1.27, false),
+      effects: this.createTextEffects(1.27, isPowerOrGround),
     })
 
     const valueProperty = new SymbolProperty({
       key: "Value",
-      value: labelText,
+      value: valueText,
       id: 1,
       at: [x, y + valueOffset, 0],
-      effects: this.createTextEffects(1.27, true),
+      // Power symbols show their Value (the net name) next to the rail art,
+      // mirroring KiCad's own power symbols where Value is visible.
+      effects: this.createTextEffects(1.27, !isPowerOrGround),
     })
 
     const footprintProperty = new SymbolProperty({
@@ -208,7 +226,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const instancePathPrefix =
       this.ctx.symbolInstancePathPrefix ?? `/${kicadSch?.uuid?.value || ""}`
     const path = new SymbolInstancePath(instancePathPrefix)
-    path.reference = labelText
+    path.reference = referenceValue
     path.unit = 1
     project.paths.push(path)
     instances.projects.push(project)
