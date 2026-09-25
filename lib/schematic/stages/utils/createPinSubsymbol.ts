@@ -1,4 +1,8 @@
-import type { SchematicComponent, SchematicPort } from "circuit-json"
+import type {
+  SchematicComponent,
+  SchematicPort,
+  SourcePort,
+} from "circuit-json"
 import {
   SchematicSymbol,
   SymbolPin,
@@ -41,14 +45,19 @@ function getCircuitPinNumbers({
   symbolData,
   schematicComponent,
   schematicPorts,
+  sourcePorts,
 }: {
   symbolData: SymbolData
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
+  sourcePorts: SourcePort[]
 }): Map<number, string> {
   const matches = new Map<number, string>()
   if (!schematicComponent) return matches
 
+  const sourcePortsById = new Map(
+    sourcePorts.map((port) => [port.source_port_id, port]),
+  )
   const symbolCenter = symbolData.center ?? { x: 0, y: 0 }
   const componentPorts = schematicPorts.filter(
     (port) =>
@@ -99,7 +108,11 @@ function getCircuitPinNumbers({
       const symbolPort = symbolPorts[index]
       const circuitPort = circuitPorts[index]
       if (!symbolPort || !circuitPort) continue
-      const pinNumber = circuitPort.port.pin_number
+      const pinNumber =
+        circuitPort.port.pin_number ??
+        (circuitPort.port.source_port_id
+          ? sourcePortsById.get(circuitPort.port.source_port_id)?.pin_number
+          : undefined)
       if (pinNumber !== undefined && pinNumber !== null) {
         matches.set(symbolPort.index, String(pinNumber))
       }
@@ -107,6 +120,35 @@ function getCircuitPinNumbers({
   }
 
   return matches
+}
+
+function validateInferredPinNumbers(
+  symbolData: SymbolData,
+  inferredPinNumbers: Map<number, string>,
+): Map<number, string> {
+  const missingPinIndices = symbolData.ports
+    .map((port, index) => (port.pinNumber == null ? index : undefined))
+    .filter((index): index is number => index !== undefined)
+
+  if (
+    missingPinIndices.length === 0 ||
+    missingPinIndices.some((index) => !inferredPinNumbers.has(index))
+  ) {
+    return new Map()
+  }
+
+  const resolvedPinNumbers = symbolData.ports.map(
+    (port, index) =>
+      port.pinNumber?.toString() ?? inferredPinNumbers.get(index),
+  )
+  if (
+    resolvedPinNumbers.some((pinNumber) => pinNumber === undefined) ||
+    new Set(resolvedPinNumbers).size !== resolvedPinNumbers.length
+  ) {
+    return new Map()
+  }
+
+  return inferredPinNumbers
 }
 
 /**
@@ -118,6 +160,7 @@ export function createPinSubsymbol({
   isChip,
   schematicComponent,
   schematicPorts,
+  sourcePorts,
   c2kMatSchScale,
 }: {
   libId: string
@@ -125,6 +168,7 @@ export function createPinSubsymbol({
   isChip: boolean
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
+  sourcePorts: SourcePort[]
   c2kMatSchScale: number
 }): SchematicSymbol {
   const pinSymbol = new SchematicSymbol({
@@ -135,13 +179,18 @@ export function createPinSubsymbol({
   // Non-chip artwork already draws the visible lead up to each port.
   const CUSTOM_SYMBOL_PIN_LENGTH = 0.01
 
-  const circuitPinNumbers = isChip
+  const inferredPinNumbers = isChip
     ? new Map<number, string>()
     : getCircuitPinNumbers({
         symbolData,
         schematicComponent,
         schematicPorts,
+        sourcePorts,
       })
+  const circuitPinNumbers = validateInferredPinNumbers(
+    symbolData,
+    inferredPinNumbers,
+  )
 
   for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
@@ -171,7 +220,7 @@ export function createPinSubsymbol({
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
     const pinNum =
-      circuitPinNumbers.get(i) || port.pinNumber?.toString() || `${i + 1}`
+      port.pinNumber?.toString() ?? circuitPinNumbers.get(i) ?? `${i + 1}`
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,

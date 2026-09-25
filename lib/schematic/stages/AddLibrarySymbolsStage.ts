@@ -452,6 +452,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       isChip,
       schematicComponent,
       schematicPorts: this.ctx.db.schematic_port.list(),
+      sourcePorts: this.ctx.db.source_port.list(),
       c2kMatSchScale: symbolScale,
     })
     symbol.subSymbols.push(pinSymbol)
