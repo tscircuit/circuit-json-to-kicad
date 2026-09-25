@@ -1,4 +1,8 @@
-import type { SchematicComponent, SchematicPort } from "circuit-json"
+import type {
+  SchematicComponent,
+  SchematicPort,
+  SourcePort,
+} from "circuit-json"
 import {
   SchematicSymbol,
   SymbolPin,
@@ -7,7 +11,145 @@ import {
   TextEffects,
   TextEffectsFont,
 } from "kicadts"
+import type { SchSymbol } from "schematic-symbols"
 import { calculatePinPosition } from "./calculatePinPosition"
+
+type PortSide = "left" | "right" | "up" | "down"
+type SymbolPort = SchSymbol["ports"][number] & {
+  pinNumber?: string | number
+}
+type SymbolData = Omit<SchSymbol, "ports"> & { ports: SymbolPort[] }
+type PositionedPort = { x: number; y: number }
+type PositionedSymbolPort = PositionedPort & { index: number }
+type PositionedCircuitPort = PositionedPort & { port: SchematicPort }
+
+function getPortSide(x: number, y: number): PortSide {
+  if (Math.abs(x) > Math.abs(y)) return x < 0 ? "left" : "right"
+  return y < 0 ? "down" : "up"
+}
+
+function hasDuplicatePositions(values: number[]): boolean {
+  const sorted = [...values].sort((a, b) => a - b)
+  return sorted.some((value, index) => {
+    const previous = sorted[index - 1]
+    return previous !== undefined && Math.abs(value - previous) < 1e-6
+  })
+}
+
+/**
+ * Match symbol artwork ports to the circuit ports drawn on the same side.
+ * Stem lengths can differ, so compare ordering along each side rather than
+ * requiring the coordinates to be equal.
+ */
+function getCircuitPinNumbers({
+  symbolData,
+  schematicComponent,
+  schematicPorts,
+  sourcePorts,
+}: {
+  symbolData: SymbolData
+  schematicComponent?: SchematicComponent
+  schematicPorts: SchematicPort[]
+  sourcePorts: SourcePort[]
+}): Map<number, string> {
+  const matches = new Map<number, string>()
+  if (!schematicComponent) return matches
+
+  const sourcePortsById = new Map(
+    sourcePorts.map((port) => [port.source_port_id, port]),
+  )
+  const symbolCenter = symbolData.center ?? { x: 0, y: 0 }
+  const componentPorts = schematicPorts.filter(
+    (port) =>
+      port.schematic_component_id === schematicComponent.schematic_component_id,
+  )
+
+  for (const side of ["left", "right", "up", "down"] as const) {
+    const symbolPorts: PositionedSymbolPort[] = symbolData.ports
+      .map((port, index) => ({
+        index,
+        x: (port.x ?? 0) - symbolCenter.x,
+        y: (port.y ?? 0) - symbolCenter.y,
+      }))
+      .filter(
+        (port: { x: number; y: number }) =>
+          getPortSide(port.x, port.y) === side,
+      )
+    const circuitPorts: PositionedCircuitPort[] = componentPorts
+      .map((port) => ({
+        port,
+        x: port.center.x - schematicComponent.center.x,
+        y: port.center.y - schematicComponent.center.y,
+      }))
+      .filter(
+        ({ port, x, y }) =>
+          (port.facing_direction ?? getPortSide(x, y)) === side,
+      )
+
+    if (
+      symbolPorts.length === 0 ||
+      symbolPorts.length !== circuitPorts.length
+    ) {
+      continue
+    }
+
+    const coordinate = (port: PositionedPort) =>
+      side === "left" || side === "right" ? port.y : port.x
+    if (
+      hasDuplicatePositions(symbolPorts.map(coordinate)) ||
+      hasDuplicatePositions(circuitPorts.map(coordinate))
+    ) {
+      continue
+    }
+
+    symbolPorts.sort((a, b) => coordinate(a) - coordinate(b))
+    circuitPorts.sort((a, b) => coordinate(a) - coordinate(b))
+    for (let index = 0; index < symbolPorts.length; index++) {
+      const symbolPort = symbolPorts[index]
+      const circuitPort = circuitPorts[index]
+      if (!symbolPort || !circuitPort) continue
+      const pinNumber =
+        circuitPort.port.pin_number ??
+        (circuitPort.port.source_port_id
+          ? sourcePortsById.get(circuitPort.port.source_port_id)?.pin_number
+          : undefined)
+      if (pinNumber !== undefined && pinNumber !== null) {
+        matches.set(symbolPort.index, String(pinNumber))
+      }
+    }
+  }
+
+  return matches
+}
+
+function validateInferredPinNumbers(
+  symbolData: SymbolData,
+  inferredPinNumbers: Map<number, string>,
+): Map<number, string> {
+  const missingPinIndices = symbolData.ports
+    .map((port, index) => (port.pinNumber == null ? index : undefined))
+    .filter((index): index is number => index !== undefined)
+
+  if (
+    missingPinIndices.length === 0 ||
+    missingPinIndices.some((index) => !inferredPinNumbers.has(index))
+  ) {
+    return new Map()
+  }
+
+  const resolvedPinNumbers = symbolData.ports.map(
+    (port, index) =>
+      port.pinNumber?.toString() ?? inferredPinNumbers.get(index),
+  )
+  if (
+    resolvedPinNumbers.some((pinNumber) => pinNumber === undefined) ||
+    new Set(resolvedPinNumbers).size !== resolvedPinNumbers.length
+  ) {
+    return new Map()
+  }
+
+  return inferredPinNumbers
+}
 
 /**
  * Create the pin subsymbol for a KiCad library symbol
@@ -18,13 +160,15 @@ export function createPinSubsymbol({
   isChip,
   schematicComponent,
   schematicPorts,
+  sourcePorts,
   c2kMatSchScale,
 }: {
   libId: string
-  symbolData: any
+  symbolData: SymbolData
   isChip: boolean
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
+  sourcePorts: SourcePort[]
   c2kMatSchScale: number
 }): SchematicSymbol {
   const pinSymbol = new SchematicSymbol({
@@ -35,8 +179,20 @@ export function createPinSubsymbol({
   // Non-chip artwork already draws the visible lead up to each port.
   const CUSTOM_SYMBOL_PIN_LENGTH = 0.01
 
-  for (let i = 0; i < (symbolData.ports?.length || 0); i++) {
-    const port = symbolData.ports[i]
+  const inferredPinNumbers = isChip
+    ? new Map<number, string>()
+    : getCircuitPinNumbers({
+        symbolData,
+        schematicComponent,
+        schematicPorts,
+        sourcePorts,
+      })
+  const circuitPinNumbers = validateInferredPinNumbers(
+    symbolData,
+    inferredPinNumbers,
+  )
+
+  for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
     pin.pinElectricalType = "passive"
     pin.pinGraphicStyle = "line"
@@ -63,7 +219,8 @@ export function createPinSubsymbol({
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
-    const pinNum = port.pinNumber?.toString() || `${i + 1}`
+    const pinNum =
+      port.pinNumber?.toString() ?? circuitPinNumbers.get(i) ?? `${i + 1}`
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,
