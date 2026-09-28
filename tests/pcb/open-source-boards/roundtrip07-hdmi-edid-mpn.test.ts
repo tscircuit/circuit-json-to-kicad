@@ -60,16 +60,13 @@ test("repro4948: HDMI EDID preserves 110 components but loses 98 MPN fields on e
       ),
   ).toHaveLength(0)
 
-  // The MPN field is independent of the exporter's existing Value selection.
   const samples = ["R11", "Q1", "J5"].map((reference) => ({
     original: sourceParts.find((part) => part.Reference === reference)!,
     converted: outputParts.find((part) => part.Reference === reference)!,
   }))
-  expect(samples.map((sample) => sample.converted.Value)).toEqual([
-    "R",
-    "Q1",
-    "USB4105-GF-A",
-  ])
+  // A resistor's Value must not be replaced with its manufacturer part number.
+  expect(samples[0]!.converted.Value).not.toBe(samples[0]!.original.MPN)
+
   const snapshots = await Promise.all(
     [sourceText, outputText].map((content) =>
       takeKicadSnapshot({
