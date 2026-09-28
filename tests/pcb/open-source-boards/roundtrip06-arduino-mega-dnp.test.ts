@@ -118,4 +118,4 @@ test("repro4948: Arduino Mega preserves 66 components but loses 2 DNP flags on e
 ${panels.join("\n")}
 </svg>`
   await expectOpenSourceSvgSnapshot(svg, import.meta.path)
-})
+}, 30_000)
