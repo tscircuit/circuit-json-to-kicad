@@ -7,7 +7,7 @@ import { CircuitJsonToKicadPcbConverter } from "../../../lib"
 import { expectOpenSourceSvgSnapshot } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro4948: HDMI EDID preserves 110 components but loses 98 MPN fields on export", async () => {
+test("repro4948: HDMI EDID preserves 110 components and all 98 MPN fields on export", async () => {
   const filename = "hdmi-edid-debug-board.kicad_pcb"
   const sourceText = await readFile(resolve("references", filename), "utf8")
   const source = parseKicadPcb(sourceText)
@@ -37,7 +37,7 @@ test("repro4948: HDMI EDID preserves 110 components but loses 98 MPN fields on e
   const exportedMpns = outputParts.filter((part) => part.MPN)
   expect(originalMpns).toHaveLength(98)
   expect(output.footprints).toHaveLength(source.footprints.length)
-  expect(exportedMpns).toHaveLength(0)
+  expect(exportedMpns).toHaveLength(originalMpns.length)
   for (const part of sourceParts) {
     const component = components.find((item) => item.name === part.Reference)
     const converted = outputParts.find(
@@ -46,7 +46,7 @@ test("repro4948: HDMI EDID preserves 110 components but loses 98 MPN fields on e
     expect(component).toBeDefined()
     expect(converted).toBeDefined()
     expect(component!.manufacturer_part_number).toBe(part.MPN || undefined)
-    expect(converted!.MPN).toBeUndefined()
+    expect(converted!.MPN).toBe(part.MPN || undefined)
   }
   const reimporter = new KicadToCircuitJsonConverter()
   reimporter.addFile(filename, outputText)
@@ -58,7 +58,7 @@ test("repro4948: HDMI EDID preserves 110 components but loses 98 MPN fields on e
         (item) =>
           item.type === "source_component" && item.manufacturer_part_number,
       ),
-  ).toHaveLength(0)
+  ).toHaveLength(98)
 
   const samples = ["R11", "Q1", "J5"].map((reference) => ({
     original: sourceParts.find((part) => part.Reference === reference)!,
@@ -111,7 +111,7 @@ test("repro4948: HDMI EDID preserves 110 components but loses 98 MPN fields on e
 <g font-family="sans-serif" fill="white">
 <text x="24" y="38" font-size="26">HDMI EDID Debug Board — manufacturer part numbers</text>
 <text x="24" y="80" font-size="21">Original KiCad · full board</text>
-<text x="732" y="80" font-size="21">Current KiCad round trip · full board</text>
+<text x="732" y="80" font-size="21">Fixed KiCad round trip · full board</text>
 <text x="24" y="110" font-size="18" fill="#8fd6a7">${sourceParts.length} components · ${originalMpns.length} MPN fields</text>
 <text x="732" y="110" font-size="18" fill="${color}">${outputParts.length} components · ${exportedMpns.length} MPN fields · ${lost} lost</text>
 <g font-size="19">${rows}</g>

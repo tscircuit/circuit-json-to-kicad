@@ -3,15 +3,15 @@
 <g font-family="sans-serif" fill="white">
 <text x="24" y="38" font-size="26">HDMI EDID Debug Board — manufacturer part numbers</text>
 <text x="24" y="80" font-size="21">Original KiCad · full board</text>
-<text x="732" y="80" font-size="21">Current KiCad round trip · full board</text>
+<text x="732" y="80" font-size="21">Fixed KiCad round trip · full board</text>
 <text x="24" y="110" font-size="18" fill="#8fd6a7">110 components · 98 MPN fields</text>
-<text x="732" y="110" font-size="18" fill="#ff8585">110 components · 0 MPN fields · 98 lost</text>
+<text x="732" y="110" font-size="18" fill="#8fd6a7">110 components · 98 MPN fields · 0 lost</text>
 <g font-size="19"><text x="40" y="678">R11: CR0402-FX-5101GLF</text>
-<text x="748" y="678" fill="#ff8585">R11: MPN field lost</text>
+<text x="748" y="678" fill="#8fd6a7">R11: CR0402-FX-5101GLF</text>
 <text x="40" y="712">Q1: DMG1012T-7</text>
-<text x="748" y="712" fill="#ff8585">Q1: MPN field lost</text>
+<text x="748" y="712" fill="#8fd6a7">Q1: DMG1012T-7</text>
 <text x="40" y="746">J5: USB4105-GF-A</text>
-<text x="748" y="746" fill="#ff8585">J5: MPN field lost</text></g>
+<text x="748" y="746" fill="#8fd6a7">J5: USB4105-GF-A</text></g>
 <text x="24" y="786" font-size="17" fill="#b8c7d3">Rows show parsed MPN properties. Manufacturer-name support and Value fidelity are separate import/export concerns.</text>
 </g>
 <svg data-comparison="source" x="24" y="128" width="684" height="490" viewBox="0.0000 0.0000 54.9910 44.9834" preserveAspectRatio="xMidYMid meet">

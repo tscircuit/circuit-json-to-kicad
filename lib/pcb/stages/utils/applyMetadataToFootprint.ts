@@ -152,6 +152,22 @@ export function applyMetadataToFootprint({
     }),
   )
 
+  if (componentProperty.manufacturerPartNumber) {
+    newProperties.push(
+      new Property({
+        key: "MPN",
+        value: componentProperty.manufacturerPartNumber,
+        position: [0, 0, 0],
+        layer: "F.Fab",
+        uuid: generateDeterministicUuid(
+          `${componentProperty.reference}-property-MPN`,
+        ),
+        effects: createTextEffects(),
+        hidden: true,
+      }),
+    )
+  }
+
   footprint.properties = newProperties
   // Apply attributes if provided
 
