@@ -11,7 +11,7 @@ import {
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FootprintModel } from "kicadts"
+import { Footprint, FootprintModel, FootprintAttr } from "kicadts"
 import {
   MODEL_CDN_BASE_URL,
   getBasename,
@@ -456,6 +456,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         metadata: footprintMetadata,
         componentProperty: kicadComponentProperty,
       })
+    }
+
+    if (component.do_not_place) {
+      footprint.attr ??= new FootprintAttr()
+      footprint.attr.dnp = true
     }
 
     const footprints = kicadPcb.footprints
