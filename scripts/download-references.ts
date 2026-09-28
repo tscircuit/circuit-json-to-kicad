@@ -11,13 +11,6 @@ type ReferenceSpec = {
 
 const references: ReferenceSpec[] = [
   {
-    filename: "hdmi-edid-debug-board.kicad_pcb",
-    sha256: "bb547fe1a4ecd7b1a2a3e0a288007219390a17e383a9c659b1bd293997ac3194",
-    source:
-      "tscircuit/kicad-to-circuit-json@3ff650e71e59a0684459c064cc31a9ab365ce926 (HDMI EDID Debug fixture)",
-    url: "https://raw.githubusercontent.com/tscircuit/kicad-to-circuit-json/3ff650e71e59a0684459c064cc31a9ab365ce926/tests/assets/hdmi-edid-debug-board.kicad_pcb",
-  },
-  {
     filename: "hsp-usb-led.kicad_pcb",
     sha256: "a8e69c14ceec9dd0954c3027cc89ca6bbb9c0b0ec3aeede5feacfdd47736f362",
     source:
@@ -122,6 +115,13 @@ const references: ReferenceSpec[] = [
     sha256: "a465e1de8cc85dd9bdbd3ff37909d69693197c2913f9c93b7bd4f7c2a568f96d",
     source: "xjtuecho/EBAZ4205@05cdb45035a06fc5b4db16babf0ac6f4ee4497be (MIT)",
     url: "https://raw.githubusercontent.com/xjtuecho/EBAZ4205/05cdb45035a06fc5b4db16babf0ac6f4ee4497be/HW/ebaz4205/kicad/Zynq_Pwr.kicad_sch",
+  },
+  {
+    filename: "hdmi-edid-debug-board.kicad_pcb",
+    sha256: "bb547fe1a4ecd7b1a2a3e0a288007219390a17e383a9c659b1bd293997ac3194",
+    source:
+      "tscircuit/kicad-to-circuit-json@3ff650e71e59a0684459c064cc31a9ab365ce926 (HDMI EDID Debug fixture)",
+    url: "https://raw.githubusercontent.com/tscircuit/kicad-to-circuit-json/3ff650e71e59a0684459c064cc31a9ab365ce926/tests/assets/hdmi-edid-debug-board.kicad_pcb",
   },
 ]
 
