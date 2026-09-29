@@ -1,3 +1,4 @@
+import { getInlineTraceNetLabels } from "../getInlineTraceNetLabels"
 import type {
   CircuitJson,
   SchematicArc as CircuitSchematicArc,
@@ -68,8 +69,11 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     const schematicArcs = (db.schematic_arc?.list() || []).filter(
       isStandaloneSchematicElement,
     )
+    const { convertedTextIds } = getInlineTraceNetLabels(this.ctx.circuitJson)
     const schematicTexts = (db.schematic_text?.list() || []).filter(
-      isStandaloneSchematicElement,
+      (text) =>
+        isStandaloneSchematicElement(text) &&
+        !convertedTextIds.has(text.schematic_text_id),
     )
     const preserveStandaloneGraphics = db.schematic_component
       .list()
