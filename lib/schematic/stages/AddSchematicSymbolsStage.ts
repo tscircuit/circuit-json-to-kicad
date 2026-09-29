@@ -1,4 +1,3 @@
-import type { KicadSymbolMetadata } from "@tscircuit/props"
 import type {
   CircuitJson,
   SchematicComponent,
@@ -24,17 +23,13 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
-import {
-  getKicadCompatibleCustomSymbolName,
-  getReferenceDesignator,
-} from "../../utils/getKicadCompatibleComponentName"
-import { getComponentLevelLibraryId, getLibraryId } from "../getLibraryId"
+import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
+import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
   getTextJustificationFromAnchor,
   type TextJustification,
 } from "./utils/getTextJustificationFromAnchor"
-import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -64,6 +59,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       if (!sourceComponent) continue
 
+      const symbolContext = resolveSchematicComponentSymbol({
+        circuitJson: this.ctx.circuitJson,
+        schematicComponent,
+        sourceComponent,
+        cadComponents: db.cad_component?.list?.() ?? [],
+      })
+      const {
+        schematicSymbol,
+        schematicSymbolId,
+        hasLinkedSymbolPrimitives,
+        usesComponentLevelSymbolPrimitives,
+        libraryId,
+      } = symbolContext
+
       // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
       if (!this.ctx.c2kMatSch) continue
       const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
@@ -87,73 +96,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         fieldsAutoplaced: false,
       })
 
-      // Get the cad_component for footprinter_string (if available)
-      const cadComponent = db.cad_component
-        ?.list()
-        ?.find(
-          (cad: any) =>
-            cad.source_component_id === sourceComponent.source_component_id,
-        )
-
-      // Check for custom symbol via schematic_symbol_id
-      let schematicSymbolName: string | undefined
-      let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
-
-      // If not on the component, check if there are primitives linked to this component
-      // that have a schematic_symbol_id (tscircuit links primitives to components this way)
-      if (!schematicSymbolId) {
-        const linkedPrimitive = this.ctx.circuitJson.find(
-          (el: any) =>
-            (el.type === "schematic_line" ||
-              el.type === "schematic_circle" ||
-              el.type === "schematic_arc" ||
-              el.type === "schematic_path" ||
-              el.type === "schematic_rect") &&
-            el.schematic_component_id ===
-              schematicComponent.schematic_component_id &&
-            el.schematic_symbol_id,
-        ) as any
-        if (linkedPrimitive) {
-          schematicSymbolId = linkedPrimitive.schematic_symbol_id
-        }
-      }
-
-      if (schematicSymbolId) {
-        const schematicSymbol = this.ctx.circuitJson.find(
-          (el: any) =>
-            el.type === "schematic_symbol" &&
-            el.schematic_symbol_id === schematicSymbolId,
-        ) as any
-        if (schematicSymbol?.name) {
-          schematicSymbolName = schematicSymbol.name
-        } else {
-          schematicSymbolName = getKicadCompatibleCustomSymbolName(
-            sourceComponent,
-            cadComponent,
-            schematicSymbolId,
-          )
-        }
-      }
-
-      // Get the appropriate library ID based on component type
-      const usesComponentLevelSymbolPrimitives =
-        hasComponentLevelSymbolPrimitives(
-          this.ctx.circuitJson,
-          schematicComponent,
-        )
-      const libId = usesComponentLevelSymbolPrimitives
-        ? getComponentLevelLibraryId(
-            sourceComponent,
-            schematicComponent,
-            cadComponent,
-          )
-        : getLibraryId(
-            sourceComponent,
-            schematicComponent,
-            cadComponent,
-            schematicSymbolName,
-          )
-      const symLibId = new SymbolLibId(libId)
+      const symLibId = new SymbolLibId(libraryId)
       ;(symbol as any)._sxLibId = symLibId
 
       // Get component metadata
@@ -169,22 +112,12 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         this.getTextPositions({
           schematicComponent,
           placeValueAtNamePosition: hasManufacturerValueForValuePlacement,
+          isCustomSymbol: hasLinkedSymbolPrimitives,
           reference,
           value,
         })
 
-      // Check for kicadSymbolMetadata from circuit-json element
-      let symbolMetadata: KicadSymbolMetadata | undefined
-      if (schematicSymbolId) {
-        const schSymEl = this.ctx.circuitJson.find(
-          (el) =>
-            el.type === "schematic_symbol" &&
-            el.schematic_symbol_id === schematicSymbolId,
-        )
-        if (schSymEl && schSymEl.type === "schematic_symbol") {
-          symbolMetadata = schSymEl.metadata?.kicad_symbol
-        }
-      }
+      const symbolMetadata = schematicSymbol?.metadata?.kicad_symbol
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
@@ -407,11 +340,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   private getTextPositions({
     schematicComponent,
     placeValueAtNamePosition,
+    isCustomSymbol,
     reference,
     value,
   }: {
     schematicComponent: SchematicComponent
     placeValueAtNamePosition: boolean
+    isCustomSymbol: boolean
     reference: string
     value: string
   }): {
@@ -435,7 +370,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     const referenceAboveBodyY = symbolKicadPos.y - componentHeightMm / 2 - 3
     const valueBelowBodyY = symbolKicadPos.y + componentHeightMm / 2 + 3
 
-    const isCustomSymbol = this.isCustomSymbolComponent(schematicComponent)
     if (isCustomSymbol) {
       const customHeightMm =
         (schematicComponent.size?.height || 1) *
@@ -582,23 +516,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       position: applyToPoint(this.ctx.c2kMatSch!, text.position),
       justify: getTextJustificationFromAnchor(text.anchor),
     }
-  }
-
-  private isCustomSymbolComponent(
-    schematicComponent: SchematicComponent,
-  ): boolean {
-    const componentId = schematicComponent.schematic_component_id
-    if (!componentId) return false
-    return this.ctx.circuitJson.some(
-      (el: any) =>
-        (el.type === "schematic_line" ||
-          el.type === "schematic_circle" ||
-          el.type === "schematic_arc" ||
-          el.type === "schematic_path" ||
-          el.type === "schematic_rect") &&
-        el.schematic_component_id === componentId &&
-        el.schematic_symbol_id,
-    )
   }
 
   /**
