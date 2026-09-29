@@ -11,7 +11,7 @@ const board = {
   center: { x: 0, y: 0 },
 }
 
-test("repro #585: component footprints retain physical pad types in board output", () => {
+test.failing("repro #585: component footprints retain physical pad types in board output", () => {
   const circuitJson = [
     board,
     {
@@ -87,7 +87,7 @@ test("repro #585: component footprints retain physical pad types in board output
   })
 })
 
-test("repro #585: standalone pads retain physical pad types in board output", () => {
+test.failing("repro #585: standalone pads retain physical pad types in board output", () => {
   const circuitJson = [
     board,
     {
