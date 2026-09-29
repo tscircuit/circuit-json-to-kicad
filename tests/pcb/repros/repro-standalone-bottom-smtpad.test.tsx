@@ -3,6 +3,9 @@ import type { CircuitJson, PcbSmtPad } from "circuit-json"
 import type { Footprint } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const BottomTestPadBoard = () => (
   <board width="20mm" height="12mm" routingDisabled>
@@ -20,6 +23,8 @@ const BottomTestPadBoard = () => (
 
 let circuitJson: CircuitJson
 let standaloneFootprint: Footprint | undefined
+let footprints: Footprint[]
+let kicadPcbString: string
 
 beforeAll(async () => {
   const circuit = new Circuit()
@@ -29,11 +34,11 @@ beforeAll(async () => {
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
-  standaloneFootprint = converter
-    .getOutput()
-    .footprints.find((footprint) =>
-      footprint.libraryLink?.startsWith("tscircuit:smtpad_"),
-    )
+  kicadPcbString = converter.getOutputString()
+  footprints = converter.getOutput().footprints
+  standaloneFootprint = footprints.find((footprint) =>
+    footprint.libraryLink?.startsWith("tscircuit:smtpad_"),
+  )
 })
 
 test("real board contains a standalone bottom SMT pad exported on B.Cu", () => {
@@ -49,6 +54,32 @@ test("real board contains a standalone bottom SMT pad exported on B.Cu", () => {
   )
 })
 
-test.failing("standalone bottom SMT pad is placed in a B.Cu footprint", () => {
+test("standalone bottom SMT pad is placed in a B.Cu footprint", () => {
   expect(standaloneFootprint?.layer?.getString()).toBe("(layer B.Cu)")
+  expect(
+    footprints.map((footprint) => ({
+      libraryLink: footprint.libraryLink,
+      footprintLayer: footprint.layer?.getString(),
+      padLayers: footprint.fpPads.map((pad) => pad.layers?.layers),
+    })),
+  ).toMatchSnapshot()
 })
+
+test(
+  "standalone bottom SMT pad board snapshot",
+  async () => {
+    const kicadSnapshot = await takeKicadSnapshot({
+      kicadFileContent: kicadPcbString,
+      kicadFileType: "pcb",
+    })
+
+    expect(kicadSnapshot.exitCode).toBe(0)
+    expect(
+      await stackCircuitJsonKicadPngs(
+        await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
+        kicadSnapshot.generatedFileContent["temp_file.png"]!,
+      ),
+    ).toMatchPngSnapshot(import.meta.path)
+  },
+  { timeout: 120000 },
+)
