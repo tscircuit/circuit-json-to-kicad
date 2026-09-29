@@ -35,6 +35,20 @@ beforeAll(async () => {
     stroke_width: 0.2,
   }
   circuitJson.push(silkscreenRect)
+  circuitJson.push({
+    type: "pcb_silkscreen_rect",
+    pcb_silkscreen_rect_id: "silkscreen_rect_2",
+    pcb_component_id: component.pcb_component_id,
+    center: { x: 4, y: -5 },
+    width: 3,
+    height: 2,
+    layer: "bottom",
+    stroke_width: 0.2,
+    corner_radius: 0.4,
+    ccw_rotation: 30,
+    has_stroke: false,
+    is_filled: true,
+  })
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
@@ -49,12 +63,18 @@ test("real board contains a component silkscreen rectangle", () => {
   ).toBe(true)
 })
 
-test.failing("component silkscreen rectangle is exported on F.SilkS", () => {
+test("component silkscreen rectangle is exported on F.SilkS", () => {
   expect(
     footprint.fpPolys.some(
       (poly) => poly.layer?.getString() === "(layer F.SilkS)",
     ),
   ).toBe(true)
+  const bottomRect = footprint.fpPolys.find(
+    (poly) => poly.layer?.getString() === "(layer B.SilkS)",
+  )
+  expect(bottomRect?.fill?.filled).toBe(true)
+  expect(bottomRect?.stroke).toBeUndefined()
+  expect(bottomRect?.points?.points.length).toBeGreaterThan(4)
 })
 
 test(
