@@ -81,7 +81,7 @@ test(
       /\(fp_text\s+user\s+"FOOTPRINT SILK"[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
     )
     expect(outputString).toMatch(
-      /\(gr_text\s+"FAB NOTE"[\s\S]*?\(layer F\.Fab\)[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
+      /\(fp_text\s+user\s+"FAB NOTE"[\s\S]*?\(layer F\.Fab\)[\s\S]*?\(size 0\.8 0\.8\)[\s\S]*?\(thickness 0\.15\)/,
     )
 
     const kicadSnapshot = await takeKicadSnapshot({
