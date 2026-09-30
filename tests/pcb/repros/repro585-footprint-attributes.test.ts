@@ -11,7 +11,7 @@ const board = {
   center: { x: 0, y: 0 },
 }
 
-test.failing("repro #585: component footprints retain physical pad types in board output", () => {
+test("repro #585: component footprints retain physical pad types in board output", () => {
   const circuitJson = [
     board,
     {
@@ -29,6 +29,14 @@ test.failing("repro #585: component footprints retain physical pad types in boar
       height: 1,
       rotation: 0,
       layer: "top",
+      metadata: {
+        kicad_footprint: {
+          attributes: {
+            exclude_from_bom: true,
+            exclude_from_pos_files: true,
+          },
+        },
+      },
     },
     {
       type: "pcb_smtpad",
@@ -85,9 +93,14 @@ test.failing("repro #585: component footprints retain physical pad types in boar
     smd: "smd",
     thru_hole: "through_hole",
   })
+  const smdFootprint = boardOutput.footprints.find(
+    (footprint) => footprint.fpPads[0]?.padType === "smd",
+  )
+  expect(smdFootprint?.attr?.excludeFromBom).toBe(true)
+  expect(smdFootprint?.attr?.excludeFromPosFiles).toBe(true)
 })
 
-test.failing("repro #585: standalone pads retain physical pad types in board output", () => {
+test("repro #585: standalone pads retain physical pad types in board output", () => {
   const circuitJson = [
     board,
     {
@@ -127,4 +140,69 @@ test.failing("repro #585: standalone pads retain physical pad types in board out
     smd: "smd",
     thru_hole: "through_hole",
   })
+})
+
+test("through-hole pads take priority unless metadata sets the footprint type", () => {
+  const circuitJson = [
+    board,
+    {
+      type: "source_component",
+      source_component_id: "source_component_mixed",
+      name: "J1",
+      ftype: "simple_pin_header",
+    },
+    {
+      type: "pcb_component",
+      pcb_component_id: "pcb_component_mixed",
+      source_component_id: "source_component_mixed",
+      center: { x: 0, y: 0 },
+      width: 3,
+      height: 2,
+      rotation: 0,
+      layer: "top",
+    },
+    {
+      type: "pcb_smtpad",
+      pcb_smtpad_id: "pcb_smtpad_mixed",
+      pcb_component_id: "pcb_component_mixed",
+      shape: "rect",
+      x: -1,
+      y: 0,
+      width: 1,
+      height: 1,
+      layer: "top",
+    },
+    {
+      type: "pcb_plated_hole",
+      pcb_plated_hole_id: "pcb_plated_hole_mixed",
+      pcb_component_id: "pcb_component_mixed",
+      shape: "circle",
+      x: 1,
+      y: 0,
+      hole_diameter: 0.7,
+      outer_diameter: 1.4,
+      layers: ["top", "bottom"],
+    },
+  ] as CircuitJson
+
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  converter.runUntilFinished()
+  expect(converter.getOutput().footprints[0]?.attr?.type).toBe("through_hole")
+
+  const component = circuitJson.find(
+    (element) => element.type === "pcb_component",
+  )!
+  const overriddenCircuitJson = circuitJson.map((element) =>
+    element === component
+      ? {
+          ...component,
+          metadata: { kicad_footprint: { attributes: { smd: true } } },
+        }
+      : element,
+  ) as CircuitJson
+  const overriddenConverter = new CircuitJsonToKicadPcbConverter(
+    overriddenCircuitJson,
+  )
+  overriddenConverter.runUntilFinished()
+  expect(overriddenConverter.getOutput().footprints[0]?.attr?.type).toBe("smd")
 })

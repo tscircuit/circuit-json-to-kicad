@@ -16,6 +16,7 @@ import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
+import { setFootprintTypeFromPads } from "./utils/setFootprintTypeFromPads"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
@@ -77,6 +78,7 @@ export class AddStandalonePcbElements extends ConverterStage<
           componentId: pcbPad.pcb_smtpad_id,
         }),
       ]
+      setFootprintTypeFromPads(footprint)
       const footprints = kicadPcb.footprints
       footprints.push(footprint)
       kicadPcb.footprints = footprints
@@ -128,6 +130,7 @@ export class AddStandalonePcbElements extends ConverterStage<
 
       if (pad) {
         footprint.fpPads = [pad]
+        setFootprintTypeFromPads(footprint)
         const footprints = kicadPcb.footprints
         footprints.push(footprint)
         kicadPcb.footprints = footprints
