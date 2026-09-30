@@ -7,7 +7,7 @@ import { CircuitJsonToKicadPcbConverter } from "../../../lib"
 import { expectOpenSourceSvgSnapshot } from "../../fixtures/create-open-source-schematic-svg-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro4948: Arduino Mega preserves 66 components but loses 2 DNP flags on export", async () => {
+test("repro4948: Arduino Mega preserves 66 components and both DNP flags on export", async () => {
   const filename = "arduino-mega-2560.kicad_pcb"
   const sourceText = await readFile(resolve("references", filename), "utf8")
   const source = parseKicadPcb(sourceText)
@@ -35,7 +35,7 @@ test("repro4948: Arduino Mega preserves 66 components but loses 2 DNP flags on e
     ),
   )
   expect(retainedComponents).toHaveLength(source.footprints.length)
-  expect(outputDnp).toHaveLength(0)
+  expect(outputDnp.map(reference).sort()).toEqual(["R1", "R2"])
 
   for (const original of source.footprints) {
     const converted = output.footprints.find(
@@ -65,7 +65,7 @@ test("repro4948: Arduino Mega preserves 66 components but loses 2 DNP flags on e
     reimporter
       .getOutput()
       .filter((item) => item.type === "pcb_component" && item.do_not_place),
-  ).toHaveLength(0)
+  ).toHaveLength(2)
 
   const snapshots = await Promise.all(
     [sourceText, outputText].map((content) =>
@@ -109,7 +109,7 @@ test("repro4948: Arduino Mega preserves 66 components but loses 2 DNP flags on e
 <g font-family="sans-serif" fill="white">
 <text x="24" y="38" font-size="26">Arduino Mega 2560 — Do Not Populate (DNP)</text>
 <text x="24" y="80" font-size="21">Original KiCad · full board</text>
-<text x="732" y="80" font-size="21">Current KiCad round trip · full board</text>
+<text x="732" y="80" font-size="21">Fixed KiCad round trip · full board</text>
 <text x="24" y="110" font-size="18" fill="#8fd6a7">${source.footprints.length} components · ${sourceDnp.length} DNP flags</text>
 <text x="732" y="110" font-size="18" fill="${color}">${retainedComponents.length} components · ${outputDnp.length} DNP flags · ${lost} lost</text>
 <g font-size="19">${rows}</g>
