@@ -4,15 +4,15 @@ import { resolve } from "node:path"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
 import { parseKicadPcb } from "kicadts"
 import sharp from "sharp"
-import { CircuitJsonToKicadPcbConverter } from "../../../../lib"
-import { stackPngsVertically } from "../../../fixtures/stackPngsVertically"
-import { takeKicadSnapshot } from "../../../fixtures/take-kicad-snapshot"
-import "../../../fixtures/png-matcher"
+import { CircuitJsonToKicadPcbConverter } from "../../../lib"
+import { stackPngsVertically } from "../../fixtures/stackPngsVertically"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import "../../fixtures/png-matcher"
 
 // Source: kicad-to-circuit-json/tests/assets/via_grid_template.kicad_pcb
 test.failing("exports copper labels from the real via-grid board", async () => {
   const source = readFileSync(
-    resolve(import.meta.dir, "via_grid_template.kicad_pcb"),
+    resolve(import.meta.dir, "../../assets/via_grid_template.kicad_pcb"),
     "utf8",
   )
   const importer = new KicadToCircuitJsonConverter()
