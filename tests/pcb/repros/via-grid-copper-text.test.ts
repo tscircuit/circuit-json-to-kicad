@@ -3,7 +3,6 @@ import { readFileSync } from "node:fs"
 import { resolve } from "node:path"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
 import { parseKicadPcb } from "kicadts"
-import sharp from "sharp"
 import { CircuitJsonToKicadPcbConverter } from "../../../lib"
 import { stackPngsVertically } from "../../fixtures/stackPngsVertically"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -44,19 +43,7 @@ test.failing("exports copper labels from the real via-grid board", async () => {
   ])
   const sourcePng = sourceSnapshot.generatedFileContent["temp_file.png"]!
   const exportedPng = exportedSnapshot.generatedFileContent["temp_file.png"]!
-  // Crop the lower-left board legend from each actual KiCad render.
-  const cropLegend = async (png: Buffer) => {
-    const { height } = await sharp(png).metadata()
-    return sharp(png)
-      .extract({ left: 0, top: height! - 160, width: 500, height: 160 })
-      .resize({ width: 1000 })
-      .png()
-      .toBuffer()
-  }
-  const comparison = await stackPngsVertically([
-    await cropLegend(sourcePng),
-    await cropLegend(exportedPng),
-  ])
+  const comparison = await stackPngsVertically([sourcePng, exportedPng])
   await expect(comparison).toMatchPngSnapshot(import.meta.path)
 
   const copperLabels = (board: ReturnType<typeof parseKicadPcb>) =>
