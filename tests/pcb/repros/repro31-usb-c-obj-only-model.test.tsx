@@ -12,7 +12,7 @@ import { SmdUsbC } from "./assets/smd-usb-c-obj-only"
 test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C", async () => {
   const circuit = new Circuit()
   circuit.add(
-    <board width="20mm" height="20mm" routingDisabled>
+    <board width="20mm" height="20mm" thickness={1.6} routingDisabled>
       <SmdUsbC
         name="J1"
         pcbY={-6}
