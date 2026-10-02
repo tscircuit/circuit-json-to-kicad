@@ -1,15 +1,28 @@
 import type { PcbFabricationNoteRect } from "circuit-json"
-import { FpRect, Stroke } from "kicadts"
+import { FpPoly, Stroke } from "kicadts"
+import {
+  applyToPoint,
+  compose,
+  rotate,
+  scale,
+  translate,
+} from "transformation-matrix"
 
 export function convertFabricationNoteRects(
   fabRects: PcbFabricationNoteRect[],
   componentCenter: { x: number; y: number },
-): FpRect[] {
-  const fpRects: FpRect[] = []
+  componentCcwRotationDegrees: number,
+): FpPoly[] {
+  const fpPolys: FpPoly[] = []
+  // Circuit JSON rectangles are axis-aligned in Y-up board space (mm).
+  // Undo the KiCad footprint placement to get Y-down local points (mm).
+  const toLocal = compose(
+    rotate((componentCcwRotationDegrees * Math.PI) / 180),
+    scale(1, -1),
+    translate(-componentCenter.x, -componentCenter.y),
+  )
 
   for (const rect of fabRects) {
-    const relX = rect.center.x - componentCenter.x
-    const relY = -(rect.center.y - componentCenter.y)
     const halfW = rect.width / 2
     const halfH = rect.height / 2
 
@@ -19,21 +32,26 @@ export function convertFabricationNoteRects(
     }
     const kicadLayer = layerMap[rect.layer] || rect.layer || "F.Fab"
 
-    const fpRect = new FpRect({
-      start: { x: relX - halfW, y: relY - halfH },
-      end: { x: relX + halfW, y: relY + halfH },
+    const fpPoly = new FpPoly({
+      // Four corners also preserve the rectangle at non-cardinal rotations.
+      points: [
+        { x: rect.center.x - halfW, y: rect.center.y - halfH },
+        { x: rect.center.x + halfW, y: rect.center.y - halfH },
+        { x: rect.center.x + halfW, y: rect.center.y + halfH },
+        { x: rect.center.x - halfW, y: rect.center.y + halfH },
+      ].map((point) => applyToPoint(toLocal, point)),
       layer: kicadLayer,
       stroke: new Stroke(),
       fill: false,
     })
 
-    if (fpRect.stroke) {
-      fpRect.stroke.width = rect.stroke_width || 0.1
-      fpRect.stroke.type = "default"
+    if (fpPoly.stroke) {
+      fpPoly.stroke.width = rect.stroke_width || 0.1
+      fpPoly.stroke.type = "default"
     }
 
-    fpRects.push(fpRect)
+    fpPolys.push(fpPoly)
   }
 
-  return fpRects
+  return fpPolys
 }
