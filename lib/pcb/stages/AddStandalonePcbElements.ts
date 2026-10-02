@@ -63,7 +63,7 @@ export class AddStandalonePcbElements extends ConverterStage<
 
       const footprint = new Footprint({
         libraryLink: this.getSmtPadLibraryLink(pcbPad),
-        layer: "F.Cu",
+        layer: pcbPad.layer === "bottom" ? "B.Cu" : "F.Cu",
         at: [kicadPos.x, kicadPos.y, 0],
         uuid: generateDeterministicUuid(footprintSeed),
       })
