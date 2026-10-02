@@ -54,7 +54,28 @@ export function selectSchematicPaperSize(
     }
   }
 
-  // If even A0 is too small, return A0 (largest available)
-  // In this case, content will be scaled down by the existing transform
-  return PAPER_SIZES[PAPER_SIZES.length - 1]!
+  // Preserve existing landscape selections, then try portrait sheets.
+  for (const paperSize of PAPER_SIZES) {
+    if (
+      requiredWidth <= paperSize.height &&
+      requiredHeight <= paperSize.width
+    ) {
+      return {
+        name: paperSize.name,
+        width: paperSize.height,
+        height: paperSize.width,
+        isPortrait: true,
+      }
+    }
+  }
+
+  // No fit-to-sheet transform is applied, so grow the sheet to fit.
+  const width = Math.ceil(requiredWidth)
+  const height = Math.ceil(requiredHeight)
+  return {
+    name: "User",
+    width,
+    height,
+    customSize: { width, height },
+  }
 }
