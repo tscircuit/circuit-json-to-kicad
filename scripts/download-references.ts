@@ -123,6 +123,13 @@ const references: ReferenceSpec[] = [
     source: "xjtuecho/EBAZ4205@05cdb45035a06fc5b4db16babf0ac6f4ee4497be (MIT)",
     url: "https://raw.githubusercontent.com/xjtuecho/EBAZ4205/05cdb45035a06fc5b4db16babf0ac6f4ee4497be/HW/ebaz4205/kicad/Zynq_Pwr.kicad_sch",
   },
+  {
+    filename: "hdmi-edid-debug-board.kicad_pcb",
+    sha256: "bb547fe1a4ecd7b1a2a3e0a288007219390a17e383a9c659b1bd293997ac3194",
+    source:
+      "tscircuit/kicad-to-circuit-json@3ff650e71e59a0684459c064cc31a9ab365ce926 (HDMI EDID Debug fixture)",
+    url: "https://raw.githubusercontent.com/tscircuit/kicad-to-circuit-json/3ff650e71e59a0684459c064cc31a9ab365ce926/tests/assets/hdmi-edid-debug-board.kicad_pcb",
+  },
 ]
 
 const referencesDirectory = resolve(import.meta.dir, "..", "references")
