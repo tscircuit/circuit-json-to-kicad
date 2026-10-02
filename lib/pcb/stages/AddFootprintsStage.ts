@@ -241,6 +241,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const getNetInfo = (pcbPortId?: string) =>
       this.getNetInfoForPcbPort(pcbPortId)
 
+    // Shared across SMT pads and plated holes so a hint-derived pad number
+    // (e.g. from an auto-generated internal port hint that happens to look
+    // like a pin number) can never collide with a number already assigned
+    // to another pad in this footprint.
+    const usedPadNumbers = new Set<string>()
+
     const pcbPads =
       this.ctx.db.pcb_smtpad
         ?.list()
@@ -256,6 +262,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentId: component.pcb_component_id,
         startPadNumber: 1,
         getNetInfo,
+        usedPadNumbers,
       },
       this.ctx,
     )
@@ -276,6 +283,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentId: component.pcb_component_id,
         startPadNumber: nextPadNumber,
         getNetInfo,
+        usedPadNumbers,
       },
       this.ctx,
     )
