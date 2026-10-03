@@ -479,6 +479,16 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       footprint.attr.dnp = true
     }
 
+    // Emit KiCad footprint type so modeled parts don't all land in the
+    // Virtual Models class: any plated or mounting hole means through_hole,
+    // a pure SMT pad set is smd.
+    if (!footprint.attr?.type && fpPads.length > 0) {
+      const attr = footprint.attr ?? new FootprintAttr()
+      attr.type =
+        thruHolePads.length > 0 || smdPads.length === 0 ? "through_hole" : "smd"
+      footprint.attr = attr
+    }
+
     const footprints = kicadPcb.footprints
     footprints.push(footprint)
     kicadPcb.footprints = footprints
