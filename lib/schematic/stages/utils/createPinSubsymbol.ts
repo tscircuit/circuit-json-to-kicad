@@ -226,11 +226,11 @@ export function createPinSubsymbol({
       ? String(port.labels![0])
       : undefined
     const pinNum = isChip
-      ? port.pinNumber?.toString() ?? numericLabel ?? `${i + 1}`
-      : numericLabel ??
+      ? (port.pinNumber?.toString() ?? numericLabel ?? `${i + 1}`)
+      : (numericLabel ??
         port.pinNumber?.toString() ??
         circuitPinNumbers.get(i) ??
-        `${i + 1}`
+        `${i + 1}`)
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,
