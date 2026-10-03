@@ -219,8 +219,18 @@ export function createPinSubsymbol({
     const numFont = new TextEffectsFont()
     numFont.size = { height: 1.27, width: 1.27 }
     const numEffects = new TextEffects({ font: numFont })
-    const pinNum =
-      port.pinNumber?.toString() ?? circuitPinNumbers.get(i) ?? `${i + 1}`
+    // A numeric port label carries the circuit's pin number, while a
+    // library-drawn symbol's pinNumber is just its library position — the
+    // label wins for non-chip symbols. Chips keep their real pinNumber.
+    const numericLabel = /^\d+$/.test(String(port.labels?.[0] ?? ""))
+      ? String(port.labels![0])
+      : undefined
+    const pinNum = isChip
+      ? (port.pinNumber?.toString() ?? numericLabel ?? `${i + 1}`)
+      : (numericLabel ??
+        port.pinNumber?.toString() ??
+        circuitPinNumbers.get(i) ??
+        `${i + 1}`)
     pin._sxNumber = new SymbolPinNumber({
       value: pinNum,
       effects: numEffects,
