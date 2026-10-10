@@ -285,6 +285,23 @@ export class CircuitJsonToKicadSchConverter {
       ]
     }
 
+    const filenameSafePlan = buildSchematicSheetPlan(this.circuitJson, {
+      reservedRootFilename: options.schematicFilename,
+    })
+    let childFilenameChanged = false
+    for (const [index, child] of this.schematicSheetPlan.children.entries()) {
+      const filenameSafeChild = filenameSafePlan.children[index]!
+      if (child.filename !== filenameSafeChild.filename) {
+        child.fileBaseName = filenameSafeChild.fileBaseName
+        child.filename = filenameSafeChild.filename
+        childFilenameChanged = true
+      }
+    }
+    if (childFilenameChanged) {
+      this.files = []
+      this.built = false
+    }
+
     this.buildAll()
     return this.files.map((file, index) => ({
       filename: index === 0 ? options.schematicFilename : file.entry.filename,
