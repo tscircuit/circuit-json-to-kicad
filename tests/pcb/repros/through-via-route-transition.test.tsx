@@ -4,6 +4,7 @@ import { EventEmitter } from "node:events"
 import type { ReactElement } from "react"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import { renderKicadLayers } from "../../fixtures/render-kicad-layers"
 import { renderPcbLayers } from "../../fixtures/render-pcb-layers"
 
 async function captureVias(
@@ -87,12 +88,18 @@ async function checkThroughVia(
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   await captureVias(converter, snapshotName, 1)
-  expect(
+  await expect(
     renderPcbLayers(
       circuitJson,
       `${physical.from_layer} -> ${physical.to_layer}: one physical via; KiCad exports ${converter.getOutput().vias.length} (expected 1).`,
     ),
   ).toMatchSvgSnapshot(import.meta.path, `${snapshotName}-pcb-layers`)
+  await expect(
+    await renderKicadLayers(
+      converter.getOutputString(),
+      `${physical.from_layer} -> ${physical.to_layer}: KiCad output; ${converter.getOutput().vias.length} coincident vias (expected 1).`,
+    ),
+  ).toMatchSvgSnapshot(import.meta.path, `${snapshotName}-kicad-layers`)
   expect(converter.getOutput().vias).toHaveLength(1)
   expect(converter.getOutput().vias[0]).toMatchObject({ size: 0.7, drill: 0.3 })
 }
@@ -112,7 +119,7 @@ test.failing("top to inner1 reuses its physical through via", async () => {
     </board>,
     "through-via-route-transition-0",
   )
-})
+}, 120000)
 
 test.failing("inner2 to bottom reuses its physical through via", async () => {
   await checkThroughVia(
@@ -129,4 +136,4 @@ test.failing("inner2 to bottom reuses its physical through via", async () => {
     </board>,
     "through-via-route-transition-1",
   )
-})
+}, 120000)
