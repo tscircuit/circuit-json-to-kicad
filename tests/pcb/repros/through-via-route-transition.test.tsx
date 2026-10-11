@@ -249,11 +249,9 @@ test("an unrelated coincident through via does not absorb a route transition", a
   const transition = trace.route.find((point) => point.route_type === "via")!
   expect(physical.layers).toEqual(["top", "inner1", "inner2", "bottom"])
   expect([transition.x, transition.y]).toEqual([physical.x, physical.y])
-  const sourceTrace = circuitJson.find(
-    (item) =>
-      item.type === "source_trace" &&
-      item.source_trace_id === trace.source_trace_id,
-  )!
+  const sourceTrace = circuitJson
+    .filter((item) => item.type === "source_trace")
+    .find((item) => item.source_trace_id === trace.source_trace_id)!
   expect(physical.pcb_trace_id).not.toBe(trace.pcb_trace_id)
   expect(physical.subcircuit_connectivity_map_key).toBeDefined()
   expect(physical.subcircuit_connectivity_map_key).not.toBe(
