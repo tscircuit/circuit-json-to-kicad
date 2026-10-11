@@ -1,7 +1,10 @@
 import { expect, test } from "bun:test"
+import "bun-match-svg"
 import { EventEmitter } from "node:events"
+import type { ReactElement } from "react"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import { renderPcbLayers } from "../../fixtures/render-pcb-layers"
 
 async function captureVias(
   converter: CircuitJsonToKicadPcbConverter,
@@ -23,10 +26,80 @@ async function captureVias(
   return svg
 }
 
-test.failing("top to inner1 reuses its physical through via", async () => {
+async function checkThroughVia(
+  manualBoard: ReactElement,
+  snapshotName: string,
+) {
   const manual = new Circuit()
-  manual.add(
-    <board width="20mm" height="14mm" layers={4}>
+  manual.add(manualBoard)
+  await manual.renderUntilSettled()
+  const savedRoutes = manual
+    .getCircuitJson()
+    .filter((element) => element.type === "pcb_trace")
+  // Replay the live TSX route through the group router, which emits a through via.
+  const circuit = new Circuit({
+    platform: {
+      autorouter: {
+        algorithmFn: async () => {
+          const router = new EventEmitter()
+          return Object.assign(router, {
+            start: () => router.emit("complete", { traces: savedRoutes }),
+            stop: () => {},
+          })
+        },
+      },
+    },
+  })
+  circuit.add(
+    <board
+      width={20}
+      height={14}
+      layers={4}
+      minViaHoleDiameter={0.3}
+      minViaPadDiameter={0.7}
+    >
+      <resistor name="R1" resistance="10k" footprint="0402" pcbX={-5} />
+      <resistor name="R2" resistance="10k" footprint="0402" pcbX={5} />
+      <trace from=".R1 > .pin2" to=".R2 > .pin1" />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+  const physicalVias = circuitJson.filter(
+    (element) => element.type === "pcb_via",
+  )
+  expect(physicalVias).toHaveLength(1)
+  const physical = physicalVias[0]!
+  expect(physical.layers).toEqual(["top", "inner1", "inner2", "bottom"])
+  expect([physical.outer_diameter, physical.hole_diameter]).toEqual([0.7, 0.3])
+  expect(savedRoutes).toHaveLength(1)
+  expect(physical.pcb_trace_id).toBe(savedRoutes[0]!.pcb_trace_id)
+  const transitions = savedRoutes[0]!.route.filter(
+    (point) => point.route_type === "via",
+  )
+  expect(transitions).toHaveLength(1)
+  expect(transitions[0]).toMatchObject({
+    x: physical.x,
+    y: physical.y,
+    from_layer: physical.from_layer,
+    to_layer: physical.to_layer,
+  })
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  converter.runUntilFinished()
+  await captureVias(converter, snapshotName, 1)
+  expect(
+    renderPcbLayers(
+      circuitJson,
+      `${physical.from_layer} -> ${physical.to_layer}: one physical via; KiCad exports ${converter.getOutput().vias.length} (expected 1).`,
+    ),
+  ).toMatchSvgSnapshot(import.meta.path, `${snapshotName}-pcb-layers`)
+  expect(converter.getOutput().vias).toHaveLength(1)
+  expect(converter.getOutput().vias[0]).toMatchObject({ size: 0.7, drill: 0.3 })
+}
+
+test.failing("top to inner1 reuses its physical through via", async () => {
+  await checkThroughVia(
+    <board width={20} height={14} layers={4}>
       <resistor name="R1" resistance="10k" footprint="0402" pcbX={-5} />
       <resistor name="R2" resistance="10k" footprint="0402" pcbX={5} />
       <trace
@@ -37,65 +110,13 @@ test.failing("top to inner1 reuses its physical through via", async () => {
         ]}
       />
     </board>,
+    "through-via-route-transition-0",
   )
-  await manual.renderUntilSettled()
-  const savedRoutes = manual
-    .getCircuitJson()
-    .filter((item) => item.type === "pcb_trace")
-  // Replay the unchanged live JSX route; the group router emits full-board vias.
-  const circuit = new Circuit()
-  circuit.add(
-    <board
-      width="20mm"
-      height="14mm"
-      layers={4}
-      minViaHoleDiameter={0.3}
-      minViaPadDiameter={0.7}
-      autorouter={{
-        algorithmFn: async () => {
-          const router = new EventEmitter()
-          return Object.assign(router, {
-            start: () => router.emit("complete", { traces: savedRoutes }),
-            stop: () => {},
-          })
-        },
-      }}
-    >
-      <resistor name="R1" resistance="10k" footprint="0402" pcbX={-5} />
-      <resistor name="R2" resistance="10k" footprint="0402" pcbX={5} />
-      <trace from=".R1 > .pin2" to=".R2 > .pin1" />
-    </board>,
-  )
-  await circuit.renderUntilSettled()
-  const circuitJson = circuit.getCircuitJson()
-  const physicalVias = circuitJson.filter((item) => item.type === "pcb_via")
-  expect(physicalVias).toHaveLength(1)
-  const physical = physicalVias[0]!
-  expect(physical.layers).toEqual(["top", "inner1", "inner2", "bottom"])
-  expect([physical.outer_diameter, physical.hole_diameter]).toEqual([0.7, 0.3])
-  expect(savedRoutes).toHaveLength(1)
-  expect(physical.pcb_trace_id).toBe(savedRoutes[0]!.pcb_trace_id)
-  const transitions = savedRoutes[0]!.route.filter(
-    (point) => point.route_type === "via",
-  )
-  expect(transitions).toHaveLength(1)
-  expect(transitions[0]).toMatchObject({
-    x: physical.x,
-    y: physical.y,
-    from_layer: "top",
-    to_layer: "inner1",
-  })
-  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
-  converter.runUntilFinished()
-  const svg = await captureVias(converter, "through-via-route-transition-0", 1)
-  expect(converter.getOutput().vias).toHaveLength(1)
-  expect(converter.getOutput().vias[0]).toMatchObject({ size: 0.7, drill: 0.3 })
 })
 
 test.failing("inner2 to bottom reuses its physical through via", async () => {
-  const manual = new Circuit()
-  manual.add(
-    <board width="20mm" height="14mm" layers={4}>
+  await checkThroughVia(
+    <board width={20} height={14} layers={4}>
       <resistor name="R1" resistance="10k" footprint="0402" pcbX={-5} />
       <resistor name="R2" resistance="10k" footprint="0402" pcbX={5} />
       <trace
@@ -106,57 +127,6 @@ test.failing("inner2 to bottom reuses its physical through via", async () => {
         ]}
       />
     </board>,
+    "through-via-route-transition-1",
   )
-  await manual.renderUntilSettled()
-  const savedRoutes = manual
-    .getCircuitJson()
-    .filter((item) => item.type === "pcb_trace")
-  // Replay the unchanged live JSX route; the group router emits full-board vias.
-  const circuit = new Circuit()
-  circuit.add(
-    <board
-      width="20mm"
-      height="14mm"
-      layers={4}
-      minViaHoleDiameter={0.3}
-      minViaPadDiameter={0.7}
-      autorouter={{
-        algorithmFn: async () => {
-          const router = new EventEmitter()
-          return Object.assign(router, {
-            start: () => router.emit("complete", { traces: savedRoutes }),
-            stop: () => {},
-          })
-        },
-      }}
-    >
-      <resistor name="R1" resistance="10k" footprint="0402" pcbX={-5} />
-      <resistor name="R2" resistance="10k" footprint="0402" pcbX={5} />
-      <trace from=".R1 > .pin2" to=".R2 > .pin1" />
-    </board>,
-  )
-  await circuit.renderUntilSettled()
-  const circuitJson = circuit.getCircuitJson()
-  const physicalVias = circuitJson.filter((item) => item.type === "pcb_via")
-  expect(physicalVias).toHaveLength(1)
-  const physical = physicalVias[0]!
-  expect(physical.layers).toEqual(["top", "inner1", "inner2", "bottom"])
-  expect([physical.outer_diameter, physical.hole_diameter]).toEqual([0.7, 0.3])
-  expect(savedRoutes).toHaveLength(1)
-  expect(physical.pcb_trace_id).toBe(savedRoutes[0]!.pcb_trace_id)
-  const transitions = savedRoutes[0]!.route.filter(
-    (point) => point.route_type === "via",
-  )
-  expect(transitions).toHaveLength(1)
-  expect(transitions[0]).toMatchObject({
-    x: physical.x,
-    y: physical.y,
-    from_layer: "inner2",
-    to_layer: "bottom",
-  })
-  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
-  converter.runUntilFinished()
-  const svg = await captureVias(converter, "through-via-route-transition-1", 1)
-  expect(converter.getOutput().vias).toHaveLength(1)
-  expect(converter.getOutput().vias[0]).toMatchObject({ size: 0.7, drill: 0.3 })
 })
