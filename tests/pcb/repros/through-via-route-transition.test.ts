@@ -91,13 +91,8 @@ test("an inner-layer route transition reuses its physical through via", async ()
       )
       .join("")
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="800" height="500"><rect width="800" height="500" fill="white"/><g font-family="sans-serif" font-size="17" text-anchor="middle" fill="#222"><text x="400" y="30">The KiCad exporter converts Circuit JSON into PCB files.</text><text x="400" y="60">1 physical barrel / ${vias.length} exported vias, ${uuids.size} unique UUIDs. Expected 1 via.</text></g><g font-family="monospace" font-size="13" fill="#222">${rows}</g></svg>`
-    if (process.env.EVIDENCE_DIR) {
-      await Bun.write(`${process.env.EVIDENCE_DIR}/${from}-${to}.svg`, svg)
-      await Bun.write(
-        `${process.env.EVIDENCE_DIR}/${from}-${to}.kicad_pcb`,
-        converter.getOutputString(),
-      )
-    }
+    if (process.env.SNAPSHOT_DIR)
+      await Bun.write(`${process.env.SNAPSHOT_DIR}/${from}-${to}.svg`, svg)
     counts.push(vias.length)
     snapshots.push(svg)
     const routeOnly = new CircuitJsonToKicadPcbConverter(
