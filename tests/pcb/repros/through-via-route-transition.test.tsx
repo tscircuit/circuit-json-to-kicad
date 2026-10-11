@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { EventEmitter } from "node:events"
 import { Circuit } from "tscircuit"
+import sharp from "sharp"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 
 async function captureVias(
@@ -23,7 +24,7 @@ async function captureVias(
   return svg
 }
 
-test.failing("top to inner1 reuses its physical through via", async () => {
+test("top to inner1 reuses its physical through via", async () => {
   const manual = new Circuit()
   manual.add(
     <board width="20mm" height="14mm" layers={4}>
@@ -90,9 +91,12 @@ test.failing("top to inner1 reuses its physical through via", async () => {
   const svg = await captureVias(converter, "through-via-route-transition-0", 1)
   expect(converter.getOutput().vias).toHaveLength(1)
   expect(converter.getOutput().vias[0]).toMatchObject({ size: 0.7, drill: 0.3 })
+  await expect(
+    await sharp(Buffer.from(svg)).png().toBuffer(),
+  ).toMatchPngSnapshot(import.meta.path, "through-via-route-transition-0")
 })
 
-test.failing("inner2 to bottom reuses its physical through via", async () => {
+test("inner2 to bottom reuses its physical through via", async () => {
   const manual = new Circuit()
   manual.add(
     <board width="20mm" height="14mm" layers={4}>
@@ -159,4 +163,155 @@ test.failing("inner2 to bottom reuses its physical through via", async () => {
   const svg = await captureVias(converter, "through-via-route-transition-1", 1)
   expect(converter.getOutput().vias).toHaveLength(1)
   expect(converter.getOutput().vias[0]).toMatchObject({ size: 0.7, drill: 0.3 })
+  await expect(
+    await sharp(Buffer.from(svg)).png().toBuffer(),
+  ).toMatchPngSnapshot(import.meta.path, "through-via-route-transition-1")
+})
+
+test("route-only legacy diameter aliases preserve the rendered size", async () => {
+  const circuit = new Circuit()
+  circuit.add(
+    <board
+      width="20mm"
+      height="14mm"
+      layers={4}
+      pcbStyle={{ viaHoleDiameter: 0.3, viaPadDiameter: 0.7 }}
+    >
+      <resistor name="R1" resistance="10k" footprint="0402" pcbX={-5} />
+      <resistor name="R2" resistance="10k" footprint="0402" pcbX={5} />
+      <trace
+        from=".R1 > .pin2"
+        to=".R2 > .pin1"
+        pcbPath={[
+          { x: 1, y: 0, via: true, fromLayer: "top", toLayer: "inner1" },
+        ]}
+      />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  // Exercise the legacy route-only representation of this live rendered path.
+  const physical = circuit
+    .getCircuitJson()
+    .find((item) => item.type === "pcb_via")!
+  expect([physical.outer_diameter, physical.hole_diameter]).toEqual([0.7, 0.3])
+  const circuitJson = circuit
+    .getCircuitJson()
+    .filter((item) => item.type !== "pcb_via")
+  const trace = circuitJson.find((item) => item.type === "pcb_trace")!
+  const transition = trace.route.find((point) => point.route_type === "via")!
+  Object.assign(transition, {
+    via_diameter: physical.outer_diameter,
+    via_hole_diameter: physical.hole_diameter,
+  })
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  converter.runUntilFinished()
+  const svg = await captureVias(converter, "through-via-route-aliases", 1)
+  expect(converter.getOutput().vias).toHaveLength(1)
+  expect(converter.getOutput().vias[0]).toMatchObject({ size: 0.7, drill: 0.3 })
+  await expect(
+    await sharp(Buffer.from(svg)).png().toBuffer(),
+  ).toMatchPngSnapshot(import.meta.path, "through-via-route-aliases")
+})
+
+test("an unrelated coincident through via does not absorb a route transition", async () => {
+  const circuit = new Circuit()
+  circuit.add(
+    <board width="20mm" height="14mm" layers={4}>
+      <net name="UNRELATED" />
+      <via
+        name="V1"
+        pcbX={-4}
+        pcbY={0}
+        fromLayer="top"
+        toLayer="bottom"
+        outerDiameter={0.7}
+        holeDiameter={0.3}
+        connectsTo="net.UNRELATED"
+      />
+      <resistor name="R1" resistance="10k" footprint="0402" pcbX={-5} />
+      <resistor name="R2" resistance="10k" footprint="0402" pcbX={5} />
+      <trace
+        from=".R1 > .pin2"
+        to=".R2 > .pin1"
+        pcbPath={[
+          { x: 1, y: 0, via: true, fromLayer: "top", toLayer: "inner1" },
+        ]}
+      />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  // Keep the explicit JSX via and the live route, omitting its redundant physical record.
+  const circuitJson = circuit
+    .getCircuitJson()
+    .filter((item) => item.type !== "pcb_via" || item.layers.length === 4)
+  const physical = circuitJson.find((item) => item.type === "pcb_via")!
+  const trace = circuitJson.find((item) => item.type === "pcb_trace")!
+  const transition = trace.route.find((point) => point.route_type === "via")!
+  expect(physical.layers).toEqual(["top", "inner1", "inner2", "bottom"])
+  expect([transition.x, transition.y]).toEqual([physical.x, physical.y])
+  const sourceTrace = circuitJson
+    .filter((item) => item.type === "source_trace")
+    .find((item) => item.source_trace_id === trace.source_trace_id)!
+  expect(physical.pcb_trace_id).not.toBe(trace.pcb_trace_id)
+  expect(physical.subcircuit_connectivity_map_key).toBeDefined()
+  expect(physical.subcircuit_connectivity_map_key).not.toBe(
+    sourceTrace.subcircuit_connectivity_map_key,
+  )
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  converter.runUntilFinished()
+  const svg = await captureVias(converter, "through-via-unrelated", 2)
+  expect(converter.getOutput().vias).toHaveLength(2)
+  await expect(
+    await sharp(Buffer.from(svg)).png().toBuffer(),
+  ).toMatchPngSnapshot(import.meta.path, "through-via-unrelated")
+})
+
+test("aligned disjoint JSX vias retain distinct spans and UUIDs", async () => {
+  const circuit = new Circuit()
+  circuit.add(
+    <board width="10mm" height="8mm" layers={4}>
+      <via
+        name="UPPER"
+        pcbX={0}
+        pcbY={0}
+        fromLayer="top"
+        toLayer="inner1"
+        outerDiameter={0.7}
+        holeDiameter={0.3}
+      />
+      <via
+        name="LOWER"
+        pcbX={0}
+        pcbY={0}
+        fromLayer="inner2"
+        toLayer="bottom"
+        outerDiameter={0.7}
+        holeDiameter={0.3}
+      />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+  expect(
+    circuitJson
+      .filter((item) => item.type === "pcb_via")
+      .map((via) => via.layers),
+  ).toEqual([
+    ["top", "inner1"],
+    ["inner2", "bottom"],
+  ])
+  const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  converter.runUntilFinished()
+  const svg = await captureVias(converter, "through-via-disjoint-spans", 2)
+  expect(converter.getOutput().vias).toHaveLength(2)
+  expect(converter.getOutput().vias.map((via) => via.layers?.names)).toEqual([
+    ["F.Cu", "In1.Cu"],
+    ["In2.Cu", "B.Cu"],
+  ])
+  expect(
+    new Set(converter.getOutput().vias.map((via) => via.uuid!.value)).size,
+  ).toBe(2)
+  await expect(
+    await sharp(Buffer.from(svg)).png().toBuffer(),
+  ).toMatchPngSnapshot(import.meta.path, "through-via-disjoint-spans")
 })
