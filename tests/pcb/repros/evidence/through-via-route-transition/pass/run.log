@@ -1,0 +1,10 @@
+bun test v1.3.14 (0d9b296a)
+
+tests/pcb/repros/through-via-route-transition.test.ts:
+objc[67755]: Class GNotificationCenterDelegate is implemented in both /Users/ankan/Documents/Codex/2026-10-11/tsx-saved-route-bug-reproductions/work/kicad/node_modules/looks-same/node_modules/sharp/vendor/8.14.5/darwin-arm64v8/lib/libvips-cpp.42.dylib (0x124f4da40) and /Users/ankan/Documents/Codex/2026-10-11/tsx-saved-route-bug-reproductions/work/kicad/node_modules/@img/sharp-libvips-darwin-arm64/lib/libvips-cpp.8.17.3.dylib (0x127025978). This may cause spurious casting failures and mysterious crashes. One of the duplicates must be removed or renamed.
+(pass) an inner-layer route transition reuses its physical through via [150.13ms]
+
+ 1 pass
+ 0 fail
+ 17 expect() calls
+Ran 1 test across 1 file. [291.00ms]

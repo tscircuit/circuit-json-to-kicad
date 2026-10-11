@@ -1,9 +1,11 @@
 import { expect, test } from "bun:test"
 import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import sharp from "sharp"
 
-test.failing("an inner-layer route transition reuses its physical through via", async () => {
+test("an inner-layer route transition reuses its physical through via", async () => {
   const counts = []
+  const snapshots: string[] = []
   for (const [from, to] of [
     ["top", "inner1"],
     ["inner2", "bottom"],
@@ -97,6 +99,47 @@ test.failing("an inner-layer route transition reuses its physical through via", 
       )
     }
     counts.push(vias.length)
+    snapshots.push(svg)
+    const routeOnly = new CircuitJsonToKicadPcbConverter(
+      circuitJson.filter((element) => element.type !== "pcb_via"),
+    )
+    routeOnly.runUntilFinished()
+    expect(routeOnly.getOutput().vias).toHaveLength(1)
+    expect(routeOnly.getOutput().vias[0]!.size).toBe(0.7)
+    expect(routeOnly.getOutput().vias[0]!.drill).toBe(0.3)
+    const unrelated = structuredClone(circuitJson)
+    const physical = unrelated.find((element) => element.type === "pcb_via")!
+    physical.pcb_trace_id = "other_trace"
+    physical.subcircuit_connectivity_map_key = "other_net"
+    const independent = new CircuitJsonToKicadPcbConverter(unrelated)
+    independent.runUntilFinished()
+    expect(independent.getOutput().vias).toHaveLength(2)
+    const stacked: CircuitJson = circuitJson.filter(
+      (element) => element.type !== "pcb_trace" && element.type !== "pcb_via",
+    )
+    stacked.push({
+      ...physical,
+      pcb_via_id: "upper",
+      layers: ["top", "inner1"],
+    })
+    stacked.push({
+      ...physical,
+      pcb_via_id: "lower",
+      layers: ["inner2", "bottom"],
+    })
+    const disjoint = new CircuitJsonToKicadPcbConverter(stacked)
+    disjoint.runUntilFinished()
+    expect(disjoint.getOutput().vias).toHaveLength(2)
+    expect(
+      new Set(disjoint.getOutput().vias.map((via) => via.uuid!.value)).size,
+    ).toBe(2)
   }
   expect(counts).toEqual([1, 1])
+  for (const [index, svg] of snapshots.entries())
+    await expect(
+      await sharp(Buffer.from(svg)).png().toBuffer(),
+    ).toMatchPngSnapshot(
+      import.meta.path,
+      `through-via-route-transition-${index}`,
+    )
 })
