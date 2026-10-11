@@ -1,5 +1,0 @@
-The KiCad exporter should emit one drilled physical barrel when a trace transitions between layers inside that barrel. This four-layer board has one 0.7 / 0.3 mm through via and a matching top-to-inner1 (or inner2-to-bottom) route marker with valid layer semantics and the same trace/net ownership. Expected: one original through via. Observed: two overlapping vias and a repeated UUID.
-
-Run `bun test tests/pcb/repros/through-via-route-transition.test.ts`. Remove only `.failing` to expose the assertion failure. `failure/run.log` records that unannotated exit-1 run; white SVGs show real exported via s-expressions below centered captions, and .kicad_pcb files are actual converter outputs. These failure captures are not passing baselines.
-
-Verified main `b337d73bd88a26dab3b880e19399ad9cf5f9747a` / 0.0.230 on 2026-10-11. Existing proposal https://github.com/tscircuit/circuit-json-to-kicad/pull/629 passes this primary reproduction when applied locally. A compact alternative stack will retain route-only legacy diameter aliases and preserve distinct spans/UUIDs. This does not certify full KiCad roundtrip or manufacturing correctness.
