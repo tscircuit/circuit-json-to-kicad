@@ -15,12 +15,7 @@
     "type": "source_port",
     "source_port_id": "source_port_0",
     "name": "A1",
-    "port_hints": [
-      "A1",
-      "DQ0",
-      "pin1",
-      "1"
-    ],
+    "port_hints": ["A1", "DQ0", "pin1", "1"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0",
     "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_0_connectivity_net0"
@@ -29,12 +24,7 @@
     "type": "source_port",
     "source_port_id": "source_port_1",
     "name": "A2",
-    "port_hints": [
-      "A2",
-      "GND",
-      "pin2",
-      "2"
-    ],
+    "port_hints": ["A2", "GND", "pin2", "2"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0",
     "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_0_connectivity_net1"
@@ -43,12 +33,7 @@
     "type": "source_port",
     "source_port_id": "source_port_2",
     "name": "B1",
-    "port_hints": [
-      "B1",
-      "GND",
-      "pin3",
-      "3"
-    ],
+    "port_hints": ["B1", "GND", "pin3", "3"],
     "source_component_id": "source_component_0",
     "subcircuit_id": "subcircuit_source_group_0",
     "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_0_connectivity_net1"
@@ -90,12 +75,8 @@
   {
     "type": "source_trace",
     "source_trace_id": "source_trace_0",
-    "connected_source_port_ids": [
-      "source_port_0"
-    ],
-    "connected_source_net_ids": [
-      "source_net_0"
-    ],
+    "connected_source_port_ids": ["source_port_0"],
+    "connected_source_net_ids": ["source_net_0"],
     "subcircuit_id": "subcircuit_source_group_0",
     "display_name": ".U1 > .DQ0 to net.DATA",
     "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_0_connectivity_net0"
@@ -103,12 +84,8 @@
   {
     "type": "source_trace",
     "source_trace_id": "source_trace_1",
-    "connected_source_port_ids": [
-      "source_port_1"
-    ],
-    "connected_source_net_ids": [
-      "source_net_1"
-    ],
+    "connected_source_port_ids": ["source_port_1"],
+    "connected_source_net_ids": ["source_net_1"],
     "subcircuit_id": "subcircuit_source_group_0",
     "display_name": ".U1 > .A2 to net.GND",
     "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_0_connectivity_net1"
@@ -116,12 +93,8 @@
   {
     "type": "source_trace",
     "source_trace_id": "source_trace_2",
-    "connected_source_port_ids": [
-      "source_port_2"
-    ],
-    "connected_source_net_ids": [
-      "source_net_1"
-    ],
+    "connected_source_port_ids": ["source_port_2"],
+    "connected_source_net_ids": ["source_net_1"],
     "subcircuit_id": "subcircuit_source_group_0",
     "display_name": ".U1 > .B1 to net.GND",
     "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_0_connectivity_net1"
@@ -132,11 +105,7 @@
     "warning_type": "source_no_power_pin_defined_warning",
     "message": "U1 has no pin with requires_power=true",
     "source_component_id": "source_component_0",
-    "source_port_ids": [
-      "source_port_0",
-      "source_port_1",
-      "source_port_2"
-    ],
+    "source_port_ids": ["source_port_0", "source_port_1", "source_port_2"],
     "subcircuit_id": "subcircuit_source_group_0"
   },
   {
@@ -145,22 +114,14 @@
     "warning_type": "source_no_ground_pin_defined_warning",
     "message": "U1 has no pin with requires_ground=true",
     "source_component_id": "source_component_0",
-    "source_port_ids": [
-      "source_port_0",
-      "source_port_1",
-      "source_port_2"
-    ],
+    "source_port_ids": ["source_port_0", "source_port_1", "source_port_2"],
     "subcircuit_id": "subcircuit_source_group_0"
   },
   {
     "type": "source_component_pins_underspecified_warning",
     "source_component_pins_underspecified_warning_id": "source_component_pins_underspecified_warning_0",
     "source_component_id": "source_component_0",
-    "source_port_ids": [
-      "source_port_0",
-      "source_port_1",
-      "source_port_2"
-    ],
+    "source_port_ids": ["source_port_0", "source_port_1", "source_port_2"],
     "subcircuit_id": "subcircuit_source_group_0",
     "warning_type": "source_component_pins_underspecified_warning",
     "message": "All pins on U1 are underspecified (no pinAttributes set)"
@@ -179,16 +140,11 @@
     },
     "port_arrangement": {
       "left_side": {
-        "pins": [
-          "A1"
-        ],
+        "pins": ["A1"],
         "direction": "top-to-bottom"
       },
       "right_side": {
-        "pins": [
-          "A2",
-          "B1"
-        ],
+        "pins": ["A2", "B1"],
         "direction": "top-to-bottom"
       }
     },
@@ -476,11 +432,7 @@
     "layer": "top",
     "shape": "circle",
     "radius": 0.2,
-    "port_hints": [
-      "pin99",
-      "DQ0",
-      "A1"
-    ],
+    "port_hints": ["pin99", "DQ0", "A1"],
     "is_covered_with_solder_mask": false,
     "x": 0,
     "y": 0,
@@ -506,11 +458,7 @@
     "layer": "top",
     "shape": "circle",
     "radius": 0.2,
-    "port_hints": [
-      "pin99",
-      "GND",
-      "A2"
-    ],
+    "port_hints": ["pin99", "GND", "A2"],
     "is_covered_with_solder_mask": false,
     "x": 0.8,
     "y": 0,
@@ -536,11 +484,7 @@
     "layer": "top",
     "shape": "circle",
     "radius": 0.2,
-    "port_hints": [
-      "pin99",
-      "GND",
-      "B1"
-    ],
+    "port_hints": ["pin99", "GND", "B1"],
     "is_covered_with_solder_mask": false,
     "x": 0,
     "y": -0.8,
@@ -576,9 +520,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_0",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 0,
     "y": 0,
@@ -588,9 +530,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_1",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 0.8,
     "y": 0,
@@ -600,9 +540,7 @@
     "type": "pcb_port",
     "pcb_port_id": "pcb_port_2",
     "pcb_component_id": "pcb_component_0",
-    "layers": [
-      "top"
-    ],
+    "layers": ["top"],
     "subcircuit_id": "subcircuit_source_group_0",
     "x": 0,
     "y": -0.8,
