@@ -1,3 +1,4 @@
+import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
 import type {
   CircuitJson,
   SchematicComponent,
@@ -307,7 +308,12 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         if (!port) continue
         const pin = new SymbolPin()
         // Use pin_number if available, otherwise use 1-based index
-        pin.numberString = `${port.pin_number || i + 1}`
+        pin.numberString =
+          getPhysicalPinName(
+            port.source_port_id
+              ? db.source_port.get(port.source_port_id)
+              : undefined,
+          ) ?? `${port.pin_number || i + 1}`
         pin.uuid = crypto.randomUUID()
         symbol.pins.push(pin)
       }

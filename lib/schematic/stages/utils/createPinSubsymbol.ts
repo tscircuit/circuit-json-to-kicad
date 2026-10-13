@@ -1,3 +1,4 @@
+import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import type {
   SchematicComponent,
   SchematicPort,
@@ -221,8 +222,17 @@ export function createPinSubsymbol({
     const numEffects = new TextEffects({ font: numFont })
     const pinNum =
       port.pinNumber?.toString() ?? circuitPinNumbers.get(i) ?? `${i + 1}`
+    const schematicPort = schematicPorts.find(
+      (candidate) =>
+        candidate.schematic_component_id ===
+          schematicComponent?.schematic_component_id &&
+        String(candidate.pin_number) === pinNum,
+    )
+    const sourcePort = sourcePorts.find(
+      (candidate) => candidate.source_port_id === schematicPort?.source_port_id,
+    )
     pin._sxNumber = new SymbolPinNumber({
-      value: pinNum,
+      value: getPhysicalPinName(sourcePort) ?? pinNum,
       effects: numEffects,
     })
 
