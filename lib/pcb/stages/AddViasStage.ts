@@ -7,6 +7,7 @@ import {
   type PcbNetInfo,
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
+import { isRouteViaInPhysicalVia } from "../utils/isRouteViaInPhysicalVia"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import {
   getKicadLayer,
@@ -25,7 +26,6 @@ type ViaLike = {
   pcb_trace_id?: string
   source_net_id?: string
   subcircuit_connectivity_map_key?: string
-  connection_name?: string
 }
 
 /**
@@ -41,50 +41,61 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private collectPcbVias(): ViaLike[] {
-    const standaloneVias = (this.ctx.db.pcb_via?.list() || []) as ViaLike[]
-    const seenViaKeys = new Set(
-      standaloneVias.map((via) => this.getViaDedupeKey(via)),
-    )
-
-    const routeDefinedVias = (this.ctx.db.pcb_trace?.list() || []).flatMap(
-      (trace: any) =>
-        (trace.route || [])
-          .filter((point: any) => point.route_type === "via")
-          .map(
-            (point: any): ViaLike => ({
-              x: point.x,
-              y: point.y,
-              outer_diameter: point.outer_diameter ?? point.via_diameter,
-              hole_diameter: point.hole_diameter ?? point.via_hole_diameter,
-              from_layer: point.from_layer,
-              to_layer: point.to_layer,
-              pcb_trace_id: trace.pcb_trace_id,
-              subcircuit_connectivity_map_key:
-                trace.subcircuit_connectivity_map_key,
-              connection_name: trace.connection_name,
-            }),
+    const numLayers = this.ctx.db.pcb_board.list()[0]?.num_layers ?? 2
+    const standaloneVias = this.ctx.db.pcb_via.list()
+    const routeDefinedVias: ViaLike[] = []
+    for (const trace of this.ctx.db.pcb_trace.list()) {
+      let connectivityKey: string | undefined
+      if (trace.source_trace_id) {
+        connectivityKey = this.ctx.db.source_trace.get(
+          trace.source_trace_id,
+        )?.subcircuit_connectivity_map_key
+      }
+      for (const point of trace.route) {
+        if (point.route_type !== "via") continue
+        if (
+          standaloneVias.some(
+            (via) =>
+              (via.pcb_trace_id === trace.pcb_trace_id ||
+                (connectivityKey !== undefined &&
+                  via.subcircuit_connectivity_map_key === connectivityKey)) &&
+              isRouteViaInPhysicalVia({
+                physicalVia: via,
+                routeVia: point,
+                numLayers,
+              }),
           )
-          .filter((via: ViaLike) => {
-            const viaKey = this.getViaDedupeKey(via)
-            if (seenViaKeys.has(viaKey)) {
-              return false
-            }
-            seenViaKeys.add(viaKey)
-            return true
-          }),
-    )
+        )
+          continue
 
+        if (
+          routeDefinedVias.some(
+            (via) =>
+              via.pcb_trace_id === trace.pcb_trace_id &&
+              via.x === point.x &&
+              via.y === point.y &&
+              via.outer_diameter === point.outer_diameter &&
+              via.hole_diameter === point.hole_diameter &&
+              ((via.from_layer === point.from_layer &&
+                via.to_layer === point.to_layer) ||
+                (via.from_layer === point.to_layer &&
+                  via.to_layer === point.from_layer)),
+          )
+        )
+          continue
+
+        routeDefinedVias.push({
+          x: point.x,
+          y: point.y,
+          outer_diameter: point.outer_diameter,
+          hole_diameter: point.hole_diameter,
+          from_layer: point.from_layer,
+          to_layer: point.to_layer,
+          pcb_trace_id: trace.pcb_trace_id,
+        })
+      }
+    }
     return [...standaloneVias, ...routeDefinedVias]
-  }
-
-  private getViaDedupeKey(via: ViaLike): string {
-    // A via is identified by its position and its layer span. `pcb_trace_id` and
-    // the raw layer list are intentionally excluded: the same physical via is
-    // represented both as a standalone `pcb_via` (with the full traversed-layer
-    // list) and as a trace `route` via-point (with only from/to layers), and
-    // those must dedupe to one via.
-    const span = [...this.getKicadViaLayers(via)].sort().join(",")
-    return `${via.x}:${via.y}:${span}`
   }
 
   private getRawViaLayers(via: ViaLike): string[] {
@@ -194,14 +205,6 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
               }
             }
           }
-        }
-      }
-
-      if (!connectivityKey && via.connection_name) {
-        const sourceNet = this.ctx.db.source_net?.get(via.connection_name)
-        if (sourceNet) {
-          connectivityKey =
-            sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
         }
       }
 
