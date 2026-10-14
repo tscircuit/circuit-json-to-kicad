@@ -8,6 +8,7 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { createViaTenting } from "./utils/createViaTenting"
 import {
   getKicadLayer,
   getViaLayers,
@@ -26,6 +27,9 @@ type ViaLike = {
   source_net_id?: string
   subcircuit_connectivity_map_key?: string
   connection_name?: string
+  tented_on_top?: boolean
+  tented_on_bottom?: boolean
+  is_tented?: boolean
 }
 
 /**
@@ -62,6 +66,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
               subcircuit_connectivity_map_key:
                 trace.subcircuit_connectivity_map_key,
               connection_name: trace.connection_name,
+              tented_on_top: point.tented_on_top,
+              tented_on_bottom: point.tented_on_bottom,
             }),
           )
           .filter((via: ViaLike) => {
@@ -227,6 +233,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       layers: viaLayers,
       net: new ViaNet(netInfo?.id ?? 0),
       uuid: generateDeterministicUuid(viaData),
+      tenting: createViaTenting(via),
     })
 
     // Add the via to the PCB
