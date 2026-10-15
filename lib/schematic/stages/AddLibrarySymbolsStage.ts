@@ -248,6 +248,15 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicComponentSize: schematicComponent.size,
     })
 
+    // Core resolves {REF} to the component name before export. Restore a
+    // per-instance reference so the shared library drawing does not keep the
+    // first component's name. Other symbol text must remain literal.
+    for (const text of symbolData.texts) {
+      if (sourceComp.name && text.text === sourceComp.name) {
+        text.text = "${REFERENCE}"
+      }
+    }
+
     // Get footprint name for symbol-footprint linkage
     const footprintName = getKicadCompatibleComponentName(
       sourceComp,

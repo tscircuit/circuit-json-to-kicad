@@ -64,24 +64,24 @@ test("repro640: shared custom symbol reference text", async () => {
     "Custom:MySym",
   ])
 
-  // Issue #640: the shared drawing stores the first instance's name, so KiCad
-  // displays U1 twice even though the source circuit contains U1 and U2.
+  // The shared drawing must resolve its reference separately for each instance.
   const libraryTexts = schematic.libSymbols?.symbols.flatMap((symbol) =>
     symbol.subSymbols.flatMap((drawing) =>
       drawing.texts.map((text) => text.value),
     ),
   )
-  expect(libraryTexts).toEqual(["U1"])
+  expect(libraryTexts).toEqual(["${REFERENCE}"])
 
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
     includeSvg: true,
   })
-  // Inspect the rendered text as well as the PNG: both instances say U1.
+  // KiCad must actually resolve the variable, even with hidden Reference fields.
   const svg = snapshot.generatedFileContent["temp_file.svg"]!.toString()
-  expect(svg.match(/>U1<\/text>/g)).toHaveLength(2)
-  expect(svg).not.toContain(">U2</text>")
+  expect(svg.match(/>U1<\/text>/g)).toHaveLength(1)
+  expect(svg.match(/>U2<\/text>/g)).toHaveLength(1)
+  expect(svg).not.toContain("${REFERENCE}")
 
   await expect(
     stackCircuitJsonKicadPngs(
