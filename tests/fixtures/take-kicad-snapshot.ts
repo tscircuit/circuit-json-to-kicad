@@ -219,6 +219,7 @@ export const takeKicadSnapshot = async (params: {
   includeSvg?: boolean
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
+  showSolderPaste?: boolean
 }): Promise<KicadOutput> => {
   const {
     kicadFilePath,
@@ -228,6 +229,7 @@ export const takeKicadSnapshot = async (params: {
     includeSvg = false,
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
+    showSolderPaste = false,
   } = params
 
   // Check to make sure kicad-cli is installed
@@ -303,11 +305,15 @@ export const takeKicadSnapshot = async (params: {
       }
     }
 
+    let pcbLayers =
+      "B.Cu,In1.Cu,In2.Cu,F.Cu,F.SilkS,B.SilkS,F.Fab,B.Fab,F.CrtYd,B.CrtYd,Edge.Cuts"
+    if (showSolderPaste) pcbLayers += ",B.Paste,F.Paste"
+
     // Export to SVG for sch/pcb/mod
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
-        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers B.Cu,In1.Cu,In2.Cu,F.Cu,F.SilkS,B.SilkS,F.Fab,B.Fab,F.CrtYd,B.CrtYd,Edge.Cuts --mode-single --page-size-mode 2 --exclude-drawing-sheet`
+        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers ${pcbLayers} --mode-single --page-size-mode 2 --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
 
