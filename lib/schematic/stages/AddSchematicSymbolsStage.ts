@@ -97,7 +97,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         fieldsAutoplaced: false,
       })
 
-      const symLibId = new SymbolLibId(libraryId)
+      const symLibId = new SymbolLibId(
+        this.ctx.schematicComponentLibraryIds?.get(
+          schematicComponent.schematic_component_id,
+        ) ?? libraryId,
+      )
       ;(symbol as any)._sxLibId = symLibId
 
       // Get component metadata

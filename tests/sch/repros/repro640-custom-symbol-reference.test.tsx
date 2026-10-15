@@ -58,26 +58,26 @@ test("repro640: shared custom symbol reference text", async () => {
   const schematic = parseKicadSch(output)
   expect(
     schematic.libSymbols?.symbols.map((symbol) => symbol.libraryId),
-  ).toEqual(["Custom:MySym"])
+  ).toEqual(["Custom:MySym", "Custom:MySym__2"])
   expect(schematic.symbols.map((symbol) => symbol.libraryId)).toEqual([
     "Custom:MySym",
-    "Custom:MySym",
+    "Custom:MySym__2",
   ])
 
-  // The shared drawing must resolve its reference separately for each instance.
+  // Resolved text differs, so these instances must not share a library drawing.
   const libraryTexts = schematic.libSymbols?.symbols.flatMap((symbol) =>
     symbol.subSymbols.flatMap((drawing) =>
       drawing.texts.map((text) => text.value),
     ),
   )
-  expect(libraryTexts).toEqual(["${REFERENCE}"])
+  expect(libraryTexts).toEqual(["U1", "U2"])
 
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
     includeSvg: true,
   })
-  // KiCad must actually resolve the variable, even with hidden Reference fields.
+  // Verify the actual rendered labels, even with hidden Reference fields.
   const svg = snapshot.generatedFileContent["temp_file.svg"]!.toString()
   expect(svg.match(/>U1<\/text>/g)).toHaveLength(1)
   expect(svg.match(/>U2<\/text>/g)).toHaveLength(1)

@@ -38,9 +38,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
-  // Track processed symbol names to avoid duplicates
-  private processedSymbolNames: Set<string> = new Set()
-
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
@@ -48,20 +45,64 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const libSymbols = new LibSymbols()
     const librarySymbols: SchematicSymbol[] = []
 
-    // Reset processed symbol names for this run
-    this.processedSymbolNames = new Set()
+    const componentSymbols = db.schematic_component.list().map((component) => ({
+      component,
+      symbol: this.createLibrarySymbolForComponent(component),
+    }))
+    const netLabels = db.schematic_net_label?.list?.() || []
+    // Reserve authored names before assigning variants, including names that
+    // already look like generated suffixes (e.g. MySym__2).
+    const usedLibraryIds = new Set([
+      ...componentSymbols.flatMap(({ symbol }) =>
+        symbol?.libraryId ? [symbol.libraryId] : [],
+      ),
+      ...netLabels.flatMap((label) =>
+        label.symbol_name ? [`Custom:${label.symbol_name}`] : [],
+      ),
+    ])
+    const definitionsByName = new Map<string, Map<string, string>>()
+    const componentLibraryIds = new Map<string, string>()
+    this.ctx.schematicComponentLibraryIds = componentLibraryIds
 
-    // Process schematic components
-    const schematicComponents = db.schematic_component.list()
-    for (const schematicComponent of schematicComponents) {
-      const libSymbol = this.createLibrarySymbolForComponent(schematicComponent)
-      if (libSymbol) {
-        librarySymbols.push(libSymbol)
+    for (const { component, symbol } of componentSymbols) {
+      if (!symbol?.libraryId) continue
+      if (!symbol.libraryId.startsWith("Custom:")) {
+        librarySymbols.push(symbol)
+        continue
       }
+      const baseId = symbol.libraryId
+      // Compare the actual local drawing, text, pins, and properties. A shared
+      // name alone does not imply identical artwork or resolved text.
+      const definition = symbol.getString()
+      let definitions = definitionsByName.get(baseId)
+      if (!definitions) {
+        definitions = new Map()
+        definitionsByName.set(baseId, definitions)
+      }
+      let libraryId = definitions.get(definition)
+      if (!libraryId) {
+        libraryId = baseId
+        if (definitions.size > 0) {
+          let suffix = 2
+          while (usedLibraryIds.has(`${baseId}__${suffix}`)) suffix++
+          libraryId = `${baseId}__${suffix}`
+          usedLibraryIds.add(libraryId)
+          const oldName = baseId.split(":")[1]!
+          const newName = libraryId.split(":")[1]!
+          symbol.libraryId = libraryId
+          for (const child of symbol.subSymbols) {
+            if (child.libraryId?.startsWith(`${oldName}_`)) {
+              child.libraryId = newName + child.libraryId.slice(oldName.length)
+            }
+          }
+        }
+        definitions.set(definition, libraryId)
+        librarySymbols.push(symbol)
+      }
+      componentLibraryIds.set(component.schematic_component_id, libraryId)
     }
 
     // Process schematic net labels with symbol names
-    const netLabels = db.schematic_net_label?.list?.() || []
     for (const netLabel of netLabels) {
       if (netLabel.symbol_name) {
         const isPower = netLabel.source_net_id
@@ -231,13 +272,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       return null
     }
 
-    // Check if we've already processed this symbol name
-    // If two symbols have the same name, we assume they're the same symbol
-    if (this.processedSymbolNames.has(libraryId)) {
-      return null // Skip duplicate symbol definitions
-    }
-    this.processedSymbolNames.add(libraryId)
-
     // Build symbol data from schematic primitives linked to this schematic_symbol
     const symbolData = buildSymbolDataFromSchematicPrimitives({
       circuitJson: this.ctx.circuitJson,
@@ -247,15 +281,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicComponentCenter: schematicComponent.center,
       schematicComponentSize: schematicComponent.size,
     })
-
-    // Core resolves {REF} to the component name before export. Restore a
-    // per-instance reference so the shared library drawing does not keep the
-    // first component's name. Other symbol text must remain literal.
-    for (const text of symbolData.texts) {
-      if (sourceComp.name && text.text === sourceComp.name) {
-        text.text = "${REFERENCE}"
-      }
-    }
 
     // Get footprint name for symbol-footprint linkage
     const footprintName = getKicadCompatibleComponentName(

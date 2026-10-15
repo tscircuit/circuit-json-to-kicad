@@ -8,11 +8,13 @@ import { takeCircuitJsonSnapshot } from "../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 
 const LabeledSymbol = () => (
-  <symbol name="LabeledSymbol" width={3} height={2}>
-    <schematicrect width={3} height={2} strokeWidth={0.05} />
-    <schematictext text="{REF}" schX={0.5} schY={0.5} fontSize={0.3} />
-    <schematictext text="U7 supply" schY={-0.3} fontSize={0.2} />
-    <schematictext text="+" schX={-1} schY={0.5} fontSize={0.2} />
+  <symbol name="LabeledSymbol" width={3} height={3}>
+    <schematicrect width={3} height={3} strokeWidth={0.05} />
+    <schematictext text="{REF}" schX={0.5} schY={1} fontSize={0.3} />
+    <schematictext text="IC {REF}" schY={0.3} fontSize={0.2} />
+    <schematictext text="U7" schY={-0.3} fontSize={0.2} />
+    <schematictext text="U7 supply" schY={-1} fontSize={0.2} />
+    <schematictext text="+" schX={-1} schY={1} fontSize={0.2} />
   </symbol>
 )
 
@@ -37,7 +39,7 @@ const Example = () => (
 
 export default Example
 
-test("custom-symbol11: reference text resolves per instance and literal text is preserved", async () => {
+test("custom-symbol11: resolved reference text and literal text are preserved without inference", async () => {
   const circuit = new Circuit()
   circuit.add(<Example />)
   await circuit.renderUntilSettled()
@@ -52,13 +54,24 @@ test("custom-symbol11: reference text resolves per instance and literal text is 
   converter.runUntilFinished()
   const output = converter.getOutputString()
   const schematic = parseKicadSch(output)
-  expect(schematic.libSymbols?.symbols).toHaveLength(1)
+  expect(schematic.libSymbols?.symbols).toHaveLength(2)
   const libraryTexts = schematic.libSymbols?.symbols.flatMap((symbol) =>
     symbol.subSymbols.flatMap((drawing) =>
       drawing.texts.map((text) => text.value),
     ),
   )
-  expect(libraryTexts).toEqual(["${REFERENCE}", "U7 supply", "+"])
+  expect(libraryTexts).toEqual([
+    "U7",
+    "IC U7",
+    "U7",
+    "U7 supply",
+    "+",
+    "U8",
+    "IC U8",
+    "U7",
+    "U7 supply",
+    "+",
+  ])
   expect(sourceTexts).toEqual(originalTexts)
   expect(
     schematic.symbols.map(
@@ -74,29 +87,12 @@ test("custom-symbol11: reference text resolves per instance and literal text is 
     includeSvg: true,
   })
   const svg = snapshot.generatedFileContent["temp_file.svg"]!.toString()
-  expect(svg.match(/>U7<\/text>/g)).toHaveLength(1)
+  expect(svg.match(/>U7<\/text>/g)).toHaveLength(3)
   expect(svg.match(/>U8<\/text>/g)).toHaveLength(1)
+  expect(svg.match(/>IC U7<\/text>/g)).toHaveLength(1)
+  expect(svg.match(/>IC U8<\/text>/g)).toHaveLength(1)
   expect(svg.match(/>U7 supply<\/text>/g)).toHaveLength(2)
   expect(svg.match(/>\+<\/text>/g)).toHaveLength(2)
-
-  // Re-annotating an instance in KiCad must also update its drawn reference.
-  const secondReference = schematic.symbols[1]?.properties.find(
-    (property) => property.key === "Reference",
-  )
-  if (!secondReference) throw new Error("Expected second instance reference")
-  secondReference.value = "U42"
-  const secondPath = schematic.symbols[1]?._sxInstances?.projects[0]?.paths[0]
-  if (!secondPath) throw new Error("Expected second instance path")
-  secondPath.reference = "U42"
-  const renamedSnapshot = await takeKicadSnapshot({
-    kicadFileContent: schematic.getString(),
-    kicadFileType: "sch",
-    generatePng: false,
-  })
-  const renamedSvg =
-    renamedSnapshot.generatedFileContent["temp_file.svg"]!.toString()
-  expect(renamedSvg.match(/>U42<\/text>/g)).toHaveLength(1)
-  expect(renamedSvg).not.toContain(">U8</text>")
 
   await expect(
     stackCircuitJsonKicadPngs(
