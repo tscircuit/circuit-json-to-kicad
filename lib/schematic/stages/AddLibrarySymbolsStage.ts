@@ -40,6 +40,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 > {
   // Track processed symbol names to avoid duplicates
   private processedSymbolNames: Set<string> = new Set()
+  // Distinct pin numberings emitted under each lib id, in order of first use
+  private pinNumberingsByLibId: Map<string, string[]> = new Map()
 
   override _step(): void {
     const { kicadSch, db } = this.ctx
@@ -50,6 +52,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Reset processed symbol names for this run
     this.processedSymbolNames = new Set()
+    this.pinNumberingsByLibId = new Map()
+    this.ctx.schematicComponentLibraryIds = new Map()
 
     // Process schematic components
     const schematicComponents = db.schematic_component.list()
@@ -194,8 +198,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       cadComponent,
     )
 
-    return this.createLibrarySymbol({
-      libId: libraryId,
+    const librarySymbolOptions = {
       symbolData,
       isChip,
       schematicComponent,
@@ -205,7 +208,50 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
+    }
+    const librarySymbol = this.createLibrarySymbol({
+      libId: libraryId,
+      ...librarySymbolOptions,
     })
+
+    const pinNumberingLibId = this.getLibraryIdForPinNumbering(
+      libraryId,
+      librarySymbol,
+    )
+    if (pinNumberingLibId === libraryId) return librarySymbol
+
+    this.ctx.schematicComponentLibraryIds!.set(
+      schematicComponent.schematic_component_id,
+      pinNumberingLibId,
+    )
+    return this.createLibrarySymbol({
+      libId: pinNumberingLibId,
+      ...librarySymbolOptions,
+    })
+  }
+
+  /**
+   * KiCad resolves every instance of a lib id through a single definition and
+   * joins symbol pins to footprint pads by number. Instances of one library
+   * symbol whose pins need different numbers (for example two LEDs with
+   * opposite pin labels) therefore each get their own lib id.
+   */
+  private getLibraryIdForPinNumbering(
+    libId: string,
+    librarySymbol: SchematicSymbol,
+  ): string {
+    const pinNumbering = librarySymbol.subSymbols
+      .flatMap((subSymbol) => subSymbol.pins.map((pin) => pin.numberString))
+      .join(",")
+    const numberings = this.pinNumberingsByLibId.get(libId) ?? []
+    this.pinNumberingsByLibId.set(libId, numberings)
+
+    let index = numberings.indexOf(pinNumbering)
+    if (index === -1) {
+      numberings.push(pinNumbering)
+      index = numberings.length - 1
+    }
+    return index === 0 ? libId : `${libId}_${index + 1}`
   }
 
   /**

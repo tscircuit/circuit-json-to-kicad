@@ -78,6 +78,13 @@ export interface ConverterContext {
    */
   symbolInstancePathPrefix?: string
 
+  /**
+   * Lib id for each schematic component whose pin numbering differs from an
+   * earlier instance of the same library symbol, keyed by
+   * schematic_component_id. Set by AddLibrarySymbolsStage.
+   */
+  schematicComponentLibraryIds?: Map<string, string>
+
   // Optional data that can be shared between stages
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>
   wireConnections?: Map<SchematicTraceId, SchematicPortId[]>
