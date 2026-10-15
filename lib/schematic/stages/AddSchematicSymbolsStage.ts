@@ -122,21 +122,23 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Match the resolved {REF} label within this custom symbol instance.
       // AddLibrarySymbolsStage omits the same label from the shared drawing.
-      const customReferenceText =
-        schematicSymbolId && sourceComponent.name
-          ? db.schematic_text
-              .list()
-              .find(
-                (text) =>
-                  text.schematic_symbol_id === schematicSymbolId &&
-                  text.text === sourceComponent.name,
-              )
-          : undefined
+      let customReferenceText: SchematicText | undefined
+      if (schematicSymbolId && sourceComponent.name) {
+        customReferenceText = db.schematic_text
+          .list()
+          .find(
+            (text) =>
+              text.schematic_symbol_id === schematicSymbolId &&
+              text.text === sourceComponent.name,
+          )
+      }
       const customReferencePosition = this.getTextPosition(customReferenceText)
       const referencePosition = customReferencePosition?.position ?? refTextPos
-      const referenceFontSize = customReferenceText
-        ? customReferenceText.font_size * this.ctx.kicadSchematicScaleFactor!
-        : 1.27
+      let referenceFontSize = 1.27
+      if (customReferenceText) {
+        referenceFontSize =
+          customReferenceText.font_size * this.ctx.kicadSchematicScaleFactor!
+      }
 
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference

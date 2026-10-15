@@ -250,11 +250,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Core resolves {REF} to the component name. Render that label using the
     // placed symbol's Reference field instead of baking it into shared artwork.
-    const referenceTextIndex = sourceComp.name
-      ? symbolData.texts.findIndex((text) => text.text === sourceComp.name)
-      : -1
-    if (referenceTextIndex !== -1) {
-      symbolData.texts.splice(referenceTextIndex, 1)
+    if (sourceComp.name) {
+      const referenceTextIndex = symbolData.texts.findIndex(
+        (text) => text.text === sourceComp.name,
+      )
+      if (referenceTextIndex !== -1) {
+        symbolData.texts.splice(referenceTextIndex, 1)
+      }
     }
 
     // Get footprint name for symbol-footprint linkage

@@ -7616,22 +7616,6 @@ L237.7000 153.8847
 <path d="M237.7000 153.8847
 L239.1857 153.8847
 " />
-</g><text x="239.2500" y="133.8825"
-textLength="5.6115" font-size="4.4000" lengthAdjust="spacingAndGlyphs"
-text-anchor="middle" opacity="0" stroke-opacity="0">L7</text>
-<g class="stroked-text"><desc>L7</desc>
-<path d="M238.7000 133.7511
-L237.1286 133.7511
-" />
-<path d="M237.1286 133.7511
-L237.1286 130.4511
-" />
-<path d="M239.4857 130.4511
-L241.6857 130.4511
-" />
-<path d="M241.6857 130.4511
-L240.2714 133.7511
-" />
 </g><path d="M216.7500 156.5225
 L216.7500 156.5325
 " />
@@ -7788,6 +7772,22 @@ L215.9092 120.9002
 " />
 <path d="M215.9092 120.9002
 L215.9092 120.1141
+" />
+</g><text x="242.4459" y="133.8825"
+textLength="5.6115" font-size="4.4000" lengthAdjust="spacingAndGlyphs"
+text-anchor="middle" opacity="0" stroke-opacity="0">L7</text>
+<g class="stroked-text"><desc>L7</desc>
+<path d="M241.8959 133.7511
+L240.3245 133.7511
+" />
+<path d="M240.3245 133.7511
+L240.3245 130.4511
+" />
+<path d="M242.6816 130.4511
+L244.8816 130.4511
+" />
+<path d="M244.8816 130.4511
+L243.4673 133.7511
 " />
 </g><path style="fill:#FFFFC2; fill-opacity:1.0000; stroke:none;fill-rule:evenodd;"
 d="M 261.0000,143.0325
