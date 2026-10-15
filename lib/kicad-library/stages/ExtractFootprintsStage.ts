@@ -93,8 +93,9 @@ export class ExtractFootprintsStage extends ConverterStage<
           pcbComp.type === "pcb_component" &&
           pcbComp.metadata?.kicad_footprint?.footprintName
         ) {
+          // Match the bare name used by sanitizeFootprint for library links.
           customFootprintNames.add(
-            pcbComp.metadata.kicad_footprint.footprintName,
+            pcbComp.metadata.kicad_footprint.footprintName.split(":").pop()!,
           )
         }
       }
