@@ -7,7 +7,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro34: exposed pad without paste gets a KiCad paste aperture", async () => {
+test("repro34: exposed pad without paste omits the KiCad paste aperture", async () => {
   const circuitJson: CircuitJson = [
     {
       type: "pcb_board",
@@ -77,12 +77,11 @@ test("repro34: exposed pad without paste gets a KiCad paste aperture", async () 
   converter.runUntilFinished()
   const output = converter.getOutputString()
   const pcb = parseKicadPcb(output)
-  // Capture the current bug: both pads get paste despite only one source aperture.
   expect(
     pcb.footprints
       .flatMap((footprint) => footprint.fpPads)
       .filter((pad) => pad.layers?.layers.includes("F.Paste")),
-  ).toHaveLength(2)
+  ).toHaveLength(1)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
