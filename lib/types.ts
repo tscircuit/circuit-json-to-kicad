@@ -79,8 +79,6 @@ export interface ConverterContext {
   symbolInstancePathPrefix?: string
 
   // Optional data that can be shared between stages
-  /** Library definition selected for each placed schematic component. */
-  schematicComponentLibraryIds?: Map<string, string>
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>
   wireConnections?: Map<SchematicTraceId, SchematicPortId[]>
 

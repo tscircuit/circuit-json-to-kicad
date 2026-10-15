@@ -97,11 +97,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         fieldsAutoplaced: false,
       })
 
-      const symLibId = new SymbolLibId(
-        this.ctx.schematicComponentLibraryIds?.get(
-          schematicComponent.schematic_component_id,
-        ) ?? libraryId,
-      )
+      const symLibId = new SymbolLibId(libraryId)
       ;(symbol as any)._sxLibId = symLibId
 
       // Get component metadata
@@ -124,6 +120,24 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       const symbolMetadata = schematicSymbol?.metadata?.kicad_symbol
 
+      // Match the resolved {REF} label within this custom symbol instance.
+      // AddLibrarySymbolsStage omits the same label from the shared drawing.
+      const customReferenceText =
+        schematicSymbolId && sourceComponent.name
+          ? db.schematic_text
+              .list()
+              .find(
+                (text) =>
+                  text.schematic_symbol_id === schematicSymbolId &&
+                  text.text === sourceComponent.name,
+              )
+          : undefined
+      const customReferencePosition = this.getTextPosition(customReferenceText)
+      const referencePosition = customReferencePosition?.position ?? refTextPos
+      const referenceFontSize = customReferenceText
+        ? customReferenceText.font_size * this.ctx.kicadSchematicScaleFactor!
+        : 1.27
+
       // Add properties for this instance, applying metadata if available
       const refMeta = symbolMetadata?.properties?.Reference
       const hideGeneratedCustomReference =
@@ -132,12 +146,18 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         key: "Reference",
         value: refMeta?.value ?? reference,
         id: 0,
-        at: [refTextPos.x, refTextPos.y, 0],
+        at: [
+          referencePosition.x,
+          referencePosition.y,
+          customReferenceText?.rotation ?? 0,
+        ],
         effects: this.createTextEffects(
-          Number(refMeta?.effects?.font?.size?.x ?? 1.27),
+          Number(refMeta?.effects?.font?.size?.x ?? referenceFontSize),
           {
-            hide: refMeta?.effects?.hide ?? hideGeneratedCustomReference,
-            justify: refJustify,
+            hide:
+              refMeta?.effects?.hide ??
+              (hideGeneratedCustomReference && !customReferenceText),
+            justify: customReferencePosition?.justify ?? refJustify,
           },
         ),
       })

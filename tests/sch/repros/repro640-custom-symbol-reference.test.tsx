@@ -58,26 +58,34 @@ test("repro640: shared custom symbol reference text", async () => {
   const schematic = parseKicadSch(output)
   expect(
     schematic.libSymbols?.symbols.map((symbol) => symbol.libraryId),
-  ).toEqual(["Custom:MySym", "Custom:MySym__2"])
+  ).toEqual(["Custom:MySym"])
   expect(schematic.symbols.map((symbol) => symbol.libraryId)).toEqual([
     "Custom:MySym",
-    "Custom:MySym__2",
+    "Custom:MySym",
   ])
 
-  // Resolved text differs, so these instances must not share a library drawing.
+  // References belong to the placed instances, not the shared drawing.
   const libraryTexts = schematic.libSymbols?.symbols.flatMap((symbol) =>
     symbol.subSymbols.flatMap((drawing) =>
       drawing.texts.map((text) => text.value),
     ),
   )
-  expect(libraryTexts).toEqual(["U1", "U2"])
+  expect(libraryTexts).toEqual([])
+  const references = schematic.symbols.map(
+    (symbol) =>
+      symbol.properties.find((property) => property.key === "Reference")!,
+  )
+  expect(references.map((property) => property.value)).toEqual(["U1", "U2"])
+  expect(references.every((property) => !property.effects?.hiddenText)).toBe(
+    true,
+  )
 
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "sch",
     includeSvg: true,
   })
-  // Verify the actual rendered labels, even with hidden Reference fields.
+  // Verify the native fields are actually rendered once for each instance.
   const svg = snapshot.generatedFileContent["temp_file.svg"]!.toString()
   expect(svg.match(/>U1<\/text>/g)).toHaveLength(1)
   expect(svg.match(/>U2<\/text>/g)).toHaveLength(1)
