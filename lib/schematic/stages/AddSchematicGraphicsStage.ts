@@ -24,6 +24,7 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
+import { getInlineTraceNetLabels } from "../getInlineTraceNetLabels"
 import { getSchematicArcPoints } from "../getSchematicArcPoints"
 import { getTextJustificationFromAnchor } from "./utils/getTextJustificationFromAnchor"
 import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
@@ -68,8 +69,11 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     const schematicArcs = (db.schematic_arc?.list() || []).filter(
       isStandaloneSchematicElement,
     )
+    const { convertedTextIds } = getInlineTraceNetLabels(this.ctx.circuitJson)
     const schematicTexts = (db.schematic_text?.list() || []).filter(
-      isStandaloneSchematicElement,
+      (text) =>
+        isStandaloneSchematicElement(text) &&
+        !convertedTextIds.has(text.schematic_text_id),
     )
     const preserveStandaloneGraphics = db.schematic_component
       .list()
