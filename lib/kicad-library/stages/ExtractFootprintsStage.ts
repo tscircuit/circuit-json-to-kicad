@@ -80,6 +80,10 @@ export class ExtractFootprintsStage extends ConverterStage<
         footprinterStrings.set(footprintName, cadComponent.footprinter_string)
       } else {
         customFootprintNames.add(footprintName)
+        if (footprintName.includes(":")) {
+          const bare = footprintName.split(":").pop()
+          if (bare) customFootprintNames.add(bare)
+        }
 
         // Also include metadata-provided footprintName (metadata may
         // rename libraryLink during intermediate PCB generation)
@@ -93,9 +97,12 @@ export class ExtractFootprintsStage extends ConverterStage<
           pcbComp.type === "pcb_component" &&
           pcbComp.metadata?.kicad_footprint?.footprintName
         ) {
-          customFootprintNames.add(
-            pcbComp.metadata.kicad_footprint.footprintName,
-          )
+          const rawFpName = pcbComp.metadata.kicad_footprint.footprintName
+          customFootprintNames.add(rawFpName)
+          if (rawFpName.includes(":")) {
+            const bare = rawFpName.split(":").pop()
+            if (bare) customFootprintNames.add(bare)
+          }
         }
       }
     }
