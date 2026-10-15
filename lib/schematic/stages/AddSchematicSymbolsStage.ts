@@ -32,6 +32,8 @@ import {
   type TextJustification,
 } from "./utils/getTextJustificationFromAnchor"
 
+const DEFAULT_PROPERTY_FONT_SIZE = 1.27
+
 /**
  * Adds schematic symbol instances (placed components) to the schematic
  */
@@ -134,7 +136,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       }
       const customReferencePosition = this.getTextPosition(customReferenceText)
       const referencePosition = customReferencePosition?.position ?? refTextPos
-      let referenceFontSize = 1.27
+      let referenceFontSize = DEFAULT_PROPERTY_FONT_SIZE
       if (customReferenceText) {
         referenceFontSize =
           customReferenceText.font_size * this.ctx.kicadSchematicScaleFactor!
@@ -180,7 +182,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(
-          Number(valMeta?.effects?.font?.size?.x ?? 1.27),
+          Number(valMeta?.effects?.font?.size?.x ?? DEFAULT_PROPERTY_FONT_SIZE),
           { hide: valMeta?.effects?.hide ?? hideValue, justify: valJustify },
         ),
       })
@@ -191,7 +193,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: fpMeta?.value ?? "",
         id: 2,
         at: [x - 1.778, y, 90],
-        effects: this.createTextEffects(1.27, {
+        effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
           hide: fpMeta?.effects?.hide ?? true,
         }),
       })
@@ -202,7 +204,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: dsMeta?.value ?? "~",
         id: 3,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, {
+        effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
           hide: dsMeta?.effects?.hide ?? true,
         }),
       })
@@ -213,7 +215,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: descMeta?.value ?? description,
         id: 4,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, {
+        effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
           hide: descMeta?.effects?.hide ?? true,
         }),
       })
@@ -234,7 +236,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value: kwMeta.value,
           id: 5,
           at: [x, y, 0],
-          effects: this.createTextEffects(1.27, {
+          effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
             hide: kwMeta.effects?.hide ?? true,
           }),
         })
@@ -249,7 +251,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value: fpFilterMeta.value,
           id: 6,
           at: [x, y, 0],
-          effects: this.createTextEffects(1.27, {
+          effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
             hide: fpFilterMeta.effects?.hide ?? true,
           }),
         })
