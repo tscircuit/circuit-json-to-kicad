@@ -15,27 +15,30 @@ import {
   scale,
   rotate,
 } from "transformation-matrix"
-import type { PcbNetInfo } from "../../../types"
+import type { ConverterContext, PcbNetInfo } from "../../../types"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
  */
-export function createSmdPadFromCircuitJson({
-  pcbPad,
-  componentCenter,
-  padNumber,
-  componentRotation = 0,
-  netInfo,
-  componentId,
-}: {
-  pcbPad: PcbSmtPad
-  componentCenter: { x: number; y: number }
-  padNumber: number | string
-  componentRotation?: number
-  netInfo?: PcbNetInfo
-  componentId?: string
-}): FootprintPad {
+export function createSmdPadFromCircuitJson(
+  {
+    pcbPad,
+    componentCenter,
+    padNumber,
+    componentRotation = 0,
+    netInfo,
+    componentId,
+  }: {
+    pcbPad: PcbSmtPad
+    componentCenter: { x: number; y: number }
+    padNumber: number | string
+    componentRotation?: number
+    netInfo?: PcbNetInfo
+    componentId?: string
+  },
+  ctx: ConverterContext,
+): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
   let padY: number
@@ -71,6 +74,16 @@ export function createSmdPadFromCircuitJson({
     bottom: "B.Cu",
   }
   const padLayer = layerMap[pcbPad.layer] || "F.Cu"
+  let side = "F"
+  if (padLayer === "B.Cu") side = "B"
+  const layers = [padLayer]
+  const solderPaste = ctx.db.pcb_solder_paste.getWhere({
+    pcb_smtpad_id: pcbPad.pcb_smtpad_id,
+  })
+  if (solderPaste && !pcbPad.is_covered_with_solder_mask) {
+    layers.push(`${side}.Paste`)
+  }
+  layers.push(`${side}.Mask`)
 
   // Handle different pad shapes (circle pads have radius, rect pads have width/height, polygon pads use custom shape)
   let padShape: string | undefined
@@ -155,13 +168,7 @@ export function createSmdPadFromCircuitJson({
     shape: padShape,
     at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
-    layers: [
-      `${padLayer}`,
-      ...(pcbPad.is_covered_with_solder_mask
-        ? []
-        : [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]),
-      `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
-    ],
+    layers,
     solderMaskMargin: pcbPad.soldermask_margin,
     roundrectRatio: roundrect_rratio,
     uuid: generateDeterministicUuid(padData),
