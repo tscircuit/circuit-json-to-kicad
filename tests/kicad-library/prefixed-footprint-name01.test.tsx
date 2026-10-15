@@ -86,7 +86,7 @@ test("library export paths for prefixed and unprefixed custom footprint names", 
         "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
       ],
       "mylib:MyPart": [
-        "footprints/tscircuit_builtin.pretty/MyPart.kicad_mod",
+        "footprints/mylib.pretty/MyPart.kicad_mod",
         "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
       ],
     }
