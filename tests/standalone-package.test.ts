@@ -34,6 +34,25 @@ test("the packed package imports with only production dependencies", async () =>
       }),
     )
     run(["install", "--production"], consumer)
+    await writeFile(
+      join(consumer, "consumer.ts"),
+      'import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad"; const output: string = new CircuitJsonToKicadSchConverter([]).getOutputString();',
+    )
+    run(
+      [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--moduleResolution",
+        "bundler",
+        "--module",
+        "esnext",
+        "--target",
+        "esnext",
+        "--skipLibCheck",
+        "consumer.ts",
+      ],
+      consumer,
+    )
     run(
       [
         "--no-install",
