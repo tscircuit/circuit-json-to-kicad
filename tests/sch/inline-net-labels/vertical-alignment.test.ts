@@ -11,3 +11,13 @@ test("a label at the top wire end points down along the wire", () => {
     anchor_side: "top",
   })
 })
+
+test("a label at the bottom wire end points up along the wire", () => {
+  const circuit = createWireLabelCircuit({ x: 0, y: -2 })
+  const [label] = getInlineTraceNetLabels(circuit).labels
+
+  expect(label).toMatchObject({
+    anchor_position: { x: 0, y: -2 },
+    anchor_side: "bottom",
+  })
+})
