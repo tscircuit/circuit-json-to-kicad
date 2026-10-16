@@ -1,4 +1,6 @@
 import type { CircuitJson, Point } from "circuit-json"
+import { CircuitJsonToKicadSchConverter } from "lib"
+import { applyToPoint } from "transformation-matrix"
 import fixture from "./inline-net-labels.json"
 
 // Two resistor pins should connect through automatic SIGNAL labels:
@@ -7,7 +9,7 @@ export function createInlineLabelCircuit(): CircuitJson {
   return structuredClone(fixture) as CircuitJson
 }
 
-export function createWireLabelCircuit(openEnd: Point): CircuitJson {
+export function convertWireLabelCircuit(openEnd: Point) {
   const circuit = createInlineLabelCircuit()
   for (const row of circuit) {
     if (
@@ -23,7 +25,12 @@ export function createWireLabelCircuit(openEnd: Point): CircuitJson {
       row.center = { x: 0, y: 0 }
     }
   }
-  return circuit
+  const converter = new CircuitJsonToKicadSchConverter(circuit)
+  converter.runUntilFinished()
+  return {
+    label: converter.getOutput().labels[0],
+    anchor: applyToPoint(converter.ctx.c2kMatSch!, openEnd),
+  }
 }
 
 export function createInlineLabelSheet({

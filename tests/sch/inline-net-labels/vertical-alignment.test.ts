@@ -1,23 +1,20 @@
 import { expect, test } from "bun:test"
-import { getInlineTraceNetLabels } from "lib/schematic/getInlineTraceNetLabels"
-import { createWireLabelCircuit } from "../../fixtures/inline-net-labels"
+import { convertWireLabelCircuit } from "../../fixtures/inline-net-labels"
 
 test("a label at the top wire end points down along the wire", () => {
-  const circuit = createWireLabelCircuit({ x: 0, y: 2 })
-  const [label] = getInlineTraceNetLabels(circuit).labels
+  const { label, anchor } = convertWireLabelCircuit({ x: 0, y: 2 })
 
-  expect(label).toMatchObject({
-    anchor_position: { x: 0, y: 2 },
-    anchor_side: "top",
-  })
+  expect(label?.at?.x).toBeCloseTo(anchor.x)
+  expect(label?.at?.y).toBeCloseTo(anchor.y)
+  expect(label?.at?.angle).toBe(270)
+  expect(label?.effects?.justify?.horizontal).toBe("right")
 })
 
 test("a label at the bottom wire end points up along the wire", () => {
-  const circuit = createWireLabelCircuit({ x: 0, y: -2 })
-  const [label] = getInlineTraceNetLabels(circuit).labels
+  const { label, anchor } = convertWireLabelCircuit({ x: 0, y: -2 })
 
-  expect(label).toMatchObject({
-    anchor_position: { x: 0, y: -2 },
-    anchor_side: "bottom",
-  })
+  expect(label?.at?.x).toBeCloseTo(anchor.x)
+  expect(label?.at?.y).toBeCloseTo(anchor.y)
+  expect(label?.at?.angle).toBe(90)
+  expect(label?.effects?.justify?.horizontal).toBe("left")
 })

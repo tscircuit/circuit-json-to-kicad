@@ -4,9 +4,9 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { createInlineLabelCircuit } from "../../fixtures/inline-net-labels"
 
 test("automatic SIGNAL text exports as local electrical labels", () => {
-  const converter = new CircuitJsonToKicadSchConverter(
-    createInlineLabelCircuit(),
-  )
+  const circuit = createInlineLabelCircuit()
+  const originalCircuit = structuredClone(circuit)
+  const converter = new CircuitJsonToKicadSchConverter(circuit)
   converter.runUntilFinished()
   const schematic = converter.getOutput()
 
@@ -16,6 +16,8 @@ test("automatic SIGNAL text exports as local electrical labels", () => {
   ])
   expect(schematic.globalLabels).toHaveLength(0)
   expect(schematic.texts.some((text) => text.value === "SIGNAL")).toBe(false)
+  expect(circuit).toEqual(originalCircuit)
+  expect(converter.ctx.db.schematic_net_label.list()).toHaveLength(0)
 })
 
 test("an explicit net label keeps its existing global scope", () => {

@@ -1,4 +1,3 @@
-import { getInlineTraceNetLabels } from "../getInlineTraceNetLabels"
 import type {
   CircuitJson,
   SchematicArc as CircuitSchematicArc,
@@ -26,6 +25,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { getSchematicArcPoints } from "../getSchematicArcPoints"
+import { createInlineTraceLabel } from "./utils/createInlineTraceLabel"
 import { getTextJustificationFromAnchor } from "./utils/getTextJustificationFromAnchor"
 import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 import { parseColor } from "./utils/parseColor"
@@ -69,11 +69,8 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     const schematicArcs = (db.schematic_arc?.list() || []).filter(
       isStandaloneSchematicElement,
     )
-    const { convertedTextIds } = getInlineTraceNetLabels(this.ctx.circuitJson)
     const schematicTexts = (db.schematic_text?.list() || []).filter(
-      (text) =>
-        isStandaloneSchematicElement(text) &&
-        !convertedTextIds.has(text.schematic_text_id),
+      isStandaloneSchematicElement,
     )
     const preserveStandaloneGraphics = db.schematic_component
       .list()
@@ -246,7 +243,18 @@ export class AddSchematicGraphicsStage extends ConverterStage<
 
     if (schematicTexts.length > 0) {
       const texts = kicadSch.texts || []
+      const labels = kicadSch.labels
       for (const text of schematicTexts) {
+        const inlineLabel = createInlineTraceLabel({
+          text,
+          db,
+          transform: this.ctx.c2kMatSch,
+          fontSize: DEFAULT_SECTION_TEXT_SIZE_MM,
+        })
+        if (inlineLabel) {
+          labels.push(inlineLabel)
+          continue
+        }
         const isInlineTraceText = "source_trace_id" in text
         const preserveText = preserveStandaloneGraphics && !isInlineTraceText
         let sourceY = text.position?.y ?? 0
@@ -300,6 +308,7 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         texts.push(schematicText)
       }
       kicadSch.texts = texts
+      kicadSch.labels = labels
     }
 
     this.finished = true
