@@ -4,6 +4,7 @@ import { Circuit } from "tscircuit-latest"
 import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
+import { getInlineTraceNetLabels } from "lib/schematic/getInlineTraceNetLabels"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -55,6 +56,8 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(output).toContain("(fields_autoplaced no)")
   expect(output).not.toContain("(fields_autoplaced yes)")
   expect(inlineNetLabels).toHaveLength(2)
+  expect(parsedSchematic.globalLabels).toHaveLength(0)
+  expect(parsedSchematic.labels).toHaveLength(2)
 
   const componentSymbol = parsedSchematic.symbols.find((symbol) =>
     symbol.properties.some(
@@ -68,12 +71,14 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(manufacturerPartNumber?.effects?.justify?.horizontal).toBe("left")
 
   for (const inlineNetLabel of inlineNetLabels) {
-    const convertedText = parsedSchematic.texts.find(
+    const convertedText = parsedSchematic.labels.find(
       (text) => text.value === inlineNetLabel.text,
     )
     const expectedPosition = applyToPoint(
       converter.ctx.c2kMatSch!,
-      inlineNetLabel.position,
+      getInlineTraceNetLabels(circuitJson).labels.find(
+        (label) => label.text === inlineNetLabel.text,
+      )!.anchor_position!,
     )
     const expectedHorizontalJustification =
       inlineNetLabel.anchor === "left" || inlineNetLabel.anchor === "right"

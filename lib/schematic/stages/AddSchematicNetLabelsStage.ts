@@ -1,4 +1,4 @@
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, SchematicNetLabel } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
   SchematicSymbol,
@@ -12,17 +12,20 @@ import {
   TextEffectsFont,
   TextEffectsJustify,
   GlobalLabel,
+  Label,
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
+import { getInlineTraceNetLabels } from "../getInlineTraceNetLabels"
 
 /**
  * Adds schematic net labels to the schematic
  *
  * Net labels with symbol_name are treated as power/ground symbols (e.g., VCC, GND from schematic-symbols)
  * Net labels without symbol_name are converted to KiCad global labels
+ * Automatic inline labels recovered from schematic_text are local to their sheet
  * All use anchor_position as the primary coordinate source for positioning
  */
 export class AddSchematicNetLabelsStage extends ConverterStage<
@@ -34,8 +37,9 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     // Get all schematic net labels
     const netLabels = db.schematic_net_label?.list?.() || []
+    const inlineLabels = getInlineTraceNetLabels(this.ctx.circuitJson).labels
 
-    if (netLabels.length === 0) {
+    if (netLabels.length === 0 && inlineLabels.length === 0) {
       this.finished = true
       return
     }
@@ -85,7 +89,37 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       ]
     }
 
+    // Inline labels replace wires within this sheet. Making them global would
+    // also join unrelated same-named nets on other sheets.
+    if (kicadSch) {
+      kicadSch.labels = [
+        ...kicadSch.labels,
+        ...inlineLabels.map((netLabel) => this.createLocalLabel(netLabel)),
+      ]
+    }
+
     this.finished = true
+  }
+
+  private createLocalLabel(netLabel: SchematicNetLabel): Label {
+    const { x, y } = applyToPoint(
+      this.ctx.c2kMatSch!,
+      netLabel.anchor_position ?? netLabel.center,
+    )
+    const anchorSide = netLabel.anchor_side ?? "left"
+    const angle = { left: 0, right: 180, top: 270, bottom: 90 }[anchorSide]
+    const effects = this.createTextEffects(1.27)
+    effects.justify = new TextEffectsJustify({
+      horizontal:
+        anchorSide === "right" || anchorSide === "top" ? "right" : "left",
+      vertical: "bottom",
+    })
+    return new Label({
+      value: netLabel.text,
+      at: [x, y, angle],
+      effects,
+      uuid: crypto.randomUUID(),
+    })
   }
 
   /**
