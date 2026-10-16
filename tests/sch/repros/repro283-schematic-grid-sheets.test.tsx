@@ -3,7 +3,7 @@ import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit-latest"
 
-test.failing("grid alignment applies independently to hierarchical child sheets", async () => {
+test("grid alignment applies independently to hierarchical child sheets", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board routingDisabled>

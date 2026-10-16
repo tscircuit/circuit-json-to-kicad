@@ -5,7 +5,7 @@ import { createSchematicGridCircuit } from "../../fixtures/create-schematic-grid
 import { getNativeSchematicNetGroups } from "../../fixtures/get-native-schematic-net-groups"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test.failing("repro283: electrical anchors export on the requested KiCad grid", async () => {
+test("repro283: electrical anchors export on the requested KiCad grid", async () => {
   const circuitJson = await createSchematicGridCircuit()
   const originalCircuitJson = JSON.stringify(circuitJson)
   const gridOptions = { schematicGridSize: 0.25, paperSize: undefined }
