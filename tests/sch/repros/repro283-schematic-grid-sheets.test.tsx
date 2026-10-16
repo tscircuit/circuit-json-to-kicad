@@ -8,7 +8,7 @@ test.failing("grid alignment applies independently to hierarchical child sheets"
   circuit.add(
     <board routingDisabled>
       {["Power", "Logic"].map((name, index) => (
-        <schematicsheet name={name} sheetIndex={index}>
+        <schematicsheet name={name} displayName={name} sheetIndex={index}>
           <resistor
             name={`R${index + 1}`}
             resistance="1k"
