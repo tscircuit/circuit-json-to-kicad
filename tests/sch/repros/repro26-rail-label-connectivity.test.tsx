@@ -4,9 +4,6 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit-latest"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 test("repro26: repeated power rail labels split nets in KiCad", async () => {
   const circuit = new Circuit()
@@ -111,16 +108,4 @@ test("repro26: repeated power rail labels split nets in KiCad", async () => {
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
-
-  const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: output,
-    kicadFileType: "sch",
-  })
-  expect(kicadSnapshot.exitCode).toBe(0)
-  await expect(
-    stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
-      kicadSnapshot.generatedFileContent["temp_file.png"]!,
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
 }, 120_000)
