@@ -76,8 +76,25 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const nets: PcbNet[] = []
     nets.push(new PcbNet(0, ""))
 
+    // KiCad indexes nets by name as well as by number. Reserve authored names
+    // before disambiguating independent connectivity keys with the same label.
+    const nameCounts = new Map<string, number>()
+    for (const name of netNameByKey.values()) {
+      nameCounts.set(name, (nameCounts.get(name) ?? 0) + 1)
+    }
+    const usedNames = new Set(netNameByKey.values())
+
     let netNumber = 1
-    for (const [connectivityKey, netName] of sortedEntries) {
+    for (const [connectivityKey, requestedName] of sortedEntries) {
+      let netName = requestedName
+      if (nameCounts.get(requestedName)! > 1) {
+        netName = `${connectivityKey}/${requestedName}`
+        let suffix = 2
+        while (usedNames.has(netName)) {
+          netName = `${connectivityKey}/${suffix++}/${requestedName}`
+        }
+        usedNames.add(netName)
+      }
       const pcbNet = new PcbNet(netNumber, netName)
       nets.push(pcbNet)
 
