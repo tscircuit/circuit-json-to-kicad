@@ -31,7 +31,7 @@ function findLabelPlacement(
   text: SchematicText,
   edges: SchematicTrace["edges"],
   ports: SchematicPort[],
-): LabelPlacement | undefined {
+): { placement: LabelPlacement; distance: number } | undefined {
   let nearest: (LabelPlacement & { distance: number }) | undefined
   const endpoints = new Map<
     string,
@@ -106,7 +106,8 @@ function findLabelPlacement(
       closestEnd = { ...getEndpointPlacement(end.point, end.toward), distance }
     }
   }
-  return closestEnd ?? nearest
+  if (!nearest) return undefined
+  return { placement: closestEnd ?? nearest, distance: nearest.distance }
 }
 
 /** Convert source-backed trace text directly to a KiCad local label. */
@@ -136,11 +137,21 @@ export function createInlineTraceLabel({
     )
   if (!matchesSourceNet) return undefined
 
-  const edges = db.schematic_trace
-    .list()
-    .filter((trace) => trace.source_trace_id === sourceTrace.source_trace_id)
-    .flatMap((trace) => trace.edges)
-  const placement = findLabelPlacement(text, edges, db.schematic_port.list())
+  const ports = db.schematic_port.list()
+  let closestTrace: ReturnType<typeof findLabelPlacement>
+  for (const trace of db.schematic_trace.list()) {
+    if (trace.source_trace_id !== sourceTrace.source_trace_id) continue
+    const candidate = findLabelPlacement(text, trace.edges, ports)
+    // One source trace can produce several disconnected wire stubs. Select by
+    // distance to the wire so each label stays on the stub it names.
+    if (
+      candidate &&
+      (!closestTrace || candidate.distance < closestTrace.distance)
+    ) {
+      closestTrace = candidate
+    }
+  }
+  const placement = closestTrace?.placement
   if (!placement) return undefined
 
   const { x, y } = applyToPoint(transform, placement.point)
