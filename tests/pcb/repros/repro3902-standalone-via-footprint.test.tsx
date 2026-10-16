@@ -7,7 +7,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro: standalone vias export an extra anonymous footprint", async () => {
+test("standalone vias do not export an extra anonymous footprint", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="10mm" height="6mm" schematicDisabled>
@@ -36,8 +36,7 @@ test("repro: standalone vias export an extra anonymous footprint", async () => {
   const outputString = converter.getOutputString()
   const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
 
-  // Capture the current bug; after the fix, only R1's footprint should remain.
-  expect(kicadPcb.footprints).toHaveLength(2)
+  expect(kicadPcb.footprints).toHaveLength(1)
   expect(
     kicadPcb.footprints.map((footprint) => ({
       libraryLink: footprint.libraryLink,
@@ -48,11 +47,6 @@ test("repro: standalone vias export an extra anonymous footprint", async () => {
     })),
   ).toMatchInlineSnapshot(`
     [
-      {
-        "libraryLink": "tscircuit:Unknown",
-        "padCount": 0,
-        "reference": null,
-      },
       {
         "libraryLink": "tscircuit:resistor_res0402",
         "padCount": 2,
