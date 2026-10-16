@@ -20,6 +20,10 @@ test("the packed package imports with only production dependencies", async () =>
   }
   try {
     run(["run", "build"], repository)
+    const declarations = await Bun.file(
+      join(repository, "dist/index.d.ts"),
+    ).text()
+    expect(declarations).not.toMatch(/from ["']kicadts["']/)
     run(["pm", "pack", "--destination", consumer], repository)
     const tarball = Array.from(new Bun.Glob("*.tgz").scanSync(consumer))[0]!
     await writeFile(
