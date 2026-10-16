@@ -8,6 +8,7 @@ import type {
 import { Label, TextEffectsJustify } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { createTextEffects } from "../symbols-stage-converters/createTextEffects"
+import { getTextJustificationFromAnchor } from "./getTextJustificationFromAnchor"
 
 interface LabelPlacement {
   point: Point
@@ -33,6 +34,8 @@ function findLabelPlacement(
   ports: SchematicPort[],
 ): { placement: LabelPlacement; distance: number } | undefined {
   let nearest: (LabelPlacement & { distance: number }) | undefined
+  const justify =
+    getTextJustificationFromAnchor(text.anchor)?.horizontal ?? "left"
   const endpoints = new Map<
     string,
     { point: Point; toward: Point; count: number }
@@ -67,8 +70,14 @@ function findLabelPlacement(
       nearest = {
         point,
         distance,
-        angle: horizontal ? (text.anchor === "right" ? 180 : 0) : 90,
-        justify: horizontal && text.anchor === "right" ? "right" : "left",
+        angle: horizontal
+          ? justify === "right"
+            ? 180
+            : 0
+          : justify === "right"
+            ? 270
+            : 90,
+        justify,
       }
     }
 
