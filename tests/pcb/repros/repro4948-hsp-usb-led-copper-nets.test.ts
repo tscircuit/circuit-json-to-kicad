@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
-import { type KicadPcb, parseKicadPcb } from "kicadts"
+import { type FpRect, type KicadPcb, parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "../../../lib/pcb/CircuitJsonToKicadPcbConverter"
 import { createSideBySideSvg } from "../../fixtures/create-side-by-side-svg"
 import { expectOpenSourceSvgSnapshot } from "../../fixtures/create-open-source-schematic-svg-snapshot"
@@ -33,6 +33,51 @@ test("repro4948: HSP USB LED preserves pad, trace and via nets on export", async
       .sort(([a], [b]) => a.localeCompare(b))
   const sourcePcb = parseKicadPcb(source)
   const outputPcb = parseKicadPcb(output)
+
+  // Check the actual source footprint corners, independently of the importer.
+  // J1/R2/R3 are rotated +/-90 degrees; their F.Fab geometry must stay local.
+  const localPointKey = ({ x, y }: { x: number; y: number }) =>
+    [Number(x.toFixed(6)), Number(y.toFixed(6))].join(",")
+  const rectangleCorners = (rect: FpRect) => [
+    rect.start!,
+    { x: rect.start!.x, y: rect.end!.y },
+    rect.end!,
+    { x: rect.end!.x, y: rect.start!.y },
+  ]
+  for (const reference of ["J1", "R2", "R3"]) {
+    const hasReference = (footprint: KicadPcb["footprints"][number]) =>
+      footprint.properties.some(
+        (property) =>
+          property.key === "Reference" && property.value === reference,
+      )
+    const original = sourcePcb.footprints.find(hasReference)!
+    const converted = outputPcb.footprints.find(hasReference)!
+    expect(converted.position).toMatchObject({
+      angle: "angle" in original.position! ? original.position.angle : 0,
+    })
+    const sourceRect = original.fpRects.find((rect) =>
+      rect.layer?.names.includes("F.Fab"),
+    )!
+    const fabricationCorners = [
+      ...converted.fpRects
+        .filter((rect) => rect.layer?.names.includes("F.Fab"))
+        .map(rectangleCorners),
+      ...converted.fpPolys
+        .filter((poly) => poly.layer?.names.includes("F.Fab"))
+        .map((poly) =>
+          poly.points!.points.map((point) => {
+            if (!("x" in point))
+              throw new Error("Expected straight rectangle edges")
+            return point
+          }),
+        ),
+    ]
+    expect(fabricationCorners).toHaveLength(1)
+    expect(fabricationCorners[0]!.map(localPointKey).sort()).toEqual(
+      rectangleCorners(sourceRect).map(localPointKey).sort(),
+    )
+  }
+
   const sourcePads = getPadNets(sourcePcb)
   const outputPads = getPadNets(outputPcb)
   expect(sourcePads).toHaveLength(22)

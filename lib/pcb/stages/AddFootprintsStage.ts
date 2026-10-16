@@ -336,7 +336,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     const fpRects = footprint.fpRects ?? []
-    fpRects.push(...convertFabricationNoteRects(pcbFabRects, component.center))
 
     const pcbNoteRects =
       this.ctx.db.pcb_note_rect
@@ -371,6 +370,14 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentCenter: component.center,
       componentRotation: component.rotation || 0,
     })
+
+    fpPolys.push(
+      ...convertFabricationNoteRects(
+        pcbFabRects,
+        component.center,
+        component.rotation || 0,
+      ),
+    )
 
     const pcbSilkscreenRects =
       this.ctx.db.pcb_silkscreen_rect
