@@ -5,7 +5,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 // A real packed consumer catches undeclared imports hidden by this repo's devDependencies.
-test.failing("the packed package imports with only production dependencies", async () => {
+test("the packed package imports with only production dependencies", async () => {
   const repository = join(dirname(fileURLToPath(import.meta.url)), "..")
   const consumer = await mkdtemp(join(tmpdir(), "kicad-standalone-"))
   const run = (args: string[], cwd: string) => {
@@ -13,7 +13,9 @@ test.failing("the packed package imports with only production dependencies", asy
     expect(result.stderr.toString() + result.stdout.toString()).not.toContain(
       "Cannot find module",
     )
-    expect(result.exitCode).toBe(0)
+    if (result.exitCode !== 0) {
+      throw new Error(result.stderr.toString() + result.stdout.toString())
+    }
     return result.stdout.toString()
   }
   try {

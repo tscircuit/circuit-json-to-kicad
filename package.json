@@ -16,7 +16,7 @@
     "sharp"
   ],
   "scripts": {
-    "build": "tsup-node lib/index.ts --format esm --dts",
+    "build": "tsup-node",
     "build:site": "bun build ./site/index.html --outdir site-build",
     "download-demos": "git clone --depth 1 --branch 9.0.9-rc1 --filter=blob:none --sparse https://gitlab.com/kicad/code/kicad.git kicad-demos && cd kicad-demos && git sparse-checkout set demos",
     "download-references": "bun run scripts/download-references.ts",
@@ -32,22 +32,26 @@
     "@tscircuit/common": "^0.0.5",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "^0.0.480",
     "circuit-json-to-gltf": "0.0.118",
-    "earcut": "^3.0.2",
-    "format-si-unit": "^0.0.14",
     "jszip": "^3.10.1",
     "kicad-to-circuit-json": "^0.0.137",
-    "kicadts": "github:tscircuit/kicadts#f3ea106bdc65ca901e9b23255ad3be0bd2a624ab",
-    "polygon-clipping": "^0.15.7",
     "poppygl": "0.0.27",
     "sharp": "^0.34.4",
-    "transformation-matrix": "^3.1.0",
     "tscircuit": "^0.0.2046",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
-    "tsup": "^8.5.0"
+    "tsup": "^8.5.0",
+    "kicadts": "github:tscircuit/kicadts#f3ea106bdc65ca901e9b23255ad3be0bd2a624ab"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "dependencies": {
+    "@tscircuit/circuit-json-util": "^0.0.106",
+    "circuit-json": "^0.0.480",
+    "earcut": "^3.0.2",
+    "format-si-unit": "^0.0.14",
+    "polygon-clipping": "^0.15.7",
+    "schematic-symbols": "^0.0.231",
+    "transformation-matrix": "^3.1.0"
   }
 }
