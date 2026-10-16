@@ -20,10 +20,6 @@ test("the packed package imports with only production dependencies", async () =>
   }
   try {
     run(["run", "build"], repository)
-    const declarations = await Bun.file(
-      join(repository, "dist/index.d.ts"),
-    ).text()
-    expect(declarations).not.toMatch(/from ["']kicadts["']/)
     run(["pm", "pack", "--destination", consumer], repository)
     const tarball = Array.from(new Bun.Glob("*.tgz").scanSync(consumer))[0]!
     await writeFile(
@@ -40,7 +36,7 @@ test("the packed package imports with only production dependencies", async () =>
     run(["install", "--production"], consumer)
     await writeFile(
       join(consumer, "consumer.ts"),
-      'import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad"; const output: string = new CircuitJsonToKicadSchConverter([]).getOutputString();',
+      'import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad"; import type { KicadSch } from "kicadts"; const converter = new CircuitJsonToKicadSchConverter([]); const output: string = converter.getOutputString(); const schematic: KicadSch = converter.getOutput();',
     )
     run(
       [
@@ -61,7 +57,7 @@ test("the packed package imports with only production dependencies", async () =>
       [
         "--no-install",
         "--eval",
-        'const { CircuitJsonToKicadSchConverter } = await import("circuit-json-to-kicad"); const converter = new CircuitJsonToKicadSchConverter([]); converter.runUntilFinished(); if (!converter.getOutputString().includes("kicad_sch")) throw new Error("Missing schematic output")',
+        'const { CircuitJsonToKicadSchConverter } = await import("circuit-json-to-kicad"); const { KicadSch } = await import("kicadts"); const converter = new CircuitJsonToKicadSchConverter([]); converter.runUntilFinished(); if (!(converter.getOutput() instanceof KicadSch)) throw new Error("Expected peer kicadts schematic"); if (!converter.getOutputString().includes("kicad_sch")) throw new Error("Missing schematic output")',
       ],
       consumer,
     )
