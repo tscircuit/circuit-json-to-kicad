@@ -80,13 +80,9 @@ test("repro18: component fields and inline labels preserve placement", async () 
         (label) => label.text === inlineNetLabel.text,
       )!.anchor_position!,
     )
-    const expectedHorizontalJustification =
-      inlineNetLabel.anchor === "left" || inlineNetLabel.anchor === "right"
-        ? inlineNetLabel.anchor
-        : undefined
-    expect(convertedText?.effects?.justify?.horizontal).toBe(
-      expectedHorizontalJustification,
-    )
+    // Both wires extend left from J_UART, so the text starts at the open left
+    // end and extends right, back along the wire toward the component.
+    expect(convertedText?.effects?.justify?.horizontal).toBe("left")
     expect(convertedText?.at?.x).toBeCloseTo(expectedPosition.x)
     expect(convertedText?.at?.y).toBeCloseTo(expectedPosition.y)
   }

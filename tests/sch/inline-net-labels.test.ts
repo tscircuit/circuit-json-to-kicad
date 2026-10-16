@@ -5,9 +5,13 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
+import { applyToPoint } from "transformation-matrix"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { getInlineTraceNetLabels } from "lib/schematic/getInlineTraceNetLabels"
+import { partitionCircuitJsonBySheet } from "lib/schematic/partitionCircuitJsonBySheet"
 import fixture from "../fixtures/inline-net-labels.json"
+import automotiveFixture from "../assets/repro21-generated-system-automotive-mirror.circuit.json"
+import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 
 test("automatic labels export as local electrical labels at wire ends", () => {
   const data = structuredClone(fixture) as CircuitJson
@@ -25,6 +29,75 @@ test("automatic labels export as local electrical labels at wire ends", () => {
     { x: 3.9400000000000004, y: 0 },
   ])
 })
+
+test.each([
+  { end: { x: 2, y: 0 }, side: "right" },
+  { end: { x: -2, y: 0 }, side: "left" },
+  { end: { x: 0, y: 2 }, side: "top" },
+  { end: { x: 0, y: -2 }, side: "bottom" },
+])(
+  "inline text faces along the wire from the $side endpoint",
+  ({ end, side }) => {
+    const data = structuredClone(fixture) as CircuitJson
+    for (const row of data) {
+      if (
+        row.type === "schematic_trace" &&
+        row.source_trace_id === "source_trace_0"
+      ) {
+        row.edges = [{ from: { x: 0, y: 0 }, to: end }]
+      }
+      if (
+        row.type === "schematic_port" &&
+        row.source_port_id === "source_port_1"
+      ) {
+        row.center = { x: 0, y: 0 }
+      }
+    }
+    const label = getInlineTraceNetLabels(data).labels.find(
+      (label) => label.source_trace_id === "source_trace_0",
+    )!
+    expect(label.anchor_position).toEqual(end)
+    expect(label.anchor_side).toBe(side)
+  },
+)
+
+test("native KiCad renders TEMP_SENSE beside its wire, inside the wire's length", async () => {
+  const data = partitionCircuitJsonBySheet(
+    automotiveFixture as CircuitJson,
+    "schematic_sheet_6",
+  )
+  const converter = new CircuitJsonToKicadSchConverter(data)
+  converter.runUntilFinished()
+  const trace = data.find(
+    (row) =>
+      row.type === "schematic_trace" &&
+      row.source_trace_id === "source_trace_187",
+  )!
+  if (trace.type !== "schematic_trace")
+    throw new Error("Missing TEMP_SENSE wire")
+  const edge = trace.edges[0]!
+  const from = applyToPoint(converter.ctx.c2kMatSch!, edge.from)
+  const to = applyToPoint(converter.ctx.c2kMatSch!, edge.to)
+  const output = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+    generatePng: false,
+  })
+  const svg = output.generatedFileContent["temp_file.svg"]!.toString()
+  const glyphs = svg.match(
+    /<g class="stroked-text"><desc>TEMP_SENSE<\/desc>([\s\S]*?)<\/g>/,
+  )?.[1]
+  expect(glyphs).toBeDefined()
+  const points = [...glyphs!.matchAll(/[ML](-?[\d.]+) (-?[\d.]+)/g)].map(
+    ([, x, y]) => ({ x: Number(x), y: Number(y) }),
+  )
+  expect(points.length).toBeGreaterThan(0)
+  for (const point of points) {
+    expect(point.y).toBeGreaterThanOrEqual(Math.min(from.y, to.y))
+    expect(point.y).toBeLessThanOrEqual(Math.max(from.y, to.y))
+    expect(Math.abs(point.x - from.x)).toBeLessThan(2)
+  }
+}, 30_000)
 
 test("trace annotations and text without source connectivity remain graphics", () => {
   const data = structuredClone(fixture) as CircuitJson

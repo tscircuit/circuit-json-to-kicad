@@ -26,7 +26,11 @@ export function getInlineTraceNetLabels(circuitJson: CircuitJson) {
     )
     if (!net) continue
     let nearest:
-      | { point: Point; distance: number; horizontal: boolean }
+      | {
+          point: Point
+          distance: number
+          anchorSide: SchematicNetLabel["anchor_side"]
+        }
       | undefined
     for (const trace of traces.filter(
       (t) => t.source_trace_id === source.source_trace_id,
@@ -57,7 +61,12 @@ export function getInlineTraceNetLabels(circuitJson: CircuitJson) {
           nearest = {
             point,
             distance,
-            horizontal: Math.abs(dx) >= Math.abs(dy),
+            anchorSide:
+              Math.abs(dx) >= Math.abs(dy)
+                ? text.anchor === "right"
+                  ? "right"
+                  : "left"
+                : "bottom",
           }
       }
     }
@@ -65,22 +74,36 @@ export function getInlineTraceNetLabels(circuitJson: CircuitJson) {
     // leaving a dangling segment beyond an otherwise connected inline label.
     const endpoints = new Map<
       string,
-      { point: Point; count: number; horizontal: boolean }
+      {
+        point: Point
+        count: number
+        anchorSide: SchematicNetLabel["anchor_side"]
+      }
     >()
     const ports = circuitJson.filter((r) => r.type === "schematic_port")
     for (const trace of traces.filter(
       (t) => t.source_trace_id === source.source_trace_id,
     )) {
       for (const edge of trace.edges) {
-        for (const point of [edge.from, edge.to]) {
+        for (const [point, toward] of [
+          [edge.from, edge.to],
+          [edge.to, edge.from],
+        ] as const) {
           const key = `${point.x.toFixed(6)},${point.y.toFixed(6)}`
           const previous = endpoints.get(key)
           endpoints.set(key, {
             point,
             count: (previous?.count ?? 0) + 1,
-            horizontal:
-              Math.abs(edge.to.x - edge.from.x) >=
-              Math.abs(edge.to.y - edge.from.y),
+            // At an open endpoint the text must extend back along the wire,
+            // rather than carrying the old inline text's outward alignment.
+            anchorSide:
+              Math.abs(toward.x - point.x) >= Math.abs(toward.y - point.y)
+                ? toward.x > point.x
+                  ? "left"
+                  : "right"
+                : toward.y > point.y
+                  ? "bottom"
+                  : "top",
           })
         }
       }
@@ -112,11 +135,7 @@ export function getInlineTraceNetLabels(circuitJson: CircuitJson) {
       text: net.name,
       center: nearest.point,
       anchor_position: nearest.point,
-      anchor_side: nearest.horizontal
-        ? text.anchor === "right"
-          ? "right"
-          : "left"
-        : "bottom",
+      anchor_side: nearest.anchorSide,
     })
     convertedTextIds.add(text.schematic_text_id)
   }
