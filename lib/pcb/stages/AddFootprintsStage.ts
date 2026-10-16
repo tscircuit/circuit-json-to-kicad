@@ -1,3 +1,4 @@
+import { resolveKicad3dModelPaths } from "../../utils/resolveKicad3dModelPaths"
 import type {
   CircuitJson,
   CadComponent,
@@ -47,6 +48,10 @@ import { convertFabricationNotePaths } from "./footprints-stage-converters/conve
  */
 export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
+  private modelReferences: Array<{
+    model: FootprintModel
+    sourcePath: string
+  }> = []
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
   private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
@@ -134,6 +139,14 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     if (this.componentsProcessed >= this.pcbComponents.length) {
+      const paths = resolveKicad3dModelPaths(
+        this.ctx.pcbModel3dSourcePaths ?? [],
+        this.ctx.projectName,
+      )
+      for (const { model, sourcePath } of this.modelReferences) {
+        const path = paths.get(sourcePath)
+        if (path) model.path = `\${KIPRJMOD}/${path}`
+      }
       this.finished = true
       return
     }
@@ -429,8 +442,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
             if (model.offset) newModel.offset = model.offset
             if (model.scale) newModel.scale = model.scale
             if (model.rotate) newModel.rotate = model.rotate
-            // Track original source URL for the CLI to download (strip query params)
-            const sourcePath = model.path?.split("?")[0]
+            const sourcePath = model.path
+            this.modelReferences.push({ model: newModel, sourcePath })
             if (
               sourcePath &&
               !this.ctx.pcbModel3dSourcePaths?.includes(sourcePath)
@@ -453,6 +466,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         footprint.models = [new FootprintModel(modelPath)]
         // Record CDN source URL so callers can download and include the model file
         const cdnUrl = `${MODEL_CDN_BASE_URL}/${footprinter_string}.step`
+        this.modelReferences.push({
+          model: footprint.models[0]!,
+          sourcePath: cdnUrl,
+        })
         if (!this.ctx.pcbModel3dSourcePaths?.includes(cdnUrl)) {
           this.ctx.pcbModel3dSourcePaths?.push(cdnUrl)
         }
