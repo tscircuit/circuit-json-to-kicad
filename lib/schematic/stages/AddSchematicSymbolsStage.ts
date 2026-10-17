@@ -24,7 +24,10 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
-import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getKicadCompatibleComponentName,
+  getReferenceDesignator,
+} from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
@@ -191,10 +194,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         ),
       })
 
+      // The placed symbol's Footprint field overrides the library symbol's in
+      // KiCad, so an empty instance value leaves the component with no footprint
+      // (empty <footprint> in KiCad's netlist, no footprint binding on import).
+      // Use the same name the PCB footprint gets (AddFootprintsStage).
       const fpMeta = symbolMetadata?.properties?.Footprint
+      const instanceFootprintName = getKicadCompatibleComponentName(
+        sourceComponent,
+        symbolContext.cadComponent,
+      )
       const footprintProperty = new SymbolProperty({
         key: "Footprint",
-        value: fpMeta?.value ?? "",
+        value:
+          fpMeta?.value ??
+          (instanceFootprintName ? `tscircuit:${instanceFootprintName}` : ""),
         id: 2,
         at: [x - 1.778, y, 90],
         effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
