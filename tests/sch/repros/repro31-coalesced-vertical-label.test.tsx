@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { CircuitJson } from "circuit-json"
-import { parseKicadSch } from "kicadts"
+import { parseKicadSch, type Xy } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import "tscircuit"
 import { Circuit } from "tscircuit-latest"
@@ -119,7 +119,9 @@ test("coalesced vertical-wire labels anchor on KiCad's lower endpoint", async ()
   expect(signalLabels).toHaveLength(2)
   for (const label of signalLabels) {
     const matchingWire = parsedSchematic.wires.find((wire) => {
-      const points = wire.points?.points
+      const points = wire.points?.points.filter(
+        (point): point is Xy => "x" in point,
+      )
       return (
         points?.length === 2 &&
         points[0]!.x === points[1]!.x &&
@@ -127,7 +129,9 @@ test("coalesced vertical-wire labels anchor on KiCad's lower endpoint", async ()
       )
     })
     expect(matchingWire).toBeDefined()
-    const [first, second] = matchingWire!.points!.points
+    const [first, second] = matchingWire!.points!.points.filter(
+      (point): point is Xy => "x" in point,
+    )
     // KiCad's y-axis is flipped from Circuit coordinates, so the physically
     // lower endpoint of the rendered wire has the larger KiCad y coordinate.
     expect(label.at!.y).toBeCloseTo(Math.max(first!.y, second!.y), 6)
