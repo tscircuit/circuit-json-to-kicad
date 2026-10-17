@@ -4,7 +4,7 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { createSchematicGridCircuit } from "../../fixtures/create-schematic-grid-circuit"
 import { getNativeSchematicNetGroups } from "../../fixtures/get-native-schematic-net-groups"
 
-test.failing("the standard 50 mil grid retains native net connectivity", async () => {
+test("the standard 50 mil grid retains native net connectivity", async () => {
   const circuitJson = await createSchematicGridCircuit()
   const options = { schematicGridSize: 1.27, paperSize: undefined }
   const converter = new CircuitJsonToKicadSchConverter(circuitJson, options)
