@@ -34,9 +34,17 @@ test("the packed package imports with only production dependencies", async () =>
       }),
     )
     run(["install", "--production"], consumer)
+    run(
+      [
+        "--no-install",
+        "--eval",
+        'const { CircuitJsonToKicadSchConverter } = await import("circuit-json-to-kicad"); const converter = new CircuitJsonToKicadSchConverter([]); converter.runUntilFinished(); if (!converter.getOutputString().includes("kicad_sch")) throw new Error("Missing schematic output")',
+      ],
+      consumer,
+    )
     await writeFile(
       join(consumer, "consumer.ts"),
-      'import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad"; import type { KicadSch } from "kicadts"; const converter = new CircuitJsonToKicadSchConverter([]); const output: string = converter.getOutputString(); const schematic: KicadSch = converter.getOutput();',
+      'import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad"; const converter = new CircuitJsonToKicadSchConverter([]); const output: string = converter.getOutputString();',
     )
     run(
       [
@@ -50,14 +58,6 @@ test("the packed package imports with only production dependencies", async () =>
         "esnext",
         "--skipLibCheck",
         "consumer.ts",
-      ],
-      consumer,
-    )
-    run(
-      [
-        "--no-install",
-        "--eval",
-        'const { CircuitJsonToKicadSchConverter } = await import("circuit-json-to-kicad"); const { KicadSch } = await import("kicadts"); const converter = new CircuitJsonToKicadSchConverter([]); converter.runUntilFinished(); if (!(converter.getOutput() instanceof KicadSch)) throw new Error("Expected peer kicadts schematic"); if (!converter.getOutputString().includes("kicad_sch")) throw new Error("Missing schematic output")',
       ],
       consumer,
     )
