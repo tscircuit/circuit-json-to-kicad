@@ -29,7 +29,6 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
-    "@tscircuit/circuit-json-util": "^0.0.106",
     "@tscircuit/common": "^0.0.5",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
@@ -42,7 +41,6 @@
     "kicadts": "github:tscircuit/kicadts#f3ea106bdc65ca901e9b23255ad3be0bd2a624ab",
     "polygon-clipping": "^0.15.7",
     "poppygl": "0.0.27",
-    "schematic-symbols": "^0.0.231",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
     "tscircuit": "^0.0.2046",
@@ -50,14 +48,7 @@
     "tsup": "^8.5.0"
   },
   "peerDependencies": {
-    "@tscircuit/circuit-json-util": "*",
-    "circuit-json": "*",
-    "earcut": "^3.0.2",
-    "format-si-unit": "^0.0.14",
-    "kicadts": "^0.0.58",
-    "polygon-clipping": "^0.15.7",
-    "schematic-symbols": "^0.0.231",
-    "transformation-matrix": "^3.1.0",
-    "typescript": "^5"
+    "typescript": "^5",
+    "@tscircuit/circuit-json-util": "*"
   }
 }
