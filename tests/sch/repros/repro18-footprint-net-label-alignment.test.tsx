@@ -55,6 +55,8 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(output).toContain("(fields_autoplaced no)")
   expect(output).not.toContain("(fields_autoplaced yes)")
   expect(inlineNetLabels).toHaveLength(2)
+  expect(parsedSchematic.globalLabels).toHaveLength(0)
+  expect(parsedSchematic.labels).toHaveLength(2)
 
   const componentSymbol = parsedSchematic.symbols.find((symbol) =>
     symbol.properties.some(
@@ -68,20 +70,25 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(manufacturerPartNumber?.effects?.justify?.horizontal).toBe("left")
 
   for (const inlineNetLabel of inlineNetLabels) {
-    const convertedText = parsedSchematic.texts.find(
+    const convertedText = parsedSchematic.labels.find(
       (text) => text.value === inlineNetLabel.text,
     )
-    const expectedPosition = applyToPoint(
-      converter.ctx.c2kMatSch!,
-      inlineNetLabel.position,
+    const trace = circuitJson.find(
+      (element) =>
+        element.type === "schematic_trace" &&
+        element.source_trace_id === inlineNetLabel.source_trace_id,
     )
-    const expectedHorizontalJustification =
-      inlineNetLabel.anchor === "left" || inlineNetLabel.anchor === "right"
-        ? inlineNetLabel.anchor
-        : undefined
-    expect(convertedText?.effects?.justify?.horizontal).toBe(
-      expectedHorizontalJustification,
-    )
+    if (trace?.type !== "schematic_trace")
+      throw new Error("Missing labelled wire")
+    // This fixture's wires extend left from J_UART. The leftmost wire point is
+    // the expected label anchor, independently of the conversion helper.
+    const openEnd = trace.edges
+      .flatMap((edge) => [edge.from, edge.to])
+      .reduce((leftmost, point) => (point.x < leftmost.x ? point : leftmost))
+    const expectedPosition = applyToPoint(converter.ctx.c2kMatSch!, openEnd)
+    // Both wires extend left from J_UART, so the text starts at the open left
+    // end and extends right, back along the wire toward the component.
+    expect(convertedText?.effects?.justify?.horizontal).toBe("left")
     expect(convertedText?.at?.x).toBeCloseTo(expectedPosition.x)
     expect(convertedText?.at?.y).toBeCloseTo(expectedPosition.y)
   }
