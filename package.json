@@ -48,6 +48,7 @@
     "tsup": "^8.5.0"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "@tscircuit/circuit-json-util": "*"
   }
 }
