@@ -5,7 +5,7 @@ import { dirname, join } from "node:path"
 import { fileURLToPath } from "node:url"
 
 // A real packed consumer catches undeclared imports hidden by this repo's devDependencies.
-test.failing("the packed package imports with only production dependencies", async () => {
+test("the packed package imports with only production dependencies", async () => {
   const repository = join(dirname(fileURLToPath(import.meta.url)), "..")
   const consumer = await mkdtemp(join(tmpdir(), "kicad-standalone-"))
   const run = (args: string[], cwd: string) => {
@@ -13,7 +13,9 @@ test.failing("the packed package imports with only production dependencies", asy
     expect(result.stderr.toString() + result.stdout.toString()).not.toContain(
       "Cannot find module",
     )
-    expect(result.exitCode).toBe(0)
+    if (result.exitCode !== 0) {
+      throw new Error(result.stderr.toString() + result.stdout.toString())
+    }
     return result.stdout.toString()
   }
   try {
@@ -32,11 +34,30 @@ test.failing("the packed package imports with only production dependencies", asy
       }),
     )
     run(["install", "--production"], consumer)
+    await writeFile(
+      join(consumer, "consumer.ts"),
+      'import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad"; import type { KicadSch } from "kicadts"; const converter = new CircuitJsonToKicadSchConverter([]); const output: string = converter.getOutputString(); const schematic: KicadSch = converter.getOutput();',
+    )
+    run(
+      [
+        "node_modules/typescript/bin/tsc",
+        "--noEmit",
+        "--moduleResolution",
+        "bundler",
+        "--module",
+        "esnext",
+        "--target",
+        "esnext",
+        "--skipLibCheck",
+        "consumer.ts",
+      ],
+      consumer,
+    )
     run(
       [
         "--no-install",
         "--eval",
-        'const { CircuitJsonToKicadSchConverter } = await import("circuit-json-to-kicad"); const converter = new CircuitJsonToKicadSchConverter([]); converter.runUntilFinished(); if (!converter.getOutputString().includes("kicad_sch")) throw new Error("Missing schematic output")',
+        'const { CircuitJsonToKicadSchConverter } = await import("circuit-json-to-kicad"); const { KicadSch } = await import("kicadts"); const converter = new CircuitJsonToKicadSchConverter([]); converter.runUntilFinished(); if (!(converter.getOutput() instanceof KicadSch)) throw new Error("Expected peer kicadts schematic"); if (!converter.getOutputString().includes("kicad_sch")) throw new Error("Missing schematic output")',
       ],
       consumer,
     )
