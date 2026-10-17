@@ -68,6 +68,40 @@ export class AddStandalonePcbElements extends ConverterStage<
         uuid: generateDeterministicUuid(footprintSeed),
       })
 
+      const hasAnyPcbSolderPasteInCircuit =
+        (this.ctx.db.pcb_solder_paste?.list?.().length ?? 0) > 0 ||
+        (this.ctx.circuitJson as any[])?.some((el) => el.type === "pcb_solder_paste")
+
+      const padHasExplicitSolderPaste =
+        Boolean(
+          this.ctx.db.pcb_solder_paste?.list?.().some(
+            (sp: any) => sp.pcb_smtpad_id === pcbPad.pcb_smtpad_id,
+          ) ||
+          (this.ctx.circuitJson as any[])?.some(
+            (el) => el.type === "pcb_solder_paste" && el.pcb_smtpad_id === pcbPad.pcb_smtpad_id,
+          ),
+        )
+
+      const padLevelPasteDisabled =
+        (pcbPad as any).has_solder_paste === false ||
+        (pcbPad as any).solder_paste === false ||
+        (pcbPad as any).no_solder_paste === true
+
+      const padLevelPasteEnabled =
+        (pcbPad as any).has_solder_paste === true ||
+        (pcbPad as any).solder_paste === true
+
+      let hasSolderPaste: boolean
+      if (pcbPad.is_covered_with_solder_mask || padLevelPasteDisabled) {
+        hasSolderPaste = false
+      } else if (padLevelPasteEnabled || padHasExplicitSolderPaste) {
+        hasSolderPaste = true
+      } else if (hasAnyPcbSolderPasteInCircuit) {
+        hasSolderPaste = false
+      } else {
+        hasSolderPaste = true
+      }
+
       footprint.fpPads = [
         createSmdPadFromCircuitJson({
           pcbPad,
@@ -75,6 +109,7 @@ export class AddStandalonePcbElements extends ConverterStage<
           padNumber: 1,
           componentRotation: 0,
           componentId: pcbPad.pcb_smtpad_id,
+          hasSolderPaste,
         }),
       ]
       const footprints = kicadPcb.footprints

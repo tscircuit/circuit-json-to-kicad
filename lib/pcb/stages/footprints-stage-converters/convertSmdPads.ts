@@ -51,6 +51,40 @@ export function convertSmdPads(
           ? pinHint.replace(/^pin/i, "")
           : (gridHint ?? String(padNumber)))
 
+    const hasAnyPcbSolderPasteInCircuit =
+      (ctx.db.pcb_solder_paste?.list?.().length ?? 0) > 0 ||
+      (ctx.circuitJson as any[])?.some((el) => el.type === "pcb_solder_paste")
+
+    const padHasExplicitSolderPaste =
+      Boolean(
+        ctx.db.pcb_solder_paste?.list?.().some(
+          (sp: any) => sp.pcb_smtpad_id === pcbPad.pcb_smtpad_id,
+        ) ||
+        (ctx.circuitJson as any[])?.some(
+          (el) => el.type === "pcb_solder_paste" && el.pcb_smtpad_id === pcbPad.pcb_smtpad_id,
+        ),
+      )
+
+    const padLevelPasteDisabled =
+      (pcbPad as any).has_solder_paste === false ||
+      (pcbPad as any).solder_paste === false ||
+      (pcbPad as any).no_solder_paste === true
+
+    const padLevelPasteEnabled =
+      (pcbPad as any).has_solder_paste === true ||
+      (pcbPad as any).solder_paste === true
+
+    let hasSolderPaste: boolean
+    if (pcbPad.is_covered_with_solder_mask || padLevelPasteDisabled) {
+      hasSolderPaste = false
+    } else if (padLevelPasteEnabled || padHasExplicitSolderPaste) {
+      hasSolderPaste = true
+    } else if (hasAnyPcbSolderPasteInCircuit) {
+      hasSolderPaste = false
+    } else {
+      hasSolderPaste = true
+    }
+
     const pad = createSmdPadFromCircuitJson({
       pcbPad,
       componentCenter,
@@ -58,6 +92,7 @@ export function convertSmdPads(
       componentRotation,
       netInfo,
       componentId,
+      hasSolderPaste,
     })
     pads.push(pad)
     padNumber++
