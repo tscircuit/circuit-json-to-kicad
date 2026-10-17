@@ -31,6 +31,9 @@ import { createGenericChipSymbolData } from "./symbols-stage-converters/createGe
 import { addSymbolProperties } from "./utils/addSymbolProperties"
 import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 
+const NUMBER_PATTERN = /-?\d+(?:\.\d+)?(?:e-?\d+)?/g
+const GEOMETRY_TOLERANCE_MM = 1e-6
+
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
  * Also handles custom symbols defined via schematic_symbol elements.
@@ -43,6 +46,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private processedSymbolNames: Set<string> = new Set()
   // Distinct pin numberings emitted under each lib id, in order of first use
   private pinNumberingsByLibId: Map<string, string[]> = new Map()
+  // Distinct custom-symbol geometries emitted under each lib id, in order of first use
+  private geometriesByLibId: Map<
+    string,
+    Array<{ shape: string; values: number[] }>
+  > = new Map()
 
   override _step(): void {
     const { kicadSch, db } = this.ctx
@@ -54,6 +62,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     // Reset processed symbol names for this run
     this.processedSymbolNames = new Set()
     this.pinNumberingsByLibId = new Map()
+    this.geometriesByLibId = new Map()
     this.ctx.schematicComponentLibraryIds = new Map()
 
     // Process schematic components
@@ -272,13 +281,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       return null
     }
 
-    // Check if we've already processed this symbol name
-    // If two symbols have the same name, we assume they're the same symbol
-    if (this.processedSymbolNames.has(libraryId)) {
-      return null // Skip duplicate symbol definitions
-    }
-    this.processedSymbolNames.add(libraryId)
-
     // Build symbol data from schematic primitives linked to this schematic_symbol
     const symbolData = buildSymbolDataFromSchematicPrimitives({
       circuitJson: this.ctx.circuitJson,
@@ -306,8 +308,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       cadComponent,
     )
 
-    return this.createLibrarySymbol({
-      libId: libraryId,
+    const librarySymbolOptions = {
       symbolData,
       isChip: false, // Custom symbols are not treated as generic chips
       schematicComponent,
@@ -317,7 +318,60 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
-    })
+    }
+
+    const { libId, isNew } = this.getLibraryIdForGeometry(
+      libraryId,
+      this.createLibrarySymbol({
+        libId: "Custom:geometry",
+        ...librarySymbolOptions,
+      }),
+    )
+    if (libId !== libraryId) {
+      this.ctx.schematicComponentLibraryIds!.set(
+        schematicComponent.schematic_component_id,
+        libId,
+      )
+    }
+    // Instances with the same name and geometry share one definition
+    if (!isNew) return null
+
+    return this.createLibrarySymbol({ libId, ...librarySymbolOptions })
+  }
+
+  /**
+   * KiCad draws every instance of a lib id from a single definition. Custom
+   * symbols that share a name but not their drawing or pins (for example the
+   * same symbol resized per instance) therefore each get their own lib id, or
+   * the later instances' pins land off their wires.
+   */
+  private getLibraryIdForGeometry(
+    libId: string,
+    geometrySymbol: SchematicSymbol,
+  ): { libId: string; isNew: boolean } {
+    // Instances drawn about different centres differ by floating-point noise,
+    // so numbers within KiCad's 1 nm resolution count as equal
+    const text = geometrySymbol.subSymbols
+      .map((subSymbol) => subSymbol.getString())
+      .join("\n")
+    const values = (text.match(NUMBER_PATTERN) ?? []).map(Number)
+    const shape = text.replace(NUMBER_PATTERN, "#")
+    const geometries = this.geometriesByLibId.get(libId) ?? []
+    this.geometriesByLibId.set(libId, geometries)
+
+    let index = geometries.findIndex(
+      (geometry) =>
+        geometry.shape === shape &&
+        geometry.values.every(
+          (value, i) => Math.abs(value - values[i]!) <= GEOMETRY_TOLERANCE_MM,
+        ),
+    )
+    const isNew = index === -1
+    if (isNew) {
+      geometries.push({ shape, values })
+      index = geometries.length - 1
+    }
+    return { libId: index === 0 ? libId : `${libId}_${index + 1}`, isNew }
   }
 
   /**
