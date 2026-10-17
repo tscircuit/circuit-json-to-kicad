@@ -123,14 +123,15 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       y += pinPosition.y
     }
 
+    const reference = `#PWR${netLabel.schematic_net_label_id}`
     const uuid = crypto.randomUUID()
 
     const symbol = new SchematicSymbol({
       at: [x, y, 0],
       unit: 1,
       excludeFromSim: false,
-      inBom: true,
-      onBoard: true,
+      inBom: false,
+      onBoard: false,
       dnp: false,
       uuid: uuid,
       fieldsAutoplaced: false,
@@ -144,23 +145,22 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const isUpSymbol =
       symbolName.includes("_up") || symbolName.toLowerCase().includes("vcc")
     const referenceOffset = isUpSymbol ? -4 : 4
-    const valueOffset = isUpSymbol ? -6 : 6
 
     // Add properties
     const referenceProperty = new SymbolProperty({
       key: "Reference",
-      value: labelText, // Use the label text as the reference
+      value: reference,
       id: 0,
       at: [x, y + referenceOffset, 0],
-      effects: this.createTextEffects(1.27, false),
+      effects: this.createTextEffects(1.27, true),
     })
 
     const valueProperty = new SymbolProperty({
       key: "Value",
       value: labelText,
       id: 1,
-      at: [x, y + valueOffset, 0],
-      effects: this.createTextEffects(1.27, true),
+      at: [x, y + referenceOffset, 0],
+      effects: this.createTextEffects(1.27, false),
     })
 
     const footprintProperty = new SymbolProperty({
@@ -208,7 +208,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const instancePathPrefix =
       this.ctx.symbolInstancePathPrefix ?? `/${kicadSch?.uuid?.value || ""}`
     const path = new SymbolInstancePath(instancePathPrefix)
-    path.reference = labelText
+    path.reference = reference
     path.unit = 1
     project.paths.push(path)
     instances.projects.push(project)
