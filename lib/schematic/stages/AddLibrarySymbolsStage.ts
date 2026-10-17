@@ -12,6 +12,7 @@ import {
   SchematicSymbol,
   SymbolPinNames,
   SymbolPinNumbers,
+  SymbolPower,
 } from "kicadts"
 import { symbols } from "schematic-symbols"
 import { ConverterStage } from "../../types"
@@ -64,29 +65,23 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       }
     }
 
-    // Process schematic net labels with symbol names
+    // Rail artwork is shared, while each instance's Value names its global net.
     const netLabels = db.schematic_net_label?.list?.() || []
+    const railLibraryIds = new Set<string>()
     for (const netLabel of netLabels) {
-      if (netLabel.symbol_name) {
-        const isPower = netLabel.source_net_id
-          ? db.source_net.get(netLabel.source_net_id)?.is_power
-          : false
-        const isGround = netLabel.source_net_id
-          ? db.source_net.get(netLabel.source_net_id)?.is_ground
-          : false
-
-        const isPowerOrGround = isPower || isGround
-
-        if (isPowerOrGround) {
-          const libSymbol = this.createLibrarySymbolForNetLabel({
-            netLabel,
-            isPower: isPower ?? false,
-            isGround: isGround ?? false,
-          })
-          if (libSymbol) {
-            librarySymbols.push(libSymbol)
-          }
-        }
+      if (!netLabel.symbol_name || railLibraryIds.has(netLabel.symbol_name))
+        continue
+      const sourceNet = netLabel.source_net_id
+        ? db.source_net.get(netLabel.source_net_id)
+        : undefined
+      const libSymbol = this.createLibrarySymbolForNetLabel({
+        netLabel,
+        isPower: sourceNet?.is_power ?? false,
+        isGround: sourceNet?.is_ground ?? false,
+      })
+      if (libSymbol) {
+        librarySymbols.push(libSymbol)
+        railLibraryIds.add(netLabel.symbol_name)
       }
     }
 
@@ -345,7 +340,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     const libId = `Custom:${symbolName}`
 
-    return this.createLibrarySymbol({
+    const symbol = this.createLibrarySymbol({
       libId,
       symbolData,
       isChip: false,
@@ -357,9 +352,16 @@ export class AddLibrarySymbolsStage extends ConverterStage<
           : "Net symbol",
       keywords: isPower ? "power net" : isGround ? "ground net" : "net",
       fpFilters: "",
-      referencePrefix: libId.split(":")[1]?.[0] || "U",
+      referencePrefix: "#PWR",
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
     })
+    symbol._sxPower = new SymbolPower("global")
+    symbol.inBom = false
+    symbol.onBoard = false
+    for (const unit of symbol.subSymbols) {
+      for (const pin of unit.pins) pin.pinElectricalType = "power_in"
+    }
+    return symbol
   }
 
   /**

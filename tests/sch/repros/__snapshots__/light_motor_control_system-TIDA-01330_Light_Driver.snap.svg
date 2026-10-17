@@ -4375,6 +4375,147 @@ L183.0767 95.3650
 <path d="M183.0767 95.3650
 L183.8629 95.3650
 " />
+</g><path style="fill:none; 
+stroke:#840000; stroke-width:0.2540; stroke-opacity:1; 
+stroke-linecap:round; stroke-linejoin:round;fill:none"
+d="M 140.8950,131.4825
+144.4950,131.4825
+" /> 
+<path style="fill:none; 
+stroke:#840000; stroke-width:0.2540; stroke-opacity:1; 
+stroke-linecap:round; stroke-linejoin:round;fill:none"
+d="M 142.6950,131.4825
+142.6950,128.7825
+" /> 
+</g>
+<g style="fill:none; 
+stroke:#840000; stroke-width:0.1524; stroke-opacity:1; 
+stroke-linecap:round; stroke-linejoin:round;">
+<path d="M142.6950 128.7925
+L142.6950 128.7825
+" />
+</g>
+<g style="fill:none; 
+stroke:#006464; stroke-width:0.1524; stroke-opacity:1; 
+stroke-linecap:round; stroke-linejoin:round;">
+<g transform="rotate(-90.000000 142.4410 128.7875)">
+<text x="142.4410" y="128.7875"
+textLength="1.4127" font-size="1.6933" lengthAdjust="spacingAndGlyphs"
+text-anchor="middle" opacity="0" stroke-opacity="0">1</text>
+</g>
+<g class="stroked-text"><desc>1</desc>
+<path d="M142.2775 128.4245
+L142.2775 129.1502
+" />
+<path d="M142.2775 128.7874
+L141.0075 128.7874
+" />
+<path d="M141.0075 128.7874
+L141.1890 128.9083
+" />
+<path d="M141.1890 128.9083
+L141.3099 129.0293
+" />
+<path d="M141.3099 129.0293
+L141.3704 129.1502
+" />
+</g><text x="142.6950" y="134.7675"
+textLength="4.0737" font-size="1.6933" lengthAdjust="spacingAndGlyphs"
+text-anchor="middle" opacity="0" stroke-opacity="0">GND</text>
+<g class="stroked-text"><desc>GND</desc>
+<path d="M141.7274 133.5025
+L141.6064 133.4420
+" />
+<path d="M141.6064 133.4420
+L141.4250 133.4420
+" />
+<path d="M141.4250 133.4420
+L141.2436 133.5025
+" />
+<path d="M141.2436 133.5025
+L141.1226 133.6235
+" />
+<path d="M141.1226 133.6235
+L141.0621 133.7444
+" />
+<path d="M141.0621 133.7444
+L141.0017 133.9863
+" />
+<path d="M141.0017 133.9863
+L141.0017 134.1677
+" />
+<path d="M141.0017 134.1677
+L141.0621 134.4096
+" />
+<path d="M141.0621 134.4096
+L141.1226 134.5306
+" />
+<path d="M141.1226 134.5306
+L141.2436 134.6516
+" />
+<path d="M141.2436 134.6516
+L141.4250 134.7120
+" />
+<path d="M141.4250 134.7120
+L141.5459 134.7120
+" />
+<path d="M141.5459 134.7120
+L141.7274 134.6516
+" />
+<path d="M141.7274 134.6516
+L141.7878 134.5911
+" />
+<path d="M141.7878 134.5911
+L141.7878 134.1677
+" />
+<path d="M141.7878 134.1677
+L141.5459 134.1677
+" />
+<path d="M142.3321 134.7120
+L142.3321 133.4420
+" />
+<path d="M142.3321 133.4420
+L143.0578 134.7120
+" />
+<path d="M143.0578 134.7120
+L143.0578 133.4420
+" />
+<path d="M143.6626 134.7120
+L143.6626 133.4420
+" />
+<path d="M143.6626 133.4420
+L143.9650 133.4420
+" />
+<path d="M143.9650 133.4420
+L144.1464 133.5025
+" />
+<path d="M144.1464 133.5025
+L144.2674 133.6235
+" />
+<path d="M144.2674 133.6235
+L144.3279 133.7444
+" />
+<path d="M144.3279 133.7444
+L144.3883 133.9863
+" />
+<path d="M144.3883 133.9863
+L144.3883 134.1677
+" />
+<path d="M144.3883 134.1677
+L144.3279 134.4096
+" />
+<path d="M144.3279 134.4096
+L144.2674 134.5306
+" />
+<path d="M144.2674 134.5306
+L144.1464 134.6516
+" />
+<path d="M144.1464 134.6516
+L143.9650 134.7120
+" />
+<path d="M143.9650 134.7120
+L143.6626 134.7120
+" />
 </g></g>
 <g style="fill:none; 
 stroke:#840000; stroke-width:0.1524; stroke-opacity:1; 
@@ -6792,6 +6933,38 @@ L143.9650 134.7120
 " />
 <path d="M143.9650 134.7120
 L143.6626 134.7120
+" />
+</g></g>
+<g style="fill:none; 
+stroke:#840000; stroke-width:0.1524; stroke-opacity:1; 
+stroke-linecap:round; stroke-linejoin:round;">
+<path d="M142.6950 128.7925
+L142.6950 128.7825
+" />
+</g>
+<g style="fill:none; 
+stroke:#006464; stroke-width:0.1524; stroke-opacity:1; 
+stroke-linecap:round; stroke-linejoin:round;">
+<g transform="rotate(-90.000000 142.4410 128.7875)">
+<text x="142.4410" y="128.7875"
+textLength="1.4127" font-size="1.6933" lengthAdjust="spacingAndGlyphs"
+text-anchor="middle" opacity="0" stroke-opacity="0">1</text>
+</g>
+<g class="stroked-text"><desc>1</desc>
+<path d="M142.2775 128.4245
+L142.2775 129.1502
+" />
+<path d="M142.2775 128.7874
+L141.0075 128.7874
+" />
+<path d="M141.0075 128.7874
+L141.1890 128.9083
+" />
+<path d="M141.1890 128.9083
+L141.3099 129.0293
+" />
+<path d="M141.3099 129.0293
+L141.3704 129.1502
 " />
 </g></g> 
 </svg>
