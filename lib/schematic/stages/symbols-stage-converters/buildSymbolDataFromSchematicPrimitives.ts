@@ -224,14 +224,44 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     })
   }
 
+  // Find component name for refdes placeholder detection
+  let compName = ""
+  if (schematicComponentId) {
+    const schComp = circuitJson.find(
+      (el): el is any =>
+        el.type === "schematic_component" &&
+        el.schematic_component_id === schematicComponentId,
+    )
+    if (schComp?.source_component_id) {
+      const srcComp = circuitJson.find(
+        (el): el is any =>
+          el.type === "source_component" &&
+          el.source_component_id === schComp.source_component_id,
+      )
+      if (srcComp?.name) {
+        compName = srcComp.name
+      }
+    }
+  }
+
   // Convert schematic_text to text primitives
-  const symbolTexts = texts.map((text) => ({
-    text: text.text ?? "",
-    x: text.position?.x ?? 0,
-    y: text.position?.y ?? 0,
-    fontSize: text.font_size ?? 0.2,
-    anchor: text.anchor ?? "center",
-  }))
+  const symbolTexts = texts.map((text) => {
+    let rawText = text.text ?? ""
+    if (
+      rawText === "{REF}" ||
+      rawText === "${REFERENCE}" ||
+      (compName && rawText === compName)
+    ) {
+      rawText = "${REFERENCE}"
+    }
+    return {
+      text: rawText,
+      x: text.position?.x ?? 0,
+      y: text.position?.y ?? 0,
+      fontSize: text.font_size ?? 0.2,
+      anchor: text.anchor ?? "center",
+    }
+  })
 
   // Convert schematic_port to ports
   const symbolPorts = ports.map((port, index) => ({
