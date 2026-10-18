@@ -1,6 +1,7 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
+import { getKicadNetNames } from "../../utils/getKicadNetNames"
 import {
   ConverterStage,
   type ConverterContext,
@@ -21,57 +22,15 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     // Initialize the net map in context if it doesn't exist
     this.ctx.pcbNetMap = new Map()
 
-    const netNameByKey = new Map<string, string>()
+    const netNameByKey = getKicadNetNames(this.ctx.db)
 
-    const sourceNets = this.ctx.db.source_net?.list() ?? []
-    for (const sourceNet of sourceNets) {
-      const connectivityKey =
-        sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
-      if (!connectivityKey) continue
-
-      const candidateName = sourceNet.name || sourceNet.source_net_id || ""
-      const netName =
-        candidateName && candidateName.trim().length > 0
-          ? candidateName
-          : connectivityKey
-
-      netNameByKey.set(connectivityKey, netName)
-    }
-
-    const sourceTraces = this.ctx.db.source_trace?.list() ?? []
-    for (const sourceTrace of sourceTraces) {
-      let connectivityKey = sourceTrace.subcircuit_connectivity_map_key
-
-      if (!connectivityKey && sourceTrace.connected_source_net_ids?.length) {
-        for (const sourceNetId of sourceTrace.connected_source_net_ids) {
-          const connectedNet = this.ctx.db.source_net?.get(sourceNetId)
-          if (
-            connectedNet?.subcircuit_connectivity_map_key &&
-            connectedNet.subcircuit_connectivity_map_key.length > 0
-          ) {
-            connectivityKey = connectedNet.subcircuit_connectivity_map_key
-            break
-          }
-        }
-      }
-
-      if (!connectivityKey) continue
-
-      if (!netNameByKey.has(connectivityKey)) {
-        const candidateName =
-          sourceTrace.display_name || sourceTrace.source_trace_id || ""
-        const netName =
-          candidateName && candidateName.trim().length > 0
-            ? candidateName
-            : connectivityKey
-
-        netNameByKey.set(connectivityKey, netName)
-      }
-    }
-
-    const sortedEntries = Array.from(netNameByKey.entries()).sort((a, b) =>
-      a[0].localeCompare(b[0]),
-    )
+    const sortedEntries = Array.from(netNameByKey.entries()).sort((a, b) => {
+      // Preserve existing connected-net numbers when adding isolated pins.
+      const isolatedOrder =
+        Number(a[0].startsWith("unconnected:")) -
+        Number(b[0].startsWith("unconnected:"))
+      return isolatedOrder || a[0].localeCompare(b[0])
+    })
 
     const nets: PcbNet[] = []
     nets.push(new PcbNet(0, ""))
