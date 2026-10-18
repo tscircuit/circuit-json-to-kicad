@@ -149,6 +149,17 @@ Notes:
   connect by name across the whole hierarchy, so no hierarchical sheet pins are
   required.
 
+### Unnamed nets in paired exports
+
+When schematic and PCB data are both present, unnamed connections receive the
+same generated names in both exports. The schematic includes explicit generated
+labels, including distinct labels for isolated pins with corresponding PCB pads,
+so KiCad does not independently choose different names during schematic-parity
+checks. Explicit source-net names are preserved. Generated names are unique
+across sheets and do not join unrelated nets that share presentation text.
+PCB-only inputs retain their trace display names; schematic-only inputs retain
+KiCad's normal automatic naming.
+
 ## Features
 
 - **Schematic Conversion**: Convert Circuit JSON to KiCad schematic files (`.kicad_sch`)
