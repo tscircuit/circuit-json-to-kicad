@@ -3,8 +3,10 @@ import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import circuitJson from "tests/assets/issue676-inner-layer-vias.json"
 
-// Captured from the exact TSX and tscircuit version in #676. Keep routing out
-// of this regression so changes to the autorouter cannot hide the export bug.
+// Reduced from the #676 example generated with tscircuit 0.0.2942: retain the
+// four-layer board, six physical vias, matching route via points and their nets.
+// Components, graphics, copper pours and wire segments are irrelevant here.
+// Keep routing out of this regression so autorouter changes cannot hide the bug.
 const physicalVias = circuitJson.filter((element) => element.type === "pcb_via")
 const routeVias = (circuitJson as CircuitJson)
   .filter((element) => element.type === "pcb_trace")
