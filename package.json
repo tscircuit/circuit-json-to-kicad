@@ -50,13 +50,13 @@
     "@types/node": "^22.5.5",
     "dts-bundle-generator": "^9.5.1",
     "schematic-symbols": "^0.0.231",
-    "typescript": "^5.9.3"
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
     "typescript": "^5",
     "@tscircuit/circuit-json-util": "*"
   },
   "overrides": {
-    "typescript": "^5.9.3"
+    "typescript": "5.9.3"
   }
 }
