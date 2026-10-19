@@ -1,4 +1,4 @@
-import { parseColor } from "../utils/parseColor"
+import { parseColor } from "../../../utils/parseColor"
 
 type KicadSexprPrimitive =
   | string

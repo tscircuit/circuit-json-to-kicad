@@ -354,7 +354,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertCourtyardRects(pcbCourtyardRects, component.center))
+    const courtyardRects = convertCourtyardRects({
+      courtyardRects: pcbCourtyardRects,
+      componentCenter: component.center,
+      componentRotation: component.rotation || 0,
+    })
+    fpRects.push(...courtyardRects.fpRects)
     footprint.fpRects = fpRects
 
     // Convert polygons
@@ -371,6 +376,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentCenter: component.center,
       componentRotation: component.rotation || 0,
     })
+    fpPolys.push(...courtyardRects.fpPolys)
 
     const pcbSilkscreenRects =
       this.ctx.db.pcb_silkscreen_rect

@@ -1,8 +1,7 @@
 /**
- * Repro: pcb_courtyard_rect.ccw_rotation and color are lost on PCB export.
+ * Regression: preserve pcb_courtyard_rect.ccw_rotation and color on PCB export.
  * Run: bun test tests/pcb/repros/repro-courtyard-rect-rotation-color.test.ts
- * Replace test.failing with test to see the failing geometry/color assertions.
- * The component rotation is zero so only courtyard rotation is exercised.
+ * Also covers courtyard offsets and rotation relative to a rotated component.
  */
 import { expect, test } from "bun:test"
 import { type CircuitJson, pcb_courtyard_rect } from "circuit-json"
@@ -13,14 +12,22 @@ import fixture from "../../assets/repro-courtyard-rect-rotation-color.circuit.js
 type Point = { x: number; y: number }
 type CourtyardLayer = "top" | "bottom"
 
-function convert(layer: CourtyardLayer, rotation: number, color?: string) {
+function convert(
+  layer: CourtyardLayer,
+  rotation: number,
+  color?: string,
+  options: { componentRotation?: number; courtyardOffset?: Point } = {},
+) {
   const circuitJson = structuredClone(fixture) as CircuitJson
   const component = circuitJson.find((e) => e.type === "pcb_component")!
   component.layer = layer
+  component.rotation = options.componentRotation ?? 0
   const courtyard = circuitJson.find((e) => e.type === "pcb_courtyard_rect")!
   courtyard.layer = layer
   courtyard.ccw_rotation = rotation
   courtyard.color = color
+  courtyard.center.x += options.courtyardOffset?.x ?? 0
+  courtyard.center.y += options.courtyardOffset?.y ?? 0
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
@@ -48,7 +55,7 @@ function normalizedPoints(points: Point[]) {
   ].sort()
 }
 
-function courtyardCorners(footprint: Footprint, layer: CourtyardLayer) {
+function courtyardPoints(footprint: Footprint, layer: CourtyardLayer) {
   const points: Point[] = []
   for (const graphic of courtyardGraphics(footprint, layer)) {
     if (graphic.token === "fp_rect" && "start" in graphic && "end" in graphic) {
@@ -67,7 +74,11 @@ function courtyardCorners(footprint: Footprint, layer: CourtyardLayer) {
       points.push(graphic.start!, graphic.end!)
     }
   }
-  return normalizedPoints(points)
+  return points
+}
+
+function courtyardCorners(footprint: Footprint, layer: CourtyardLayer) {
+  return normalizedPoints(courtyardPoints(footprint, layer))
 }
 
 const unrotatedCorners = [
@@ -80,6 +91,16 @@ const unrotatedCorners = [
 // Footprint-local corners of a 6 x 2 mm courtyard, after Circuit JSON's
 // counterclockwise rotation and the Y-axis flip into KiCad coordinates.
 const rotatedCases = [
+  { rotation: 360, corners: unrotatedCorners },
+  {
+    rotation: -45,
+    corners: [
+      { x: -2 * Math.SQRT2, y: -Math.SQRT2 },
+      { x: Math.SQRT2, y: 2 * Math.SQRT2 },
+      { x: 2 * Math.SQRT2, y: Math.SQRT2 },
+      { x: -Math.SQRT2, y: -2 * Math.SQRT2 },
+    ],
+  },
   {
     rotation: 45,
     corners: [
@@ -121,7 +142,7 @@ for (const layer of ["top", "bottom"] as const) {
   })
 
   for (const { rotation, corners } of rotatedCases) {
-    test.failing(`repro courtyard: ${layer} preserves ccw_rotation=${rotation}`, () => {
+    test(`repro courtyard: ${layer} preserves ccw_rotation=${rotation}`, () => {
       expect(courtyardCorners(convert(layer, rotation), layer)).toEqual(
         normalizedPoints(corners),
       )
@@ -132,10 +153,62 @@ for (const layer of ["top", "bottom"] as const) {
     ["#ff3366", { r: 255, g: 51, b: 102, a: 1 }],
     ["#3366ff", { r: 51, g: 102, b: 255, a: 1 }],
   ] as const) {
-    test.failing(`repro courtyard: ${layer} preserves color=${color}`, () => {
+    test(`repro courtyard: ${layer} preserves color=${color}`, () => {
       const graphics = courtyardGraphics(convert(layer, 0, color), layer)
       expect(graphics).toHaveLength(1)
       expect(graphics[0]!.stroke?.color).toEqual(rgba)
+    })
+  }
+
+  for (const [color, rgba] of [
+    ["#f36", { r: 255, g: 51, b: 102, a: 1 }],
+    ["#f368", { r: 255, g: 51, b: 102, a: 136 / 255 }],
+    ["#ff336680", { r: 255, g: 51, b: 102, a: 128 / 255 }],
+    ["rgba(255, 51, 102, 0.25)", { r: 255, g: 51, b: 102, a: 0.25 }],
+    ["rgb(255, 51, 102)", { r: 255, g: 51, b: 102, a: 1 }],
+  ] as const) {
+    test(`repro courtyard: ${layer} polygon preserves color=${color}`, () => {
+      const footprint = convert(layer, 45, color)
+      expect(footprint.fpPolys).toHaveLength(1)
+      expect(footprint.fpPolys[0]!.stroke?.color).toEqual(rgba)
+      expect(footprint.fpPolys[0]!.stroke?.width).toBe(0.05)
+      expect(footprint.fpPolys[0]!.fill?.filled).toBe(false)
+    })
+  }
+
+  for (const color of [undefined, "#invalid"]) {
+    test(`repro courtyard: ${layer} polygon omits missing or invalid color=${color}`, () => {
+      const graphics = courtyardGraphics(convert(layer, 45, color), layer)
+      expect(graphics).toHaveLength(1)
+      expect(graphics[0]!.stroke?.color).toBeUndefined()
+    })
+  }
+
+  for (const componentRotation of [30, 45, 90]) {
+    test(`repro courtyard: ${layer} offset courtyard retains its board position on a ${componentRotation} degree component`, () => {
+      const footprint = convert(layer, 45, undefined, {
+        componentRotation,
+        courtyardOffset: { x: 1, y: -2 },
+      })
+      const position = footprint.position!
+      const angle = "angle" in position ? (position.angle ?? 0) : 0
+      expect(angle).toBe(componentRotation)
+      const radians = (angle * Math.PI) / 180
+      // Place the exported local geometry back on the board, as KiCad does.
+      const boardPoints = courtyardPoints(footprint, layer).map(({ x, y }) => ({
+        x: position.x + x * Math.cos(radians) + y * Math.sin(radians),
+        y: position.y - x * Math.sin(radians) + y * Math.cos(radians),
+      }))
+      // The courtyard center is Circuit JSON (3, 1) -> KiCad (103, 99).
+      // Its board geometry must be independent of its parent's rotation.
+      expect(normalizedPoints(boardPoints)).toEqual(
+        normalizedPoints([
+          { x: 103 - Math.SQRT2, y: 99 + 2 * Math.SQRT2 },
+          { x: 103 + 2 * Math.SQRT2, y: 99 - Math.SQRT2 },
+          { x: 103 + Math.SQRT2, y: 99 - 2 * Math.SQRT2 },
+          { x: 103 - 2 * Math.SQRT2, y: 99 + Math.SQRT2 },
+        ]),
+      )
     })
   }
 }

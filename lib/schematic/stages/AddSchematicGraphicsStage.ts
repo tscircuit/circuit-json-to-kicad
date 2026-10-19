@@ -24,10 +24,10 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
+import { parseColor } from "../../utils/parseColor"
 import { getSchematicArcPoints } from "../getSchematicArcPoints"
 import { getTextJustificationFromAnchor } from "./utils/getTextJustificationFromAnchor"
 import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
-import { parseColor } from "./utils/parseColor"
 
 const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
 const DEFAULT_SECTION_LINE_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
