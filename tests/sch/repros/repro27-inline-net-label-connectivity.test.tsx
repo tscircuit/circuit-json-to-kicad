@@ -32,9 +32,10 @@ test("repro27: inline SIGNAL labels connect two resistor pins in KiCad", async (
 
   // Matching words in the drawing are not enough: KiCad must connect the pins.
   const nets = await exportNativeSchematicNets(circuitJson)
-  expect(nets.filter((net) => net.name === "/SIGNAL")).toEqual([
-    { name: "/SIGNAL", pins: ["R1.2", "R2.1"] },
-  ])
+  const signalNets = nets.filter(
+    (net) => net.pins.includes("R1.2") || net.pins.includes("R2.1"),
+  )
+  expect(signalNets).toEqual([{ name: "/SIGNAL", pins: ["R1.2", "R2.1"] }])
 
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
