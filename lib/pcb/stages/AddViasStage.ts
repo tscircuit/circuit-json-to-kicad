@@ -10,6 +10,7 @@ import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { createViaTenting } from "./utils/createViaTenting"
 import {
+  getKicadCopperLayerIndex,
   getKicadLayer,
   getViaLayers,
   getViaLayerSpan,
@@ -71,6 +72,13 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             }),
           )
           .filter((via: ViaLike) => {
+            if (
+              standaloneVias.some((physical) =>
+                this.physicalViaCoversRoute(physical, via),
+              )
+            ) {
+              return false
+            }
             const viaKey = this.getViaDedupeKey(via)
             if (seenViaKeys.has(viaKey)) {
               return false
@@ -91,6 +99,40 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     // those must dedupe to one via.
     const span = [...this.getKicadViaLayers(via)].sort().join(",")
     return `${via.x}:${via.y}:${span}`
+  }
+
+  private physicalViaCoversRoute(physical: ViaLike, route: ViaLike): boolean {
+    const sameOwner =
+      (route.pcb_trace_id !== undefined &&
+        physical.pcb_trace_id === route.pcb_trace_id) ||
+      (route.subcircuit_connectivity_map_key !== undefined &&
+        physical.subcircuit_connectivity_map_key ===
+          route.subcircuit_connectivity_map_key)
+    if (
+      !sameOwner ||
+      physical.x !== route.x ||
+      physical.y !== route.y ||
+      (route.outer_diameter !== undefined &&
+        physical.outer_diameter !== undefined &&
+        route.outer_diameter !== physical.outer_diameter) ||
+      (route.hole_diameter !== undefined &&
+        physical.hole_diameter !== undefined &&
+        route.hole_diameter !== physical.hole_diameter)
+    ) {
+      return false
+    }
+
+    const numLayers = this.ctx.numLayers ?? 2
+    const layerIndex = (layer: string) =>
+      getKicadCopperLayerIndex(layer, numLayers)
+    const physicalSpan = this.getKicadViaLayers(physical).map(layerIndex)
+    const minPhysical = Math.min(...physicalSpan)
+    const maxPhysical = Math.max(...physicalSpan)
+
+    return this.getKicadViaLayers(route).every((layer) => {
+      const idx = layerIndex(layer)
+      return idx >= minPhysical && idx <= maxPhysical
+    })
   }
 
   private getRawViaLayers(via: ViaLike): string[] {
@@ -225,7 +267,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const viaDrill = via.hole_diameter ?? 0.4
 
     // Create a via with deterministic UUID
-    const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}`
+    const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}:${viaLayers.join(",")}`
     const kicadVia = new Via({
       at: [transformedPos.x, transformedPos.y],
       size: viaSize,
