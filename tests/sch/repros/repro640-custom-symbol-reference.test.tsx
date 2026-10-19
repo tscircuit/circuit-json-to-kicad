@@ -56,12 +56,15 @@ test("repro640: shared custom symbol reference text", async () => {
   converter.runUntilFinished()
   const output = converter.getOutputString()
   const schematic = parseKicadSch(output)
+  // The tscircuit version pinned here fits the two resized instances
+  // differently (rect widths 0.65 and 0.95), so each gets its own definition
+  // (#663). Current tscircuit draws them alike and they share "Custom:MySym".
   expect(
     schematic.libSymbols?.symbols.map((symbol) => symbol.libraryId),
-  ).toEqual(["Custom:MySym"])
+  ).toEqual(["Custom:MySym", "Custom:MySym_2"])
   expect(schematic.symbols.map((symbol) => symbol.libraryId)).toEqual([
     "Custom:MySym",
-    "Custom:MySym",
+    "Custom:MySym_2",
   ])
 
   // References belong to the placed instances, not the shared drawing.
