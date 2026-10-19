@@ -38,10 +38,11 @@ export function createThruHolePadFromCircuitJson({
   })
 
   // Determine pad shape based on plated hole shape
-  let padShape: "circle" | "oval" | "rect" = "circle"
+  let padShape: "circle" | "oval" | "rect" | "roundrect" = "circle"
   let padSize: [number, number]
   let drill: PadDrill
   let rotation = 0
+  let roundrectRatio: number | undefined
 
   const hasHoleOffset =
     "hole_offset_x" in platedHole || "hole_offset_y" in platedHole
@@ -87,7 +88,8 @@ export function createThruHolePadFromCircuitJson({
     })
   } else if (platedHole.shape === "pill_hole_with_rect_pad") {
     // Pill hole with rectangular pad
-    padShape = "rect"
+    roundrectRatio = getRectPadRoundrectRatio(platedHole)
+    padShape = roundrectRatio ? "roundrect" : "rect"
     padSize = [platedHole.rect_pad_width, platedHole.rect_pad_height]
     drill = new PadDrill({
       oval: true,
@@ -97,7 +99,8 @@ export function createThruHolePadFromCircuitJson({
     })
   } else if (platedHole.shape === "circular_hole_with_rect_pad") {
     // Circular hole with rectangular pad
-    padShape = "rect"
+    roundrectRatio = getRectPadRoundrectRatio(platedHole)
+    padShape = roundrectRatio ? "roundrect" : "rect"
     padSize = [platedHole.rect_pad_width, platedHole.rect_pad_height]
     drill = new PadDrill({
       diameter: platedHole.hole_diameter,
@@ -106,7 +109,8 @@ export function createThruHolePadFromCircuitJson({
     rotation = platedHole.rect_ccw_rotation || 0
   } else if (platedHole.shape === "rotated_pill_hole_with_rect_pad") {
     // Rotated pill hole with rectangular pad
-    padShape = "rect"
+    roundrectRatio = getRectPadRoundrectRatio(platedHole)
+    padShape = roundrectRatio ? "roundrect" : "rect"
     padSize = [platedHole.rect_pad_width, platedHole.rect_pad_height]
     drill = new PadDrill({
       oval: true,
@@ -131,8 +135,12 @@ export function createThruHolePadFromCircuitJson({
     at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
     drill: drill,
-    layers: ["*.Cu", "*.Mask"],
+    layers: platedHole.is_covered_with_solder_mask
+      ? ["*.Cu"]
+      : ["*.Cu", "*.Mask"],
     removeUnusedLayers: false,
+    roundrectRatio,
+    solderMaskMargin: platedHole.soldermask_margin,
     uuid: generateDeterministicUuid(padData),
   })
 
@@ -141,4 +149,19 @@ export function createThruHolePadFromCircuitJson({
   }
 
   return pad
+}
+
+/**
+ * KiCad stores rounded rect corners as a ratio of the pad's shorter side
+ */
+function getRectPadRoundrectRatio(platedHole: {
+  rect_pad_width: number
+  rect_pad_height: number
+  rect_border_radius?: number
+}): number | undefined {
+  if (!platedHole.rect_border_radius) return undefined
+  return (
+    platedHole.rect_border_radius /
+    Math.min(platedHole.rect_pad_width, platedHole.rect_pad_height)
+  )
 }
