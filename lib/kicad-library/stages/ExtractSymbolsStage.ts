@@ -23,10 +23,12 @@ export class ExtractSymbolsStage extends ConverterStage<
   }
 
   override _step(): void {
-    const schContent = this.ctx.kicadSchString
+    const schContents =
+      this.ctx.kicadSchFiles?.map((file) => file.content) ??
+      (this.ctx.kicadSchString ? [this.ctx.kicadSchString] : [])
     const fpLibraryName = this.ctx.fpLibraryName ?? "tscircuit"
 
-    if (!schContent) {
+    if (!schContents.length) {
       throw new Error(
         "Schematic content not available. Run GenerateKicadSchAndPcbStage first.",
       )
@@ -34,53 +36,51 @@ export class ExtractSymbolsStage extends ConverterStage<
 
     const uniqueSymbols = new Map<string, SymbolEntry>()
 
-    try {
-      const parsed = parseKicadSexpr(schContent)
-      const sch = parsed.find(
-        (node): node is KicadSch => node instanceof KicadSch,
-      )
-      if (!sch) {
-        this.ctx.symbolEntries = []
-        this.finished = true
-        return
-      }
-
-      const libSymbols = sch.libSymbols
-      if (!libSymbols) {
-        this.ctx.symbolEntries = []
-        this.finished = true
-        return
-      }
-
-      const symbols = libSymbols.symbols ?? []
-      for (const symbol of symbols) {
-        // Check if custom BEFORE sanitizing (Custom: prefix is removed by sanitize)
-        const isCustom = this.isCustomSymbol(symbol.libraryId)
-
-        const symbolName = this.sanitizeSymbolName(symbol.libraryId)
-        if (!uniqueSymbols.has(symbolName)) {
-          // Update libraryId for standalone library use
-          symbol.libraryId = symbolName
-
-          // Update Footprint property to use the correct library name
-          this.updateFootprintProperty(symbol, fpLibraryName)
-
-          // Snap pin positions to 1.27mm grid for proper KiCad wire connections
-          // Only for non-custom symbols (chips) - custom symbols have intentionally designed coordinates
-          // This is done post-extraction so schematic trace alignment isn't affected
-          if (!isCustom) {
-            this.snapPinPositionsToGrid(symbol)
-          }
-
-          uniqueSymbols.set(symbolName, {
-            symbolName,
-            symbol,
-            isBuiltin: !isCustom,
-          })
+    for (const schContent of schContents) {
+      try {
+        const parsed = parseKicadSexpr(schContent)
+        const sch = parsed.find(
+          (node): node is KicadSch => node instanceof KicadSch,
+        )
+        if (!sch) {
+          continue
         }
+
+        const libSymbols = sch.libSymbols
+        if (!libSymbols) {
+          continue
+        }
+
+        const symbols = libSymbols.symbols ?? []
+        for (const symbol of symbols) {
+          // Check if custom BEFORE sanitizing (Custom: prefix is removed by sanitize)
+          const isCustom = this.isCustomSymbol(symbol.libraryId)
+
+          const symbolName = this.sanitizeSymbolName(symbol.libraryId)
+          if (!uniqueSymbols.has(symbolName)) {
+            // Update libraryId for standalone library use
+            symbol.libraryId = symbolName
+
+            // Update Footprint property to use the correct library name
+            this.updateFootprintProperty(symbol, fpLibraryName)
+
+            // Snap pin positions to 1.27mm grid for proper KiCad wire connections
+            // Only for non-custom symbols (chips) - custom symbols have intentionally designed coordinates
+            // This is done post-extraction so schematic trace alignment isn't affected
+            if (!isCustom) {
+              this.snapPinPositionsToGrid(symbol)
+            }
+
+            uniqueSymbols.set(symbolName, {
+              symbolName,
+              symbol,
+              isBuiltin: !isCustom,
+            })
+          }
+        }
+      } catch (error) {
+        console.warn("Failed to parse schematic for symbol extraction:", error)
       }
-    } catch (error) {
-      console.warn("Failed to parse schematic for symbol extraction:", error)
     }
 
     this.ctx.symbolEntries = Array.from(uniqueSymbols.values())

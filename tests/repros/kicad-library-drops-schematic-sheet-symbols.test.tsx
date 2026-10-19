@@ -2,21 +2,9 @@ import { test, expect } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadLibraryConverter } from "lib/kicad-library/CircuitJsonToKicadLibraryConverter"
 
-/**
- * Known bug: the KiCad symbol-library (`.kicad_sym`) drops every component that
- * is placed on a `<schematicsheet>`.
- *
- * The library is extracted from the schematic converter's output, which for a
- * hierarchical design is the ROOT `.kicad_sch`. Its `lib_symbols` only holds
- * root-level components — everything placed on a sheet lives in a child
- * `.kicad_sch`, so it never reaches the library.
- *
- * Marked `test.failing` because it asserts the CORRECT behavior (the library
- * should contain the sheet symbols), which the current code does not satisfy.
- * The fix is to union `lib_symbols` across all sheet files; remove `.failing`
- * once it lands.
- */
-test.failing("kicad library drops symbols placed on schematic sheets", async () => {
+// The root schematic contains only sheet nodes. All three symbol definitions
+// must be collected from the child schematics when exporting the library.
+test("kicad library includes symbols placed on schematic sheets", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board routingDisabled>
@@ -55,7 +43,6 @@ test.failing("kicad library drops symbols placed on schematic sheets", async () 
 
   const output = libraryConverter.getOutput()
 
-  // The library should contain a `(symbol ...)` for the resistor, capacitor,
-  // and chip used on the sheets. Today it is empty, so this fails.
+  expect(output.symbols).toHaveLength(3)
   expect(output.kicadSymString).toContain('(symbol "')
 })
