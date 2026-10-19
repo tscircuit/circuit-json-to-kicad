@@ -2,6 +2,8 @@ import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit-latest"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 test("repro27: inline SIGNAL labels connect two resistor pins in KiCad", async () => {
@@ -42,6 +44,12 @@ test("repro27: inline SIGNAL labels connect two resistor pins in KiCad", async (
     kicadFileType: "sch",
   })
   await expect(
-    snapshot.generatedFileContent["temp_file.png"]!,
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson,
+        outputType: "schematic",
+      }),
+      snapshot.generatedFileContent["temp_file.png"]!,
+    ),
   ).toMatchPngSnapshot(import.meta.path)
 }, 30_000)
