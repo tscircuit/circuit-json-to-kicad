@@ -3,6 +3,7 @@ import type { PcbSmtPad } from "circuit-json"
 import type { FootprintPad } from "kicadts"
 import type { ConverterContext, PcbNetInfo } from "../../../types"
 import { createSmdPadFromCircuitJson } from "../utils/CreateSmdPadFromCircuitJson"
+import { hasSolderPasteForPad } from "../utils/hasSolderPasteForPad"
 
 export function convertSmdPads(
   {
@@ -58,6 +59,7 @@ export function convertSmdPads(
       componentRotation,
       netInfo,
       componentId,
+      hasSolderPaste: hasSolderPasteForPad(pcbPad, ctx),
     })
     pads.push(pad)
     padNumber++
