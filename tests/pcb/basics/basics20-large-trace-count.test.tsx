@@ -4,7 +4,7 @@ import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbCon
 import { createElement } from "react"
 import { Circuit } from "tscircuit"
 
-test.failing("PCB export preserves traces at and above the default iteration limit", async () => {
+test("PCB export preserves traces at and above the default iteration limit", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width={60} height={50}>
