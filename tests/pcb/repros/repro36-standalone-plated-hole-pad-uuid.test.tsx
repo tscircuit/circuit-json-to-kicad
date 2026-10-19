@@ -59,7 +59,7 @@ test("repro36: standalone SMT pads export unique pad UUIDs", () => {
   expect(new Set(smtPads.map((pad) => pad.uuid?.value)).size).toBe(2)
 })
 
-test.failing("repro36: standalone plated holes export unique pad UUIDs", () => {
+test("repro36: standalone plated holes export unique pad UUIDs", () => {
   expect(platedHolePads).toHaveLength(3)
   expect(new Set(platedHolePads.map((pad) => pad.uuid?.value)).size).toBe(3)
 })
