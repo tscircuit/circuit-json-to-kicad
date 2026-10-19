@@ -28,11 +28,15 @@ function getEndpointPlacement(point: Point, toward: Point): LabelPlacement {
     : { point, angle: 270, justify: "right" }
 }
 
-function getOpenEndPlacement(
-  position: Point,
-  edges: SchematicTrace["edges"],
-  connectedPorts: SchematicPort[],
-): LabelPlacement | undefined {
+function getOpenEndPlacement({
+  position,
+  edges,
+  connectedPorts,
+}: {
+  position: Point
+  edges: SchematicTrace["edges"]
+  connectedPorts: SchematicPort[]
+}): LabelPlacement | undefined {
   const endpoints = new Map<
     string,
     {
@@ -171,11 +175,11 @@ export function createInlineTraceLabel({
   }
   if (!trace) return undefined
 
-  let placement = getOpenEndPlacement(
-    text.position,
-    trace.edges,
+  let placement = getOpenEndPlacement({
+    position: text.position,
+    edges: trace.edges,
     connectedPorts,
-  )
+  })
   if (!placement) {
     // A wire between pins or a closed path has no free end. Attach to the
     // nearest point on that wire, preserving the source text alignment.
