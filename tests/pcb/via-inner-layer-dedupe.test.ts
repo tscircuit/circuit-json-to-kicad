@@ -100,7 +100,7 @@ test("deduplicates inner-layer trace route vias already covered by a physical pc
   const pcb = converter.getOutput()
 
   expect(pcb.vias).toHaveLength(2)
-  expect(
-    new Set(pcb.vias.map((via) => `${via.at?.x}:${via.at?.y}`)).size,
-  ).toBe(2)
+  expect(new Set(pcb.vias.map((via) => `${via.at?.x}:${via.at?.y}`)).size).toBe(
+    2,
+  )
 })
