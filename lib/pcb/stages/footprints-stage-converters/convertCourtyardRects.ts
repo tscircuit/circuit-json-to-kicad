@@ -10,6 +10,22 @@ import {
 import { parseColor } from "../../../schematic/stages/utils/parseColor"
 import { generateDeterministicUuid } from "../utils/generateDeterministicUuid"
 
+function rotateCenter(point: { x: number; y: number }, degrees: number) {
+  // Quarter turns are exact coordinate swaps; trigonometry introduces noise.
+  switch (((degrees % 360) + 360) % 360) {
+    case 0:
+      return point
+    case 90:
+      return { x: -point.y, y: point.x }
+    case 180:
+      return { x: -point.x, y: -point.y }
+    case 270:
+      return { x: point.y, y: -point.x }
+    default:
+      return applyToPoint(rotate((degrees * Math.PI) / 180), point)
+  }
+}
+
 export function convertCourtyardRects({
   courtyardRects,
   componentCenter,
@@ -31,16 +47,6 @@ export function convertCourtyardRects({
     const halfW = rect.width / 2
     const halfH = rect.height / 2
     const rotation = rect.ccw_rotation ?? 0
-    const fromRectCenter = compose(
-      translate(rect.center.x, rect.center.y),
-      rotate((rotation * Math.PI) / 180),
-    )
-    const points = [
-      { x: -halfW, y: -halfH },
-      { x: halfW, y: -halfH },
-      { x: halfW, y: halfH },
-      { x: -halfW, y: halfH },
-    ].map((point) => applyToPoint(toLocal, applyToPoint(fromRectCenter, point)))
     const layer = rect.layer === "bottom" ? "B.CrtYd" : "F.CrtYd"
     const stroke = new Stroke()
     stroke.width = 0.05
@@ -51,15 +57,25 @@ export function convertCourtyardRects({
     // KiCad rectangles are axis-aligned in footprint coordinates. Other
     // angles need a polygon to preserve all four corners, not a bounding box.
     if ((rotation - componentRotation) % 90 === 0) {
+      const center = rotateCenter(
+        {
+          x: rect.center.x - componentCenter.x,
+          y: -(rect.center.y - componentCenter.y),
+        },
+        componentRotation,
+      )
+      const swapAxes = (rotation - componentRotation) % 180 !== 0
+      const localHalfW = swapAxes ? halfH : halfW
+      const localHalfH = swapAxes ? halfW : halfH
       fpRects.push(
         new FpRect({
           start: {
-            x: Math.min(...points.map((point) => point.x)),
-            y: Math.min(...points.map((point) => point.y)),
+            x: center.x - localHalfW,
+            y: center.y - localHalfH,
           },
           end: {
-            x: Math.max(...points.map((point) => point.x)),
-            y: Math.max(...points.map((point) => point.y)),
+            x: center.x + localHalfW,
+            y: center.y + localHalfH,
           },
           layer,
           stroke,
@@ -67,6 +83,18 @@ export function convertCourtyardRects({
         }),
       )
     } else {
+      const fromRectCenter = compose(
+        translate(rect.center.x, rect.center.y),
+        rotate((rotation * Math.PI) / 180),
+      )
+      const points = [
+        { x: -halfW, y: -halfH },
+        { x: halfW, y: -halfH },
+        { x: halfW, y: halfH },
+        { x: -halfW, y: halfH },
+      ].map((point) =>
+        applyToPoint(toLocal, applyToPoint(fromRectCenter, point)),
+      )
       fpPolys.push(
         new FpPoly({
           points,
