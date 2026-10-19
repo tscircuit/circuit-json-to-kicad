@@ -7,21 +7,39 @@ import { fileURLToPath } from "node:url"
 import { Circuit } from "tscircuit"
 import ts from "typescript"
 
+function run(args: string[], cwd: string) {
+  const result = Bun.spawnSync(args, { cwd })
+  if (result.exitCode !== 0) {
+    throw new Error(result.stderr.toString() + result.stdout.toString())
+  }
+  return result.stdout.toString()
+}
+
+function expectDeclaredImport(path: string) {
+  expect(path === "@tscircuit/circuit-json-util" || isBuiltin(path)).toBe(true)
+}
+
+function visit(node: ts.Node) {
+  if (
+    (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
+    node.moduleSpecifier &&
+    ts.isStringLiteral(node.moduleSpecifier)
+  ) {
+    expectDeclaredImport(node.moduleSpecifier.text)
+  }
+  if (
+    ts.isImportTypeNode(node) &&
+    ts.isLiteralTypeNode(node.argument) &&
+    ts.isStringLiteral(node.argument.literal)
+  ) {
+    expectDeclaredImport(node.argument.literal.text)
+  }
+  ts.forEachChild(node, visit)
+}
+
 test("the packed package converts circuits in isolated Bun and Node consumers", async () => {
   const repository = join(dirname(fileURLToPath(import.meta.url)), "..")
   const consumer = await mkdtemp(join(tmpdir(), "kicad-standalone-"))
-  const run = (args: string[], cwd: string) => {
-    const result = Bun.spawnSync(args, { cwd })
-    if (result.exitCode !== 0) {
-      throw new Error(result.stderr.toString() + result.stdout.toString())
-    }
-    return result.stdout.toString()
-  }
-  const expectDeclaredImport = (path: string) => {
-    expect(path === "@tscircuit/circuit-json-util" || isBuiltin(path)).toBe(
-      true,
-    )
-  }
   try {
     run([process.execPath, "run", "build"], repository)
     const javascript = await readFile(join(repository, "dist/index.js"), "utf8")
@@ -34,23 +52,6 @@ test("the packed package converts circuits in isolated Bun and Node consumers", 
       ts.ScriptTarget.Latest,
       true,
     )
-    const visit = (node: ts.Node) => {
-      if (
-        (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) &&
-        node.moduleSpecifier &&
-        ts.isStringLiteral(node.moduleSpecifier)
-      ) {
-        expectDeclaredImport(node.moduleSpecifier.text)
-      }
-      if (
-        ts.isImportTypeNode(node) &&
-        ts.isLiteralTypeNode(node.argument) &&
-        ts.isStringLiteral(node.argument.literal)
-      ) {
-        expectDeclaredImport(node.argument.literal.text)
-      }
-      ts.forEachChild(node, visit)
-    }
     visit(declarations)
 
     run([process.execPath, "pm", "pack", "--destination", consumer], repository)
