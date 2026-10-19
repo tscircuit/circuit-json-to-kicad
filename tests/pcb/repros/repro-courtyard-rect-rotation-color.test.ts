@@ -15,6 +15,8 @@ type CourtyardLayer = "top" | "bottom"
 
 function convert(layer: CourtyardLayer, rotation: number, color?: string) {
   const circuitJson = structuredClone(fixture) as CircuitJson
+  const component = circuitJson.find((e) => e.type === "pcb_component")!
+  component.layer = layer
   const courtyard = circuitJson.find((e) => e.type === "pcb_courtyard_rect")!
   courtyard.layer = layer
   courtyard.ccw_rotation = rotation
@@ -25,6 +27,9 @@ function convert(layer: CourtyardLayer, rotation: number, color?: string) {
   // Inspect the serialized board, not just the converter's in-memory objects.
   const pcb = KicadPcb.parse(converter.getOutputString())[0] as KicadPcb
   expect(pcb.footprints).toHaveLength(1)
+  expect(pcb.footprints[0]!.layer?.names).toEqual([
+    layer === "top" ? "F.Cu" : "B.Cu",
+  ])
   return pcb.footprints[0]!
 }
 
