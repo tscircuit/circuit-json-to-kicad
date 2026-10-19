@@ -15,27 +15,30 @@ import {
   scale,
   rotate,
 } from "transformation-matrix"
-import type { PcbNetInfo } from "../../../types"
+import type { ConverterContext, PcbNetInfo } from "../../../types"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
  */
-export function createSmdPadFromCircuitJson({
-  pcbPad,
-  componentCenter,
-  padNumber,
-  componentRotation = 0,
-  netInfo,
-  componentId,
-}: {
-  pcbPad: PcbSmtPad
-  componentCenter: { x: number; y: number }
-  padNumber: number | string
-  componentRotation?: number
-  netInfo?: PcbNetInfo
-  componentId?: string
-}): FootprintPad {
+export function createSmdPadFromCircuitJson(
+  {
+    pcbPad,
+    componentCenter,
+    padNumber,
+    componentRotation = 0,
+    netInfo,
+    componentId,
+  }: {
+    pcbPad: PcbSmtPad
+    componentCenter: { x: number; y: number }
+    padNumber: number | string
+    componentRotation?: number
+    netInfo?: PcbNetInfo
+    componentId?: string
+  },
+  ctx: Pick<ConverterContext, "db">,
+): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
   let padY: number
@@ -147,6 +150,21 @@ export function createSmdPadFromCircuitJson({
     padSize = [pcbPad.width, pcbPad.height]
   }
 
+  const side = padLayer === "B.Cu" ? "B" : "F"
+  // Core expresses noSolderPaste by omitting the pad's pcb_solder_paste.
+  // Match both ownership and side so unrelated apertures cannot enable paste.
+  const hasSolderPaste = ctx.db.pcb_solder_paste
+    .list()
+    .some(
+      (paste) =>
+        paste.pcb_smtpad_id === pcbPad.pcb_smtpad_id &&
+        paste.layer === pcbPad.layer,
+    )
+  // Fiducials use a covered pad with an explicit positive mask pullback.
+  // Preserve that opening while fully covered pads stay off the mask layer.
+  const opensSolderMask =
+    !pcbPad.is_covered_with_solder_mask || (pcbPad.soldermask_margin ?? 0) > 0
+
   // Generate deterministic UUID for pad
   const padData = `pad:${componentId}:${padNumber}:${rotatedPos.x},${rotatedPos.y}`
   const pad = new FootprintPad({
@@ -156,11 +174,11 @@ export function createSmdPadFromCircuitJson({
     at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
     layers: [
-      `${padLayer}`,
-      ...(pcbPad.is_covered_with_solder_mask
-        ? []
-        : [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]),
-      `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
+      padLayer,
+      ...(hasSolderPaste && !pcbPad.is_covered_with_solder_mask
+        ? [`${side}.Paste`]
+        : []),
+      ...(opensSolderMask ? [`${side}.Mask`] : []),
     ],
     solderMaskMargin: pcbPad.soldermask_margin,
     roundrectRatio: roundrect_rratio,

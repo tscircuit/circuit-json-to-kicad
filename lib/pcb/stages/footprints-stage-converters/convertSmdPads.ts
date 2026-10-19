@@ -51,14 +51,17 @@ export function convertSmdPads(
           ? pinHint.replace(/^pin/i, "")
           : (gridHint ?? String(padNumber)))
 
-    const pad = createSmdPadFromCircuitJson({
-      pcbPad,
-      componentCenter,
-      padNumber: resolvedPadNumber,
-      componentRotation,
-      netInfo,
-      componentId,
-    })
+    const pad = createSmdPadFromCircuitJson(
+      {
+        pcbPad,
+        componentCenter,
+        padNumber: resolvedPadNumber,
+        componentRotation,
+        netInfo,
+        componentId,
+      },
+      ctx,
+    )
     pads.push(pad)
     padNumber++
   }
