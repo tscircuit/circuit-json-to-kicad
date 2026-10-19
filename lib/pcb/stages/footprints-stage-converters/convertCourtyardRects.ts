@@ -7,7 +7,7 @@ import {
   scale,
   translate,
 } from "transformation-matrix"
-import { parseColor } from "../../../utils/parseColor"
+import { parseColor } from "../../../schematic/stages/utils/parseColor"
 import { generateDeterministicUuid } from "../utils/generateDeterministicUuid"
 
 export function convertCourtyardRects({
