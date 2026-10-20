@@ -156,9 +156,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         )
       : "Unknown"
 
+    // PCB geometry is in right-handed board-world mm (+X right, +Y top,
+    // +Z above). This point becomes KiCad’s footprint-local (0, 0).
+    const footprintOrigin = component.footprint_origin ?? component.center
     const transformedPos = applyToPoint(c2kMatPcb, {
-      x: component.center.x,
-      y: component.center.y,
+      x: footprintOrigin.x,
+      y: footprintOrigin.y,
     })
 
     const footprintData = `footprint:${component.pcb_component_id}:${transformedPos.x},${transformedPos.y}`
@@ -182,7 +185,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpTexts.push(
       ...convertSilkscreenTexts({
         silkscreenTexts: pcbSilkscreenTexts,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
         sourceComponentName: sourceComponent?.name,
       }),
@@ -198,7 +201,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpTexts.push(
       ...convertNoteTexts({
         noteTexts: pcbNoteTexts,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -216,7 +219,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const fpLines = footprint.fpLines ?? []
     fpLines.push(
       ...convertSilkscreenPaths(pcbSilkscreenPaths, {
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -231,7 +234,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     fpLines.push(
       ...convertFabricationNotePaths(fabricationNotePaths, {
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -252,7 +255,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const { pads: smdPads, nextPadNumber } = convertSmdPads(
       {
         pcbPads,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
         componentId: component.pcb_component_id,
         startPadNumber: 1,
@@ -272,7 +275,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const { pads: thruHolePads } = convertPlatedHoles(
       {
         platedHoles: pcbPlatedHoles,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
         componentId: component.pcb_component_id,
         startPadNumber: nextPadNumber,
@@ -292,7 +295,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const npthPads = convertNpthHoles({
       pcbHoles,
-      componentCenter: component.center,
+      componentCenter: footprintOrigin,
       componentRotation: component.rotation || 0,
     })
     fpPads.push(...npthPads)
@@ -311,7 +314,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const fpCircles = footprint.fpCircles ?? []
     fpCircles.push(
       ...convertSilkscreenCircles(pcbSilkscreenCircles, {
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -324,7 +327,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpCircles.push(
-      ...convertCourtyardCircles(pcbCourtyardCircles, component.center),
+      ...convertCourtyardCircles(pcbCourtyardCircles, footprintOrigin),
     )
     footprint.fpCircles = fpCircles
 
@@ -337,7 +340,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     const fpRects = footprint.fpRects ?? []
-    fpRects.push(...convertFabricationNoteRects(pcbFabRects, component.center))
+    fpRects.push(...convertFabricationNoteRects(pcbFabRects, footprintOrigin))
 
     const pcbNoteRects =
       this.ctx.db.pcb_note_rect
@@ -346,7 +349,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertNoteRects(pcbNoteRects, component.center))
+    fpRects.push(...convertNoteRects(pcbNoteRects, footprintOrigin))
 
     const pcbCourtyardRects =
       this.ctx.db.pcb_courtyard_rect
@@ -357,7 +360,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const courtyardRects = convertCourtyardRects({
       courtyardRects: pcbCourtyardRects,
-      componentCenter: component.center,
+      componentCenter: footprintOrigin,
       componentRotation: component.rotation || 0,
     })
     fpRects.push(...courtyardRects.fpRects)
@@ -374,7 +377,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const fpPolys = convertCourtyardOutlines({
       courtyardOutlines: pcbCourtyardOutlines,
-      componentCenter: component.center,
+      componentCenter: footprintOrigin,
       componentRotation: component.rotation || 0,
     })
     fpPolys.push(...courtyardRects.fpPolys)
@@ -389,7 +392,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpPolys.push(
       ...convertSilkscreenRects({
         silkscreenRects: pcbSilkscreenRects,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -410,7 +413,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           : boardThickness / 2
       const models = create3DModelsFromCadComponent(
         cadComponent,
-        component.center,
+        footprintOrigin,
         {
           boardLayerZOffset,
           footprintRotation: component.rotation || 0,
