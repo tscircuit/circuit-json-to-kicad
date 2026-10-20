@@ -11,6 +11,7 @@ import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { createViaTenting } from "./utils/createViaTenting"
 import {
   getKicadLayer,
+  getKicadCopperLayerIndex,
   getViaLayers,
   getViaLayerSpan,
 } from "../utils/layerMapping"
@@ -49,6 +50,13 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const seenViaKeys = new Set(
       standaloneVias.map((via) => this.getViaDedupeKey(via)),
     )
+    const standaloneViasByPosition = new Map<string, ViaLike[]>()
+    for (const via of standaloneVias) {
+      const positionKey = `${via.x}:${via.y}`
+      const viasAtPosition = standaloneViasByPosition.get(positionKey) ?? []
+      viasAtPosition.push(via)
+      standaloneViasByPosition.set(positionKey, viasAtPosition)
+    }
 
     const routeDefinedVias = (this.ctx.db.pcb_trace?.list() || []).flatMap(
       (trace: any) =>
@@ -75,12 +83,62 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             if (seenViaKeys.has(viaKey)) {
               return false
             }
+            const physicalVias = standaloneViasByPosition.get(
+              `${via.x}:${via.y}`,
+            )
+            if (
+              physicalVias?.some((physicalVia) =>
+                this.physicalViaCoversRouteVia(physicalVia, via),
+              )
+            ) {
+              return false
+            }
             seenViaKeys.add(viaKey)
             return true
           }),
     )
 
     return [...standaloneVias, ...routeDefinedVias]
+  }
+
+  private physicalViaCoversRouteVia(
+    physicalVia: ViaLike,
+    routeVia: ViaLike,
+  ): boolean {
+    const sameTrace =
+      physicalVia.pcb_trace_id !== undefined &&
+      physicalVia.pcb_trace_id === routeVia.pcb_trace_id
+    const sameConnectivity =
+      physicalVia.subcircuit_connectivity_map_key !== undefined &&
+      physicalVia.subcircuit_connectivity_map_key ===
+        routeVia.subcircuit_connectivity_map_key
+    if (!sameTrace && !sameConnectivity) return false
+
+    if (
+      (routeVia.outer_diameter !== undefined &&
+        routeVia.outer_diameter !== physicalVia.outer_diameter) ||
+      (routeVia.hole_diameter !== undefined &&
+        routeVia.hole_diameter !== physicalVia.hole_diameter)
+    ) {
+      return false
+    }
+
+    // A route records the layers used by the trace, while pcb_via.layers
+    // describes the physical drilled span. The physical via is authoritative
+    // when it already covers this transition on the same connection.
+    const numLayers = this.ctx.numLayers ?? 2
+    const physicalSpan = this.getKicadViaLayers(physicalVia).map((layer) =>
+      getKicadCopperLayerIndex(layer, numLayers),
+    )
+    const routeSpan = this.getKicadViaLayers(routeVia).map((layer) =>
+      getKicadCopperLayerIndex(layer, numLayers),
+    )
+    return (
+      physicalSpan.length === 2 &&
+      routeSpan.length === 2 &&
+      physicalSpan[0]! <= routeSpan[0]! &&
+      physicalSpan[1]! >= routeSpan[1]!
+    )
   }
 
   private getViaDedupeKey(via: ViaLike): string {
