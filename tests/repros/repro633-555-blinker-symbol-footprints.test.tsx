@@ -116,7 +116,7 @@ const getProperty = (
 // KiCad reads a part's footprint from the placed schematic symbol, not from
 // lib_symbols. With an empty field, `kicad-cli sch export netlist` has no
 // footprints and EasyEDA Pro's importer can't bind symbols to the board (#633).
-test.failing("repro633: 555 blinker schematic symbols carry their PCB footprints", async () => {
+test("repro633: 555 blinker schematic symbols carry their PCB footprints", async () => {
   const circuit = new Circuit()
   circuit.add(<Blinker555 />)
   await circuit.renderUntilSettled()

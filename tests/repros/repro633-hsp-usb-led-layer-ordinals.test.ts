@@ -7,7 +7,7 @@ import { CircuitJsonToKicadPcbConverter } from "lib"
 // (version 20241229) stamp, so every layer must keep its KiCad 9 ordinal.
 // EasyEDA Pro's KiCad importer reads layers by ordinal and crashes on the
 // KiCad 8 numbers (#633).
-test.failing("repro633: hsp-usb-led keeps its KiCad 9 layer ordinals on export", async () => {
+test("repro633: hsp-usb-led keeps its KiCad 9 layer ordinals on export", async () => {
   const source = await Bun.file(
     new URL("../../references/hsp-usb-led.kicad_pcb", import.meta.url),
   ).text()

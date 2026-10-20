@@ -196,11 +196,15 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       })
 
       // KiCad reads the footprint from the placed symbol, not lib_symbols,
-      // so write the same name the PCB footprint gets.
-      const footprintName = getKicadCompatibleComponentName(
-        sourceComponent,
-        cadComponent,
-      )
+      // so write the same name the PCB footprint gets. Parts without a PCB
+      // component (e.g. imported power symbols) have no footprint.
+      const hasPcbComponent =
+        db.pcb_component.list({
+          source_component_id: sourceComponent.source_component_id,
+        }).length > 0
+      const footprintName = hasPcbComponent
+        ? getKicadCompatibleComponentName(sourceComponent, cadComponent)
+        : null
       const fpMeta = symbolMetadata?.properties?.Footprint
       const footprintProperty = new SymbolProperty({
         key: "Footprint",
