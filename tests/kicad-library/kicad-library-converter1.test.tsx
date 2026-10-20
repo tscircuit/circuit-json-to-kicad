@@ -135,7 +135,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
       (property "Reference" "REF**"
         (at 0 -4.34 0)
         (layer F.SilkS)
-        (uuid 521fe180-3a89-2d01-38cd-c47e53db4a03)
+        (uuid 6c4c7240-7df2-7b41-6831-68c252705643)
         (effects
           (font
             (size 1.27 1.27)
@@ -146,7 +146,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
       (property "Value" "Val**"
         (at 0 4.34 0)
         (layer F.Fab)
-        (uuid 59786640-408c-b2ff-256e-33c27496e57d)
+        (uuid 2b326180-5425-e441-2c81-d5fe52d66fc3)
         (effects
           (font
             (size 1.27 1.27)
@@ -158,7 +158,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (at 0 0 0)
         (layer F.Fab)
         (hide yes)
-        (uuid 6b33c240-2175-4c41-51e1-a53e3ac76943)
+        (uuid 51f69900-3c35-8681-2674-740210b36183)
         (effects
           (font
             (size 1.27 1.27)
@@ -170,7 +170,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (at 0 0 0)
         (layer F.Fab)
         (hide yes)
-        (uuid 06594860-0cf8-b6c1-1398-25221a379383)
+        (uuid 45ad1b20-6419-577f-0ddf-ca1e4859c343)
         (effects
           (font
             (size 1.27 1.27)
@@ -194,20 +194,20 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
         (at -3.175 -0.7000000000000002 0)
         (size 2.5 1.2)
         (layers F.Cu F.Paste F.Mask)
-        (uuid 633a4dec-1f37-b14c-24ca-eb5468cd87f4)
+        (uuid 443db628-118c-13c8-2125-8e9853d730f8)
       )
       (pad "2" smd rect
         (at 3.1750000000000003 -3.24 0)
         (size 2.5 1.2)
         (layers F.Cu F.Paste F.Mask)
-        (uuid 07e0ff52-4be3-9bf2-7019-c76e2c172ace)
+        (uuid 0aeca566-27c4-fcfa-5a76-9f5a72d7be46)
       )
       (pad "" np_thru_hole circle
         (at 0.6350000000000002 1.8399999999999999 0)
         (size 4 4)
         (drill 4)
         (layers *.Cu *.Mask)
-        (uuid 51b679a0-2a9d-c901-0385-18622393983d)
+        (uuid 3cabcba0-360c-5d3f-2f6c-eede28cd807d)
       )
     )"
   `)

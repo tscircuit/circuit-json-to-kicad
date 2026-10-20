@@ -6,7 +6,8 @@ import type { SourceComponentBase, CadComponent } from "circuit-json"
  * Priority:
  * 1. manufacturer_part_number (BEST) - e.g., "NA555", "ATmega328P"
  * 2. {clean_type}_{footprinter_string} (OK) - e.g., "resistor_0402", "chip_soic8"
- * 3. {clean_type} (LAST RESORT) - e.g., "resistor", "capacitor", "chip"
+ * 3. {clean_type}_{cad_component_id} for anonymous inline footprints
+ * 4. {clean_type} when no CAD identity is available
  *
  * Never uses:
  * - Reference designators (R1, U1, C1)
@@ -31,7 +32,13 @@ export function getKicadCompatibleComponentName(
     return sanitizeName(`${cleanType}_${footprinterString}`)
   }
 
-  // Priority 3: Use clean type name only
+  // Anonymous inline footprints have no reusable part identifier. Keep their
+  // CAD identities distinct so library extraction cannot merge different pads.
+  if (cadComponent?.cad_component_id) {
+    return sanitizeName(`${cleanType}_${cadComponent.cad_component_id}`)
+  }
+
+  // Last resort: no CAD identity is available.
   return sanitizeName(cleanType)
 }
 
