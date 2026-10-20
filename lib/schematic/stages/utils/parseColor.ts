@@ -7,7 +7,7 @@ export type ParsedColor = {
 
 export function parseColor(color: string): ParsedColor | undefined {
   const rgbMatch = color.match(
-    /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)(?:\s*,\s*(\d+(?:\.\d+)?))?\s*\)$/i,
+    /^rgba?\(\s*((?:\d*\.)?\d+)\s*,\s*((?:\d*\.)?\d+)\s*,\s*((?:\d*\.)?\d+)(?:\s*,\s*((?:\d*\.)?\d+))?\s*\)$/i,
   )
   if (rgbMatch) {
     return {
