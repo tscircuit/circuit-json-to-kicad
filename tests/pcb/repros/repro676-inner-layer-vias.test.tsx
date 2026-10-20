@@ -2,9 +2,6 @@ import { expect, test } from "bun:test"
 import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 test("repro676: duplicate inner-layer vias", async () => {
   const circuit = new Circuit()
@@ -57,23 +54,10 @@ test("repro676: duplicate inner-layer vias", async () => {
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
-  const output = converter.getOutputString()
-  await Bun.write("debug-output/repro676-inner-layer-vias.kicad_pcb", output)
+  const vias = parseKicadPcb(converter.getOutputString()).vias
 
-  // Capture #676: eight physical vias become fourteen exported vias.
+  // #676: duplicate via entries overlap at the same positions.
   expect(circuitJson.filter((e) => e.type === "pcb_via")).toHaveLength(8)
-  expect(parseKicadPcb(output).vias).toHaveLength(14)
-
-  const kicadSnapshot = await takeKicadSnapshot({
-    kicadFileContent: output,
-    kicadFileType: "pcb",
-    pcbDrillHoleColor: "white",
-  })
-  expect(kicadSnapshot.exitCode).toBe(0)
-  await expect(
-    stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
-      kicadSnapshot.generatedFileContent["temp_file.png"]!,
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
+  expect(vias).toHaveLength(14)
+  expect(new Set(vias.map((via) => `${via.at?.x},${via.at?.y}`)).size).toBe(8)
 }, 120000)
