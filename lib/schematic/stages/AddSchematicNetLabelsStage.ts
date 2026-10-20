@@ -12,11 +12,13 @@ import {
   TextEffectsFont,
   TextEffectsJustify,
   GlobalLabel,
+  Label,
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
+import { getCoalescedTraceNetLabels } from "./utils/getCoalescedTraceNetLabels"
 
 /**
  * Adds schematic net labels to the schematic
@@ -34,8 +36,11 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     // Get all schematic net labels
     const netLabels = db.schematic_net_label?.list?.() || []
+    const coalescedTraceLabels = getCoalescedTraceNetLabels(
+      this.ctx.circuitJson,
+    )
 
-    if (netLabels.length === 0) {
+    if (netLabels.length === 0 && coalescedTraceLabels.length === 0) {
       this.finished = true
       return
     }
@@ -47,6 +52,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     const symbols: SchematicSymbol[] = []
     const globalLabels: GlobalLabel[] = []
+    const localLabels: Label[] = []
 
     for (const netLabel of netLabels) {
       const labelText = netLabel.text || ""
@@ -71,6 +77,27 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       }
     }
 
+    for (const netLabel of coalescedTraceLabels) {
+      const { x, y } = applyToPoint(
+        this.ctx.c2kMatSch,
+        netLabel.anchor_position,
+      )
+      const effects = this.createTextEffects(1.27)
+      effects.justify = new TextEffectsJustify({
+        horizontal: "left",
+        vertical: "bottom",
+      })
+      localLabels.push(
+        new Label({
+          value: netLabel.value,
+          at: [x, y, netLabel.rotation],
+          effects,
+          uuid: crypto.randomUUID(),
+          fieldsAutoplaced: false,
+        }),
+      )
+    }
+
     // Add symbols to the existing symbols array
     if (kicadSch && symbols.length > 0) {
       const existingSymbols = kicadSch.symbols || []
@@ -83,6 +110,10 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
         ...(kicadSch.globalLabels || []),
         ...globalLabels,
       ]
+    }
+
+    if (kicadSch && localLabels.length > 0) {
+      kicadSch.labels = [...(kicadSch.labels || []), ...localLabels]
     }
 
     this.finished = true
