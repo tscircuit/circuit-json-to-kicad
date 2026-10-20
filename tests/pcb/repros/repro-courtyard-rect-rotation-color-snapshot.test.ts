@@ -76,16 +76,17 @@ test(
       expect(footprint.layer?.names).toEqual([
         layer === "top" ? "F.Cu" : "B.Cu",
       ])
-      expect(footprint.fpRects).toHaveLength(1)
-      expect(footprint.fpRects[0]!.layer?.names).toEqual([
+      const graphics = [...footprint.fpRects, ...footprint.fpPolys]
+      expect(graphics).toHaveLength(1)
+      expect(graphics[0]!.layer?.names).toEqual([
         layer === "top" ? "F.CrtYd" : "B.CrtYd",
       ])
     }
 
-    // Record the current bug: the Circuit JSON image has rotated courtyards,
-    // while the actual KiCad export has axis-aligned rectangles on both layers.
+    // Circuit JSON and the actual KiCad export must both show rotated
+    // courtyards on the top and bottom layers.
     // Both image renderers use their courtyard layer palettes. Per-element
-    // color loss is asserted by the separate serialized-stroke repro tests.
+    // color preservation is asserted by the serialized-stroke regression tests.
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: output,
       kicadFileType: "pcb",
