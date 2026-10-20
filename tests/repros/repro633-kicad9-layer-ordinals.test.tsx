@@ -47,7 +47,7 @@ const renderCircuitJson = async (layers: 2 | 4) => {
   return circuit.getCircuitJson()
 }
 
-test.failing("repro633: KiCad 9 boards use KiCad 9 layer ordinals", async () => {
+test("repro633: KiCad 9 boards use KiCad 9 layer ordinals", async () => {
   for (const layers of [2, 4] as const) {
     const converter = new CircuitJsonToKicadPcbConverter(
       await renderCircuitJson(layers),

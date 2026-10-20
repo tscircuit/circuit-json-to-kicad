@@ -23,7 +23,7 @@ const renderCircuitJson = async () => {
   return circuit.getCircuitJson()
 }
 
-test.failing("repro633: placed schematic symbols carry their PCB footprint", async () => {
+test("repro633: placed schematic symbols carry their PCB footprint", async () => {
   const circuitJson = await renderCircuitJson()
 
   const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)
