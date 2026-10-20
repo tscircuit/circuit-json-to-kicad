@@ -24,6 +24,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
+import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
 import { getkicadComponentProperty } from "./utils/getKicadComponentProperty"
 import type { KicadFootprintMetadata } from "@tscircuit/props"
 import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
@@ -484,6 +485,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       footprint.attr ??= new FootprintAttr()
       footprint.attr.dnp = true
     }
+
+    applyInferredFootprintType(footprint)
 
     const footprints = kicadPcb.footprints
     footprints.push(footprint)

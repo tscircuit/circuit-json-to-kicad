@@ -3,7 +3,7 @@ import { KicadPcb } from "kicadts"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 
-test.failing("repro #585: component and standalone footprints retain physical types", async () => {
+test("repro #585: component and standalone footprints retain physical types", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="20mm" height="20mm" routingDisabled>
