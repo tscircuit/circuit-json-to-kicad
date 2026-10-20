@@ -16,7 +16,11 @@ function run(args: string[], cwd: string) {
 }
 
 function expectDeclaredImport(path: string) {
-  expect(path === "@tscircuit/circuit-json-util" || isBuiltin(path)).toBe(true)
+  expect(
+    path === "@tscircuit/circuit-json-util" ||
+      path === "circuit-json" ||
+      isBuiltin(path),
+  ).toBe(true)
 }
 
 function visit(node: ts.Node) {
@@ -63,6 +67,7 @@ test("the packed package converts circuits in isolated Bun and Node consumers", 
         type: "module",
         dependencies: {
           "circuit-json-to-kicad": `file:./${tarball}`,
+          "circuit-json": "0.0.525",
           typescript: "5.9.3",
         },
       }),
@@ -98,7 +103,9 @@ for (const [Converter, marker] of [[CircuitJsonToKicadSchConverter, "kicad_sch"]
     await writeFile(
       join(consumer, "consumer.ts"),
       `import { CircuitJsonToKicadSchConverter } from "circuit-json-to-kicad";
-const converter = new CircuitJsonToKicadSchConverter([]);
+import type { CircuitJson } from "circuit-json";
+const circuitJson: CircuitJson = [];
+const converter = new CircuitJsonToKicadSchConverter(circuitJson);
 const output: string = converter.getOutput().getString();
 // @ts-expect-error The KiCad output must retain its class type.
 converter.getOutput().nonexistentMethod();

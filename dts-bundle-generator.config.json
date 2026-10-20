@@ -7,13 +7,8 @@
       "filePath": "./lib/index.ts",
       "outFile": "./dist/index.d.ts",
       "libraries": {
-        "inlinedLibraries": [
-          "circuit-json",
-          "kicadts",
-          "transformation-matrix",
-          "zod"
-        ],
-        "importedLibraries": ["@tscircuit/circuit-json-util"]
+        "inlinedLibraries": ["kicadts", "transformation-matrix"],
+        "importedLibraries": ["@tscircuit/circuit-json-util", "circuit-json"]
       },
       "output": {
         "inlineDeclareExternals": true,
