@@ -1,3 +1,4 @@
+import { createBoardOwnerMap } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Via, ViaNet } from "kicadts"
@@ -16,6 +17,7 @@ import {
 } from "../utils/layerMapping"
 
 type ViaLike = {
+  pcb_via_id?: string
   x: number
   y: number
   outer_diameter?: number
@@ -36,11 +38,13 @@ type ViaLike = {
  * Adds vias to the PCB from circuit JSON
  */
 export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
+  private boardOwnerMap: ReturnType<typeof createBoardOwnerMap>
   private viasProcessed = 0
   private pcbVias: ViaLike[] = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
+    this.boardOwnerMap = createBoardOwnerMap(input)
     this.pcbVias = this.collectPcbVias()
   }
 
@@ -138,6 +142,11 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       return
     }
 
+    const boardOwnerId = via.pcb_via_id ?? via.pcb_trace_id
+    const board = boardOwnerId
+      ? this.boardOwnerMap.get(boardOwnerId)
+      : undefined
+
     // Transform the via position to KiCad coordinates
     const transformedPos = applyToPoint(c2kMatPcb, {
       x: via.x,
@@ -233,7 +242,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       layers: viaLayers,
       net: new ViaNet(netInfo?.id ?? 0),
       uuid: generateDeterministicUuid(viaData),
-      tenting: createViaTenting(via),
+      tenting: createViaTenting(via, board),
     })
 
     // Add the via to the PCB
