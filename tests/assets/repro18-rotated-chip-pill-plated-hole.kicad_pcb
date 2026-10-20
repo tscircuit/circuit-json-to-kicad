@@ -39,6 +39,7 @@
     (layer F.Cu)
     (uuid 79d989fa-314b-7906-238f-83fa786a80fa)
     (at 101.57511755 95.675015 -90)
+    (attr through_hole)
     (property "Reference" "U1"
       (at 0 -3 0)
       (layer F.SilkS)
