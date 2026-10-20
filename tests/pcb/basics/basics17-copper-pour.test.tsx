@@ -51,7 +51,8 @@ test("pcb basics17 copper pour", async () => {
   expect(parsedPcb.zones[0]?.filledPolygons.length ?? 0).toBeGreaterThan(0)
 
   const zoneBlock = getZoneBlock(outputString)
-  expect(zoneBlock).toContain("(net 1)")
+  const groundNet = parsedPcb.nets.find((net) => net.name === "GND")
+  expect(zoneBlock).toContain(`(net ${groundNet?.id})`)
   expect(zoneBlock).toContain("(net_name GND)")
   expect(zoneBlock).toContain("(layer F.Cu)")
   expect(zoneBlock).toContain("(clearance 0.15)")

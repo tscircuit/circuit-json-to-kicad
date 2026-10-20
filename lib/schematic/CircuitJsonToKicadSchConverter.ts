@@ -21,6 +21,7 @@ import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
 import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
+import { getKicadNetNames } from "../utils/getKicadNetNames"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
@@ -198,6 +199,7 @@ export class CircuitJsonToKicadSchConverter {
     this.ctx = {
       db,
       circuitJson,
+      kicadNetNames: getKicadNetNames(db),
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
@@ -398,6 +400,7 @@ export class CircuitJsonToKicadSchConverter {
     const ctx: ConverterContext = {
       db,
       circuitJson,
+      kicadNetNames: this.ctx.kicadNetNames,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",

@@ -5,7 +5,7 @@ import {
 } from "lib"
 import { Circuit } from "tscircuit"
 
-test("repro674: unnamed nets disagree between schematic and PCB", async () => {
+test("repro674: unnamed nets agree between schematic and PCB", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="20mm" height="10mm">
@@ -41,6 +41,6 @@ test("repro674: unnamed nets disagree between schematic and PCB", async () => {
   const conflicts = report.schematic_parity.filter(
     (violation: { type: string }) => violation.type === "net_conflict",
   )
-  // Two connected pads and two isolated pads have mismatched names (#674).
-  expect(conflicts).toHaveLength(4)
+  // Both connected and isolated pads must agree with the schematic (#674).
+  expect(conflicts).toHaveLength(0)
 }, 30_000)

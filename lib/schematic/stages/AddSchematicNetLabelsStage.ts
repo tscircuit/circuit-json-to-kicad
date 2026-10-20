@@ -1,4 +1,4 @@
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, SchematicTrace } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
   SchematicSymbol,
@@ -35,11 +35,6 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     // Get all schematic net labels
     const netLabels = db.schematic_net_label?.list?.() || []
 
-    if (netLabels.length === 0) {
-      this.finished = true
-      return
-    }
-
     if (!this.ctx.c2kMatSch) {
       this.finished = true
       return
@@ -69,6 +64,50 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
           globalLabels.push(label)
         }
       }
+    }
+
+    const netNames = this.ctx.kicadNetNames ?? new Map<string, string>()
+    const namedKeys = new Set(
+      db.source_net
+        .list()
+        .map((net) => net.subcircuit_connectivity_map_key || net.source_net_id),
+    )
+    for (const trace of db.schematic_trace.list()) {
+      const key = trace.subcircuit_connectivity_map_key
+      if (!key || namedKeys.has(key) || !netNames.has(key)) continue
+      // Prefer the longest wire to leave room for the generated label.
+      const length = (edge: SchematicTrace["edges"][number]) =>
+        Math.hypot(edge.to.x - edge.from.x, edge.to.y - edge.from.y)
+      const edge = [...trace.edges].sort((a, b) => length(b) - length(a))[0]
+      if (!edge) continue
+      const label = this.createGlobalLabel(
+        {
+          anchor_position: {
+            x: (edge.from.x + edge.to.x) / 2,
+            y: (edge.from.y + edge.to.y) / 2,
+          },
+          anchor_side: edge.from.x === edge.to.x ? "left" : "bottom",
+        },
+        netNames.get(key)!,
+      )
+      if (label) globalLabels.push(label)
+    }
+    for (const port of db.schematic_port.list()) {
+      const name = netNames.get(port.source_port_id)
+      if (!name) continue
+      const label = this.createGlobalLabel(
+        {
+          anchor_position: port.center,
+          anchor_side: {
+            left: "right",
+            right: "left",
+            up: "bottom",
+            down: "top",
+          }[port.facing_direction ?? "right"],
+        },
+        name,
+      )
+      if (label) globalLabels.push(label)
     }
 
     // Add symbols to the existing symbols array

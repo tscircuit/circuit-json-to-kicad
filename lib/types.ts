@@ -48,6 +48,8 @@ export interface KicadLibraryOutput {
 export interface ConverterContext {
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
+  /** Full-design net names shared by every schematic sheet. */
+  kicadNetNames?: Map<string, string>
   kicadSch?: KicadSch
   kicadPcb?: KicadPcb
 
