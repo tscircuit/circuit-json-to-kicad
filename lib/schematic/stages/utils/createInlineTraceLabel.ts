@@ -147,17 +147,6 @@ export function createInlineTraceLabel({
   if (!text.source_trace_id) return undefined
   const sourceTrace = db.source_trace.get(text.source_trace_id)
   if (!sourceTrace) return undefined
-  const matchesSourceNet = db.source_net
-    .list()
-    .some(
-      (net) =>
-        net.name === text.text &&
-        (sourceTrace.connected_source_net_ids?.includes(net.source_net_id) ||
-          (net.subcircuit_connectivity_map_key &&
-            net.subcircuit_connectivity_map_key ===
-              sourceTrace.subcircuit_connectivity_map_key)),
-    )
-  if (!matchesSourceNet) return undefined
 
   const connectedPorts = sourceTrace.connected_source_port_ids.flatMap(
     (sourcePortId) => db.schematic_port.list({ source_port_id: sourcePortId }),
