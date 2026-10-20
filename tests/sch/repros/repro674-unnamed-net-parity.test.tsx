@@ -3,7 +3,7 @@ import {
   CircuitJsonToKicadPcbConverter,
   CircuitJsonToKicadSchConverter,
 } from "lib"
-import { Circuit } from "tscircuit"
+import { Circuit } from "tscircuit-latest"
 
 test("repro674: unnamed nets agree between schematic and PCB", async () => {
   const circuit = new Circuit()
