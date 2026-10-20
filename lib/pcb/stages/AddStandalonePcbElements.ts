@@ -17,6 +17,7 @@ import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { hasSolderPasteForPad } from "./utils/hasSolderPasteForPad"
+import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
@@ -79,6 +80,7 @@ export class AddStandalonePcbElements extends ConverterStage<
           hasSolderPaste: hasSolderPasteForPad(pcbPad, this.ctx),
         }),
       ]
+      applyInferredFootprintType(footprint)
       const footprints = kicadPcb.footprints
       footprints.push(footprint)
       kicadPcb.footprints = footprints
@@ -130,6 +132,7 @@ export class AddStandalonePcbElements extends ConverterStage<
 
       if (pad) {
         footprint.fpPads = [pad]
+        applyInferredFootprintType(footprint)
         const footprints = kicadPcb.footprints
         footprints.push(footprint)
         kicadPcb.footprints = footprints

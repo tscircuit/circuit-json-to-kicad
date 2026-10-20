@@ -11,7 +11,6 @@ import {
   FootprintModel,
   At,
   EmbeddedFonts,
-  FootprintAttr,
   Property,
   TextEffects,
   TextEffectsFont,
@@ -24,6 +23,7 @@ import {
 } from "../../types"
 import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
+import { applyInferredFootprintType } from "../../pcb/stages/utils/applyInferredFootprintType"
 
 export const MODEL_CDN_BASE_URL = "https://modelcdn.tscircuit.com/jscad_models"
 
@@ -191,16 +191,7 @@ export class ExtractFootprintsStage extends ConverterStage<
     if (!footprint.embeddedFonts) {
       footprint.embeddedFonts = new EmbeddedFonts(false)
     }
-    if (!footprint.attr) {
-      const attr = new FootprintAttr()
-      const padTypes = (footprint.fpPads ?? []).map((pad) => pad.padType)
-      if (padTypes.some((padType) => padType.includes("thru_hole"))) {
-        attr.type = "through_hole"
-      } else if (padTypes.some((padType) => padType.includes("smd"))) {
-        attr.type = "smd"
-      }
-      footprint.attr = attr
-    }
+    applyInferredFootprintType(footprint)
     footprint.uuid = undefined
     footprint.path = undefined
     footprint.sheetfile = undefined
