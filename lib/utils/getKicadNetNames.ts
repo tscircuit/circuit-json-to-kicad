@@ -13,6 +13,7 @@ export function getSchematicNetLabelConnectivityKey(
     : undefined
   return (
     net?.subcircuit_connectivity_map_key ||
+    net?.source_net_id ||
     trace?.subcircuit_connectivity_map_key ||
     label.source_net_id
   )
