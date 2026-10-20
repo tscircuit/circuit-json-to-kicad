@@ -46,10 +46,9 @@ test("KiCad vias inherit their own board defaults and retain explicit overrides"
   )
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
-  const boardGroups = circuitJson.filter(
-    (e) =>
-      e.type === "source_group" && ["TOP", "BOTTOM"].includes(e.name ?? ""),
-  )
+  const boardGroups = circuitJson
+    .filter((element) => element.type === "source_group")
+    .filter((group) => ["TOP", "BOTTOM"].includes(group.name ?? ""))
   const boards = circuitJson.filter((element) => element.type === "pcb_board")
   for (const [boardIndex, board] of boards.entries()) {
     Object.assign(board, {
