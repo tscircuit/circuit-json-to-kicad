@@ -1,4 +1,22 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
+import type { SchematicNetLabel } from "circuit-json"
+
+export function getSchematicNetLabelConnectivityKey(
+  db: CircuitJsonUtilObjects,
+  label: SchematicNetLabel,
+): string | undefined {
+  const net = label.source_net_id
+    ? db.source_net.get(label.source_net_id)
+    : undefined
+  const trace = label.source_trace_id
+    ? db.source_trace.get(label.source_trace_id)
+    : undefined
+  return (
+    net?.subcircuit_connectivity_map_key ||
+    trace?.subcircuit_connectivity_map_key ||
+    label.source_net_id
+  )
+}
 
 /** Resolve net names once for both KiCad exports, keyed by connectivity. */
 export function getKicadNetNames(
@@ -21,8 +39,16 @@ export function getKicadNetNames(
     netNameByKey.set(connectivityKey, netName)
   }
 
-  const sourceTraces = db.source_trace?.list() ?? []
+  // Imported schematics can name a connection with a label without a
+  // corresponding source_net row. Reuse that name before generating one.
+  for (const label of db.schematic_net_label.list()) {
+    const key = getSchematicNetLabelConnectivityKey(db, label)
+    if (key && label.text && !netNameByKey.has(key)) {
+      netNameByKey.set(key, label.text)
+    }
+  }
   const namedKeys = new Set(netNameByKey.keys())
+  const sourceTraces = db.source_trace?.list() ?? []
   for (const sourceTrace of sourceTraces) {
     let connectivityKey = sourceTrace.subcircuit_connectivity_map_key
 

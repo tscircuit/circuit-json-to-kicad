@@ -17,6 +17,7 @@ import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
+import { getSchematicNetLabelConnectivityKey } from "../../utils/getKicadNetNames"
 
 /**
  * Adds schematic net labels to the schematic
@@ -42,9 +43,18 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     const symbols: SchematicSymbol[] = []
     const globalLabels: GlobalLabel[] = []
+    const netNames = this.ctx.kicadNetNames ?? new Map<string, string>()
+    const namedKeys = new Set(
+      db.source_net
+        .list()
+        .map((net) => net.subcircuit_connectivity_map_key || net.source_net_id),
+    )
 
     for (const netLabel of netLabels) {
-      const labelText = netLabel.text || ""
+      const key = getSchematicNetLabelConnectivityKey(db, netLabel)
+      if (key) namedKeys.add(key)
+      const labelText =
+        (key ? netNames.get(key) : undefined) ?? netLabel.text ?? ""
       const symbolName = netLabel.symbol_name
 
       if (symbolName) {
@@ -66,12 +76,6 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       }
     }
 
-    const netNames = this.ctx.kicadNetNames ?? new Map<string, string>()
-    const namedKeys = new Set(
-      db.source_net
-        .list()
-        .map((net) => net.subcircuit_connectivity_map_key || net.source_net_id),
-    )
     for (const trace of db.schematic_trace.list()) {
       const key = trace.subcircuit_connectivity_map_key
       if (!key || namedKeys.has(key) || !netNames.has(key)) continue

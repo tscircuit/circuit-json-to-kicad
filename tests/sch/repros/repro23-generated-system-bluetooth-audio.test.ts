@@ -1,4 +1,5 @@
-import { test } from "bun:test"
+import { expect, test } from "bun:test"
+import { parseKicadSch } from "kicadts"
 import { runGeneratedSystemRepro } from "../../fixtures/run-generated-system-repro"
 
 test("repro23: convert the Bluetooth audio generated system", async () => {
@@ -10,6 +11,15 @@ test("repro23: convert the Bluetooth audio generated system", async () => {
     rootFilename: "bluetooth_audio_system.kicad_sch",
     snapshotPath: import.meta.path,
     debugOutputName: "repro23-generated-system-bluetooth-audio.stacked.png",
+    assertKicadSchematicFiles: (files) => {
+      const power = files.find(
+        (file) => file.filename === "power_1v8.kicad_sch",
+      )!
+      // Reuse existing labels, including aliases for nets without source_net rows.
+      expect(
+        parseKicadSch(power.content).globalLabels.map((label) => label.value),
+      ).toEqual(["U1_VSS", "U1_VOUT", "U1_OUT"])
+    },
     expectedSheetNames: [
       "TAS2505 Audio Amplifier",
       "CC2564C Bluetooth Controller",
