@@ -56,8 +56,8 @@ test("repro676: duplicate inner-layer vias", async () => {
   converter.runUntilFinished()
   const vias = parseKicadPcb(converter.getOutputString()).vias
 
-  // #676: duplicate via entries overlap at the same positions.
+  // Each physical via is exported once at its own position.
   expect(circuitJson.filter((e) => e.type === "pcb_via")).toHaveLength(6)
-  expect(vias).toHaveLength(10)
+  expect(vias).toHaveLength(6)
   expect(new Set(vias.map((via) => `${via.at?.x},${via.at?.y}`)).size).toBe(6)
 }, 120000)
