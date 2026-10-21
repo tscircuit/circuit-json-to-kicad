@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { Circuit } from "tscircuit"
+import { Circuit } from "tscircuit-latest"
 
 test("repro26: repeated power rail labels share nets in KiCad", async () => {
   const circuit = new Circuit()

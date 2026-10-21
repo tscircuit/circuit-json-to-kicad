@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { Circuit } from "tscircuit"
+import { Circuit } from "tscircuit-latest"
 import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
 import { applyToPoint } from "transformation-matrix"

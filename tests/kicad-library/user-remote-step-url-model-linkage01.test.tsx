@@ -53,7 +53,7 @@ test("kicad-library includes stepUrl user model in model3dSourcePaths", async ()
   const output = converter.getOutput()
   expect(output.model3dSourcePaths.sort()).toMatchInlineSnapshot(`
     [
-      "https://modelcdn.tscircuit.com/jscad_models/cap0402.step",
+      "https://modelcdn.tscircuit.com/jscad_models/0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/soic8.step",
     ]
@@ -68,7 +68,7 @@ test("kicad-library includes stepUrl user model in model3dSourcePaths", async ()
   expect(kicadModKeys.sort()).toMatchInlineSnapshot(`
     [
       "footprints/test_lib.pretty/TestCircuit.kicad_mod",
-      "footprints/tscircuit_builtin.pretty/capacitor_cap0402.kicad_mod",
+      "footprints/tscircuit_builtin.pretty/capacitor_0402.kicad_mod",
       "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
     ]
   `)

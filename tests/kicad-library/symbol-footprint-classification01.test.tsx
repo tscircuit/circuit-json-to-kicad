@@ -99,7 +99,7 @@ test("symbol-footprint classification: correct symbol assigned to user library w
     "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
   )
   expect(outputKeys).toContain(
-    "footprints/tscircuit_builtin.pretty/capacitor_cap0603.kicad_mod",
+    "footprints/tscircuit_builtin.pretty/capacitor_0603.kicad_mod",
   )
 
   // 2. Verify both user and builtin symbol libraries exist
@@ -135,7 +135,7 @@ test("symbol-footprint classification: correct symbol assigned to user library w
     '"Footprint" "tscircuit_builtin:resistor_res0402"',
   )
   expect(builtinSymbolContent).toContain(
-    '"Footprint" "tscircuit_builtin:capacitor_cap0603"',
+    '"Footprint" "tscircuit_builtin:capacitor_0603"',
   )
 
   // Builtin symbols should NOT reference user footprints
