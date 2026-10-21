@@ -1,6 +1,6 @@
 import { Circuit } from "tscircuit"
 
-export type NoteShape = "line" | "path" | "dimension"
+export type NoteShape = "line" | "path"
 
 export async function createStandalonePcbNoteShapeRepro(shape: NoteShape) {
   const circuit = new Circuit()
@@ -14,14 +14,6 @@ export async function createStandalonePcbNoteShapeRepro(shape: NoteShape) {
           { x: 5, y: 3 },
         ]}
         strokeWidth={0.2}
-      />
-    ),
-    dimension: (
-      <pcbnotedimension
-        from={{ x: -5, y: 4 }}
-        to={{ x: 5, y: 4 }}
-        fontSize={0.8}
-        arrowSize={0.5}
       />
     ),
   }
