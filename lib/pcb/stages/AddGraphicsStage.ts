@@ -168,11 +168,20 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add fabrication note text elements
+    // Component-owned PCB notes are already exported as footprint text.
+    const standaloneNoteTexts =
+      this.ctx.db.pcb_note_text
+        ?.list()
+        .filter((text) => !text.pcb_component_id) || []
+
+    // Both note types belong on the fabrication layers.
     const fabricationNoteTexts =
       this.ctx.db.pcb_fabrication_note_text?.list() || []
 
-    for (const textElement of fabricationNoteTexts) {
+    for (const textElement of [
+      ...fabricationNoteTexts,
+      ...standaloneNoteTexts,
+    ]) {
       const grText = createFabricationNoteTextFromCircuitJson({
         textElement,
         c2kMatPcb,
