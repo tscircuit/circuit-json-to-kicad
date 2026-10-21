@@ -11,6 +11,7 @@ import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { createViaTenting } from "./utils/createViaTenting"
 import {
   getKicadLayer,
+  getKicadCopperLayerIndex,
   getViaLayers,
   getViaLayerSpan,
 } from "../utils/layerMapping"
@@ -71,6 +72,27 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             }),
           )
           .filter((via: ViaLike) => {
+            // A route can enter only part of an existing physical via's span.
+            const coveredByStandaloneVia = standaloneVias.some(
+              (standaloneVia) => {
+                if (standaloneVia.x !== via.x || standaloneVia.y !== via.y) {
+                  return false
+                }
+                const numLayers = this.ctx.numLayers ?? 2
+                const span = this.getKicadViaLayers(standaloneVia).map(
+                  (layer) => getKicadCopperLayerIndex(layer, numLayers),
+                )
+                return this.getKicadViaLayers(via).every((layer) => {
+                  const layerIndex = getKicadCopperLayerIndex(layer, numLayers)
+                  return (
+                    layerIndex >= Math.min(...span) &&
+                    layerIndex <= Math.max(...span)
+                  )
+                })
+              },
+            )
+            if (coveredByStandaloneVia) return false
+
             const viaKey = this.getViaDedupeKey(via)
             if (seenViaKeys.has(viaKey)) {
               return false
