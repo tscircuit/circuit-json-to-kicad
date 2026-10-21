@@ -27,6 +27,7 @@ import { type ConverterContext, ConverterStage } from "../../types"
 import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
+import { getBuiltinSymbolPosition } from "./utils/getBuiltinSymbolPosition"
 import {
   getTextJustificationFromAnchor,
   type TextJustification,
@@ -78,10 +79,14 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
       if (!this.ctx.c2kMatSch) continue
-      const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
-        x: schematicComponent.center.x,
-        y: schematicComponent.center.y,
-      })
+      const symbolPosition =
+        hasLinkedSymbolPrimitives || usesComponentLevelSymbolPrimitives
+          ? schematicComponent.center
+          : getBuiltinSymbolPosition(
+              schematicComponent,
+              db.schematic_port.list(),
+            )
+      const { x, y } = applyToPoint(this.ctx.c2kMatSch, symbolPosition)
 
       const uuid = crypto.randomUUID()
 
@@ -117,7 +122,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       // Get text positions from schematic symbol definition
       const { refTextPos, valTextPos, refJustify, valJustify } =
         this.getTextPositions({
-          schematicComponent,
+          schematicComponent: { ...schematicComponent, center: symbolPosition },
           placeValueAtNamePosition: hasManufacturerValueForValuePlacement,
           isCustomSymbol: hasLinkedSymbolPrimitives,
           reference,

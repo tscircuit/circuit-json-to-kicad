@@ -1,4 +1,4 @@
-import { symbols } from "schematic-symbols"
+import { symbols, type SchSymbol } from "schematic-symbols"
 
 interface SchematicSymbolData {
   primitives: Array<
@@ -14,6 +14,7 @@ interface SchematicSymbolData {
       }
   >
   center?: { x: number; y: number }
+  ports: SchSymbol["ports"]
 }
 
 const legacySymbolNameByOrientedSymbolName: Record<string, string> = {
