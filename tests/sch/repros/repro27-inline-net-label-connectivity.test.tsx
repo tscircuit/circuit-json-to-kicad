@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
@@ -9,9 +9,23 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 test("repro27: inline SIGNAL text leaves two resistor pins disconnected in KiCad", async () => {
   const circuit = new Circuit()
   circuit.add(
-    <board width="20mm" height="10mm" routingDisabled schMaxTraceDistance={1}>
-      <resistor name="R1" resistance="1k" footprint="0402" schX={-1.5} />
-      <resistor name="R2" resistance="1k" footprint="0402" schX={1.5} />
+    <board width="20mm" height="10mm" routingDisabled>
+      <schematicsection name="first" />
+      <schematicsection name="second" />
+      <resistor
+        name="R1"
+        resistance="1k"
+        footprint="0402"
+        schX={-1.5}
+        schSectionName="first"
+      />
+      <resistor
+        name="R2"
+        resistance="1k"
+        footprint="0402"
+        schX={1.5}
+        schSectionName="second"
+      />
       <trace from=".R1 > .pin2" to="net.SIGNAL" />
       <trace from=".R2 > .pin1" to="net.SIGNAL" />
     </board>,
