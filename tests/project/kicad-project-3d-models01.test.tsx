@@ -48,7 +48,7 @@ test("pcb converter embeds KIPRJMOD 3D model paths for builtin and user footprin
     "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/res0402.step",
   )
   expect(pcbContent).toContain(
-    "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/0603.step",
+    "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/cap0603.step",
   )
 
   // User model → {projectName}.3dshapes
@@ -62,7 +62,7 @@ test("pcb converter embeds KIPRJMOD 3D model paths for builtin and user footprin
     "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
   )
   expect(sourcePaths).toContain(
-    "https://modelcdn.tscircuit.com/jscad_models/0603.step",
+    "https://modelcdn.tscircuit.com/jscad_models/cap0603.step",
   )
   expect(sourcePaths).toContain(SWITCH_STEP_URL)
 })

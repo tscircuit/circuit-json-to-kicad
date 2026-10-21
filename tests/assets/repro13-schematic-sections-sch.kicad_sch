@@ -2,7 +2,7 @@
   (version 20250114)
   (generator circuit-json-to-kicad)
   (generator_version 0.0.1)
-  (uuid be83095d-0909-4ad2-a7fa-ecf97d2a40e9)
+  (uuid f330d433-4518-4652-8cc7-78553406f983)
   (paper
     A4
   )
@@ -35,7 +35,7 @@
           )
         )
       )
-      (property "Footprint" "tscircuit:capacitor_0805"
+      (property "Footprint" "tscircuit:capacitor_cap0805"
         (id 2)
         (at -1.778 0 90)
         (effects
@@ -88,11 +88,11 @@
       (symbol "capacitor_right_0_1"
         (polyline
           (pts
-            (xy 8.25 0)
-            (xy 1.05 0)
+            (xy 4.5 0)
+            (xy 0.8999999999999999 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -101,11 +101,11 @@
         )
         (polyline
           (pts
-            (xy -1.3499999999999999 0)
-            (xy -8.25 0)
+            (xy -0.8999999999999999 0)
+            (xy -4.5 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -114,11 +114,11 @@
         )
         (polyline
           (pts
-            (xy 1.05 3.9000000000000004)
-            (xy 1.05 -4.05)
+            (xy 0.8999999999999999 2.4003)
+            (xy 0.8999999999999999 -2.4003)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -127,11 +127,11 @@
         )
         (polyline
           (pts
-            (xy -1.3499999999999999 3.9000000000000004)
-            (xy -1.3499999999999999 -4.05)
+            (xy -0.8999999999999999 2.4003)
+            (xy -0.8999999999999999 -2.4003)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -141,8 +141,8 @@
       )
       (symbol "capacitor_right_1_1"
         (pin passive line
-          (at -8.25 0 0)
-          (length 2.54)
+          (at -4.5 0 0)
+          (length 0.01)
           (name "1"
             (effects
               (font
@@ -159,8 +159,8 @@
           )
         )
         (pin passive line
-          (at 8.25 0 180)
-          (length 2.54)
+          (at 4.5 0 180)
+          (length 0.01)
           (name "2"
             (effects
               (font
@@ -207,7 +207,7 @@
           )
         )
       )
-      (property "Footprint" "tscircuit:capacitor_0402"
+      (property "Footprint" "tscircuit:capacitor_cap0402"
         (id 2)
         (at -1.778 0 90)
         (effects
@@ -260,11 +260,11 @@
       (symbol "capacitor_right_0_1"
         (polyline
           (pts
-            (xy 8.25 0)
-            (xy 1.05 0)
+            (xy 4.5 0)
+            (xy 0.8999999999999999 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -273,11 +273,11 @@
         )
         (polyline
           (pts
-            (xy -1.3499999999999999 0)
-            (xy -8.25 0)
+            (xy -0.8999999999999999 0)
+            (xy -4.5 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -286,11 +286,11 @@
         )
         (polyline
           (pts
-            (xy 1.05 3.9000000000000004)
-            (xy 1.05 -4.05)
+            (xy 0.8999999999999999 2.4003)
+            (xy 0.8999999999999999 -2.4003)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -299,11 +299,11 @@
         )
         (polyline
           (pts
-            (xy -1.3499999999999999 3.9000000000000004)
-            (xy -1.3499999999999999 -4.05)
+            (xy -0.8999999999999999 2.4003)
+            (xy -0.8999999999999999 -2.4003)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -313,8 +313,8 @@
       )
       (symbol "capacitor_right_1_1"
         (pin passive line
-          (at -8.25 0 0)
-          (length 2.54)
+          (at -4.5 0 0)
+          (length 0.01)
           (name "1"
             (effects
               (font
@@ -331,8 +331,8 @@
           )
         )
         (pin passive line
-          (at 8.25 0 180)
-          (length 2.54)
+          (at 4.5 0 180)
+          (length 0.01)
           (name "2"
             (effects
               (font
@@ -432,11 +432,11 @@
       (symbol "boxresistor_right_0_1"
         (polyline
           (pts
-            (xy -8.25 0)
-            (xy -4.05 0)
+            (xy -4.5 0)
+            (xy -2.9997 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -445,11 +445,11 @@
         )
         (polyline
           (pts
-            (xy 3.900000000000001 0)
-            (xy 8.25 0)
+            (xy 2.9997 0)
+            (xy 4.5 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -458,15 +458,14 @@
         )
         (polyline
           (pts
-            (xy 5.551115123125783e-16 1.9499999999999997)
-            (xy 3.900000000000001 1.9499999999999997)
-            (xy 3.900000000000001 -2.0999999999999996)
-            (xy -4.05 -2.0999999999999996)
-            (xy -4.05 1.9499999999999997)
-            (xy 5.551115123125783e-16 1.9499999999999997)
+            (xy -2.9997 1.1997)
+            (xy 2.9997 1.1997)
+            (xy 2.9997 -1.1997)
+            (xy -2.9997 -1.1997)
+            (xy -2.9997 1.1997)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -476,8 +475,8 @@
       )
       (symbol "boxresistor_right_1_1"
         (pin passive line
-          (at -8.25 0 0)
-          (length 2.54)
+          (at -4.5 0 0)
+          (length 0.01)
           (name "1"
             (effects
               (font
@@ -494,8 +493,8 @@
           )
         )
         (pin passive line
-          (at 8.25 0 180)
-          (length 2.54)
+          (at 4.5 0 180)
+          (length 0.01)
           (name "2"
             (effects
               (font
@@ -542,7 +541,7 @@
           )
         )
       )
-      (property "Footprint" "tscircuit:capacitor_0402"
+      (property "Footprint" "tscircuit:capacitor_cap0402"
         (id 2)
         (at -1.778 0 90)
         (effects
@@ -595,11 +594,11 @@
       (symbol "capacitor_right_0_1"
         (polyline
           (pts
-            (xy 8.25 0)
-            (xy 1.05 0)
+            (xy 4.5 0)
+            (xy 0.8999999999999999 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -608,11 +607,11 @@
         )
         (polyline
           (pts
-            (xy -1.3499999999999999 0)
-            (xy -8.25 0)
+            (xy -0.8999999999999999 0)
+            (xy -4.5 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -621,11 +620,11 @@
         )
         (polyline
           (pts
-            (xy 1.05 3.9000000000000004)
-            (xy 1.05 -4.05)
+            (xy 0.8999999999999999 2.4003)
+            (xy 0.8999999999999999 -2.4003)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -634,11 +633,11 @@
         )
         (polyline
           (pts
-            (xy -1.3499999999999999 3.9000000000000004)
-            (xy -1.3499999999999999 -4.05)
+            (xy -0.8999999999999999 2.4003)
+            (xy -0.8999999999999999 -2.4003)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -648,8 +647,8 @@
       )
       (symbol "capacitor_right_1_1"
         (pin passive line
-          (at -8.25 0 0)
-          (length 2.54)
+          (at -4.5 0 0)
+          (length 0.01)
           (name "1"
             (effects
               (font
@@ -666,8 +665,8 @@
           )
         )
         (pin passive line
-          (at 8.25 0 180)
-          (length 2.54)
+          (at 4.5 0 180)
+          (length 0.01)
           (name "2"
             (effects
               (font
@@ -975,11 +974,11 @@
       (symbol "boxresistor_right_0_1"
         (polyline
           (pts
-            (xy -8.25 0)
-            (xy -4.05 0)
+            (xy -4.5 0)
+            (xy -2.9997 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -988,11 +987,11 @@
         )
         (polyline
           (pts
-            (xy 3.900000000000001 0)
-            (xy 8.25 0)
+            (xy 2.9997 0)
+            (xy 4.5 0)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -1001,15 +1000,14 @@
         )
         (polyline
           (pts
-            (xy 5.551115123125783e-16 1.9499999999999997)
-            (xy 3.900000000000001 1.9499999999999997)
-            (xy 3.900000000000001 -2.0999999999999996)
-            (xy -4.05 -2.0999999999999996)
-            (xy -4.05 1.9499999999999997)
-            (xy 5.551115123125783e-16 1.9499999999999997)
+            (xy -2.9997 1.1997)
+            (xy 2.9997 1.1997)
+            (xy 2.9997 -1.1997)
+            (xy -2.9997 -1.1997)
+            (xy -2.9997 1.1997)
           )
           (stroke
-            (width 0.254)
+            (width 0.18)
             (type default)
           )
           (fill
@@ -1019,8 +1017,8 @@
       )
       (symbol "boxresistor_right_1_1"
         (pin passive line
-          (at -8.25 0 0)
-          (length 2.54)
+          (at -4.5 0 0)
+          (length 0.01)
           (name "1"
             (effects
               (font
@@ -1037,8 +1035,8 @@
           )
         )
         (pin passive line
-          (at 8.25 0 180)
-          (length 2.54)
+          (at 4.5 0 180)
+          (length 0.01)
           (name "2"
             (effects
               (font
@@ -1085,7 +1083,7 @@
           )
         )
       )
-      (property "Footprint" "tscircuit:led_0603_color(red)"
+      (property "Footprint" "tscircuit:led_0603_color_red"
         (id 2)
         (at -1.778 0 90)
         (effects
@@ -1276,7 +1274,7 @@
       (symbol "led_right_1_1"
         (pin passive line
           (at -8.100000000000001 0 0)
-          (length 2.54)
+          (length 0.01)
           (name "1"
             (effects
               (font
@@ -1294,7 +1292,7 @@
         )
         (pin passive line
           (at 8.100000000000001 0 180)
-          (length 2.54)
+          (length 0.01)
           (name "2"
             (effects
               (font
@@ -1322,35 +1320,37 @@
   (embedded_fonts no)
   (symbol
     (lib_id "Device:capacitor_right")
-    (at 88.5 60.71249999999999 0)
+    (at 88.5 60 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid d346c797-707c-41fc-9ac4-23eaa5a957b9)
-    (fields_autoplaced yes)
+    (uuid 7e457da5-5be5-4688-820b-d3de166caaff)
+    (fields_autoplaced no)
     (property "Reference" "C1"
       (id 0)
-      (at 88.35 54.71249999999999 0)
+      (at 88.5 56.4 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify bottom)
       )
     )
     (property "Value" "100uF"
       (id 1)
-      (at 88.5 67.3125 0)
+      (at 88.5 63.6 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify top)
       )
     )
     (property "Footprint" ""
       (id 2)
-      (at 86.722 60.71249999999999 90)
+      (at 86.722 60 90)
       (effects
         (font
           (size 1.27 1.27)
@@ -1360,7 +1360,7 @@
     )
     (property "Datasheet" "~"
       (id 3)
-      (at 88.5 60.71249999999999 0)
+      (at 88.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1370,7 +1370,7 @@
     )
     (property "Description" "Capacitor"
       (id 4)
-      (at 88.5 60.71249999999999 0)
+      (at 88.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1379,14 +1379,14 @@
       )
     )
     (pin "1"
-      (uuid db90ae33-30b6-4568-931b-836dce9175b4)
+      (uuid 313fc710-1827-46db-b0f8-0b48370c9329)
     )
     (pin "2"
-      (uuid 94894e6e-922e-42be-a642-787e184800e6)
+      (uuid 5b6edfe5-7936-43d1-a071-d94820c13b5c)
     )
     (instances
       (project ""
-        (path "/be83095d-0909-4ad2-a7fa-ecf97d2a40e9"
+        (path "/f330d433-4518-4652-8cc7-78553406f983"
           (reference "C1")
           (unit 1)
         )
@@ -1395,35 +1395,37 @@
   )
   (symbol
     (lib_id "Device:capacitor_right")
-    (at 118.5 60.71249999999999 0)
+    (at 118.5 60 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid 705824e3-4821-42da-931d-f08fb53b395c)
-    (fields_autoplaced yes)
+    (uuid c7946d09-4435-4336-9739-360c62c6e03b)
+    (fields_autoplaced no)
     (property "Reference" "C2"
       (id 0)
-      (at 118.35 54.71249999999999 0)
+      (at 118.5 56.4 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify bottom)
       )
     )
     (property "Value" "100nF"
       (id 1)
-      (at 118.5 67.3125 0)
+      (at 118.5 63.6 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify top)
       )
     )
     (property "Footprint" ""
       (id 2)
-      (at 116.722 60.71249999999999 90)
+      (at 116.722 60 90)
       (effects
         (font
           (size 1.27 1.27)
@@ -1433,7 +1435,7 @@
     )
     (property "Datasheet" "~"
       (id 3)
-      (at 118.5 60.71249999999999 0)
+      (at 118.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1443,7 +1445,7 @@
     )
     (property "Description" "Capacitor"
       (id 4)
-      (at 118.5 60.71249999999999 0)
+      (at 118.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1452,14 +1454,14 @@
       )
     )
     (pin "1"
-      (uuid 6d82ed62-c31a-41ef-9f8b-55a1665d4b53)
+      (uuid c2cb644d-e9da-4072-a4aa-c4724c99304b)
     )
     (pin "2"
-      (uuid 2f47d1b6-c40b-40d5-994d-43014451006d)
+      (uuid 8d5df1d5-3787-4459-8826-f5b5cc8a9e59)
     )
     (instances
       (project ""
-        (path "/be83095d-0909-4ad2-a7fa-ecf97d2a40e9"
+        (path "/f330d433-4518-4652-8cc7-78553406f983"
           (reference "C2")
           (unit 1)
         )
@@ -1468,35 +1470,37 @@
   )
   (symbol
     (lib_id "Device:boxresistor_right")
-    (at 178.5 60.71249999999999 0)
+    (at 178.5 60 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid 6629d247-63fd-46ea-bd4e-696e763d53cc)
-    (fields_autoplaced yes)
+    (uuid 484586bb-e3f0-41ea-b619-349183d38220)
+    (fields_autoplaced no)
     (property "Reference" "R1"
       (id 0)
-      (at 178.2 58.020669749999996 0)
+      (at 178.5 57.599999999999994 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify bottom)
       )
     )
     (property "Value" "10kΩ"
       (id 1)
-      (at 178.2 63.85433024999998 0)
+      (at 178.5 62.400000000000006 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify top)
       )
     )
     (property "Footprint" ""
       (id 2)
-      (at 176.722 60.71249999999999 90)
+      (at 176.722 60 90)
       (effects
         (font
           (size 1.27 1.27)
@@ -1506,7 +1510,7 @@
     )
     (property "Datasheet" "~"
       (id 3)
-      (at 178.5 60.71249999999999 0)
+      (at 178.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1516,7 +1520,7 @@
     )
     (property "Description" "Resistor"
       (id 4)
-      (at 178.5 60.71249999999999 0)
+      (at 178.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1525,14 +1529,14 @@
       )
     )
     (pin "1"
-      (uuid 0be3d023-d49d-4226-93d9-2d1788eed2ba)
+      (uuid 373df4c0-f159-4912-bdba-b8a8c0b1dd8e)
     )
     (pin "2"
-      (uuid b9d288af-0b5f-4b3c-9247-b71cd9cb2cc9)
+      (uuid 7038928a-8bce-43b4-ae8a-5076635cff9f)
     )
     (instances
       (project ""
-        (path "/be83095d-0909-4ad2-a7fa-ecf97d2a40e9"
+        (path "/f330d433-4518-4652-8cc7-78553406f983"
           (reference "R1")
           (unit 1)
         )
@@ -1541,35 +1545,37 @@
   )
   (symbol
     (lib_id "Device:capacitor_right")
-    (at 208.5 60.71249999999999 0)
+    (at 208.5 60 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid 0aeac1ce-9cfa-4730-8e57-3ef31b227232)
-    (fields_autoplaced yes)
+    (uuid 709a84bb-59f0-49a6-871b-eec2b41e09a3)
+    (fields_autoplaced no)
     (property "Reference" "C3"
       (id 0)
-      (at 208.35 54.71249999999999 0)
+      (at 208.5 56.4 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify bottom)
       )
     )
     (property "Value" "10nF"
       (id 1)
-      (at 208.5 67.3125 0)
+      (at 208.5 63.6 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify top)
       )
     )
     (property "Footprint" ""
       (id 2)
-      (at 206.722 60.71249999999999 90)
+      (at 206.722 60 90)
       (effects
         (font
           (size 1.27 1.27)
@@ -1579,7 +1585,7 @@
     )
     (property "Datasheet" "~"
       (id 3)
-      (at 208.5 60.71249999999999 0)
+      (at 208.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1589,7 +1595,7 @@
     )
     (property "Description" "Capacitor"
       (id 4)
-      (at 208.5 60.71249999999999 0)
+      (at 208.5 60 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1598,14 +1604,14 @@
       )
     )
     (pin "1"
-      (uuid c6551dc7-4686-45ba-bdac-065776992d87)
+      (uuid c3e5ccb6-ec67-4710-b2fa-a4ac62394c89)
     )
     (pin "2"
-      (uuid 0b846c9e-f8d8-4818-82c5-c8c75a41aef7)
+      (uuid 0afa2ac9-c787-45b8-ae1b-d43835eca490)
     )
     (instances
       (project ""
-        (path "/be83095d-0909-4ad2-a7fa-ecf97d2a40e9"
+        (path "/f330d433-4518-4652-8cc7-78553406f983"
           (reference "C3")
           (unit 1)
         )
@@ -1614,26 +1620,27 @@
   )
   (symbol
     (lib_id "Device:U_chip_soic8")
-    (at 103.5 135.71249999999998 0)
+    (at 103.5 135 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid 1903db20-9d64-4e92-adc4-3fa6835c3d41)
-    (fields_autoplaced yes)
+    (uuid 1b3ce43d-6c79-4c64-bf4a-0fdafd46e08a)
+    (fields_autoplaced no)
     (property "Reference" "U1"
       (id 0)
-      (at 93 126.26249999999999 0)
+      (at 93 125.55 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify left)
       )
     )
     (property "Value" ""
       (id 1)
-      (at 103.5 141.71249999999998 0)
+      (at 103.5 145.5 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1643,7 +1650,7 @@
     )
     (property "Footprint" ""
       (id 2)
-      (at 101.722 135.71249999999998 90)
+      (at 101.722 135 90)
       (effects
         (font
           (size 1.27 1.27)
@@ -1653,7 +1660,7 @@
     )
     (property "Datasheet" "~"
       (id 3)
-      (at 103.5 135.71249999999998 0)
+      (at 103.5 135 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1663,7 +1670,7 @@
     )
     (property "Description" "Integrated Circuit"
       (id 4)
-      (at 103.5 135.71249999999998 0)
+      (at 103.5 135 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1672,26 +1679,26 @@
       )
     )
     (pin "1"
-      (uuid 35b922c8-1054-4cd1-9dea-9a55ae228b7d)
+      (uuid 17338fc6-b454-48a4-bd32-a20eb272c037)
     )
     (pin "2"
-      (uuid b297a51c-c8c8-4bdf-beeb-323d299e294e)
+      (uuid 32bcec61-1819-4a8b-aa0e-29cbd3a9e777)
     )
     (pin "3"
-      (uuid 4ee19fa6-e70e-458a-a1f9-9e8b24ac65ff)
+      (uuid 6645f0c8-9446-4b4a-8b20-6a5c1b967f90)
     )
     (pin "4"
-      (uuid 76525ac4-0ccb-4014-9d2c-48db360f63ec)
+      (uuid 4580acfb-9149-45e7-a716-f6477fd376b0)
     )
     (pin "5"
-      (uuid c358547f-1642-491b-b5f5-a48a3ced21fd)
+      (uuid eb85f9ab-a30b-4860-932c-53754163b766)
     )
     (pin "8"
-      (uuid 8e1f0c9f-ece7-46c8-9ce9-4626e4954615)
+      (uuid 69ae3660-0082-47bb-b005-35c06fbbb3a0)
     )
     (instances
       (project ""
-        (path "/be83095d-0909-4ad2-a7fa-ecf97d2a40e9"
+        (path "/f330d433-4518-4652-8cc7-78553406f983"
           (reference "U1")
           (unit 1)
         )
@@ -1700,35 +1707,37 @@
   )
   (symbol
     (lib_id "Device:boxresistor_right")
-    (at 193.5 120.71249999999999 0)
+    (at 193.5 120 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid 0c22f134-58d4-408f-8cb8-7f5c95bc5170)
-    (fields_autoplaced yes)
+    (uuid 1db52f80-7c71-457d-ab00-d10d096e9cd0)
+    (fields_autoplaced no)
     (property "Reference" "R2"
       (id 0)
-      (at 193.2 118.02066975 0)
+      (at 193.5 117.6 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify bottom)
       )
     )
     (property "Value" "330Ω"
       (id 1)
-      (at 193.2 123.85433024999998 0)
+      (at 193.5 122.4 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify top)
       )
     )
     (property "Footprint" ""
       (id 2)
-      (at 191.722 120.71249999999999 90)
+      (at 191.722 120 90)
       (effects
         (font
           (size 1.27 1.27)
@@ -1738,7 +1747,7 @@
     )
     (property "Datasheet" "~"
       (id 3)
-      (at 193.5 120.71249999999999 0)
+      (at 193.5 120 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1748,7 +1757,7 @@
     )
     (property "Description" "Resistor"
       (id 4)
-      (at 193.5 120.71249999999999 0)
+      (at 193.5 120 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1757,14 +1766,14 @@
       )
     )
     (pin "1"
-      (uuid 0bf525eb-f68a-45f8-9ce6-8b0b4f03cb58)
+      (uuid 1af5e68c-d014-4f76-85e6-1b2c963cef4a)
     )
     (pin "2"
-      (uuid 10e23eaf-7940-4388-957e-f5509ec38a6b)
+      (uuid 18bf3522-2606-4ae6-84d7-6806643232c6)
     )
     (instances
       (project ""
-        (path "/be83095d-0909-4ad2-a7fa-ecf97d2a40e9"
+        (path "/f330d433-4518-4652-8cc7-78553406f983"
           (reference "R2")
           (unit 1)
         )
@@ -1773,35 +1782,37 @@
   )
   (symbol
     (lib_id "Device:led_right")
-    (at 193.5 150.71249999999998 0)
+    (at 193.5 150 0)
     (unit 1)
     (exclude_from_sim no)
     (in_bom yes)
     (on_board yes)
     (dnp no)
-    (uuid 5bacd37a-f116-4fc7-a8bf-be6ee7ce0835)
-    (fields_autoplaced yes)
+    (uuid 96fb3623-f031-4683-a0dd-69c0f570a47a)
+    (fields_autoplaced no)
     (property "Reference" "LED1"
       (id 0)
-      (at 193.5 144.5625 0)
+      (at 193.5 143.85 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify bottom)
       )
     )
     (property "Value" ""
       (id 1)
-      (at 193.5 153.86249999999998 0)
+      (at 193.5 153.15 0)
       (effects
         (font
           (size 1.27 1.27)
         )
+        (justify top)
       )
     )
     (property "Footprint" ""
       (id 2)
-      (at 191.722 150.71249999999998 90)
+      (at 191.722 150 90)
       (effects
         (font
           (size 1.27 1.27)
@@ -1811,7 +1822,7 @@
     )
     (property "Datasheet" "~"
       (id 3)
-      (at 193.5 150.71249999999998 0)
+      (at 193.5 150 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1821,7 +1832,7 @@
     )
     (property "Description" "LED"
       (id 4)
-      (at 193.5 150.71249999999998 0)
+      (at 193.5 150 0)
       (effects
         (font
           (size 1.27 1.27)
@@ -1830,14 +1841,14 @@
       )
     )
     (pin "1"
-      (uuid 3c5698db-8904-4ca2-a684-96cac149bf64)
+      (uuid f384d919-d355-41d5-98a1-7d0460f29333)
     )
     (pin "2"
-      (uuid 67fcdb6e-2cf2-428d-a3cc-cc2dfd85172c)
+      (uuid f3c1c1ea-5aa9-43c2-bedc-b8ce3daaf1c9)
     )
     (instances
       (project ""
-        (path "/be83095d-0909-4ad2-a7fa-ecf97d2a40e9"
+        (path "/f330d433-4518-4652-8cc7-78553406f983"
           (reference "LED1")
           (unit 1)
         )
@@ -1845,67 +1856,67 @@
     )
   )
   (text "Power"
-    (at 79.05 49.912499999999994 0)
+    (at 82.8 49.42499999999999 0)
     (effects
       (font
         (size 1.27 1.27)
         (color 0 0 0 1)
       )
     )
-    (uuid a81596eb-d9a6-446d-bcbc-3aa53afff583)
+    (uuid 712dee78-686e-4730-90c3-8fb90d6f49d0)
   )
   (text "Filter"
-    (at 155.8125 49.912499999999994 0)
+    (at 154.8 49.42499999999999 0)
     (effects
       (font
         (size 1.27 1.27)
         (color 0 0 0 1)
       )
     )
-    (uuid 63ba6270-9641-4ed1-8fe2-ba3aeed9058a)
+    (uuid 2ff62d46-03ab-4d4d-97bb-4226e64669be)
   )
   (text "Logic"
-    (at 79.05 98.104084875 0)
+    (at 82.8 95.7 0)
     (effects
       (font
         (size 1.27 1.27)
         (color 0 0 0 1)
       )
     )
-    (uuid e1de3d39-77fe-4162-87b0-882bcca13fc7)
+    (uuid 84c06e96-fdc2-4d9e-8838-b54db5090441)
   )
   (text "Output"
-    (at 155.8125 98.104084875 0)
+    (at 154.8 95.7 0)
     (effects
       (font
         (size 1.27 1.27)
         (color 0 0 0 1)
       )
     )
-    (uuid a72fe12f-8b55-4fbf-b5ba-7052b8694723)
+    (uuid 14442a7c-e828-414b-bc43-98ba5cc1d222)
   )
   (polyline
     (pts
-      (xy 65.25 92.404084875)
-      (xy 231.75 92.404084875)
+      (xy 69 90)
+      (xy 228 90)
     )
     (stroke
       (width 0)
       (type default)
       (color 0 0 0 1)
     )
-    (uuid 7dc4fa41-855d-48d1-a931-c204fc49fd9b)
+    (uuid 9260d4d6-2ad2-4eaf-9b3a-dd4efdd2428d)
   )
   (polyline
     (pts
-      (xy 149.5125 170.58749999999998)
-      (xy 149.5125 39.41249999999998)
+      (xy 148.5 169.875)
+      (xy 148.5 40.125)
     )
     (stroke
       (width 0)
       (type default)
       (color 0 0 0 1)
     )
-    (uuid 770137af-f474-4cb1-b5d5-eb6bf103eabe)
+    (uuid 192c494a-5dae-4e9b-92ab-5eae57e0d110)
   )
 )
