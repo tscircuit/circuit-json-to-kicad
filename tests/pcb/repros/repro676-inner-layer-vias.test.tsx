@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 
 test("repro676: duplicate inner-layer vias", async () => {
   const circuit = new Circuit()
