@@ -72,6 +72,9 @@ test("PCB note dimensions preserve labels, arrows, offsets, rotation, and layers
     generatePng: false,
   })
   expect(snapshot.exitCode).toBe(0)
+  const svg = snapshot.generatedFileContent["temp_file.svg"]!.toString()
+  expect(svg).toContain("<desc>8mm</desc>")
+  expect(svg).toContain("<desc>HEIGHT</desc>")
   expect(output).not.toMatch(/NaN|Infinity/)
   expect(JSON.stringify(circuitJson)).toBe(original)
   const repeat = new CircuitJsonToKicadPcbConverter(circuitJson)
