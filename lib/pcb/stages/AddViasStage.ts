@@ -12,7 +12,11 @@ import {
   getViaLayerSpan,
 } from "../utils/layerMapping"
 
+const DEFAULT_VIA_OUTER_DIAMETER = 0.8
+const DEFAULT_VIA_HOLE_DIAMETER = 0.4
+
 type ViaLike = {
+  // Resolved KiCad net shared by duplicate matching and export.
   net?: PcbNetInfo
   x: number
   y: number
@@ -163,8 +167,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       via.y,
       span,
       connection,
-      via.outer_diameter,
-      via.hole_diameter,
+      via.outer_diameter ?? DEFAULT_VIA_OUTER_DIAMETER,
+      via.hole_diameter ?? DEFAULT_VIA_HOLE_DIAMETER,
     ])
   }
 
@@ -227,8 +231,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const viaLayers = this.getKicadViaLayers(via)
 
     // Preserve explicit Circuit JSON via dimensions; only fall back when absent.
-    const viaSize = via.outer_diameter ?? 0.8
-    const viaDrill = via.hole_diameter ?? 0.4
+    const viaSize = via.outer_diameter ?? DEFAULT_VIA_OUTER_DIAMETER
+    const viaDrill = via.hole_diameter ?? DEFAULT_VIA_HOLE_DIAMETER
 
     // Create a via with deterministic UUID
     const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${via.net?.id ?? 0}`
