@@ -38,16 +38,16 @@ test("standalone PCB notes preserve layers, anchors, sizes, and distinct IDs", a
       x: 97,
       y: 98,
       size: 0.8,
-      horizontal: "left",
-      vertical: "top",
+      horizontal: "left" as const,
+      vertical: "top" as const,
     },
     {
       layer: "B.Fab",
       x: 103,
       y: 102,
       size: 1.2,
-      horizontal: "right",
-      vertical: "bottom",
+      horizontal: "right" as const,
+      vertical: "bottom" as const,
     },
   ].entries()) {
     const note = notes[index]!
