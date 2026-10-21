@@ -1,3 +1,4 @@
+import { convertNoteGraphics } from "./footprints-stage-converters/convertNoteGraphics"
 import type {
   CircuitJson,
   CadComponent,
@@ -397,6 +398,23 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (fpPolys.length > 0) {
       footprint.fpPolys = fpPolys
     }
+
+    const noteGraphics = convertNoteGraphics({
+      lines: this.ctx.db.pcb_note_line
+        .list()
+        .filter((note) => note.pcb_component_id === component.pcb_component_id),
+      paths: this.ctx.db.pcb_note_path
+        .list()
+        .filter((note) => note.pcb_component_id === component.pcb_component_id),
+      dimensions: this.ctx.db.pcb_note_dimension
+        .list()
+        .filter((note) => note.pcb_component_id === component.pcb_component_id),
+      componentCenter: component.center,
+      componentRotation: component.rotation || 0,
+    })
+    footprint.fpLines = [...footprint.fpLines, ...noteGraphics.lines]
+    footprint.fpPolys = [...footprint.fpPolys, ...noteGraphics.polygons]
+    footprint.fpTexts = [...footprint.fpTexts, ...noteGraphics.texts]
 
     // Add 3D models
     if (cadComponent) {

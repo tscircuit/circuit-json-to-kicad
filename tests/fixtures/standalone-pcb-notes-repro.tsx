@@ -14,6 +14,12 @@ export async function createStandalonePcbNotesRepro() {
         ]}
         strokeWidth={0.2}
       />
+      <pcbnotedimension
+        from={{ x: 4, y: 0 }}
+        to={{ x: 12, y: 0 }}
+        fontSize={0.8}
+        arrowSize={0.5}
+      />
       <chip
         name="U1"
         pcbY={-7}

@@ -7,12 +7,13 @@ import { createStandalonePcbNotesRepro } from "../../fixtures/standalone-pcb-not
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro36: standalone PCB note rectangles, lines, and paths comparison", async () => {
+test("repro36: standalone PCB note rectangles, lines, paths, and dimensions comparison", async () => {
   const circuitJson = await createStandalonePcbNotesRepro()
   for (const type of [
     "pcb_note_rect",
     "pcb_note_line",
     "pcb_note_path",
+    "pcb_note_dimension",
   ] as const) {
     const notes = circuitJson.filter((element) => element.type === type)
     expect(

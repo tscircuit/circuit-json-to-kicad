@@ -3,7 +3,7 @@ import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { createStandalonePcbNoteShapeRepro } from "../../fixtures/standalone-pcb-note-shape-repro"
 
-test.failing("repro36: standalone PCB note line survives KiCad export", async () => {
+test("repro36: standalone PCB note line survives KiCad export", async () => {
   const circuitJson = await createStandalonePcbNoteShapeRepro("line")
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()

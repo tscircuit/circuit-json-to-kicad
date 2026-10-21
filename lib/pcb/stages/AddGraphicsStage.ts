@@ -1,3 +1,5 @@
+import { convertPcbNoteGraphics } from "./utils/convertPcbNoteGraphics"
+import { convertPcbNoteDimensions } from "./utils/convertPcbNoteDimensions"
 import type {
   CircuitJson,
   PcbCutout,
@@ -192,6 +194,40 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         kicadPcb.graphicTexts = graphicTexts
       }
     }
+
+    const noteGraphics = convertPcbNoteGraphics({
+      rectangles: this.ctx.db.pcb_note_rect
+        .list()
+        .filter((note) => !note.pcb_component_id),
+      lines: this.ctx.db.pcb_note_line
+        .list()
+        .filter((note) => !note.pcb_component_id),
+      paths: this.ctx.db.pcb_note_path
+        .list()
+        .filter((note) => !note.pcb_component_id),
+      matrix: c2kMatPcb,
+    })
+    const dimensions = convertPcbNoteDimensions(
+      this.ctx.db.pcb_note_dimension
+        .list()
+        .filter((note) => !note.pcb_component_id),
+      c2kMatPcb,
+    )
+    kicadPcb.graphicLines = [
+      ...kicadPcb.graphicLines,
+      ...noteGraphics.lines,
+      ...dimensions.lines,
+    ]
+    kicadPcb.graphicRects = [
+      ...kicadPcb.graphicRects,
+      ...noteGraphics.rectangles,
+    ]
+    kicadPcb.graphicPolys = [
+      ...kicadPcb.graphicPolys,
+      ...noteGraphics.polygons,
+      ...dimensions.polygons,
+    ]
+    kicadPcb.graphicTexts = [...kicadPcb.graphicTexts, ...dimensions.texts]
 
     // Add board outline from pcb_board
     const pcbBoards = this.ctx.db.pcb_board?.list() || []
