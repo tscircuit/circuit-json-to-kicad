@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 
 test("text without a source trace stays graphical even when it matches a net name", async () => {
   const circuit = new Circuit()
@@ -24,10 +24,7 @@ test("text without a source trace stays graphical even when it matches a net nam
   converter.runUntilFinished()
   const schematic = converter.getOutput()
 
-  expect(schematic.labels.map((label) => label.value)).toEqual([
-    "SIGNAL",
-    "SIGNAL",
-  ])
+  expect(schematic.labels.map((label) => label.value)).toEqual(["SIGNAL"])
   expect(schematic.globalLabels).toHaveLength(0)
   expect(
     schematic.texts.filter((text) => text.value === "SIGNAL"),

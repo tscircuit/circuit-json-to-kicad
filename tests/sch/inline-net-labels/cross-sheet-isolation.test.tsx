@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 
 test("KiCad keeps same-named SIGNAL connections on different sheets separate", async () => {

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
@@ -73,22 +73,14 @@ test("repro18: component fields and inline labels preserve placement", async () 
     const convertedText = parsedSchematic.labels.find(
       (text) => text.value === inlineNetLabel.text,
     )
-    const trace = circuitJson.find(
-      (element) =>
-        element.type === "schematic_trace" &&
-        element.source_trace_id === inlineNetLabel.source_trace_id,
+    // Core places these labels at their inner edge, with text extending left
+    // along the wire. Preserve that supplied attachment and alignment.
+    const expectedPosition = applyToPoint(
+      converter.ctx.c2kMatSch!,
+      inlineNetLabel.position,
     )
-    if (trace?.type !== "schematic_trace")
-      throw new Error("Missing labelled wire")
-    // This fixture's wires extend left from J_UART. The leftmost wire point is
-    // the expected label anchor, independently of the conversion helper.
-    const openEnd = trace.edges
-      .flatMap((edge) => [edge.from, edge.to])
-      .reduce((leftmost, point) => (point.x < leftmost.x ? point : leftmost))
-    const expectedPosition = applyToPoint(converter.ctx.c2kMatSch!, openEnd)
-    // Both wires extend left from J_UART, so the text starts at the open left
-    // end and extends right, back along the wire toward the component.
-    expect(convertedText?.effects?.justify?.horizontal).toBe("left")
+    expect(inlineNetLabel.anchor).toBe("bottom_right")
+    expect(convertedText?.effects?.justify?.horizontal).toBe("right")
     expect(convertedText?.at?.x).toBeCloseTo(expectedPosition.x)
     expect(convertedText?.at?.y).toBeCloseTo(expectedPosition.y)
   }

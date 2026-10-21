@@ -1,5 +1,7 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
+import { CircuitJsonToKicadSchConverter } from "lib"
+import { applyToPoint } from "transformation-matrix"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 
 test("source-trace-backed inline labels connect without a source_net record", async () => {
@@ -39,6 +41,21 @@ test("source-trace-backed inline labels connect without a source_net record", as
       (label) => label.source_trace_id === sourceTraces[0]!.source_trace_id,
     ),
   ).toBe(true)
+
+  // Core supplies the attachment point. The converter must not move it to
+  // a free endpoint or search for a nearby wire.
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
+  converter.runUntilFinished()
+  expect(converter.getOutput().labels).toHaveLength(labels.length)
+  for (const [index, text] of labels.entries()) {
+    const expectedPosition = applyToPoint(
+      converter.ctx.c2kMatSch!,
+      text.position,
+    )
+    const label = converter.getOutput().labels[index]!
+    expect(label.at?.x).toBeCloseTo(expectedPosition.x)
+    expect(label.at?.y).toBeCloseTo(expectedPosition.y)
+  }
 
   const nets = await exportNativeSchematicNets(circuitJson)
   expect(
