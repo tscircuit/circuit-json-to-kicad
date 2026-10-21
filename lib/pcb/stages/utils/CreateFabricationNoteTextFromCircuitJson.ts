@@ -1,4 +1,4 @@
-import type { PcbFabricationNoteText } from "circuit-json"
+import type { PcbFabricationNoteText, PcbNoteText } from "circuit-json"
 import {
   At,
   GrText,
@@ -10,14 +10,14 @@ import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 /**
- * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_fabrication_note_text
+ * Creates a KiCad gr_text (graphics text) element from a circuit JSON fabrication note or standalone PCB note
  * Fabrication notes are placed on the F.Fab or B.Fab layer for manufacturing notes
  */
 export function createFabricationNoteTextFromCircuitJson({
   textElement,
   c2kMatPcb,
 }: {
-  textElement: PcbFabricationNoteText
+  textElement: PcbFabricationNoteText | PcbNoteText
   c2kMatPcb: Matrix
 }): GrText | null {
   if (!textElement.text || !textElement.anchor_position) {
@@ -87,7 +87,9 @@ export function createFabricationNoteTextFromCircuitJson({
     layer: kicadLayer,
     effects: textEffects,
     uuid: generateDeterministicUuid(
-      textElement.pcb_fabrication_note_text_id ?? textElement.text,
+      textElement.type === "pcb_note_text"
+        ? textElement.pcb_note_text_id
+        : (textElement.pcb_fabrication_note_text_id ?? textElement.text),
     ),
   })
   grText.position = position
