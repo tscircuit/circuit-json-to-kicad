@@ -26,9 +26,7 @@ type ViaLike = {
   from_layer?: string
   to_layer?: string
   pcb_trace_id?: string
-  source_net_id?: string
   subcircuit_connectivity_map_key?: string
-  connection_name?: string
   tented_on_top?: boolean
   tented_on_bottom?: boolean
   is_tented?: boolean
@@ -45,11 +43,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const { pcbNetMap } = this.ctx
     const standaloneVias: ViaLike[] = this.ctx.db.pcb_via.list().map((via) => ({
       ...via,
-      net: pcbNetMap?.get(
-        via.subcircuit_connectivity_map_key ||
-          via.source_net_id ||
-          via.pcb_via_id,
-      ),
+      net: pcbNetMap?.get(via.pcb_via_id),
     }))
     const seenRouteViaKeys = new Set<string>()
     const standaloneViasByPosition = new Map<string, ViaLike[]>()
@@ -78,7 +72,6 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
               pcb_trace_id: trace.pcb_trace_id,
               subcircuit_connectivity_map_key:
                 trace.subcircuit_connectivity_map_key,
-              connection_name: trace.connection_name,
               tented_on_top: point.tented_on_top,
               tented_on_bottom: point.tented_on_bottom,
             }),
