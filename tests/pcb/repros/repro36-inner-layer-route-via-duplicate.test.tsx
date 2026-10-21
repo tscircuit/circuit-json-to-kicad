@@ -7,7 +7,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro36: an inner-layer route hop duplicates its standalone through-via", async () => {
+test("repro36: an inner-layer route hop does not duplicate its standalone through-via", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width={8} height={6} layers={4}>
@@ -43,16 +43,12 @@ test("repro36: an inner-layer route hop duplicates its standalone through-via", 
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
-  // Capture the current bug: one physical via becomes two overlapping KiCad vias.
-  expect(converter.getOutput().vias).toHaveLength(2)
+  expect(converter.getOutput().vias).toHaveLength(1)
   expect(
     converter
       .getOutput()
       .vias.map((via) => ({ size: via.size, drill: via.drill })),
-  ).toEqual([
-    { size: 0.45, drill: 0.2 },
-    { size: 0.8, drill: 0.4 },
-  ])
+  ).toEqual([{ size: 0.45, drill: 0.2 }])
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
