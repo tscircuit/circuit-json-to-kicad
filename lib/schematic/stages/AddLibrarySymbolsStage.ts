@@ -372,7 +372,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     schematicComponent: SchematicComponent,
   ): any {
     if (symbolName.startsWith("generic_chip_")) {
-      return createGenericChipSymbolData(schematicComponent, this.ctx.db)
+      return createGenericChipSymbolData(
+        schematicComponent,
+        this.ctx.db,
+        this.ctx.circuitJson,
+      )
     }
 
     return getSchematicSymbolData(symbolName) || null

@@ -4,6 +4,7 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import type { PartsEngine } from "@tscircuit/props"
 import type { AnyCircuitElement } from "circuit-json"
+import { SymbolCircleCenter } from "kicadts"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -48,6 +49,8 @@ test("sch basics06 usb-c connector", async () => {
         name="U1"
         standard="usb_c"
         manufacturerPartNumber="TYPE-C-31-M-12"
+        schX={4}
+        schY={-2}
       />
     </board>,
   )
@@ -94,6 +97,30 @@ test("sch basics06 usb-c connector", async () => {
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   await converter.runUntilFinished()
+
+  const symbol = converter.getOutput().libSymbols?.symbols[0]
+  const drawing = symbol?.subSymbols.find((part) =>
+    part.libraryId?.endsWith("_0_1"),
+  )
+  // Preserve the generated box, seven artwork paths, two circles, and all pins.
+  expect(drawing?.polylines).toHaveLength(8)
+  expect(drawing?.circles).toHaveLength(2)
+  expect(symbol?.subSymbols.flatMap((part) => part.pins)).toHaveLength(16)
+
+  const component = circuitJson.find(
+    (elm) => elm.type === "schematic_component",
+  )!
+  const circle = circuitJson.find((elm) => elm.type === "schematic_circle")!
+  const circleCenter = drawing!.circles[0]!.getChildren().find(
+    (child) => child instanceof SymbolCircleCenter,
+  )!
+  const scale = converter.ctx.kicadSchematicScaleFactor!
+  expect(circleCenter.x).toBeCloseTo(
+    (circle.center.x - component.center.x) * scale,
+  )
+  expect(circleCenter.y).toBeCloseTo(
+    (circle.center.y - component.center.y) * scale,
+  )
 
   Bun.write("./debug-output/kicad.kicad_sch", converter.getOutputString())
 
