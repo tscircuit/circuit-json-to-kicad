@@ -75,12 +75,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         hasLinkedSymbolPrimitives,
         usesComponentLevelSymbolPrimitives,
         libraryId,
+        isChip,
       } = symbolContext
 
       // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
       if (!this.ctx.c2kMatSch) continue
       const symbolPosition =
-        hasLinkedSymbolPrimitives || usesComponentLevelSymbolPrimitives
+        schematicSymbolId || usesComponentLevelSymbolPrimitives || isChip
           ? schematicComponent.center
           : getBuiltinSymbolPosition(
               schematicComponent,
