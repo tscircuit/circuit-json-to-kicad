@@ -21,7 +21,8 @@ test("via deduplication preserves different nets at the same position", () => {
       hole_diameter: 0.3,
       subcircuit_connectivity_map_key: "A",
     },
-    ...["A", "B", "C", "C"].map((net, index) => ({
+    // The unresolved key "2" must not collide with KiCad net ID 2 (net B).
+    ...["A", "B", "C", "C", "2"].map((net, index) => ({
       type: "pcb_trace",
       pcb_trace_id: `pcb_trace_${index}`,
       subcircuit_connectivity_map_key: net,
@@ -45,5 +46,5 @@ test("via deduplication preserves different nets at the same position", () => {
 
   expect(
     pcb.vias.map((via) => pcb.nets.find((net) => net.id === via.net?.id)?.name),
-  ).toEqual(["A", "B", "C"])
+  ).toEqual(["A", "B", "C", ""])
 })

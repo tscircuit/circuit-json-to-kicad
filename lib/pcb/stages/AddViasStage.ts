@@ -154,9 +154,9 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const connectivityKey = via.net?.id ?? via.subcircuit_connectivity_map_key
     const connection =
       connectivityKey !== undefined
-        ? `net:${connectivityKey}`
+        ? ["net", connectivityKey]
         : via.pcb_trace_id !== undefined
-          ? `trace:${via.pcb_trace_id}`
+          ? ["trace", via.pcb_trace_id]
           : undefined
     if (connection === undefined) return undefined
 
