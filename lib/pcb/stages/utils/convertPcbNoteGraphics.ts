@@ -1,13 +1,11 @@
 import type { PcbNoteLine, PcbNotePath, PcbNoteRect } from "circuit-json"
-import { GrLine, GrPoly, GrRect, GrText, Stroke } from "kicadts"
+import { GrLine, GrRect, Stroke } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 export interface PcbNoteGraphics {
   lines: GrLine[]
   rectangles: GrRect[]
-  polygons: GrPoly[]
-  texts: GrText[]
 }
 
 export const getPcbNoteLayer = (layer: string) =>
@@ -34,8 +32,6 @@ export function convertPcbNoteGraphics({
   const graphics: PcbNoteGraphics = {
     lines: [],
     rectangles: [],
-    polygons: [],
-    texts: [],
   }
   for (const note of lines) {
     graphics.lines.push(
@@ -66,52 +62,25 @@ export function convertPcbNoteGraphics({
     const width = note.has_stroke === false ? 0 : note.stroke_width
     const halfWidth = note.width / 2
     const halfHeight = note.height / 2
-    const radius = Math.max(
-      0,
-      Math.min(note.corner_radius ?? 0, halfWidth, halfHeight),
-    )
     const common = {
       layer: getPcbNoteLayer(note.layer),
       stroke: createNoteStroke(width, note.is_stroke_dashed),
       fill: note.is_filled ?? false,
       uuid: generateDeterministicUuid(note.pcb_note_rect_id),
     }
-    if (radius > 0) {
-      const points: Array<{ x: number; y: number }> = []
-      for (let corner = 0; corner < 4; corner++) {
-        const angle = (corner * Math.PI) / 2
-        const center = {
-          x:
-            note.center.x +
-            (corner === 0 || corner === 3 ? 1 : -1) * (halfWidth - radius),
-          y: note.center.y + (corner < 2 ? 1 : -1) * (halfHeight - radius),
-        }
-        for (let step = 0; step <= 8; step++) {
-          const theta = angle + (step * Math.PI) / 16
-          points.push(
-            applyToPoint(matrix, {
-              x: center.x + Math.cos(theta) * radius,
-              y: center.y + Math.sin(theta) * radius,
-            }),
-          )
-        }
-      }
-      graphics.polygons.push(new GrPoly({ ...common, points }))
-    } else {
-      graphics.rectangles.push(
-        new GrRect({
-          ...common,
-          start: applyToPoint(matrix, {
-            x: note.center.x - halfWidth,
-            y: note.center.y + halfHeight,
-          }),
-          end: applyToPoint(matrix, {
-            x: note.center.x + halfWidth,
-            y: note.center.y - halfHeight,
-          }),
+    graphics.rectangles.push(
+      new GrRect({
+        ...common,
+        start: applyToPoint(matrix, {
+          x: note.center.x - halfWidth,
+          y: note.center.y + halfHeight,
         }),
-      )
-    }
+        end: applyToPoint(matrix, {
+          x: note.center.x + halfWidth,
+          y: note.center.y - halfHeight,
+        }),
+      }),
+    )
   }
   return graphics
 }

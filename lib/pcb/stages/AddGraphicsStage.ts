@@ -208,26 +208,15 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       matrix: c2kMatPcb,
     })
     const dimensions = convertPcbNoteDimensions(
-      this.ctx.db.pcb_note_dimension
-        .list()
-        .filter((note) => !note.pcb_component_id),
+      this.ctx.db.pcb_note_dimension.list(),
       c2kMatPcb,
     )
-    kicadPcb.graphicLines = [
-      ...kicadPcb.graphicLines,
-      ...noteGraphics.lines,
-      ...dimensions.lines,
-    ]
+    kicadPcb.graphicLines = [...kicadPcb.graphicLines, ...noteGraphics.lines]
     kicadPcb.graphicRects = [
       ...kicadPcb.graphicRects,
       ...noteGraphics.rectangles,
     ]
-    kicadPcb.graphicPolys = [
-      ...kicadPcb.graphicPolys,
-      ...noteGraphics.polygons,
-      ...dimensions.polygons,
-    ]
-    kicadPcb.graphicTexts = [...kicadPcb.graphicTexts, ...dimensions.texts]
+    kicadPcb.otherChildren = [...kicadPcb.otherChildren, ...dimensions]
 
     // Add board outline from pcb_board
     const pcbBoards = this.ctx.db.pcb_board?.list() || []

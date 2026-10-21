@@ -24,14 +24,6 @@ test("standalone PCB notes preserve geometry, stroke styles, fills, and bottom l
         isFilled
         hasStroke={false}
       />
-      <pcbnoterect
-        pcbX={6}
-        pcbY={-5}
-        width={4}
-        height={2}
-        cornerRadius={0.5}
-        strokeWidth={0.2}
-      />
       <pcbnoterect pcbX={-6} pcbY={-5} width={4} height={2} hasStroke={false} />
       <pcbnoteline
         x1={-4}
@@ -68,8 +60,6 @@ test("standalone PCB notes preserve geometry, stroke styles, fills, and bottom l
   expect(rectangle.stroke?.type).toBe("dash")
   expect(pcb.graphicRects[1]?.fill).toBe(true)
   expect(pcb.graphicRects[1]?.stroke?.width).toBe(0)
-  expect(pcb.graphicPolys).toHaveLength(1)
-  expect(pcb.graphicPolys[0]?.points?.points).toHaveLength(36)
   const lines = pcb.graphicLines.filter((line) =>
     line.layer?.names.includes("B.Fab"),
   )

@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test"
-import { parseKicadPcb } from "kicadts"
+import { Dimension, parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("component-owned lines, paths, and dimensions remain in the rotated footprint", async () => {
+test("component-owned notes export once with correct rotated coordinates", async () => {
   for (const rotation of [0, 90, 37]) {
     const circuit = new Circuit()
     circuit.add(
@@ -71,11 +71,12 @@ test("component-owned lines, paths, and dimensions remain in the rotated footpri
     }
     const pcb = parseKicadPcb(converter.getOutputString())
     const footprint = pcb.footprints[0]!
-    expect(footprint.fpLines).toHaveLength(6)
-    expect(footprint.fpPolys).toHaveLength(2)
-    expect(
-      footprint.fpTexts.filter((text) => text.text === "WIDTH"),
-    ).toHaveLength(1)
+    expect(footprint.fpLines).toHaveLength(3)
+    const dimensions = pcb.otherChildren.filter(
+      (child) => child instanceof Dimension,
+    )
+    expect(dimensions).toHaveLength(1)
+    expect(dimensions[0]?.grText?.text).toBe("WIDTH")
     const line = footprint.fpLines[0]!
     expect(line.layer?.names).toEqual(["B.Fab"])
     expect(line.stroke?.width).toBe(0.25)

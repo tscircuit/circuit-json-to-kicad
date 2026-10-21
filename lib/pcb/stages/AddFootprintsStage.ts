@@ -406,15 +406,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       paths: this.ctx.db.pcb_note_path
         .list()
         .filter((note) => note.pcb_component_id === component.pcb_component_id),
-      dimensions: this.ctx.db.pcb_note_dimension
-        .list()
-        .filter((note) => note.pcb_component_id === component.pcb_component_id),
       componentCenter: component.center,
       componentRotation: component.rotation || 0,
     })
-    footprint.fpLines = [...footprint.fpLines, ...noteGraphics.lines]
-    footprint.fpPolys = [...footprint.fpPolys, ...noteGraphics.polygons]
-    footprint.fpTexts = [...footprint.fpTexts, ...noteGraphics.texts]
+    footprint.fpLines = [...footprint.fpLines, ...noteGraphics]
 
     // Add 3D models
     if (cadComponent) {
