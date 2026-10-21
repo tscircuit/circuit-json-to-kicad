@@ -1,7 +1,7 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Via, ViaNet } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
+import { ConverterStage, type PcbNetInfo } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { createViaTenting } from "./utils/createViaTenting"
@@ -13,6 +13,7 @@ import {
 } from "../utils/layerMapping"
 
 type ViaLike = {
+  net?: PcbNetInfo
   x: number
   y: number
   outer_diameter?: number
@@ -34,15 +35,18 @@ type ViaLike = {
  */
 export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   private viasProcessed = 0
-  private pcbVias: ViaLike[] = []
-
-  constructor(input: CircuitJson, ctx: ConverterContext) {
-    super(input, ctx)
-    this.pcbVias = this.collectPcbVias()
-  }
+  private pcbVias?: ViaLike[]
 
   private collectPcbVias(): ViaLike[] {
-    const standaloneVias = (this.ctx.db.pcb_via?.list() || []) as ViaLike[]
+    const { pcbNetMap } = this.ctx
+    const standaloneVias: ViaLike[] = this.ctx.db.pcb_via.list().map((via) => ({
+      ...via,
+      net: pcbNetMap?.get(
+        via.subcircuit_connectivity_map_key ||
+          via.source_net_id ||
+          via.pcb_via_id,
+      ),
+    }))
     const seenRouteViaKeys = new Set<string>()
     const standaloneViasByPosition = new Map<string, ViaLike[]>()
     for (const via of standaloneVias) {
@@ -58,6 +62,9 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
           .filter((point: any) => point.route_type === "via")
           .map(
             (point: any): ViaLike => ({
+              net:
+                pcbNetMap?.get(trace.pcb_trace_id) ??
+                pcbNetMap?.get(trace.connection_name),
               x: point.x,
               y: point.y,
               outer_diameter: point.outer_diameter ?? point.via_diameter,
@@ -102,8 +109,10 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const sameTrace =
       physicalVia.pcb_trace_id !== undefined &&
       physicalVia.pcb_trace_id === routeVia.pcb_trace_id
-    const physicalConnection = this.getViaConnectivityKey(physicalVia)
-    const routeConnection = this.getViaConnectivityKey(routeVia)
+    const physicalConnection =
+      physicalVia.net?.id ?? physicalVia.subcircuit_connectivity_map_key
+    const routeConnection =
+      routeVia.net?.id ?? routeVia.subcircuit_connectivity_map_key
     if (physicalConnection !== undefined && routeConnection !== undefined) {
       if (physicalConnection !== routeConnection) return false
     } else if (!sameTrace) {
@@ -138,7 +147,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   private getRouteViaDedupeKey(via: ViaLike): string | undefined {
-    const connectivityKey = this.getViaConnectivityKey(via)
+    const connectivityKey = via.net?.id ?? via.subcircuit_connectivity_map_key
     const connection =
       connectivityKey !== undefined
         ? `net:${connectivityKey}`
@@ -157,75 +166,6 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       via.outer_diameter,
       via.hole_diameter,
     ])
-  }
-
-  private getViaConnectivityKey(via: ViaLike): string | undefined {
-    let connectivityKey: string | undefined =
-      via.subcircuit_connectivity_map_key
-
-    if (!connectivityKey && via.source_net_id) {
-      const sourceNet = this.ctx.db.source_net?.get(via.source_net_id)
-      if (sourceNet) {
-        connectivityKey =
-          sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
-      }
-    }
-
-    if (!connectivityKey && via.pcb_trace_id) {
-      const pcbTrace = this.ctx.db.pcb_trace?.get(via.pcb_trace_id)
-      if (pcbTrace) {
-        if ("subcircuit_connectivity_map_key" in pcbTrace) {
-          connectivityKey = (pcbTrace as any).subcircuit_connectivity_map_key
-        }
-        if (!connectivityKey && pcbTrace.source_trace_id) {
-          const sourceTrace = this.ctx.db.source_trace?.get(
-            pcbTrace.source_trace_id,
-          )
-          if (sourceTrace) {
-            if ("subcircuit_connectivity_map_key" in sourceTrace) {
-              connectivityKey = (sourceTrace as any)
-                .subcircuit_connectivity_map_key
-            }
-            if (
-              !connectivityKey &&
-              sourceTrace.connected_source_net_ids?.length
-            ) {
-              for (const sourceNetId of sourceTrace.connected_source_net_ids) {
-                const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
-                if (sourceNet) {
-                  connectivityKey =
-                    sourceNet.subcircuit_connectivity_map_key ||
-                    sourceNet.source_net_id
-                  break
-                }
-              }
-            }
-          }
-          // Bug 1 fix: source_trace_id may actually be a source_net ID
-          // (capacity-autorouter sets it this way)
-          if (!connectivityKey) {
-            const sourceNet = this.ctx.db.source_net?.get(
-              pcbTrace.source_trace_id,
-            )
-            if (sourceNet) {
-              connectivityKey =
-                sourceNet.subcircuit_connectivity_map_key ||
-                sourceNet.source_net_id
-            }
-          }
-        }
-      }
-    }
-
-    if (!connectivityKey && via.connection_name) {
-      const sourceNet = this.ctx.db.source_net?.get(via.connection_name)
-      if (sourceNet) {
-        connectivityKey =
-          sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
-      }
-    }
-
-    return connectivityKey
   }
 
   private getRawViaLayers(via: ViaLike): string[] {
@@ -252,7 +192,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
   }
 
   override _step(): void {
-    const { kicadPcb, c2kMatPcb, pcbNetMap } = this.ctx
+    const { kicadPcb, c2kMatPcb } = this.ctx
 
     if (!kicadPcb) {
       throw new Error("KicadPcb instance not initialized in context")
@@ -261,6 +201,9 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (!c2kMatPcb) {
       throw new Error("PCB transformation matrix not initialized in context")
     }
+
+    // AddNetsStage has populated the element-to-net map before this stage runs.
+    this.pcbVias ??= this.collectPcbVias()
 
     if (this.viasProcessed >= this.pcbVias.length) {
       this.finished = true
@@ -279,11 +222,6 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       y: via.y,
     })
 
-    const connectivityKey = this.getViaConnectivityKey(via)
-    const netInfo = connectivityKey
-      ? pcbNetMap?.get(connectivityKey)
-      : undefined
-
     // Get via layers based on board layer count
     // For through-hole vias, span all copper layers
     const viaLayers = this.getKicadViaLayers(via)
@@ -293,13 +231,13 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const viaDrill = via.hole_diameter ?? 0.4
 
     // Create a via with deterministic UUID
-    const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${netInfo?.id ?? 0}`
+    const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${via.net?.id ?? 0}`
     const kicadVia = new Via({
       at: [transformedPos.x, transformedPos.y],
       size: viaSize,
       drill: viaDrill,
       layers: viaLayers,
-      net: new ViaNet(netInfo?.id ?? 0),
+      net: new ViaNet(via.net?.id ?? 0),
       uuid: generateDeterministicUuid(viaData),
       tenting: createViaTenting(via),
     })

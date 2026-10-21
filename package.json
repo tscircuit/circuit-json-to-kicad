@@ -30,9 +30,11 @@
   "devDependencies": {
     "@biomejs/biome": "^2.2.4",
     "@tscircuit/common": "^0.0.5",
+    "@tscircuit/math-utils": "^0.0.36",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
     "circuit-json": "^0.0.480",
+    "circuit-json-to-connectivity-map": "0.0.35",
     "circuit-json-to-gltf": "0.0.118",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
