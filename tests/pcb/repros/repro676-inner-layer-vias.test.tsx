@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 
 test("repro676: duplicate inner-layer vias", async () => {
   const circuit = new Circuit()
@@ -58,6 +58,6 @@ test("repro676: duplicate inner-layer vias", async () => {
 
   // #676: duplicate via entries overlap at the same positions.
   expect(circuitJson.filter((e) => e.type === "pcb_via")).toHaveLength(6)
-  expect(vias).toHaveLength(8)
+  expect(vias).toHaveLength(10)
   expect(new Set(vias.map((via) => `${via.at?.x},${via.at?.y}`)).size).toBe(6)
 }, 120000)
