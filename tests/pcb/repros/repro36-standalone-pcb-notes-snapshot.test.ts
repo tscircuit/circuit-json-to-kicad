@@ -3,17 +3,25 @@ import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import sharp from "sharp"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { createStandalonePcbNoteShapeRepro } from "../../fixtures/standalone-pcb-note-shape-repro"
+import { createStandalonePcbNotesRepro } from "../../fixtures/standalone-pcb-notes-repro"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro36: standalone PCB note dimension comparison", async () => {
-  const circuitJson = await createStandalonePcbNoteShapeRepro("dimension")
-  const notes = circuitJson.filter(
-    (element) => element.type === "pcb_note_dimension",
-  )
-  expect(notes).toHaveLength(1)
-  expect(notes.filter((note) => !note.pcb_component_id)).toHaveLength(1)
+test("repro36: standalone PCB note rectangles, lines, paths, and dimensions comparison", async () => {
+  const circuitJson = await createStandalonePcbNotesRepro()
+  for (const type of [
+    "pcb_note_rect",
+    "pcb_note_line",
+    "pcb_note_path",
+    "pcb_note_dimension",
+  ] as const) {
+    const notes = circuitJson.filter((element) => element.type === type)
+    expect(
+      notes.filter(
+        (note) => !("pcb_component_id" in note) || !note.pcb_component_id,
+      ),
+    ).toHaveLength(1)
+  }
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
@@ -22,10 +30,7 @@ test("repro36: standalone PCB note dimension comparison", async () => {
   expect(pcb.footprints.flatMap((footprint) => footprint.fpRects)).toHaveLength(
     1,
   )
-  await Bun.write(
-    "debug-output/repro36-standalone-pcb-note-dimension.kicad_pcb",
-    output,
-  )
+  await Bun.write("debug-output/repro36-standalone-pcb-notes.kicad_pcb", output)
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "pcb",
