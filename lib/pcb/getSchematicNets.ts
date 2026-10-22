@@ -1,6 +1,6 @@
 import { cju, getElementId } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
-import type { ConnectivityMap } from "circuit-json-to-connectivity-map"
+import { getSourcePortConnectivityMapFromCircuitJson } from "circuit-json-to-connectivity-map"
 import { KicadSch } from "kicadts"
 import { buildSchematicSheetPlan } from "../schematic/buildSchematicSheetPlan"
 import { partitionCircuitJsonBySheet } from "../schematic/partitionCircuitJsonBySheet"
@@ -20,6 +20,11 @@ interface PinName {
 interface NetNames {
   pins: Map<string, PinName>
   labels: { name: string; priority: number }[]
+}
+
+/** Object identity represents a connection, independently of its display name. */
+export interface SchematicNet {
+  name: string
 }
 
 // KiCad drops line breaks when naming connections. Its netlist/PCB export
@@ -54,17 +59,26 @@ function compareNames(a: string, b: string) {
  * rules are checked independently by native-netlist integration tests.
  * PCB-only inputs have no schematic candidates and retain their original names.
  */
-export function getSchematicNetNames(
+export function getSchematicNets(
   circuitJson: CircuitJson,
-  connectivity: ConnectivityMap,
-): Map<string, string> {
-  const nets = new Map<string, NetNames>()
+): Map<string, SchematicNet> {
+  const candidates = new Map<string, NetNames>()
+  const labelConnections = new Map<string, string[]>()
+  const addLabelConnection = (
+    scope: ["global"] | ["local", string | null],
+    name: string,
+    id: string,
+  ) => {
+    const key = JSON.stringify([...scope, name])
+    const ids = labelConnections.get(key) ?? []
+    ids.push(id)
+    labelConnections.set(key, ids)
+  }
   const getNet = (id: string) => {
-    const key = connectivity.getNetConnectedToId(id) ?? id
-    let net = nets.get(key)
+    let net = candidates.get(id)
     if (!net) {
       net = { pins: new Map(), labels: [] }
-      nets.set(key, net)
+      candidates.set(id, net)
     }
     return net
   }
@@ -144,6 +158,13 @@ export function getSchematicNetNames(
         name: normalizeNetName(label.text),
         priority: label.symbol_name ? 5 : 6,
       })
+      addLabelConnection(["global"], normalizeNetName(label.text), id)
+      // A global label also participates in its own sheet's local namespace.
+      addLabelConnection(
+        ["local", sheet.schematicSheetId],
+        normalizeNetName(label.text),
+        id,
+      )
     }
     const path =
       sheet.schematicSheetId === null
@@ -156,49 +177,94 @@ export function getSchematicNetNames(
         name: `${path}${normalizeNetName(text.text)}`,
         priority: 4,
       })
+      addLabelConnection(
+        ["local", sheet.schematicSheetId],
+        normalizeNetName(text.text),
+        text.source_trace_id,
+      )
     }
   }
 
-  const resolved = new Map<string, string>()
-  const automatic: { key: string; name: string }[] = []
+  // Source connections and explicitly scoped labels define the intended nets.
+  // PCB routes/vias must not join schematic nets when copper is misrouted.
+  const connectivity = getSourcePortConnectivityMapFromCircuitJson(circuitJson)
+  connectivity.addConnections([
+    ...circuitJson
+      .filter((e) => e.type === "source_trace")
+      .map((trace) => [
+        trace.source_trace_id,
+        ...(trace.connected_source_port_ids ?? []),
+        ...(trace.connected_source_net_ids ?? []),
+      ]),
+    ...labelConnections.values(),
+  ])
+  const nets = new Map<string, NetNames>()
+  for (const [id, candidate] of candidates) {
+    const key = connectivity.getNetConnectedToId(id) ?? id
+    const net: NetNames = nets.get(key) ?? { pins: new Map(), labels: [] }
+    for (const [pinId, pin] of candidate.pins) net.pins.set(pinId, pin)
+    net.labels.push(...candidate.labels)
+    nets.set(key, net)
+  }
+
+  const resolved = new Map<string, SchematicNet>()
+  const automatic: {
+    key: string
+    name: string
+    unusedPin?: PinName
+    suffix: string
+  }[] = []
   for (const [key, net] of nets) {
     if (net.labels.length) {
       net.labels.sort(
         (a, b) => b.priority - a.priority || compareNames(a.name, b.name),
       )
-      resolved.set(key, net.labels[0]!.name)
+      resolved.set(key, { name: net.labels[0]!.name })
     } else if (net.pins.size) {
-      const names = [...net.pins.values()].map((pin) =>
-        pinNetName(pin, net.pins.size === 1),
-      )
+      const names = [...net.pins.values()].map((pin) => pinNetName(pin, false))
       names.sort(compareNames)
-      automatic.push({ key, name: names[0]! })
+      automatic.push({
+        key,
+        name: names[0]!,
+        unusedPin: net.pins.size === 1 ? [...net.pins.values()][0] : undefined,
+        suffix: "",
+      })
     }
   }
 
   // Explicit labels win when their names collide with an automatic name.
   const usedNames = new Set([
-    ...resolved.values(),
+    ...[...resolved.values()].map((net) => net.name),
     ...automatic.map(({ name }) => name),
   ])
-  const assignedNames = new Set(resolved.values())
-  for (const { key, name } of automatic) {
+  const assignedNames = new Set([...resolved.values()].map((net) => net.name))
+  for (const candidate of automatic) {
+    const { key, name } = candidate
     let uniqueName = name
     if (assignedNames.has(name)) {
       let suffix = 1
       while (usedNames.has(`${name}_${suffix}`)) suffix++
-      uniqueName = `${name}_${suffix}`
+      candidate.suffix = `_${suffix}`
+      uniqueName = `${name}${candidate.suffix}`
     }
-    resolved.set(key, uniqueName)
+    resolved.set(key, { name: uniqueName })
     assignedNames.add(uniqueName)
     usedNames.add(uniqueName)
   }
 
-  const result = new Map<string, string>()
+  // KiCad applies unused-pin names after resolving weak-driver collisions.
+  // This can produce duplicate names for distinct nets. Preserve their identity;
+  // AddNetsStage rejects collisions that KiCad's PCB loader would short together.
+  for (const { key, unusedPin, suffix } of automatic) {
+    if (unusedPin)
+      resolved.get(key)!.name = pinNetName(unusedPin, true) + suffix
+  }
+
+  const result = new Map<string, SchematicNet>()
   for (const element of circuitJson) {
     const id = getElementId(element)
-    const name = resolved.get(connectivity.getNetConnectedToId(id) ?? id)
-    if (name) result.set(id, name)
+    const net = resolved.get(connectivity.getNetConnectedToId(id) ?? id)
+    if (net) result.set(id, net)
   }
   return result
 }

@@ -522,3 +522,288 @@ test("different pin definitions under a shared library name use the resolved var
     pins: ["D2.2"],
   })
 }, 30_000)
+
+async function renderIndependentConnections() {
+  return render(
+    <board width="30mm" height="20mm" routingDisabled schMaxTraceDistance={100}>
+      <resistor
+        name="R1"
+        resistance="1k"
+        footprint="0603"
+        schX={-3}
+        schY={-3}
+        pcbX={-3}
+        pcbY={-3}
+      />
+      <capacitor
+        name="C1"
+        capacitance="1uF"
+        footprint="0603"
+        schX={3}
+        schY={-3}
+        pcbX={3}
+        pcbY={-3}
+      />
+      <resistor
+        name="R2"
+        resistance="1k"
+        footprint="0603"
+        schX={-3}
+        schY={3}
+        pcbX={-3}
+        pcbY={3}
+      />
+      <capacitor
+        name="C2"
+        capacitance="1uF"
+        footprint="0603"
+        schX={3}
+        schY={3}
+        pcbX={3}
+        pcbY={3}
+      />
+      <trace from=".R1 > .pin2" to=".C1 > .pin1" />
+      <trace from=".R2 > .pin2" to=".C2 > .pin1" />
+    </board>,
+  )
+}
+
+test.each([false, true])(
+  "PCB bridges do not join source nets (missing connectivity keys: %s)",
+  async (removeKeys) => {
+    const circuit = await renderIndependentConnections()
+    const traces = circuit.filter((e) => e.type === "source_trace")
+    const ports = traces.map(
+      (trace) =>
+        circuit
+          .filter((e) => e.type === "pcb_port")
+          .find(
+            (port) =>
+              port.source_port_id === trace.connected_source_port_ids[0],
+          )!,
+    )
+    circuit.push(
+      {
+        type: "pcb_trace",
+        pcb_trace_id: "misrouted_bridge",
+        source_trace_id: traces[0]!.source_trace_id,
+        route: [
+          {
+            route_type: "wire",
+            x: ports[0]!.x,
+            y: ports[0]!.y,
+            layer: "top",
+            width: 0.2,
+            start_pcb_port_id: ports[0]!.pcb_port_id,
+          },
+          {
+            route_type: "wire",
+            x: ports[1]!.x,
+            y: ports[1]!.y,
+            layer: "top",
+            width: 0.2,
+            end_pcb_port_id: ports[1]!.pcb_port_id,
+          },
+        ],
+      },
+      {
+        type: "pcb_via",
+        pcb_via_id: "misrouted_via",
+        source_trace_id: traces[0]!.source_trace_id,
+        pcb_port_ids: ports.map((port) => port.pcb_port_id),
+        x: ports[0]!.x,
+        y: ports[0]!.y,
+        outer_diameter: 0.6,
+        hole_diameter: 0.3,
+        layers: ["top", "bottom"],
+      },
+    )
+    if (removeKeys)
+      for (const element of circuit) {
+        if ("subcircuit_connectivity_map_key" in element)
+          delete element.subcircuit_connectivity_map_key
+      }
+    for (const input of [circuit, [...circuit].reverse()]) {
+      const { pcb, native } = await expectNativeParity(input)
+      expect(native).toContainEqual({
+        name: "Net-(C1-Pad1)",
+        pins: ["C1.1", "R1.2"],
+      })
+      expect(native).toContainEqual({
+        name: "Net-(C2-Pad1)",
+        pins: ["C2.1", "R2.2"],
+      })
+      const net = pcb
+        .getOutput()
+        .nets.find((net) => net.name === "Net-(C1-Pad1)")!
+      expect(pcb.getOutput().segments).toHaveLength(1)
+      expect(pcb.getOutput().segments[0]!.net?.id).toBe(net.id)
+      expect(pcb.getOutput().vias[0]!.net?.id).toBe(net.id)
+    }
+  },
+  30_000,
+)
+
+test("an unrelated PCB-only net cannot collide with a schematic name", async () => {
+  let circuit = await renderIndependentConnections()
+  const traces = circuit.filter((e) => e.type === "source_trace")
+  traces[1]!.display_name = "Net-(C1-Pad1)"
+  const sourceIds = new Set(
+    circuit
+      .filter((e) => e.type === "source_component")
+      .filter((e) => ["R2", "C2"].includes(e.name!))
+      .map((e) => e.source_component_id),
+  )
+  const componentIds = new Set(
+    circuit
+      .filter((e) => e.type === "schematic_component")
+      .filter((e) => sourceIds.has(e.source_component_id!))
+      .map((e) => e.schematic_component_id),
+  )
+  circuit = circuit.filter(
+    (e) =>
+      !e.type.startsWith("schematic_") ||
+      (!("source_component_id" in e && sourceIds.has(e.source_component_id!)) &&
+        !(
+          "schematic_component_id" in e &&
+          componentIds.has(e.schematic_component_id!)
+        ) &&
+        !(
+          "source_trace_id" in e &&
+          e.source_trace_id === traces[1]!.source_trace_id
+        )),
+  )
+  expect(await exportNativeSchematicNets(circuit)).toContainEqual({
+    name: "Net-(C1-Pad1)",
+    pins: ["C1.1", "R1.2"],
+  })
+  for (const input of [circuit, [...circuit].reverse()]) {
+    const before = JSON.stringify(input)
+    expect(() =>
+      new CircuitJsonToKicadPcbConverter(input).runUntilFinished(),
+    ).toThrow(
+      'Cannot export disconnected nets with the same KiCad name "Net-(C1-Pad1)"',
+    )
+    expect(JSON.stringify(input)).toBe(before)
+  }
+}, 30_000)
+
+test.each(["Net-(R1-Pad1)", "unconnected-(R1-Pad1)"])(
+  "unused-pin naming happens after collision resolution: %s",
+  async (name) => {
+    const circuit = await render(
+      <board
+        width="20mm"
+        height="10mm"
+        routingDisabled
+        schMaxTraceDistance={100}
+      >
+        <resistor name="R1" resistance="1k" footprint="0603" schX={-3} />
+        <resistor name="R2" resistance="1k" footprint="0603" schX={3} />
+        <netlabel net="NAMED" schX={5} schY={1} connectsTo=".R2 > .pin2" />
+      </board>,
+    )
+    for (const label of circuit.filter((e) => e.type === "schematic_net_label"))
+      label.text = name
+    const native = await exportNativeSchematicNets(circuit)
+    expect(native).toContainEqual({
+      name: name.startsWith("unconnected")
+        ? "unconnected-(R1-Pad1)"
+        : "unconnected-(R1-Pad1)_1",
+      pins: ["R1.1"],
+    })
+    expect(native).toContainEqual({ name, pins: ["R2.2"] })
+    if (name.startsWith("unconnected")) {
+      // Native schematic export has two distinct net codes with the same name.
+      // KiCad's PCB reader would merge them even if we wrote different PCB IDs.
+      expect(native.filter((net) => net.name === name)).toHaveLength(2)
+      for (const input of [circuit, [...circuit].reverse()]) {
+        expect(() =>
+          new CircuitJsonToKicadPcbConverter(input).runUntilFinished(),
+        ).toThrow(
+          `Cannot export disconnected nets with the same KiCad name "${name}"`,
+        )
+      }
+    } else {
+      await expectNativeParity(circuit)
+    }
+  },
+  30_000,
+)
+
+test("existing global label aliases join source groups before selecting the net name", async () => {
+  const circuit = await render(
+    <board width="30mm" height="20mm" routingDisabled>
+      <schematicsheet name="First" displayName="First">
+        <resistor name="R1" resistance="1k" footprint="0603" />
+        <netlabel net="AAA" schX={-3} schY={2} connectsTo=".R1 > .pin1" />
+        <netlabel
+          net="FIRST_ZZZ"
+          schX={-3}
+          schY={-2}
+          connectsTo=".R1 > .pin1"
+        />
+      </schematicsheet>
+      <schematicsheet name="Second" displayName="Second">
+        <resistor name="R2" resistance="1k" footprint="0603" />
+        <netlabel
+          net="SECOND_ZZZ"
+          schX={-2}
+          schY={2}
+          connectsTo=".R2 > .pin1"
+        />
+      </schematicsheet>
+    </board>,
+  )
+  // Imported global labels can alias independently identified source nets.
+  for (const label of circuit.filter((e) => e.type === "schematic_net_label")) {
+    if (label.text.endsWith("_ZZZ")) label.text = "ZZZ"
+  }
+  for (const input of [circuit, [...circuit].reverse()]) {
+    const { native } = await expectNativeParity(input)
+    expect(native).toContainEqual({ name: "AAA", pins: ["R1.1", "R2.1"] })
+  }
+}, 30_000)
+
+test("a global label joins matching local labels on its own sheet", async () => {
+  const circuit = await render(
+    <board width="30mm" height="20mm" routingDisabled>
+      <schematicsheet name="First" displayName="First">
+        <group subcircuit name="FirstCircuit" schMaxTraceDistance={1}>
+          <resistor name="R1" resistance="1k" footprint="0603" schX={-2} />
+          <resistor name="R2" resistance="1k" footprint="0603" schX={2} />
+          <resistor
+            name="R3"
+            resistance="1k"
+            footprint="0603"
+            schX={-2}
+            schY={4}
+          />
+          <trace name="SIGNAL" from=".R1 > .pin2" to=".R2 > .pin1" />
+          <netlabel net="NAMED" schX={-4} schY={5} connectsTo=".R3 > .pin1" />
+        </group>
+      </schematicsheet>
+      <schematicsheet name="Child" displayName="Child">
+        <group subcircuit name="ChildCircuit" schMaxTraceDistance={1}>
+          <resistor name="R4" resistance="1k" footprint="0603" schX={-2} />
+          <resistor name="R5" resistance="1k" footprint="0603" schX={2} />
+          <trace name="CHILD_SIGNAL" from=".R4 > .pin2" to=".R5 > .pin1" />
+        </group>
+      </schematicsheet>
+    </board>,
+  )
+  for (const label of circuit.filter((e) => e.type === "schematic_net_label"))
+    label.text = "SIGNAL"
+  for (const text of circuit.filter((e) => e.type === "schematic_text")) {
+    if (text.source_trace_id) text.text = "SIGNAL"
+  }
+  const { native } = await expectNativeParity(circuit)
+  expect(native).toContainEqual({
+    name: "SIGNAL",
+    pins: ["R1.2", "R2.1", "R3.1"],
+  })
+  expect(native).toContainEqual({
+    name: "/Child/SIGNAL",
+    pins: ["R4.2", "R5.1"],
+  })
+}, 30_000)

@@ -3,7 +3,7 @@ import { getElementId } from "@tscircuit/circuit-json-util"
 import { getFullConnectivityMapFromCircuitJson } from "circuit-json-to-connectivity-map"
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
-import { getSchematicNetNames } from "../getSchematicNetNames"
+import { getSchematicNets, type SchematicNet } from "../getSchematicNets"
 import {
   ConverterStage,
   type ConverterContext,
@@ -73,7 +73,8 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     const connectivityMap = getFullConnectivityMapFromCircuitJson(this.input)
-    const schematicNames = getSchematicNetNames(this.input, connectivityMap)
+    const schematicNets = getSchematicNets(this.input)
+    const schematicNetByKey = new Map<string, SchematicNet>()
     const existingKeys = new Set(netNameByKey.keys())
     const pcbSourcePorts = new Set(
       this.ctx.db.pcb_port.list().map((port) => port.source_port_id),
@@ -86,14 +87,23 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
         !pcbSourcePorts.has(element.source_port_id)
       )
         continue
-      const name = schematicNames.get(getElementId(element))
-      if (!name) continue
+      const schematicNet = schematicNets.get(getElementId(element))
+      if (!schematicNet) continue
       const key =
         ("subcircuit_connectivity_map_key" in element &&
           element.subcircuit_connectivity_map_key) ||
         (element.type === "source_net" ? element.source_net_id : undefined) ||
         (element.type === "source_port" ? element.source_port_id : undefined)
-      if (key) netNameByKey.set(key, name)
+      if (key) {
+        const existing = schematicNetByKey.get(key)
+        if (existing && existing !== schematicNet) {
+          throw new Error(
+            `Cannot export connectivity key ${key}: multiple schematic nets (${existing.name}, ${schematicNet.name})`,
+          )
+        }
+        netNameByKey.set(key, schematicNet.name)
+        schematicNetByKey.set(key, schematicNet)
+      }
     }
 
     // Append newly discovered (including unused-pin) nets after existing ones,
@@ -107,27 +117,41 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const nets: PcbNet[] = []
     nets.push(new PcbNet(0, ""))
 
-    const netBySchematicName = new Map<string, PcbNetInfo>()
-    const resolvedNames = new Set(schematicNames.values())
+    const netBySchematicNet = new Map<SchematicNet, PcbNetInfo>()
+    const keyByName = new Map<string, string>()
     let netNumber = 1
     for (const [connectivityKey, netName] of sortedEntries) {
-      const existing = netBySchematicName.get(netName)
+      const schematicNet = schematicNetByKey.get(connectivityKey)
+      const existing = schematicNet && netBySchematicNet.get(schematicNet)
       if (existing) {
         this.ctx.pcbNetMap.set(connectivityKey, existing)
         continue
       }
+      const conflictingKey = keyByName.get(netName)
+      if (conflictingKey !== undefined) {
+        throw new Error(
+          `Cannot export disconnected nets with the same KiCad name "${netName}" (${conflictingKey}, ${connectivityKey}): KiCad would merge them`,
+        )
+      }
+      keyByName.set(netName, connectivityKey)
       const pcbNet = new PcbNet(netNumber, netName)
       nets.push(pcbNet)
 
       const netInfo: PcbNetInfo = { id: netNumber, name: netName }
       this.ctx.pcbNetMap.set(connectivityKey, netInfo)
-      if (resolvedNames.has(netName)) netBySchematicName.set(netName, netInfo)
+      if (schematicNet) netBySchematicNet.set(schematicNet, netInfo)
 
       netNumber++
     }
 
+    // Source identities take precedence over PCB connectivity. In particular,
+    // a routed bridge cannot override the net assigned to either endpoint.
+    for (const [elementId, schematicNet] of schematicNets) {
+      const netInfo = netBySchematicNet.get(schematicNet)
+      if (netInfo) this.ctx.pcbNetMap.set(elementId, netInfo)
+    }
+
     // Index the existing KiCad nets by Circuit JSON element ID as well.
-    const netByConnection = new Map<string, PcbNetInfo>()
     for (const element of this.input) {
       const connectivityKey =
         ("subcircuit_connectivity_map_key" in element &&
@@ -140,15 +164,42 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       const elementId = getElementId(element)
       this.ctx.pcbNetMap.set(elementId, netInfo)
-      const connection = connectivityMap.getNetConnectedToId(elementId)
-      if (connection && !netByConnection.has(connection)) {
-        netByConnection.set(connection, netInfo)
-      }
+    }
+
+    // Resolve explicit trace/via references before using copper connectivity as
+    // a fallback. Missing connectivity keys do not discard the source identity.
+    for (const trace of this.ctx.db.pcb_trace.list()) {
+      const netInfo = trace.source_trace_id
+        ? this.ctx.pcbNetMap.get(trace.source_trace_id)
+        : undefined
+      if (netInfo && !this.ctx.pcbNetMap.has(trace.pcb_trace_id))
+        this.ctx.pcbNetMap.set(trace.pcb_trace_id, netInfo)
+    }
+    for (const via of this.ctx.db.pcb_via.list()) {
+      const id = via.source_net_id || via.source_trace_id || via.pcb_trace_id
+      const netInfo = id ? this.ctx.pcbNetMap.get(id) : undefined
+      if (netInfo && !this.ctx.pcbNetMap.has(via.pcb_via_id))
+        this.ctx.pcbNetMap.set(via.pcb_via_id, netInfo)
+    }
+
+    // Copper may infer a missing assignment only when all known assignments
+    // agree. Never pick the first net of a physically shorted pair.
+    const netsByConnection = new Map<string, Set<PcbNetInfo>>()
+    for (const [elementId, connection] of Object.entries(
+      connectivityMap.idToNetMap,
+    )) {
+      const netInfo = this.ctx.pcbNetMap.get(elementId)
+      if (!netInfo) continue
+      const nets = netsByConnection.get(connection) ?? new Set()
+      nets.add(netInfo)
+      netsByConnection.set(connection, nets)
     }
     for (const [elementId, connection] of Object.entries(
       connectivityMap.idToNetMap,
     )) {
-      const netInfo = netByConnection.get(connection)
+      const connectedNets = netsByConnection.get(connection)
+      const netInfo =
+        connectedNets?.size === 1 ? [...connectedNets][0] : undefined
       if (netInfo && !this.ctx.pcbNetMap.has(elementId)) {
         this.ctx.pcbNetMap.set(elementId, netInfo)
       }
@@ -156,7 +207,7 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     this.ctx.pcbSchematicPortNets = new Map()
     for (const port of this.ctx.db.source_port.list()) {
-      if (!schematicNames.has(port.source_port_id)) continue
+      if (!schematicNets.has(port.source_port_id)) continue
       const netInfo = this.ctx.pcbNetMap.get(port.source_port_id)
       if (netInfo)
         this.ctx.pcbSchematicPortNets.set(port.source_port_id, netInfo)
