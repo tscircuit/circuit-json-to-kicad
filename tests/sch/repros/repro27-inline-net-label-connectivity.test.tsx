@@ -6,7 +6,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro27: inline SIGNAL text leaves two resistor pins disconnected in KiCad", async () => {
+test("repro27: inline SIGNAL labels connect two resistor pins in KiCad", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="20mm" height="10mm" routingDisabled>
@@ -46,15 +46,12 @@ test("repro27: inline SIGNAL text leaves two resistor pins disconnected in KiCad
     output,
   )
 
-  // Capture the current bug: matching SIGNAL text does not connect the pins.
+  // Matching words in the drawing are not enough: KiCad must connect the pins.
   const nets = await exportNativeSchematicNets(circuitJson)
   const signalNets = nets.filter(
     (net) => net.pins.includes("R1.2") || net.pins.includes("R2.1"),
   )
-  expect(signalNets).toEqual([
-    { name: "unconnected-(R1-Pad2)", pins: ["R1.2"] },
-    { name: "unconnected-(R2-Pad1)", pins: ["R2.1"] },
-  ])
+  expect(signalNets).toEqual([{ name: "/SIGNAL", pins: ["R1.2", "R2.1"] }])
 
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
