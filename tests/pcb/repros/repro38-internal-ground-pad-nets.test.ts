@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import { AddFootprintsStage } from "lib/pcb/stages/AddFootprintsStage"
 import { createInternalGroundPadRepro } from "../../fixtures/internal-ground-pad-repro"
 
 test("internally connected exposed-pad sections inherit GND without mutating input", async () => {
@@ -31,6 +32,18 @@ test("internally connected exposed-pad sections inherit GND without mutating inp
       })
     const original = JSON.stringify(input)
     const converter = new CircuitJsonToKicadPcbConverter(input)
+    // Net resolution must finish before footprint conversion begins.
+    while (!(converter.currentStage instanceof AddFootprintsStage)) {
+      converter.step()
+    }
+    expect(
+      input
+        .filter((element) => element.type === "pcb_port")
+        .filter(
+          (port) =>
+            converter.ctx.pcbNetMap?.get(port.pcb_port_id)?.name === "GND",
+        ),
+    ).toHaveLength(format === "neither" ? 1 : 9)
     converter.runUntilFinished()
     const pcb = parseKicadPcb(converter.getOutputString())
     const footprint = pcb.footprints[0]!
