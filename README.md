@@ -164,6 +164,14 @@ nets that share presentation text. PCB-only inputs retain their trace display
 names; schematic-only inputs retain their existing local-label and automatic
 naming behavior.
 
+The connectivity grouping key is optional. When it is absent, exporters resolve
+connections from source ports, traces, named nets, and internal port connections.
+Connected traces share one name, including branches that join an existing named
+net. Conflicting declared keys are rejected when an unkeyed connection cannot be
+resolved unambiguously. PCB copper does not merge independent logical nets. If
+a schematic trace lacks a usable source reference, generated labels can anchor
+at the corresponding source pins instead.
+
 ## Features
 
 - **Schematic Conversion**: Convert Circuit JSON to KiCad schematic files (`.kicad_sch`)

@@ -41,7 +41,11 @@ import { create3DModelsFromCadComponent } from "./footprints-stage-converters/cr
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
-import { getUnconnectedPortNetKey } from "../../utils/getKicadNetNames"
+import {
+  getSourcePortNetKey,
+  getSourceTraceNetKey,
+  getUnconnectedPortNetKey,
+} from "../../utils/getKicadNetNames"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
 
 /**
@@ -87,8 +91,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${nets.map((net) => net.name).join(", ")})`,
       )
     }
+    if (nets[0]) return nets[0]
+    const inferredKey = getSourcePortNetKey(sourcePortId, this.ctx.db)
     return (
-      nets[0] ?? this.ctx.pcbNetMap?.get(getUnconnectedPortNetKey(sourcePortId))
+      (inferredKey ? this.ctx.pcbNetMap?.get(inferredKey) : undefined) ??
+      this.ctx.pcbNetMap?.get(getUnconnectedPortNetKey(sourcePortId))
     )
   }
 
@@ -113,7 +120,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     // Imported ports may have trace membership without connectivity keys.
     for (const trace of ctx.db.source_trace.list()) {
       const keys = [
-        trace.subcircuit_connectivity_map_key,
+        getSourceTraceNetKey(trace, ctx.db),
         ...(trace.connected_source_net_ids ?? []).map((id) => {
           const net = ctx.db.source_net.get(id)
           return net?.subcircuit_connectivity_map_key || net?.source_net_id

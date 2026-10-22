@@ -1,4 +1,4 @@
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, SchematicTrace } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
   SchematicSymbol,
@@ -19,6 +19,7 @@ import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
 import {
   getKicadNetNames,
+  getInferredSourceNetKey,
   getInlineTraceNetNames,
   getNamedNetKeys,
   getSourceTraceNetKey,
@@ -54,15 +55,16 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const inlineKeys =
       this.ctx.inlineTraceNetKeys ?? getInlineTraceNetNames(db).keys
     const placed = new Set<string>()
+    const labelledEdgesByKey = new Map<string, SchematicTrace["edges"]>()
     const addAutomaticLabel = (
       key: string,
       point: { x: number; y: number },
       anchorSide: string,
-    ) => {
+    ): boolean => {
       const name = names.get(key)
-      if (!name) return
+      if (!name) return false
       const positionKey = `${key}:${point.x}:${point.y}`
-      if (placed.has(positionKey)) return
+      if (placed.has(positionKey)) return true
       const label = this.createGlobalLabel(
         { anchor_position: point, anchor_side: anchorSide },
         name,
@@ -70,13 +72,16 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       if (label) {
         globalLabels.push(label)
         placed.add(positionKey)
+        return true
       }
+      return false
     }
 
     // Explicit generated names avoid depending on KiCad's changing driver-pin
     // auto-naming rules. Shared unique names also work across child sheets.
-    const schematicTraces =
-      db.pcb_port.list().length > 0 ? db.schematic_trace.list() : []
+    const hasPcbPorts = db.pcb_port.list().length > 0
+    const schematicTraces = hasPcbPorts ? db.schematic_trace.list() : []
+    let needsPortAnchors = false
     for (const trace of schematicTraces) {
       const source = trace.source_trace_id
         ? db.source_trace.get(trace.source_trace_id)
@@ -84,7 +89,11 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       const key =
         trace.subcircuit_connectivity_map_key ||
         (source ? getSourceTraceNetKey(source, db) : undefined)
-      if (!key || namedKeys.has(key) || inlineKeys.has(key)) continue
+      if (!key || !names.has(key)) {
+        needsPortAnchors = true
+        continue
+      }
+      if (namedKeys.has(key) || inlineKeys.has(key)) continue
       const edge = trace.edges
         .filter(({ from, to }) => from.x !== to.x || from.y !== to.y)
         .sort(
@@ -92,20 +101,29 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
             Math.hypot(b.to.x - b.from.x, b.to.y - b.from.y) -
             Math.hypot(a.to.x - a.from.x, a.to.y - a.from.y),
         )[0]
-      if (!edge) continue
+      if (!edge) {
+        needsPortAnchors = true
+        continue
+      }
       const dx = edge.to.x - edge.from.x
       const dy = edge.to.y - edge.from.y
       // Prefer the longest segment over the short stub next to a component.
       // Keep text perpendicular to the wire to avoid covering that segment.
       const side = Math.abs(dx) >= Math.abs(dy) ? "bottom" : "left"
-      addAutomaticLabel(
-        key,
-        {
-          x: (edge.from.x + edge.to.x) / 2,
-          y: (edge.from.y + edge.to.y) / 2,
-        },
-        side,
-      )
+      if (
+        addAutomaticLabel(
+          key,
+          {
+            x: (edge.from.x + edge.to.x) / 2,
+            y: (edge.from.y + edge.to.y) / 2,
+          },
+          side,
+        )
+      ) {
+        const labelledEdges = labelledEdgesByKey.get(key) ?? []
+        labelledEdges.push(...trace.edges)
+        labelledEdgesByKey.set(key, labelledEdges)
+      }
     }
     for (const port of db.schematic_port.list()) {
       if (!port.source_port_id) continue
@@ -115,11 +133,50 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
         up: "bottom",
         down: "top",
       }[port.facing_direction ?? "left"]
-      addAutomaticLabel(
-        getUnconnectedPortNetKey(port.source_port_id),
-        port.center,
-        side,
-      )
+      const isolatedKey = getUnconnectedPortNetKey(port.source_port_id)
+      if (names.has(isolatedKey)) {
+        addAutomaticLabel(isolatedKey, port.center, side)
+        continue
+      }
+      // Keyless schematic traces can lack a usable source-trace reference.
+      // Anchor the source-derived name at its actual pin, rather than guessing
+      // connectivity from wire geometry or parsing a synthetic trace ID.
+      const sourcePort = db.source_port.get(port.source_port_id)
+      if (
+        hasPcbPorts &&
+        (needsPortAnchors || !sourcePort?.subcircuit_connectivity_map_key)
+      ) {
+        const key = getInferredSourceNetKey(port.source_port_id, db)
+        if (key && !namedKeys.has(key) && !inlineKeys.has(key)) {
+          // Geometry only avoids duplicate annotations on an already labelled
+          // wire. The source graph above still determines the pin's net.
+          const alreadyLabelled = (labelledEdgesByKey.get(key) ?? []).some(
+            ({ from, to }) => {
+              const dx = to.x - from.x
+              const dy = to.y - from.y
+              const lengthSquared = dx * dx + dy * dy
+              const t = lengthSquared
+                ? Math.max(
+                    0,
+                    Math.min(
+                      1,
+                      ((port.center.x - from.x) * dx +
+                        (port.center.y - from.y) * dy) /
+                        lengthSquared,
+                    ),
+                  )
+                : 0
+              return (
+                Math.hypot(
+                  port.center.x - (from.x + t * dx),
+                  port.center.y - (from.y + t * dy),
+                ) < 1e-6
+              )
+            },
+          )
+          if (!alreadyLabelled) addAutomaticLabel(key, port.center, side)
+        }
+      }
     }
 
     for (const netLabel of netLabels) {
