@@ -1,20 +1,16 @@
-/**
- * Standalone plated holes all export their pad with the same UUID. The pad
- * UUID seed includes the component id, but the standalone plated hole stage
- * never passes one, so every hole at its own origin hashes to the same value.
- * Standalone SMT pads pass their pcb_smtpad_id and stay unique.
- *
- * To run: bun test tests/pcb/repros/repro39-standalone-plated-hole-pad-uuid.test.tsx
- */
-import { beforeAll, expect, test } from "bun:test"
 import type { FootprintPad } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 
-let platedHolePads: FootprintPad[]
-let smtPads: FootprintPad[]
-
-beforeAll(async () => {
+/**
+ * Three standalone plated holes and two standalone SMT pads. The pad UUID
+ * seed includes the component id: standalone SMT pads pass their
+ * pcb_smtpad_id, but the standalone plated hole path never passes one.
+ */
+export async function createStandalonePlatedHolePadUuidRepro(): Promise<{
+  platedHolePads: FootprintPad[]
+  smtPads: FootprintPad[]
+}> {
   const circuit = new Circuit()
   circuit.add(
     <board width="30mm" height="20mm" routingDisabled>
@@ -50,16 +46,8 @@ beforeAll(async () => {
   const converter = new CircuitJsonToKicadPcbConverter(circuit.getCircuitJson())
   converter.runUntilFinished()
   const pads = converter.getOutput().footprints.flatMap((fp) => fp.fpPads)
-  platedHolePads = pads.filter((pad) => pad.padType === "thru_hole")
-  smtPads = pads.filter((pad) => pad.padType === "smd")
-})
-
-test("repro39: standalone SMT pads export unique pad UUIDs", () => {
-  expect(smtPads).toHaveLength(2)
-  expect(new Set(smtPads.map((pad) => pad.uuid?.value)).size).toBe(2)
-})
-
-test.failing("repro39: standalone plated holes export unique pad UUIDs", () => {
-  expect(platedHolePads).toHaveLength(3)
-  expect(new Set(platedHolePads.map((pad) => pad.uuid?.value)).size).toBe(3)
-})
+  return {
+    platedHolePads: pads.filter((pad) => pad.padType === "thru_hole"),
+    smtPads: pads.filter((pad) => pad.padType === "smd"),
+  }
+}
