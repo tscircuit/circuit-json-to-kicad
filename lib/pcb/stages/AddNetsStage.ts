@@ -117,23 +117,46 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const nets: PcbNet[] = []
     nets.push(new PcbNet(0, ""))
 
+    // KiCad's PCB reader identifies nets by name, even when numeric IDs differ.
+    // Reserve all requested names before allocating suffixes. Schematic names
+    // take precedence over PCB-only names; explicit labels beat automatic names.
+    // Allocation is separate from numeric codes so existing codes remain stable.
+    // KiCad's schematic-parity check accepts suffixes on unconnected-pin names.
+    const namePriority = (key: string) => {
+      const net = schematicNetByKey.get(key)
+      return net ? (net.isAutomatic ? 1 : 0) : 2
+    }
+    const allocationEntries = [...sortedEntries].sort(
+      ([a], [b]) =>
+        namePriority(a) - namePriority(b) || (a < b ? -1 : a > b ? 1 : 0),
+    )
+    const reservedNames = new Set(netNameByKey.values())
+    const assignedNames = new Set<string>()
+    const nameByIdentity = new Map<SchematicNet | string, string>()
+    for (const [key, preferredName] of allocationEntries) {
+      const identity = schematicNetByKey.get(key) ?? key
+      if (nameByIdentity.has(identity)) continue
+      let name = preferredName
+      if (assignedNames.has(name)) {
+        let suffix = 1
+        while (reservedNames.has(`${preferredName}_${suffix}`)) suffix++
+        name = `${preferredName}_${suffix}`
+      }
+      nameByIdentity.set(identity, name)
+      assignedNames.add(name)
+      reservedNames.add(name)
+    }
+
     const netBySchematicNet = new Map<SchematicNet, PcbNetInfo>()
-    const keyByName = new Map<string, string>()
     let netNumber = 1
-    for (const [connectivityKey, netName] of sortedEntries) {
+    for (const [connectivityKey] of sortedEntries) {
       const schematicNet = schematicNetByKey.get(connectivityKey)
       const existing = schematicNet && netBySchematicNet.get(schematicNet)
       if (existing) {
         this.ctx.pcbNetMap.set(connectivityKey, existing)
         continue
       }
-      const conflictingKey = keyByName.get(netName)
-      if (conflictingKey !== undefined) {
-        throw new Error(
-          `Cannot export disconnected nets with the same KiCad name "${netName}" (${conflictingKey}, ${connectivityKey}): KiCad would merge them`,
-        )
-      }
-      keyByName.set(netName, connectivityKey)
+      const netName = nameByIdentity.get(schematicNet ?? connectivityKey)!
       const pcbNet = new PcbNet(netNumber, netName)
       nets.push(pcbNet)
 

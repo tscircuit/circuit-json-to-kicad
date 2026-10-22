@@ -25,6 +25,7 @@ interface NetNames {
 /** Object identity represents a connection, independently of its display name. */
 export interface SchematicNet {
   name: string
+  isAutomatic: boolean
 }
 
 // KiCad drops line breaks when naming connections. Its netlist/PCB export
@@ -57,7 +58,7 @@ function compareNames(a: string, b: string) {
  * Resolve names from the same pin definitions and labels the schematic exports.
  * This reads connectivity; it never adds schematic labels. KiCad 10's naming
  * rules are checked independently by native-netlist integration tests.
- * PCB-only inputs have no schematic candidates and retain their original names.
+ * PCB-only inputs have no schematic candidates and use their supplied names.
  */
 export function getSchematicNets(
   circuitJson: CircuitJson,
@@ -219,7 +220,7 @@ export function getSchematicNets(
       net.labels.sort(
         (a, b) => b.priority - a.priority || compareNames(a.name, b.name),
       )
-      resolved.set(key, { name: net.labels[0]!.name })
+      resolved.set(key, { name: net.labels[0]!.name, isAutomatic: false })
     } else if (net.pins.size) {
       const names = [...net.pins.values()].map((pin) => pinNetName(pin, false))
       names.sort(compareNames)
@@ -247,14 +248,14 @@ export function getSchematicNets(
       candidate.suffix = `_${suffix}`
       uniqueName = `${name}${candidate.suffix}`
     }
-    resolved.set(key, { name: uniqueName })
+    resolved.set(key, { name: uniqueName, isAutomatic: true })
     assignedNames.add(uniqueName)
     usedNames.add(uniqueName)
   }
 
   // KiCad applies unused-pin names after resolving weak-driver collisions.
   // This can produce duplicate names for distinct nets. Preserve their identity;
-  // AddNetsStage rejects collisions that KiCad's PCB loader would short together.
+  // PCB name allocation must disambiguate these without merging the connections.
   for (const { key, unusedPin, suffix } of automatic) {
     if (unusedPin)
       resolved.get(key)!.name = pinNetName(unusedPin, true) + suffix
