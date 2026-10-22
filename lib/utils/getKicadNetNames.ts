@@ -1,5 +1,6 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { SourceTrace } from "circuit-json"
+import { buildSchematicSheetPlan } from "../schematic/buildSchematicSheetPlan"
 import { getPhysicalPinName } from "./getPhysicalPinName"
 
 export const getUnconnectedPortNetKey = (sourcePortId: string) =>
@@ -25,8 +26,70 @@ export function getNamedNetKeys(db: CircuitJsonUtilObjects) {
   )
 }
 
+/** Local labels already name their connection; do not supersede them globally. */
+export function getInlineTraceNetNames(db: CircuitJsonUtilObjects) {
+  const sheetNames = new Map(
+    buildSchematicSheetPlan(db.schematic_sheet.list()).children.map((sheet) => [
+      sheet.schematicSheetId,
+      sheet.sheetName,
+    ]),
+  )
+  const globalKeys = new Set<string>()
+  for (const label of db.schematic_net_label.list()) {
+    if (!label.source_net_id) continue
+    const net = db.source_net.get(label.source_net_id)
+    if (net)
+      globalKeys.add(net.subcircuit_connectivity_map_key || net.source_net_id)
+  }
+
+  const localNamesByKey = new Map<string, Set<string>>()
+  for (const text of db.schematic_text.list()) {
+    if (
+      !text.source_trace_id ||
+      text.schematic_component_id ||
+      ("schematic_symbol_id" in text && text.schematic_symbol_id)
+    )
+      continue
+    const trace = db.source_trace.get(text.source_trace_id)
+    const key = trace ? getSourceTraceNetKey(trace, db) : undefined
+    if (!key) continue
+    const names = localNamesByKey.get(key) ?? new Set<string>()
+    const sheetName = text.schematic_sheet_id
+      ? sheetNames.get(text.schematic_sheet_id)
+      : undefined
+    if (!text.schematic_sheet_id || sheetName !== undefined) {
+      names.add(
+        `${sheetName === undefined ? "" : `/${sheetName}`}/${text.text}`,
+      )
+    }
+    localNamesByKey.set(key, names)
+  }
+
+  const names = new Map<string, string>()
+  for (const [key, localNames] of localNamesByKey) {
+    // A global/power symbol wins over local aliases. Multiple local names or
+    // sheet paths have no single canonical PCB name: keep the existing name
+    // rather than guessing from whichever text happens to appear first.
+    if (!globalKeys.has(key) && localNames.size === 1) {
+      names.set(key, [...localNames][0]!)
+    }
+  }
+  // Skip the existing automatic connection labels only when a single local
+  // canonical name or an actual global/power label supplies that connection.
+  // Ambiguous aliases must not disconnect stubs that previously shared a net.
+  const keys = new Set(
+    [...localNamesByKey.keys()].filter(
+      (key) => names.has(key) || globalKeys.has(key),
+    ),
+  )
+  return { keys, names }
+}
+
 /** Both exporters must use the same names, including before sheet partitioning. */
-export function getKicadNetNames(db: CircuitJsonUtilObjects) {
+export function getKicadNetNames(
+  db: CircuitJsonUtilObjects,
+  inlineNames = getInlineTraceNetNames(db),
+) {
   const names = new Map<string, string>()
   const hasSchematic = db.schematic_component.list().length > 0
   for (const net of db.source_net.list()) {
@@ -34,6 +97,7 @@ export function getKicadNetNames(db: CircuitJsonUtilObjects) {
     const candidate = net.name || net.source_net_id || ""
     names.set(key, candidate.trim() ? candidate : key)
   }
+  for (const [key, name] of inlineNames.names) names.set(key, name)
 
   const usedNames = new Set(names.values())
   const addAutomaticName = (key: string, candidate: string) => {

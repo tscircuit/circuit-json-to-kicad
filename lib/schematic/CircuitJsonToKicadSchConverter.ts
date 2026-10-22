@@ -3,6 +3,10 @@ import type { CircuitJson, Point } from "circuit-json"
 import { KicadSch, type Sheet } from "kicadts"
 import { compose, scale, translate } from "transformation-matrix"
 import type { ConverterContext, ConverterStage } from "../types"
+import {
+  getInlineTraceNetNames,
+  getKicadNetNames,
+} from "../utils/getKicadNetNames"
 import { buildChildSheetNodes } from "./buildChildSheetNodes"
 import {
   buildSchematicSheetPlan,
@@ -179,6 +183,7 @@ export class CircuitJsonToKicadSchConverter {
     const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
 
     const db = cju(circuitJson)
+    const inlineNetNames = getInlineTraceNetNames(db)
 
     const { center, paperSize: fittedPaperSize } =
       getSingleSheetSchematicLayout(db)
@@ -198,6 +203,8 @@ export class CircuitJsonToKicadSchConverter {
     this.ctx = {
       db,
       circuitJson,
+      kicadNetNames: getKicadNetNames(db, inlineNetNames),
+      inlineTraceNetKeys: inlineNetNames.keys,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
@@ -398,6 +405,8 @@ export class CircuitJsonToKicadSchConverter {
     const ctx: ConverterContext = {
       db,
       circuitJson,
+      kicadNetNames: this.ctx.kicadNetNames,
+      inlineTraceNetKeys: this.ctx.inlineTraceNetKeys,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",

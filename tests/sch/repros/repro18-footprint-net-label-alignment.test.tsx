@@ -7,6 +7,7 @@ import { applyToPoint } from "transformation-matrix"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { getNativeNetParity } from "../../fixtures/get-native-net-conflicts"
 
 type InlineNetLabel = Extract<
   CircuitJson[number],
@@ -55,6 +56,20 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(output).toContain("(fields_autoplaced no)")
   expect(output).not.toContain("(fields_autoplaced yes)")
   expect(inlineNetLabels).toHaveLength(2)
+  // The unconnected third pin still needs its paired-export parity label;
+  // neither ESP_RX nor ESP_TX may be promoted from local to global scope.
+  expect(parsedSchematic.globalLabels.map((label) => label.value)).toEqual([
+    "unconnected-(J_UART-Pad3)",
+  ])
+  expect(parsedSchematic.labels).toHaveLength(2)
+
+  const { conflicts, nets } = await getNativeNetParity(circuitJson)
+  expect(conflicts).toEqual([])
+  expect(nets.find((net) => net.name === "/ESP_RX")?.pins).toEqual(["J_UART.1"])
+  expect(nets.find((net) => net.name === "/ESP_TX")?.pins).toEqual(["J_UART.2"])
+  expect(nets.find((net) => net.pins.includes("J_UART.3"))?.pins).toEqual([
+    "J_UART.3",
+  ])
 
   const componentSymbol = parsedSchematic.symbols.find((symbol) =>
     symbol.properties.some(
@@ -68,20 +83,17 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(manufacturerPartNumber?.effects?.justify?.horizontal).toBe("left")
 
   for (const inlineNetLabel of inlineNetLabels) {
-    const convertedText = parsedSchematic.texts.find(
+    const convertedText = parsedSchematic.labels.find(
       (text) => text.value === inlineNetLabel.text,
     )
+    // Core places these labels at their inner edge, with text extending left
+    // along the wire. Preserve that supplied attachment and alignment.
     const expectedPosition = applyToPoint(
       converter.ctx.c2kMatSch!,
       inlineNetLabel.position,
     )
-    const expectedHorizontalJustification =
-      inlineNetLabel.anchor === "left" || inlineNetLabel.anchor === "right"
-        ? inlineNetLabel.anchor
-        : undefined
-    expect(convertedText?.effects?.justify?.horizontal).toBe(
-      expectedHorizontalJustification,
-    )
+    expect(inlineNetLabel.anchor).toBe("bottom_right")
+    expect(convertedText?.effects?.justify?.horizontal).toBe("right")
     expect(convertedText?.at?.x).toBeCloseTo(expectedPosition.x)
     expect(convertedText?.at?.y).toBeCloseTo(expectedPosition.y)
   }
@@ -101,4 +113,4 @@ test("repro18: component fields and inline labels preserve placement", async () 
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
-})
+}, 30_000)

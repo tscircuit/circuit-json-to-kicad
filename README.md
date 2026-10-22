@@ -155,10 +155,14 @@ When schematic and PCB data are both present, unnamed connections receive the
 same generated names in both exports. The schematic includes explicit generated
 labels, including distinct labels for isolated pins with corresponding PCB pads,
 so KiCad does not independently choose different names during schematic-parity
-checks. Explicit source-net names are preserved. Generated names are unique
-across sheets and do not join unrelated nets that share presentation text.
-PCB-only inputs retain their trace display names; schematic-only inputs retain
-KiCad's normal automatic naming.
+checks. Existing global and power-label names are preserved. A connection with
+one unambiguous inline local-label name uses KiCad's sheet-qualified name on the
+PCB, without adding a global label that would change its scope. Multiple aliases
+or sheet paths retain the previous naming decision rather than selecting the
+first text. Generated names are unique across sheets and do not join unrelated
+nets that share presentation text. PCB-only inputs retain their trace display
+names; schematic-only inputs retain their existing local-label and automatic
+naming behavior.
 
 ## Features
 

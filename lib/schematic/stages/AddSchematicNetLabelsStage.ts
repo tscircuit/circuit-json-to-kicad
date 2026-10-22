@@ -19,6 +19,7 @@ import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
 import {
   getKicadNetNames,
+  getInlineTraceNetNames,
   getNamedNetKeys,
   getSourceTraceNetKey,
   getUnconnectedPortNetKey,
@@ -48,8 +49,10 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     const symbols: SchematicSymbol[] = []
     const globalLabels: GlobalLabel[] = []
-    const names = getKicadNetNames(db)
+    const names = this.ctx.kicadNetNames ?? getKicadNetNames(db)
     const namedKeys = getNamedNetKeys(db)
+    const inlineKeys =
+      this.ctx.inlineTraceNetKeys ?? getInlineTraceNetNames(db).keys
     const placed = new Set<string>()
     const addAutomaticLabel = (
       key: string,
@@ -81,7 +84,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       const key =
         trace.subcircuit_connectivity_map_key ||
         (source ? getSourceTraceNetKey(source, db) : undefined)
-      if (!key || namedKeys.has(key)) continue
+      if (!key || namedKeys.has(key) || inlineKeys.has(key)) continue
       const edge = trace.edges
         .filter(({ from, to }) => from.x !== to.x || from.y !== to.y)
         .sort(

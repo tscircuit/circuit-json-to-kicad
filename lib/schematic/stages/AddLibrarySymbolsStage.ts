@@ -41,8 +41,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 > {
   // Track processed symbol names to avoid duplicates
   private processedSymbolNames: Set<string> = new Set()
-  // Distinct pin numberings emitted under each lib id, in order of first use
-  private pinNumberingsByLibId: Map<string, string[]> = new Map()
+  // Distinct drawings and pin layouts under each lib id, in order of first use
+  private symbolDefinitionsByLibId: Map<string, string[]> = new Map()
 
   override _step(): void {
     const { kicadSch, db } = this.ctx
@@ -53,7 +53,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Reset processed symbol names for this run
     this.processedSymbolNames = new Set()
-    this.pinNumberingsByLibId = new Map()
+    this.symbolDefinitionsByLibId = new Map()
     this.ctx.schematicComponentLibraryIds = new Map()
 
     // Process schematic components
@@ -209,42 +209,42 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       ...librarySymbolOptions,
     })
 
-    const pinNumberingLibId = this.getLibraryIdForPinNumbering(
+    const resolvedLibId = this.getLibraryIdForSymbolDefinition(
       libraryId,
       librarySymbol,
     )
-    if (pinNumberingLibId === libraryId) return librarySymbol
+    if (resolvedLibId === libraryId) return librarySymbol
 
     this.ctx.schematicComponentLibraryIds!.set(
       schematicComponent.schematic_component_id,
-      pinNumberingLibId,
+      resolvedLibId,
     )
     return this.createLibrarySymbol({
-      libId: pinNumberingLibId,
+      libId: resolvedLibId,
       ...librarySymbolOptions,
     })
   }
 
   /**
    * KiCad resolves every instance of a lib id through a single definition and
-   * joins symbol pins to footprint pads by number. Instances of one library
-   * symbol whose pins need different numbers (for example two LEDs with
-   * opposite pin labels) therefore each get their own lib id.
+   * joins symbol pins to wires by position and footprint pads by number.
+   * Components may share a lib id only when their drawings and pin definitions
+   * agree, including pin names, numbers, positions, and directions.
    */
-  private getLibraryIdForPinNumbering(
+  private getLibraryIdForSymbolDefinition(
     libId: string,
     librarySymbol: SchematicSymbol,
   ): string {
-    const pinNumbering = librarySymbol.subSymbols
-      .flatMap((subSymbol) => subSymbol.pins.map((pin) => pin.numberString))
-      .join(",")
-    const numberings = this.pinNumberingsByLibId.get(libId) ?? []
-    this.pinNumberingsByLibId.set(libId, numberings)
+    const definition = librarySymbol.subSymbols
+      .map((subSymbol) => subSymbol.getString())
+      .join("\n")
+    const definitions = this.symbolDefinitionsByLibId.get(libId) ?? []
+    this.symbolDefinitionsByLibId.set(libId, definitions)
 
-    let index = numberings.indexOf(pinNumbering)
+    let index = definitions.indexOf(definition)
     if (index === -1) {
-      numberings.push(pinNumbering)
-      index = numberings.length - 1
+      definitions.push(definition)
+      index = definitions.length - 1
     }
     return index === 0 ? libId : `${libId}_${index + 1}`
   }
