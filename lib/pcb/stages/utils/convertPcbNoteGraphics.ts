@@ -3,11 +3,6 @@ import { GrLine, GrRect, Stroke } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
-export interface PcbNoteGraphics {
-  lines: GrLine[]
-  rectangles: GrRect[]
-}
-
 export const getPcbNoteLayer = (layer: string) =>
   layer === "bottom" ? "B.Fab" : layer === "top" ? "F.Fab" : layer
 
@@ -28,13 +23,11 @@ export function convertPcbNoteGraphics({
   lines?: PcbNoteLine[]
   paths?: PcbNotePath[]
   matrix: Matrix
-}): PcbNoteGraphics {
-  const graphics: PcbNoteGraphics = {
-    lines: [],
-    rectangles: [],
-  }
+}) {
+  const graphicLines: GrLine[] = []
+  const graphicRects: GrRect[] = []
   for (const note of lines) {
-    graphics.lines.push(
+    graphicLines.push(
       new GrLine({
         start: applyToPoint(matrix, { x: note.x1, y: note.y1 }),
         end: applyToPoint(matrix, { x: note.x2, y: note.y2 }),
@@ -46,7 +39,7 @@ export function convertPcbNoteGraphics({
   }
   for (const note of paths) {
     for (let index = 1; index < note.route.length; index++) {
-      graphics.lines.push(
+      graphicLines.push(
         new GrLine({
           start: applyToPoint(matrix, note.route[index - 1]!),
           end: applyToPoint(matrix, note.route[index]!),
@@ -62,15 +55,12 @@ export function convertPcbNoteGraphics({
     const width = note.has_stroke === false ? 0 : note.stroke_width
     const halfWidth = note.width / 2
     const halfHeight = note.height / 2
-    const common = {
-      layer: getPcbNoteLayer(note.layer),
-      stroke: createNoteStroke(width, note.is_stroke_dashed),
-      fill: note.is_filled ?? false,
-      uuid: generateDeterministicUuid(note.pcb_note_rect_id),
-    }
-    graphics.rectangles.push(
+    graphicRects.push(
       new GrRect({
-        ...common,
+        layer: getPcbNoteLayer(note.layer),
+        stroke: createNoteStroke(width, note.is_stroke_dashed),
+        fill: note.is_filled ?? false,
+        uuid: generateDeterministicUuid(note.pcb_note_rect_id),
         start: applyToPoint(matrix, {
           x: note.center.x - halfWidth,
           y: note.center.y + halfHeight,
@@ -82,5 +72,5 @@ export function convertPcbNoteGraphics({
       }),
     )
   }
-  return graphics
+  return { lines: graphicLines, rectangles: graphicRects }
 }

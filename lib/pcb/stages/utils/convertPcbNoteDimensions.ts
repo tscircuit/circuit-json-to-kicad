@@ -9,7 +9,8 @@ const MILLIMETRES = 2
 const NO_UNITS_SUFFIX = 0
 const UNITS_SUFFIX = 1
 const TEXT_OUTSIDE = 0
-const MEASUREMENT_DECIMAL_PLACES = 3
+// Defaults required by KiCad when Circuit JSON supplies no numeric precision or line width.
+const DEFAULT_MEASUREMENT_DECIMAL_PLACES = 3
 const DEFAULT_DIMENSION_STROKE_WIDTH = 0.15
 
 export function convertPcbNoteDimensions(
@@ -17,14 +18,16 @@ export function convertPcbNoteDimensions(
   matrix: Matrix,
 ) {
   const lines: GrLine[] = []
-  const dimensions = notes.flatMap((note) => {
+  const dimensions: Dimension[] = []
+  for (const note of notes) {
+    const layer = getPcbNoteLayer(note.layer)
     const from = applyToPoint(matrix, note.from)
     const to = applyToPoint(matrix, note.to)
     const dx = to.x - from.x
     const dy = to.y - from.y
     const length = Math.hypot(dx, dy)
     if (!Number.isFinite(length) || length === 0 || note.arrow_size <= 0)
-      return []
+      continue
     const offsetDirection = note.offset_direction ?? {
       x: -(note.to.y - note.from.y),
       y: note.to.x - note.from.x,
@@ -62,7 +65,7 @@ export function convertPcbNoteDimensions(
               x: anchor.x + offsetDirection.x * extension,
               y: anchor.y + offsetDirection.y * extension,
             }),
-            layer: getPcbNoteLayer(note.layer),
+            layer,
             stroke: createNoteStroke(DEFAULT_DIMENSION_STROKE_WIDTH),
             uuid: generateDeterministicUuid(
               `${note.pcb_note_dimension_id}:extension:${index}`,
@@ -72,10 +75,10 @@ export function convertPcbNoteDimensions(
       }
     }
     // Dimension exposes a structured S-expression factory rather than setters.
-    return [
+    dimensions.push(
       Dimension.fromSexprPrimitives([
         ["type", "aligned"],
-        ["layer", getPcbNoteLayer(note.layer)],
+        ["layer", layer],
         ["uuid", generateDeterministicUuid(note.pcb_note_dimension_id)],
         [
           "pts",
@@ -93,7 +96,7 @@ export function convertPcbNoteDimensions(
             (-Math.atan2(dy, dx) * 180) / Math.PI +
               (note.text_ccw_rotation ?? 0),
           ],
-          ["layer", getPcbNoteLayer(note.layer)],
+          ["layer", layer],
           ["effects", ["font", ["size", note.font_size, note.font_size]]],
         ],
         [
@@ -103,7 +106,7 @@ export function convertPcbNoteDimensions(
             "units_format",
             note.text === undefined ? UNITS_SUFFIX : NO_UNITS_SUFFIX,
           ],
-          ["precision", MEASUREMENT_DECIMAL_PLACES],
+          ["precision", DEFAULT_MEASUREMENT_DECIMAL_PLACES],
           ...(note.text === undefined ? [] : [["override_value", note.text]]),
         ],
         [
@@ -114,7 +117,7 @@ export function convertPcbNoteDimensions(
           ...(hasSkewOffset ? [["extension_height", 0]] : []),
         ],
       ]),
-    ]
-  })
+    )
+  }
   return { dimensions, lines }
 }
