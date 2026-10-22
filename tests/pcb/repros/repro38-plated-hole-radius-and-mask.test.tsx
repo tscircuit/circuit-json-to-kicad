@@ -7,7 +7,7 @@
  * Both component-owned and standalone plated holes are checked, since they
  * reach the pad builder through different stages.
  *
- * To run: bun test tests/pcb/repros/repro35-plated-hole-radius-and-mask.test.tsx
+ * To run: bun test tests/pcb/repros/repro38-plated-hole-radius-and-mask.test.tsx
  */
 import { beforeAll, expect, test } from "bun:test"
 import type { CircuitJson, PcbPlatedHole } from "circuit-json"
@@ -103,7 +103,7 @@ beforeAll(async () => {
   kicadPcbString = converter.getOutputString()
 })
 
-test("repro35: circuit json carries plated hole radius and mask attributes", () => {
+test("repro38: circuit json carries plated hole radius and mask attributes", () => {
   const platedHoles = circuitJson.filter(
     (element): element is PcbPlatedHole => element.type === "pcb_plated_hole",
   )
@@ -121,7 +121,7 @@ test("repro35: circuit json carries plated hole radius and mask attributes", () 
   expect(standalonePads).toHaveLength(3)
 })
 
-test("repro35: rect_border_radius exports as a roundrect pad", () => {
+test("repro38: rect_border_radius exports as a roundrect pad", () => {
   // 0.5mm radius on a 3mm x 2mm pad, 0.4mm radius on a 2mm x 3mm pad
   for (const [pad, expectedRatio] of [
     [componentPads[0]!, 0.25],
@@ -132,19 +132,19 @@ test("repro35: rect_border_radius exports as a roundrect pad", () => {
   }
 })
 
-test("repro35: soldermask_margin exports as solder_mask_margin", () => {
+test("repro38: soldermask_margin exports as solder_mask_margin", () => {
   expect(componentPads[1]!.solderMaskMargin).toBe(0.3)
   expect(standalonePads[1]!.solderMaskMargin).toBe(0.3)
 })
 
-test("repro35: covered plated holes do not open the solder mask", () => {
+test("repro38: covered plated holes do not open the solder mask", () => {
   for (const pad of [componentPads[2]!, standalonePads[2]!]) {
     expect(pad.layers?.layers).toEqual(["*.Cu"])
   }
 })
 
 test(
-  "repro35: plated hole radius and mask board snapshot",
+  "repro38: plated hole radius and mask board snapshot",
   async () => {
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: kicadPcbString,
