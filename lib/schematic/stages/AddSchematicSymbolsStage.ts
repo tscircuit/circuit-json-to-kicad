@@ -492,7 +492,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         valTextPos: { x: symbolKicadPos.x, y: valueBelowBodyY },
       }
     }
-    const symbol = getSchematicSymbolData(symbolName)
+    const symbol = getSchematicSymbolData(symbolName, {
+      schematicComponent,
+      schematicPorts: this.ctx.db.schematic_port.list(),
+    })
 
     // Default positions if symbol not found
     if (!symbol) {

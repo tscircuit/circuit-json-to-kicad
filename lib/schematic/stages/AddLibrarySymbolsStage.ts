@@ -375,7 +375,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       return createGenericChipSymbolData(schematicComponent, this.ctx.db)
     }
 
-    return getSchematicSymbolData(symbolName) || null
+    return (
+      getSchematicSymbolData(symbolName, {
+        schematicComponent,
+        schematicPorts: this.ctx.db.schematic_port.list(),
+      }) || null
+    )
   }
 
   /**

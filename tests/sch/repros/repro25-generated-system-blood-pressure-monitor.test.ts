@@ -23,6 +23,39 @@ test("repro25: convert the blood pressure monitor multisheet generated system", 
       "Motor Driver",
     ],
     assertKicadSchematicFiles: (files) => {
+      const programmingSheet = parseKicadSch(
+        files.find(({ filename }) => filename === "programming.kicad_sch")!
+          .content,
+      )
+      const switchInstance = programmingSheet.symbols.find((symbol) =>
+        symbol.properties.some(
+          (property) => property.key === "Reference" && property.value === "S1",
+        ),
+      )!
+      const switchDefinition = programmingSheet.libSymbols!.symbols.find(
+        (symbol) => symbol.libraryId === switchInstance.libraryId,
+      )!
+      const switchPins = switchDefinition.subSymbols.flatMap(
+        (symbol) => symbol.pins,
+      )
+      expect(switchPins).toHaveLength(2)
+      const wirePoints = programmingSheet.wires.flatMap(
+        (wire) => wire.points?.points ?? [],
+      )
+      for (const pin of switchPins) {
+        // KiCad library Y is up, while the placed schematic Y is down.
+        const x = switchInstance.at!.x + pin.at!.x
+        const y = switchInstance.at!.y - pin.at!.y
+        expect(
+          wirePoints.some(
+            (point) =>
+              "x" in point &&
+              Math.abs(point.x - x) < 1e-4 &&
+              Math.abs(point.y - y) < 1e-4,
+          ),
+        ).toBe(true)
+      }
+
       const connectorsSheet = files.find(
         ({ filename }) => filename === "interfaces.kicad_sch",
       )
