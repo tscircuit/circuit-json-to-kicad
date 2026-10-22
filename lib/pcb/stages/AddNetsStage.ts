@@ -3,6 +3,7 @@ import { getElementId } from "@tscircuit/circuit-json-util"
 import { getFullConnectivityMapFromCircuitJson } from "circuit-json-to-connectivity-map"
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
+import { getSchematicNetNames } from "../getSchematicNetNames"
 import {
   ConverterStage,
   type ConverterContext,
@@ -71,32 +72,68 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    const sortedEntries = Array.from(netNameByKey.entries()).sort((a, b) =>
-      a[0].localeCompare(b[0]),
+    const connectivityMap = getFullConnectivityMapFromCircuitJson(this.input)
+    const schematicNames = getSchematicNetNames(this.input, connectivityMap)
+    const existingKeys = new Set(netNameByKey.keys())
+    const pcbSourcePorts = new Set(
+      this.ctx.db.pcb_port.list().map((port) => port.source_port_id),
+    )
+    for (const element of this.input) {
+      // A schematic-only pin can name an existing net, but it must not create
+      // an unused PCB net when there is no corresponding footprint port.
+      if (
+        element.type === "source_port" &&
+        !pcbSourcePorts.has(element.source_port_id)
+      )
+        continue
+      const name = schematicNames.get(getElementId(element))
+      if (!name) continue
+      const key =
+        ("subcircuit_connectivity_map_key" in element &&
+          element.subcircuit_connectivity_map_key) ||
+        (element.type === "source_net" ? element.source_net_id : undefined) ||
+        (element.type === "source_port" ? element.source_port_id : undefined)
+      if (key) netNameByKey.set(key, name)
+    }
+
+    // Append newly discovered (including unused-pin) nets after existing ones,
+    // keeping the old numeric codes stable wherever possible.
+    const sortedEntries = Array.from(netNameByKey.entries()).sort(
+      (a, b) =>
+        Number(!existingKeys.has(a[0])) - Number(!existingKeys.has(b[0])) ||
+        a[0].localeCompare(b[0]),
     )
 
     const nets: PcbNet[] = []
     nets.push(new PcbNet(0, ""))
 
+    const netBySchematicName = new Map<string, PcbNetInfo>()
+    const resolvedNames = new Set(schematicNames.values())
     let netNumber = 1
     for (const [connectivityKey, netName] of sortedEntries) {
+      const existing = netBySchematicName.get(netName)
+      if (existing) {
+        this.ctx.pcbNetMap.set(connectivityKey, existing)
+        continue
+      }
       const pcbNet = new PcbNet(netNumber, netName)
       nets.push(pcbNet)
 
       const netInfo: PcbNetInfo = { id: netNumber, name: netName }
       this.ctx.pcbNetMap.set(connectivityKey, netInfo)
+      if (resolvedNames.has(netName)) netBySchematicName.set(netName, netInfo)
 
       netNumber++
     }
 
     // Index the existing KiCad nets by Circuit JSON element ID as well.
-    const connectivityMap = getFullConnectivityMapFromCircuitJson(this.input)
     const netByConnection = new Map<string, PcbNetInfo>()
     for (const element of this.input) {
       const connectivityKey =
         ("subcircuit_connectivity_map_key" in element &&
           element.subcircuit_connectivity_map_key) ||
-        (element.type === "source_net" ? element.source_net_id : undefined)
+        (element.type === "source_net" ? element.source_net_id : undefined) ||
+        (element.type === "source_port" ? element.source_port_id : undefined)
       if (!connectivityKey) continue
       const netInfo = this.ctx.pcbNetMap.get(connectivityKey)
       if (!netInfo) continue
@@ -115,6 +152,14 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       if (netInfo && !this.ctx.pcbNetMap.has(elementId)) {
         this.ctx.pcbNetMap.set(elementId, netInfo)
       }
+    }
+
+    this.ctx.pcbSchematicPortNets = new Map()
+    for (const port of this.ctx.db.source_port.list()) {
+      if (!schematicNames.has(port.source_port_id)) continue
+      const netInfo = this.ctx.pcbNetMap.get(port.source_port_id)
+      if (netInfo)
+        this.ctx.pcbSchematicPortNets.set(port.source_port_id, netInfo)
     }
 
     kicadPcb.nets = nets

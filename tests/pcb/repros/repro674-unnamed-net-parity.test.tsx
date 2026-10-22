@@ -55,15 +55,13 @@ function getPadNetName(reference: string, number: string) {
   return footprint.fpPads.find((pad) => pad.number === number)!.net?.name
 }
 
-// #674: the PCB currently uses source_trace.display_name for this net.
-test.failing("repro674: connected pads use the schematic's automatic net name", () => {
+test("repro674: connected pads use the schematic's automatic net name", () => {
   const expected = nativeNets.find((net) => net.pins.includes("R1.2"))!.name
   expect(getPadNetName("R1", "2")).toBe(expected)
   expect(getPadNetName("C1", "1")).toBe(expected)
 })
 
-// #674: the PCB currently leaves unused pads on net 0.
-test.failing("repro674: unused pads use the schematic's unconnected net names", () => {
+test("repro674: unused pads use the schematic's unconnected net names", () => {
   for (const [reference, number] of [
     ["R1", "1"],
     ["C1", "2"],

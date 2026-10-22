@@ -68,6 +68,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       sourcePort.subcircuit_connectivity_map_key,
     ]
     const nets: PcbNetInfo[] = []
+    const schematicNet = this.ctx.pcbSchematicPortNets?.get(sourcePortId)
+    if (schematicNet) nets.push(schematicNet)
     for (const key of keys) {
       const net = key ? this.ctx.pcbNetMap?.get(key) : undefined
       if (net && !nets.some((existing) => existing.id === net.id)) {

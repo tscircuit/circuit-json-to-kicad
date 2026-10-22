@@ -188,6 +188,9 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         if (connectivityKey) {
           netInfo = pcbNetMap.get(connectivityKey)
         }
+        // AddNetsStage also indexes explicit Circuit JSON connectivity by ID.
+        // Imported traces need not carry a subcircuit connectivity key.
+        netInfo ??= pcbNetMap.get(trace.pcb_trace_id)
       }
 
       const segmentLayerSource =
