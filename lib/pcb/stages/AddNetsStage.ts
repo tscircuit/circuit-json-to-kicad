@@ -36,16 +36,18 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    const internalPortConnections = getSourcePortConnectivityMapFromCircuitJson(
-      this.input.filter(
-        (element) =>
-          element.type === "source_component" ||
-          element.type === "source_component_internal_connection",
-      ),
-    )
-    this.ctx.pcbInternalPortConnections = internalPortConnections
+    this.ctx.pcbInternalPortConnections =
+      getSourcePortConnectivityMapFromCircuitJson(
+        this.input.filter(
+          (element) =>
+            element.type === "source_component" ||
+            element.type === "source_component_internal_connection",
+        ),
+      )
     // Share existing net keys across declared internal connections, including overlapping groups.
-    for (const members of Object.values(internalPortConnections.netMap)) {
+    for (const members of Object.values(
+      this.ctx.pcbInternalPortConnections.netMap,
+    )) {
       const keys = members
         .flatMap((id) => [
           id,
