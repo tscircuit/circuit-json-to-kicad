@@ -4,7 +4,7 @@
  * never passes one, so every hole at its own origin hashes to the same value.
  * Standalone SMT pads pass their pcb_smtpad_id and stay unique.
  *
- * To run: bun test tests/pcb/repros/repro36-standalone-plated-hole-pad-uuid.test.tsx
+ * To run: bun test tests/pcb/repros/repro39-standalone-plated-hole-pad-uuid.test.tsx
  */
 import { beforeAll, expect, test } from "bun:test"
 import type { FootprintPad } from "kicadts"
@@ -54,12 +54,12 @@ beforeAll(async () => {
   smtPads = pads.filter((pad) => pad.padType === "smd")
 })
 
-test("repro36: standalone SMT pads export unique pad UUIDs", () => {
+test("repro39: standalone SMT pads export unique pad UUIDs", () => {
   expect(smtPads).toHaveLength(2)
   expect(new Set(smtPads.map((pad) => pad.uuid?.value)).size).toBe(2)
 })
 
-test.failing("repro36: standalone plated holes export unique pad UUIDs", () => {
+test.failing("repro39: standalone plated holes export unique pad UUIDs", () => {
   expect(platedHolePads).toHaveLength(3)
   expect(new Set(platedHolePads.map((pad) => pad.uuid?.value)).size).toBe(3)
 })
