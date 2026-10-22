@@ -1,3 +1,7 @@
+import {
+  getSourcePortConnectivityMapFromCircuitJson,
+  type ConnectivityMap,
+} from "circuit-json-to-connectivity-map"
 import type {
   CircuitJson,
   CadComponent,
@@ -50,6 +54,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
+  private internalPortConnections: ConnectivityMap
   private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
@@ -64,6 +69,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (!sourcePort) return undefined
 
     const keys = [
+      sourcePortId,
       ...(this.sourcePortNetKeys[sourcePortId] ?? []),
       sourcePort.subcircuit_connectivity_map_key,
     ]
@@ -120,6 +126,24 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         this.sourcePortNetKeys[portId] ??= []
         this.sourcePortNetKeys[portId].push(...keys)
       }
+    }
+    this.internalPortConnections = getSourcePortConnectivityMapFromCircuitJson(
+      input.filter(
+        (element) =>
+          element.type === "source_component" ||
+          element.type === "source_component_internal_connection",
+      ),
+    )
+    // Share existing net keys across declared internal connections, including overlapping groups.
+    for (const members of Object.values(this.internalPortConnections.netMap)) {
+      const keys = members
+        .flatMap((id) => [
+          id,
+          ...(this.sourcePortNetKeys[id] ?? []),
+          ctx.db.source_port.get(id)?.subcircuit_connectivity_map_key,
+        ])
+        .filter((key): key is string => Boolean(key))
+      for (const id of members) this.sourcePortNetKeys[id] = keys
     }
   }
 
@@ -298,6 +322,37 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpPads.push(...npthPads)
 
     footprint.fpPads = fpPads
+
+    const padsByNumber = new Map<string, typeof fpPads>()
+    for (const pad of fpPads) {
+      if (!pad.number) continue
+      const pads = padsByNumber.get(pad.number) ?? []
+      pads.push(pad)
+      padsByNumber.set(pad.number, pads)
+    }
+    const duplicatePads = [...padsByNumber.values()].filter(
+      (pads) => pads.length > 1,
+    )
+    // KiCad's flag applies to every repeated number: require explicit internal connectivity for all of them.
+    if (
+      duplicatePads.length > 0 &&
+      duplicatePads.every((pads) => {
+        const sourceIds = pcbPads.flatMap((pad, index) => {
+          const sourceId =
+            pad.pcb_port_id &&
+            this.ctx.db.pcb_port.get(pad.pcb_port_id)?.source_port_id
+          return smdPads[index]?.number === pads[0]!.number && sourceId
+            ? [sourceId]
+            : []
+        })
+        return (
+          sourceIds.length === pads.length &&
+          this.internalPortConnections.areAllIdsConnected(sourceIds)
+        )
+      })
+    ) {
+      footprint.duplicatePadNumbersAreJumpers = "yes"
+    }
 
     // Convert circles
     const pcbSilkscreenCircles =
