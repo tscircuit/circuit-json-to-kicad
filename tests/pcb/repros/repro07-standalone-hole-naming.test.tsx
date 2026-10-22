@@ -38,6 +38,8 @@ test("standalone hole footprint naming", async () => {
 
   const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
 
+  expect(kicadPcb.footprints.every((fp) => !fp.attr?.type)).toBe(true)
+
   const getFp = (name: string) =>
     kicadPcb.footprints.find((f) => f.libraryLink?.includes(name))
 

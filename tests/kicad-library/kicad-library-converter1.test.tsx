@@ -89,7 +89,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
   expect(outputKeys).toMatchInlineSnapshot(`
 [
   "footprints/my-keyboard-library.pretty/KeyHotSocket.kicad_mod",
-  "footprints/tscircuit_builtin.pretty/capacitor_0805.kicad_mod",
+  "footprints/tscircuit_builtin.pretty/capacitor_cap0805.kicad_mod",
   "footprints/tscircuit_builtin.pretty/diode_0603.kicad_mod",
   "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
   "fp-lib-table",
@@ -130,7 +130,7 @@ test("KicadLibraryConverter with mock keyboard library", async () => {
       (at 0 0 0)
       (descr "")
       (tags "")
-      (attr through_hole)
+      (attr smd)
       (embedded_fonts no)
       (property "Reference" "REF**"
         (at 0 -4.34 0)

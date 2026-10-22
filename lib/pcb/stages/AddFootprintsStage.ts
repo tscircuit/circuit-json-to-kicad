@@ -24,6 +24,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
+import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
 import { getkicadComponentProperty } from "./utils/getKicadComponentProperty"
 import type { KicadFootprintMetadata } from "@tscircuit/props"
 import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
@@ -357,7 +358,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertCourtyardRects(pcbCourtyardRects, component.center))
+    const courtyardRects = convertCourtyardRects({
+      courtyardRects: pcbCourtyardRects,
+      componentCenter: component.center,
+      componentRotation: component.rotation || 0,
+    })
+    fpRects.push(...courtyardRects.fpRects)
     footprint.fpRects = fpRects
 
     // Convert polygons
@@ -374,6 +380,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentCenter: component.center,
       componentRotation: component.rotation || 0,
     })
+    fpPolys.push(...courtyardRects.fpPolys)
 
     const pcbSilkscreenRects =
       this.ctx.db.pcb_silkscreen_rect
@@ -481,6 +488,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       footprint.attr ??= new FootprintAttr()
       footprint.attr.dnp = true
     }
+
+    applyInferredFootprintType(footprint)
 
     const footprints = kicadPcb.footprints
     footprints.push(footprint)

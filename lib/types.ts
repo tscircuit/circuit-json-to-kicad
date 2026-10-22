@@ -91,7 +91,7 @@ export interface ConverterContext {
 
   // PCB-specific data
   pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
-  pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key to KiCad net metadata
+  pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key or Circuit JSON element ID to KiCad net metadata
   numLayers?: number // Number of copper layers (2, 4, 6, 8)
   edgeCutsWidth?: number // Generated Edge.Cuts stroke width in millimetres
 
