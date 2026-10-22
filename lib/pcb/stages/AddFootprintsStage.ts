@@ -69,7 +69,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (!sourcePort) return undefined
 
     const keys = [
-      sourcePortId,
       ...(this.sourcePortNetKeys[sourcePortId] ?? []),
       sourcePort.subcircuit_connectivity_map_key,
     ]
