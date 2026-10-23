@@ -61,14 +61,11 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       })
     const netLabelSymbols: SchematicSymbol[] = []
 
-    // Net-label artwork is shared, while each instance's Value names its global net.
+    // Rail artwork is shared, while each instance's Value names its global net.
     const netLabels = db.schematic_net_label?.list?.() || []
-    const netLabelSymbolNames = new Set<string>()
+    const railLibraryIds = new Set<string>()
     for (const netLabel of netLabels) {
-      if (
-        !netLabel.symbol_name ||
-        netLabelSymbolNames.has(netLabel.symbol_name)
-      )
+      if (!netLabel.symbol_name || railLibraryIds.has(netLabel.symbol_name))
         continue
       const sourceNet = netLabel.source_net_id
         ? db.source_net.get(netLabel.source_net_id)
@@ -80,7 +77,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       })
       if (libSymbol) {
         netLabelSymbols.push(libSymbol)
-        netLabelSymbolNames.add(netLabel.symbol_name)
+        railLibraryIds.add(netLabel.symbol_name)
       }
     }
 
