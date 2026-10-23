@@ -1,3 +1,4 @@
+import type { Point } from "circuit-json"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 
 // KiCad's SCH_IU_PER_MM is 1e4 (100 nm per schematic internal unit).
@@ -13,8 +14,8 @@ export function roundSchematicCoordinate(mm: number): number {
 
 export function transformSchematicPoint(
   transform: Matrix,
-  point: { x: number; y: number },
-): { x: number; y: number } {
+  point: Point,
+): Point {
   const { x, y } = applyToPoint(transform, point)
   return { x: roundSchematicCoordinate(x), y: roundSchematicCoordinate(y) }
 }
