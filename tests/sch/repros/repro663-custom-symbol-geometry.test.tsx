@@ -4,19 +4,19 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { parseKicadSch } from "kicadts"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 
-const Box = ({ halfWidth }: { halfWidth: number }) => (
-  <symbol name="Shared">
+const Box = ({ width }: { width: number }) => (
+  <symbol name="Shared" width={width}>
     <schematicpath
       points={[
-        { x: -halfWidth, y: -0.4 },
-        { x: halfWidth, y: -0.4 },
-        { x: halfWidth, y: 0.4 },
-        { x: -halfWidth, y: 0.4 },
-        { x: -halfWidth, y: -0.4 },
+        { x: -1, y: -0.4 },
+        { x: 1, y: -0.4 },
+        { x: 1, y: 0.4 },
+        { x: -1, y: 0.4 },
+        { x: -1, y: -0.4 },
       ]}
       strokeWidth={0.05}
     />
-    <port name="1" pinNumber={1} direction="right" schX={halfWidth} schY={0} />
+    <port name="1" pinNumber={1} direction="right" schX={1} schY={0} />
   </symbol>
 )
 
@@ -24,7 +24,7 @@ test.failing("repro663: same-name custom symbols preserve each geometry and conn
   const circuit = new Circuit()
   circuit.add(
     <board width="40mm" height="40mm" routingDisabled>
-      {[1, 2, 1].map((halfWidth, index) => (
+      {[2, 4, 2].map((width, index) => (
         <group key={index}>
           <chip
             name={`A${index + 1}`}
@@ -40,7 +40,7 @@ test.failing("repro663: same-name custom symbols preserve each geometry and conn
                 />
               </footprint>
             }
-            symbol={<Box halfWidth={halfWidth} />}
+            symbol={<Box width={width} />}
             schX={0}
             schY={-3 * index}
           />
