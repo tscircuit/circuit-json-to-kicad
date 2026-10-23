@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
+import { parseKicadSch } from "kicadts"
+import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -50,4 +52,17 @@ test("repro663: same-name custom symbols with different widths", async () => {
       snapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
+
+  const schematic = parseKicadSch(converter.getOutputString())
+  expect(
+    schematic.libSymbols!.symbols.filter((symbol) =>
+      symbol.libraryId?.startsWith("Custom:Shared"),
+    ),
+  ).toHaveLength(2)
+  const connections = (await exportNativeSchematicNets(circuitJson)).map(
+    (net) => net.pins,
+  )
+  expect(connections).toContainEqual(["A1.1", "R1.1"])
+  expect(connections).toContainEqual(["A2.1", "R2.1"])
+  expect(connections).toContainEqual(["A3.1", "R3.1"])
 })
