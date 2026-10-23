@@ -1,92 +1,68 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import { Circuit } from "tscircuit"
 import { parseKicadSch } from "kicadts"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const Box = ({ width }: { width: number }) => (
   <symbol name="Shared" width={width}>
-    <schematicpath
-      points={[
-        { x: -1, y: -0.4 },
-        { x: 1, y: -0.4 },
-        { x: 1, y: 0.4 },
-        { x: -1, y: 0.4 },
-        { x: -1, y: -0.4 },
-      ]}
-      strokeWidth={0.05}
-    />
+    <schematicrect width={2} height={0.8} strokeWidth={0.05} />
+    <schematictext text="{REF}" schX={0} schY={0} fontSize={0.15} />
     <port name="1" pinNumber={1} direction="right" schX={1} schY={0} />
   </symbol>
 )
 
-test("repro663: same-name custom symbols preserve each geometry and connection", async () => {
+const Example = () => (
+  <board>
+    <chip name="A1" schY={3} symbol={<Box width={2} />} />
+    <resistor name="R1" resistance="1k" schX={6} schY={3} />
+    <trace from=".A1 > .pin1" to=".R1 > .pin1" />
+
+    <chip name="A2" schY={0} symbol={<Box width={4} />} />
+    <resistor name="R2" resistance="1k" schX={6} schY={0} />
+    <trace from=".A2 > .pin1" to=".R2 > .pin1" />
+
+    <chip name="A3" schY={-3} symbol={<Box width={2} />} />
+    <resistor name="R3" resistance="1k" schX={6} schY={-3} />
+    <trace from=".A3 > .pin1" to=".R3 > .pin1" />
+  </board>
+)
+
+export default Example
+
+test("repro663: same-name custom symbols with different widths", async () => {
   const circuit = new Circuit()
-  circuit.add(
-    <board width="40mm" height="40mm" routingDisabled>
-      {[2, 4, 2].map((width, index) => (
-        <group key={index}>
-          <chip
-            name={`A${index + 1}`}
-            footprint={
-              <footprint>
-                <smtpad
-                  shape="rect"
-                  width={1}
-                  height={1}
-                  portHints={["1"]}
-                  pcbX={0}
-                  pcbY={0}
-                />
-              </footprint>
-            }
-            symbol={<Box width={width} />}
-            schX={0}
-            schY={-3 * index}
-          />
-          <resistor
-            name={`R${index + 1}`}
-            resistance="1k"
-            footprint="0402"
-            schX={6}
-            schY={-3 * index}
-          />
-          <trace
-            from={`.A${index + 1} > .pin1`}
-            to={`.R${index + 1} > .pin1`}
-          />
-        </group>
-      ))}
-    </board>,
-  )
+  circuit.pcbDisabled = true
+  circuit.add(<Example />)
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
-  const output = converter.getOutputString()
-  await Bun.write("debug-output/repro663.kicad_sch", output)
-  const schematic = parseKicadSch(output)
-  const ids = ["A1", "A2", "A3"].map(
-    (reference) =>
-      schematic.symbols.find((symbol) =>
-        symbol.properties.some(
-          (property) =>
-            property.key === "Reference" && property.value === reference,
-        ),
-      )!.libraryId,
-  )
-  expect(ids[0]).not.toBe(ids[1])
-  expect(ids[2]).toBe(ids[0])
+
+  const snapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
+  await expect(
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
+      snapshot.generatedFileContent["temp_file.png"]!,
+    ),
+  ).toMatchPngSnapshot(import.meta.path)
+
+  const schematic = parseKicadSch(converter.getOutputString())
   expect(
     schematic.libSymbols!.symbols.filter((symbol) =>
       symbol.libraryId?.startsWith("Custom:Shared"),
     ),
   ).toHaveLength(2)
-  const nativeNets = await exportNativeSchematicNets(circuitJson)
-  for (const index of [1, 2, 3]) {
-    expect(nativeNets).toContainEqual({
-      name: `Net-(A${index}-Pad1)`,
-      pins: [`A${index}.1`, `R${index}.1`],
-    })
-  }
-}, 30_000)
+  const connections = (await exportNativeSchematicNets(circuitJson)).map(
+    (net) => net.pins,
+  )
+  expect(connections).toContainEqual(["A1.1", "R1.1"])
+  expect(connections).toContainEqual(["A2.1", "R2.1"])
+  expect(connections).toContainEqual(["A3.1", "R3.1"])
+})

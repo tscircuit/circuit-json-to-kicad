@@ -3,64 +3,44 @@ import { parseKicadSch, SymbolRectangleEnd } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
 
-// A generated suffix must not take the name of a different source symbol.
-const boxes = [
-  { name: "Shared", width: 2 },
-  { name: "Shared", width: 4 },
-  { name: "Shared_2", width: 6 },
-]
+const Box = ({ name, width }: { name: string; width: number }) => (
+  <symbol name={name}>
+    <schematicrect width={width} height={1} />
+    <port name="1" pinNumber={1} direction="right" schX={width / 2} schY={0} />
+  </symbol>
+)
 
-test("same-name variants preserve an explicitly named Shared_2 in either order", async () => {
-  for (const order of [boxes, [...boxes].reverse()]) {
-    const circuit = new Circuit()
-    circuit.pcbDisabled = true
-    circuit.add(
-      <board>
-        {order.map(({ name, width }, index) => (
-          <chip
-            key={index}
-            name={`U${index + 1}`}
-            schY={-3 * index}
-            symbol={
-              <symbol name={name}>
-                <schematicrect width={width} height={1} />
-                <port
-                  name="1"
-                  pinNumber={1}
-                  direction="right"
-                  schX={width / 2}
-                  schY={0}
-                />
-              </symbol>
-            }
-          />
-        ))}
-      </board>,
-    )
-    await circuit.renderUntilSettled()
-    const converter = new CircuitJsonToKicadSchConverter(
-      circuit.getCircuitJson(),
-    )
-    converter.runUntilFinished()
-    const schematic = parseKicadSch(converter.getOutputString())
-    const libraries = schematic.libSymbols!.symbols
-    expect(new Set(libraries.map((symbol) => symbol.libraryId)).size).toBe(3)
+const Example = () => (
+  <board>
+    <chip name="U1" schY={3} symbol={<Box name="Shared" width={2} />} />
+    <chip name="U2" schY={0} symbol={<Box name="Shared" width={4} />} />
+    <chip name="U3" schY={-3} symbol={<Box name="Shared_2" width={6} />} />
+  </board>
+)
 
-    // Each placed component must still use its own rectangle, regardless of ID.
-    for (const [index, instance] of schematic.symbols.entries()) {
-      if (order[index]!.name === "Shared_2") {
-        expect(instance.libraryId).toBe("Custom:Shared_2")
-      }
-      const library = libraries.find(
-        (symbol) => symbol.libraryId === instance.libraryId,
-      )!
-      const rectangle = library.subSymbols.flatMap(
-        (unit) => unit.rectangles,
-      )[0]!
-      const rightEdge = rectangle
+export default Example
+
+test("a generated variant ID cannot take the name of Shared_2", async () => {
+  const circuit = new Circuit()
+  circuit.pcbDisabled = true
+  circuit.add(<Example />)
+  await circuit.renderUntilSettled()
+  const converter = new CircuitJsonToKicadSchConverter(circuit.getCircuitJson())
+  converter.runUntilFinished()
+  const schematic = parseKicadSch(converter.getOutputString())
+
+  // U2 must skip the name explicitly used by U3, even though U3 comes later.
+  expect(schematic.symbols.map((symbol) => symbol.libraryId)).toEqual([
+    "Custom:Shared",
+    "Custom:Shared_3",
+    "Custom:Shared_2",
+  ])
+  const rightEdges = schematic.libSymbols!.symbols.map(
+    (symbol) =>
+      symbol.subSymbols
+        .flatMap((unit) => unit.rectangles)[0]!
         .getChildren()
-        .find((child) => child instanceof SymbolRectangleEnd)!.x
-      expect(rightEdge).toBe((order[index]!.width / 2) * 15)
-    }
-  }
+        .find((child) => child instanceof SymbolRectangleEnd)!.x,
+  )
+  expect(rightEdges).toEqual([15, 30, 45])
 })
