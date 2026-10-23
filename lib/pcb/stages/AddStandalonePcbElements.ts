@@ -16,6 +16,7 @@ import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
+import { hasSolderPasteForPad } from "./utils/hasSolderPasteForPad"
 import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
 
 export class AddStandalonePcbElements extends ConverterStage<
@@ -76,6 +77,7 @@ export class AddStandalonePcbElements extends ConverterStage<
           padNumber: 1,
           componentRotation: 0,
           componentId: pcbPad.pcb_smtpad_id,
+          hasSolderPaste: hasSolderPasteForPad(pcbPad, this.ctx),
         }),
       ]
       applyInferredFootprintType(footprint)
