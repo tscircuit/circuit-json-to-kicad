@@ -126,6 +126,7 @@ export class AddStandalonePcbElements extends ConverterStage<
         componentCenter: { x: hole.x, y: hole.y },
         padNumber: 1,
         componentRotation: 0,
+        componentId: hole.pcb_plated_hole_id,
       })
 
       if (pad) {
