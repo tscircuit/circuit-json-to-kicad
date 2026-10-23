@@ -164,7 +164,6 @@ export function createPinSubsymbol({
   schematicComponent,
   schematicPorts,
   sourcePorts,
-  c2kMatSchScale,
   c2kMatSch,
 }: {
   libId: string
@@ -173,7 +172,6 @@ export function createPinSubsymbol({
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
   sourcePorts: SourcePort[]
-  c2kMatSchScale: number
   c2kMatSch: Matrix
 }): SchematicSymbol {
   const pinSymbol = new SchematicSymbol({
@@ -214,7 +212,8 @@ export function createPinSubsymbol({
       portIndex: i,
       schematicComponent,
       schematicPorts,
-      c2kMatSchScale,
+      // The sheet transform combines translation with scale(s, -s), so a is s.
+      c2kMatSchScale: c2kMatSch.a,
     })
     // Custom/builtin artwork ports are positioned in symbolData's coordinate
     // system. Translate that source point directly into the sheet; rebuilding

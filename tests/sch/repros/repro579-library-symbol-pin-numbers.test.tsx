@@ -201,7 +201,6 @@ test("repro579: explicit imported symbol pin numbers take precedence", () => {
       },
     ] as SchematicPort[],
     sourcePorts: [],
-    c2kMatSchScale: 1,
     c2kMatSch: scale(1, -1),
   })
 
