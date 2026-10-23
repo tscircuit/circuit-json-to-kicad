@@ -59,13 +59,16 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         const symbol = this.createLibrarySymbolForComponent(component)
         return symbol ? [{ component, symbol }] : []
       })
-    const railSymbols: SchematicSymbol[] = []
+    const netLabelSymbols: SchematicSymbol[] = []
 
-    // Rail artwork is shared, while each instance's Value names its global net.
+    // Net-label artwork is shared, while each instance's Value names its global net.
     const netLabels = db.schematic_net_label?.list?.() || []
-    const railLibraryIds = new Set<string>()
+    const netLabelSymbolNames = new Set<string>()
     for (const netLabel of netLabels) {
-      if (!netLabel.symbol_name || railLibraryIds.has(netLabel.symbol_name))
+      if (
+        !netLabel.symbol_name ||
+        netLabelSymbolNames.has(netLabel.symbol_name)
+      )
         continue
       const sourceNet = netLabel.source_net_id
         ? db.source_net.get(netLabel.source_net_id)
@@ -76,20 +79,20 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         isGround: sourceNet?.is_ground ?? false,
       })
       if (libSymbol) {
-        railSymbols.push(libSymbol)
-        railLibraryIds.add(netLabel.symbol_name)
+        netLabelSymbols.push(libSymbol)
+        netLabelSymbolNames.add(netLabel.symbol_name)
       }
     }
 
     // Reserve all source names before assigning suffixes: a variant of Shared
-    // must not take the ID of an actual symbol named Shared_2. Rails retain the
-    // fixed IDs used by AddSchematicNetLabelsStage.
+    // must not take the ID of an actual symbol named Shared_2. Net-label symbols
+    // retain the fixed IDs used by AddSchematicNetLabelsStage.
     this.reservedLibraryIds = new Set([
       ...componentSymbols.map(({ symbol }) => symbol.libraryId!),
-      ...railSymbols.map((symbol) => symbol.libraryId!),
+      ...netLabelSymbols.map((symbol) => symbol.libraryId!),
     ])
     this.usedLibraryIds = new Set(
-      railSymbols.map((symbol) => symbol.libraryId!),
+      netLabelSymbols.map((symbol) => symbol.libraryId!),
     )
     const emittedLibraryIds = new Set<string>()
     for (const { component, symbol } of componentSymbols) {
@@ -111,7 +114,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       }
       librarySymbols.push(symbol)
     }
-    librarySymbols.push(...railSymbols)
+    librarySymbols.push(...netLabelSymbols)
 
     libSymbols.symbols = librarySymbols
     if (kicadSch) {
@@ -471,7 +474,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicPorts: this.ctx.db.schematic_port.list(),
       sourcePorts: this.ctx.db.source_port.list(),
       c2kMatSchScale: symbolScale,
-      c2kMatSch: this.ctx.c2kMatSch,
+      c2kMatSch: this.ctx.c2kMatSch!,
     })
     symbol.subSymbols.push(pinSymbol)
 

@@ -174,7 +174,7 @@ export function createPinSubsymbol({
   schematicPorts: SchematicPort[]
   sourcePorts: SourcePort[]
   c2kMatSchScale: number
-  c2kMatSch?: Matrix
+  c2kMatSch: Matrix
 }): SchematicSymbol {
   const pinSymbol = new SchematicSymbol({
     libraryId: `${libId.split(":")[1]}_1_1`,
@@ -197,10 +197,9 @@ export function createPinSubsymbol({
     inferredPinNumbers,
   )
 
-  const origin =
-    schematicComponent && c2kMatSch
-      ? applyToPoint(c2kMatSch, schematicComponent.center)
-      : { x: 0, y: 0 }
+  const origin = schematicComponent
+    ? applyToPoint(c2kMatSch, schematicComponent.center)
+    : { x: 0, y: 0 }
 
   for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
@@ -221,7 +220,7 @@ export function createPinSubsymbol({
     // system. Translate that source point directly into the sheet; rebuilding
     // it from the scaled local offset can change rounding at half-unit ties.
     const sheetPosition =
-      !isChip && schematicComponent && c2kMatSch
+      !isChip && schematicComponent
         ? applyToPoint(c2kMatSch, {
             x:
               (port.x ?? 0) +

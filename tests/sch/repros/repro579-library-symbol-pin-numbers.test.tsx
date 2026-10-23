@@ -8,6 +8,7 @@ import type {
   SourcePort,
 } from "circuit-json"
 import { Circuit } from "tscircuit"
+import { scale } from "transformation-matrix"
 
 function getPinMappingEntries(kicadSchematic: string) {
   return Array.from(
@@ -201,6 +202,7 @@ test("repro579: explicit imported symbol pin numbers take precedence", () => {
     ] as SchematicPort[],
     sourcePorts: [],
     c2kMatSchScale: 1,
+    c2kMatSch: scale(1, -1),
   })
 
   expect(pinSymbol.pins.map((pin) => pin._sxNumber?.value)).toEqual([
