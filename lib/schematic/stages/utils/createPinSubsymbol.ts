@@ -14,6 +14,8 @@ import {
 } from "kicadts"
 import type { SchSymbol } from "schematic-symbols"
 import { calculatePinPosition } from "./calculatePinPosition"
+import { applyToPoint, type Matrix } from "transformation-matrix"
+import { toSchematicInternalUnits } from "./schematicCoordinates"
 
 type PortSide = "left" | "right" | "up" | "down"
 type SymbolPort = SchSymbol["ports"][number] & {
@@ -163,6 +165,7 @@ export function createPinSubsymbol({
   schematicPorts,
   sourcePorts,
   c2kMatSchScale,
+  c2kMatSch,
 }: {
   libId: string
   symbolData: SymbolData
@@ -171,6 +174,7 @@ export function createPinSubsymbol({
   schematicPorts: SchematicPort[]
   sourcePorts: SourcePort[]
   c2kMatSchScale: number
+  c2kMatSch?: Matrix
 }): SchematicSymbol {
   const pinSymbol = new SchematicSymbol({
     libraryId: `${libId.split(":")[1]}_1_1`,
@@ -193,6 +197,11 @@ export function createPinSubsymbol({
     inferredPinNumbers,
   )
 
+  const origin =
+    schematicComponent && c2kMatSch
+      ? applyToPoint(c2kMatSch, schematicComponent.center)
+      : { x: 0, y: 0 }
+
   for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
     pin.pinElectricalType = "passive"
@@ -208,7 +217,18 @@ export function createPinSubsymbol({
       schematicPorts,
       c2kMatSchScale,
     })
-    pin.at = [x, y, angle]
+    // KiCad rounds the placed origin and each wire endpoint separately. Derive
+    // the local pin offset from those integer positions so their sum is exact.
+    // Library Y points up, whereas sheet Y points down.
+    pin.at = [
+      (toSchematicInternalUnits(origin.x + x) -
+        toSchematicInternalUnits(origin.x)) /
+        10_000,
+      (toSchematicInternalUnits(origin.y) -
+        toSchematicInternalUnits(origin.y - y)) /
+        10_000,
+      angle,
+    ]
     pin.length = isChip ? CHIP_PIN_LENGTH : CUSTOM_SYMBOL_PIN_LENGTH
 
     const nameFont = new TextEffectsFont()

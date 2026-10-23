@@ -20,7 +20,7 @@ const Box = ({ width }: { width: number }) => (
   </symbol>
 )
 
-test.failing("repro663: same-name custom symbols preserve each geometry and connection", async () => {
+test("repro663: same-name custom symbols preserve each geometry and connection", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="40mm" height="40mm" routingDisabled>
