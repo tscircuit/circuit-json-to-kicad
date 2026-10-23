@@ -4,10 +4,14 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import type { CircuitJsonToKicadSchConverterOptions } from "lib/schematic/CircuitJsonToKicadSchConverter"
 
 // Ask KiCad which pins are connected, independently of the converter's objects.
-export async function exportNativeSchematicNets(circuit: CircuitJson) {
-  const converter = new CircuitJsonToKicadSchConverter(circuit)
+export async function exportNativeSchematicNets(
+  circuit: CircuitJson,
+  options?: CircuitJsonToKicadSchConverterOptions,
+) {
+  const converter = new CircuitJsonToKicadSchConverter(circuit, options)
   converter.runUntilFinished()
   const files = converter.getOutputFiles({
     schematicFilename: "root.kicad_sch",

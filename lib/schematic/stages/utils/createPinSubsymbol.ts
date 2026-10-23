@@ -217,15 +217,30 @@ export function createPinSubsymbol({
       schematicPorts,
       c2kMatSchScale,
     })
+    // Custom/builtin artwork ports are positioned in symbolData's coordinate
+    // system. Translate that source point directly into the sheet; rebuilding
+    // it from the scaled local offset can change rounding at half-unit ties.
+    const sheetPosition =
+      !isChip && schematicComponent && c2kMatSch
+        ? applyToPoint(c2kMatSch, {
+            x:
+              (port.x ?? 0) +
+              (schematicComponent.center.x - (symbolData.center?.x ?? 0)),
+            y:
+              (port.y ?? 0) +
+              (schematicComponent.center.y - (symbolData.center?.y ?? 0)),
+          })
+        : { x: origin.x + x, y: origin.y - y }
+
     // KiCad rounds the placed origin and each wire endpoint separately. Derive
     // the local pin offset from those integer positions so their sum is exact.
     // Library Y points up, whereas sheet Y points down.
     pin.at = [
-      (toSchematicInternalUnits(origin.x + x) -
+      (toSchematicInternalUnits(sheetPosition.x) -
         toSchematicInternalUnits(origin.x)) /
         10_000,
       (toSchematicInternalUnits(origin.y) -
-        toSchematicInternalUnits(origin.y - y)) /
+        toSchematicInternalUnits(sheetPosition.y)) /
         10_000,
       angle,
     ]

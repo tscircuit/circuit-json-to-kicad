@@ -13,9 +13,14 @@ test("fractional custom pin offsets connect on all sides without merging adjacen
     { x: -2 / 7, y: 0 },
     { x: 0, y: 2 / 7 },
     { x: 0, y: -2 / 7 },
+    // Endpoints on a half-unit boundary: translating local offsets back to
+    // the sheet can land on the other side of the rounding boundary.
+    { x: 1 + 0.5 / 150_000, y: 0, centerX: 1.3 },
+    { x: 1.00011, y: 0, centerX: 1.3 },
+    { x: 1.0001166666666668, y: 0, centerX: 3.1 },
   ]
   const circuit: CircuitJson = pins.flatMap((offset, index) => {
-    const center = { x: 0.1234567, y: -3.1234567 * index }
+    const center = { x: offset.centerX ?? 0.1234567, y: -3.1234567 * index }
     const start = { x: center.x + offset.x, y: center.y + offset.y }
     const end = { x: 5, y: center.y }
     return [
@@ -42,7 +47,8 @@ test("fractional custom pin offsets connect on all sides without merging adjacen
       },
     ]
   })
-  const converter = new CircuitJsonToKicadSchConverter(circuit)
+  const options = { schematicSheets: [{ circuitOrigin: { x: 100, y: 100 } }] }
+  const converter = new CircuitJsonToKicadSchConverter(circuit, options)
   converter.runUntilFinished()
   const schematic = parseKicadSch(converter.getOutputString())
   const componentIds = schematic.symbols
@@ -53,8 +59,8 @@ test("fractional custom pin offsets connect on all sides without merging adjacen
       ),
     )
     .map((symbol) => symbol.libraryId)
-  expect(new Set(componentIds).size).toBe(5)
-  const nativeNets = await exportNativeSchematicNets(circuit)
+  expect(new Set(componentIds.slice(0, 5)).size).toBe(5)
+  const nativeNets = await exportNativeSchematicNets(circuit, options)
   expect(nativeNets.map((net) => net.pins).sort()).toEqual(
     pins.map((_, index) => [`J${index + 1}.1`, `U${index + 1}.1`]),
   )
