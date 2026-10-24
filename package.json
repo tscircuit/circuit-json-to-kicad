@@ -45,7 +45,8 @@
     "transformation-matrix": "^3.1.0",
     "tscircuit": "^0.0.2991",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
-    "tsup": "^8.5.0"
+    "tsup": "^8.5.0",
+    "@tscircuit/circuit-json-util": "^0.0.128"
   },
   "peerDependencies": {
     "typescript": "^5"
