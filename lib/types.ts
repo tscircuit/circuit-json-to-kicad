@@ -1,3 +1,4 @@
+import type { ConnectivityMap } from "circuit-json-to-connectivity-map"
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
@@ -92,6 +93,8 @@ export interface ConverterContext {
   // PCB-specific data
   pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
   pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key or Circuit JSON element ID to KiCad net metadata
+  /** Source ports explicitly connected inside components, populated by AddNetsStage. */
+  pcbInternalPortConnections?: ConnectivityMap
   numLayers?: number // Number of copper layers (2, 4, 6, 8)
   edgeCutsWidth?: number // Generated Edge.Cuts stroke width in millimetres
 
