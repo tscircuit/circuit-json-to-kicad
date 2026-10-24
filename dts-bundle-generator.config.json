@@ -1,0 +1,19 @@
+{
+  "compilationOptions": {
+    "preferredConfigPath": "./tsconfig.build.json"
+  },
+  "entries": [
+    {
+      "filePath": "./lib/index.ts",
+      "outFile": "./dist/index.d.ts",
+      "libraries": {
+        "inlinedLibraries": ["kicadts", "transformation-matrix"],
+        "importedLibraries": ["@tscircuit/circuit-json-util", "circuit-json"]
+      },
+      "output": {
+        "inlineDeclareExternals": true,
+        "exportReferencedTypes": false
+      }
+    }
+  ]
+}
