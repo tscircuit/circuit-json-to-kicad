@@ -70,13 +70,16 @@ export class AddStandalonePcbElements extends ConverterStage<
       })
 
       footprint.fpPads = [
-        createSmdPadFromCircuitJson({
-          pcbPad,
-          componentCenter: padCenter,
-          padNumber: 1,
-          componentRotation: 0,
-          componentId: pcbPad.pcb_smtpad_id,
-        }),
+        createSmdPadFromCircuitJson(
+          {
+            pcbPad,
+            componentCenter: padCenter,
+            padNumber: 1,
+            componentRotation: 0,
+            componentId: pcbPad.pcb_smtpad_id,
+          },
+          this.ctx,
+        ),
       ]
       applyInferredFootprintType(footprint)
       const footprints = kicadPcb.footprints
