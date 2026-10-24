@@ -42,11 +42,12 @@ function expectGraphicsStayInBoardSpace(circuitJson: CircuitJson) {
   for (const [componentIndex, component] of components.entries()) {
     const footprint = output.footprints[componentIndex]!
     const position = footprint.position!
+    const ccwRotationDegrees = "angle" in position ? (position.angle ?? 0) : 0
     // KiCad places footprint-local points on its PCB in mm (+X right, +Y down).
     // Its positive footprint angle turns local points counterclockwise visually.
     const footprintToKicadBoardTransform = compose(
       translate(position.x, position.y),
-      rotateDEG(-(position.angle ?? 0)),
+      rotateDEG(-ccwRotationDegrees),
     )
     const sourceCircle = circuitJson
       .filter((element) => element.type === "pcb_courtyard_circle")

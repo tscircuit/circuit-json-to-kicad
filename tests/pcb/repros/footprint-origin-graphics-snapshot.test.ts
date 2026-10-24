@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test"
 import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import fixture from "../../assets/footprint-origin-graphics.circuit.json"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
-import fixture from "../../assets/footprint-origin-graphics.circuit.json"
 
 test("footprint-origin graphics match the native KiCad export on both PCB faces", async () => {
   const circuitJson = structuredClone(fixture) as CircuitJson

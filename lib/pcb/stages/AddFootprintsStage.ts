@@ -327,7 +327,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpCircles.push(
-      ...convertCourtyardCircles(pcbCourtyardCircles, footprintOrigin),
+      ...convertCourtyardCircles(pcbCourtyardCircles, {
+        footprintOrigin,
+        ccwRotationDegrees: component.rotation || 0,
+      }),
     )
     footprint.fpCircles = fpCircles
 
@@ -340,7 +343,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     const fpRects = footprint.fpRects ?? []
-    fpRects.push(...convertFabricationNoteRects(pcbFabRects, footprintOrigin))
+    const fabricationNoteRects = convertFabricationNoteRects(pcbFabRects, {
+      footprintOrigin,
+      ccwRotationDegrees: component.rotation || 0,
+    })
+    fpRects.push(...fabricationNoteRects.fpRects)
 
     const pcbNoteRects =
       this.ctx.db.pcb_note_rect
@@ -349,7 +356,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertNoteRects(pcbNoteRects, footprintOrigin))
+    const noteRects = convertNoteRects(pcbNoteRects, {
+      footprintOrigin,
+      ccwRotationDegrees: component.rotation || 0,
+    })
+    fpRects.push(...noteRects.fpRects)
 
     const pcbCourtyardRects =
       this.ctx.db.pcb_courtyard_rect
@@ -380,7 +391,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentCenter: footprintOrigin,
       componentRotation: component.rotation || 0,
     })
-    fpPolys.push(...courtyardRects.fpPolys)
+    fpPolys.push(
+      ...fabricationNoteRects.fpPolys,
+      ...noteRects.fpPolys,
+      ...courtyardRects.fpPolys,
+    )
 
     const pcbSilkscreenRects =
       this.ctx.db.pcb_silkscreen_rect
