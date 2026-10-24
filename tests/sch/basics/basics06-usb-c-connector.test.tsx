@@ -4,6 +4,7 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import type { PartsEngine } from "@tscircuit/props"
 import type { AnyCircuitElement } from "circuit-json"
+import { parseKicadSch } from "kicadts"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
@@ -94,6 +95,14 @@ test("sch basics06 usb-c connector", async () => {
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   await converter.runUntilFinished()
+
+  const schematic = parseKicadSch(converter.getOutputString())
+  const connectorSymbol = schematic.libSymbols!.symbols[0]!
+  const drawing = connectorSymbol.subSymbols[0]!
+  // The box surrounds seven USB artwork paths and two filled circles.
+  expect(drawing.polylines).toHaveLength(8)
+  expect(drawing.circles).toHaveLength(2)
+  expect(connectorSymbol.subSymbols[1]!.pins).toHaveLength(16)
 
   Bun.write("./debug-output/kicad.kicad_sch", converter.getOutputString())
 
