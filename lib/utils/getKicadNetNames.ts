@@ -143,11 +143,35 @@ export function getSourcePortNetKey(
 }
 
 export function getNamedNetKeys(db: CircuitJsonUtilObjects) {
-  return new Set(
-    db.source_net
-      .list()
-      .map((net) => net.subcircuit_connectivity_map_key || net.source_net_id),
+  const nets = db.source_net.list()
+  const keys = new Set(
+    nets.map((net) => net.subcircuit_connectivity_map_key || net.source_net_id),
   )
+  // Parent-level traces and ports can use a different declared grouping key
+  // from the named net inside a child. They are already named connections:
+  // adding a generated global label would join their existing local aliases.
+  const traces = db.source_trace.list()
+  const graph = getSourcePortConnectivityMapFromCircuitJson(db.toArray())
+  graph.addConnections(
+    traces.map((trace) => [
+      trace.source_trace_id,
+      ...(trace.connected_source_port_ids ?? []),
+      ...(trace.connected_source_net_ids ?? []),
+    ]),
+  )
+  const namedConnections = new Set(
+    nets
+      .map((net) => graph.getNetConnectedToId(net.source_net_id))
+      .filter(Boolean),
+  )
+  for (const row of [...traces, ...db.source_port.list()]) {
+    const id =
+      "source_trace_id" in row ? row.source_trace_id : row.source_port_id
+    const key = row.subcircuit_connectivity_map_key
+    if (key && namedConnections.has(graph.getNetConnectedToId(id)))
+      keys.add(key)
+  }
+  return keys
 }
 
 /** Local labels already name their connection; do not supersede them globally. */
