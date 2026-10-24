@@ -4,6 +4,7 @@ import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import sharp from "sharp"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
+import { applyToPoint } from "transformation-matrix"
 import fixture from "../../assets/footprint-origin.circuit.json"
 
 const formatMm = (millimeters: number) => Number(millimeters.toFixed(4))
@@ -18,6 +19,9 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   const output = KicadPcb.parse(converter.getOutputString())[0] as KicadPcb
+  // Points in board-world mm (+X right, +Y up) become KiCad PCB points
+  // (+X right, +Y down) through the converter's shared placement transform.
+  const boardToKicadTransform = converter.ctx.c2kMatPcb!
   const labels = output.footprints
     .map((footprint, footprintIndex) => {
       const referencePad = footprint.fpPads.find((pad) => pad.drill)!
@@ -35,9 +39,12 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
   expect(output.footprints).toHaveLength(8)
   for (const [componentIndex, component] of components.entries()) {
     const footprint = output.footprints[componentIndex]!
-    const origin = component.footprint_origin!
-    expect(footprint.position!.x).toBeCloseTo(100 + origin.x)
-    expect(footprint.position!.y).toBeCloseTo(100 - origin.y)
+    const expectedFootprintPosition = applyToPoint(
+      boardToKicadTransform,
+      component.footprint_origin!,
+    )
+    expect(footprint.position!.x).toBeCloseTo(expectedFootprintPosition.x)
+    expect(footprint.position!.y).toBeCloseTo(expectedFootprintPosition.y)
     const drilledPad = footprint.fpPads.find((pad) => pad.drill)!
     expect(drilledPad.at!.x).toBeCloseTo(0)
     expect(drilledPad.at!.y).toBeCloseTo(0)
@@ -52,11 +59,15 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
     legacyConverter.getOutputString(),
   )[0] as KicadPcb
   for (const [componentIndex, component] of components.entries()) {
+    const expectedLegacyPosition = applyToPoint(
+      boardToKicadTransform,
+      component.center,
+    )
     expect(legacy.footprints[componentIndex]!.position!.x).toBeCloseTo(
-      100 + component.center.x,
+      expectedLegacyPosition.x,
     )
     expect(legacy.footprints[componentIndex]!.position!.y).toBeCloseTo(
-      100 - component.center.y,
+      expectedLegacyPosition.y,
     )
   }
 })

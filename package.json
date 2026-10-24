@@ -1,7 +1,7 @@
 {
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
-  "version": "0.0.243",
+  "version": "0.0.252",
   "repository": {
     "type": "git",
     "url": "https://github.com/tscircuit/circuit-json-to-kicad"
@@ -28,11 +28,12 @@
     "compare-kicad": "bun run scripts/compare-kicad-files.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.4",
+    "@biomejs/biome": "2.5.15",
     "@tscircuit/common": "^0.0.5",
+    "@tscircuit/core": "^0.0.2203",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "https://pkg.pr.new/circuit-json@b8c0f26",
+    "circuit-json": "^0.0.534",
     "circuit-json-to-gltf": "0.0.118",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
@@ -43,10 +44,10 @@
     "poppygl": "0.0.27",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.2046",
+    "tscircuit": "^0.0.3014",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
     "tsup": "^8.5.0",
-    "@tscircuit/circuit-json-util": "^0.0.124"
+    "@tscircuit/circuit-json-util": "^0.0.128"
   },
   "peerDependencies": {
     "typescript": "^5"

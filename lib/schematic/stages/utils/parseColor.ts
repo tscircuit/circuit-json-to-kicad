@@ -6,6 +6,8 @@ export type ParsedColor = {
 }
 
 export function parseColor(color: string): ParsedColor | undefined {
+  if (color === "transparent") return { r: 0, g: 0, b: 0, a: 0 }
+
   const rgbMatch = color.match(
     /^rgba?\(\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)\s*,\s*(\d+(?:\.\d+)?)(?:\s*,\s*(\d+(?:\.\d+)?))?\s*\)$/i,
   )

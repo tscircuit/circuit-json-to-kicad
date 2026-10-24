@@ -39,10 +39,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
-  // Track processed symbol names to avoid duplicates
-  private processedSymbolNames: Set<string> = new Set()
-  // Distinct pin numberings emitted under each lib id, in order of first use
-  private pinNumberingsByLibId: Map<string, string[]> = new Map()
+  private symbolDefinitionsByLibId = new Map<string, Map<string, string>>()
+  private reservedLibraryIds = new Set<string>()
+  private usedLibraryIds = new Set<string>()
 
   override _step(): void {
     const { kicadSch, db } = this.ctx
@@ -51,19 +50,16 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const libSymbols = new LibSymbols()
     const librarySymbols: SchematicSymbol[] = []
 
-    // Reset processed symbol names for this run
-    this.processedSymbolNames = new Set()
-    this.pinNumberingsByLibId = new Map()
+    this.symbolDefinitionsByLibId.clear()
     this.ctx.schematicComponentLibraryIds = new Map()
 
-    // Process schematic components
-    const schematicComponents = db.schematic_component.list()
-    for (const schematicComponent of schematicComponents) {
-      const libSymbol = this.createLibrarySymbolForComponent(schematicComponent)
-      if (libSymbol) {
-        librarySymbols.push(libSymbol)
-      }
-    }
+    const componentSymbols = db.schematic_component
+      .list()
+      .flatMap((component) => {
+        const symbol = this.createLibrarySymbolForComponent(component)
+        return symbol ? [{ component, symbol }] : []
+      })
+    const netLabelSymbols: SchematicSymbol[] = []
 
     // Rail artwork is shared, while each instance's Value names its global net.
     const netLabels = db.schematic_net_label?.list?.() || []
@@ -80,10 +76,42 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         isGround: sourceNet?.is_ground ?? false,
       })
       if (libSymbol) {
-        librarySymbols.push(libSymbol)
+        netLabelSymbols.push(libSymbol)
         railLibraryIds.add(netLabel.symbol_name)
       }
     }
+
+    // Reserve all source names before assigning suffixes: a variant of Shared
+    // must not take the ID of an actual symbol named Shared_2. Net-label symbols
+    // retain the fixed IDs used by AddSchematicNetLabelsStage.
+    this.reservedLibraryIds = new Set([
+      ...componentSymbols.map(({ symbol }) => symbol.libraryId!),
+      ...netLabelSymbols.map((symbol) => symbol.libraryId!),
+    ])
+    this.usedLibraryIds = new Set(
+      netLabelSymbols.map((symbol) => symbol.libraryId!),
+    )
+    const emittedLibraryIds = new Set<string>()
+    for (const { component, symbol } of componentSymbols) {
+      const originalId = symbol.libraryId!
+      const libraryId = this.getLibraryIdForSymbolDefinition(originalId, symbol)
+      this.ctx.schematicComponentLibraryIds.set(
+        component.schematic_component_id,
+        libraryId,
+      )
+      if (emittedLibraryIds.has(libraryId)) continue
+      emittedLibraryIds.add(libraryId)
+      if (libraryId !== originalId) {
+        symbol.libraryId = libraryId
+        for (const unit of symbol.subSymbols) {
+          unit.libraryId =
+            libraryId.split(":")[1] +
+            unit.libraryId!.slice(originalId.split(":")[1]!.length)
+        }
+      }
+      librarySymbols.push(symbol)
+    }
+    librarySymbols.push(...netLabelSymbols)
 
     libSymbols.symbols = librarySymbols
     if (kicadSch) {
@@ -204,49 +232,43 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       referencePrefix: getReferencePrefixForComponent(sourceComp),
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
     }
-    const librarySymbol = this.createLibrarySymbol({
-      libId: libraryId,
-      ...librarySymbolOptions,
-    })
-
-    const pinNumberingLibId = this.getLibraryIdForPinNumbering(
-      libraryId,
-      librarySymbol,
-    )
-    if (pinNumberingLibId === libraryId) return librarySymbol
-
-    this.ctx.schematicComponentLibraryIds!.set(
-      schematicComponent.schematic_component_id,
-      pinNumberingLibId,
-    )
     return this.createLibrarySymbol({
-      libId: pinNumberingLibId,
+      libId: libraryId,
       ...librarySymbolOptions,
     })
   }
 
   /**
    * KiCad resolves every instance of a lib id through a single definition and
-   * joins symbol pins to footprint pads by number. Instances of one library
-   * symbol whose pins need different numbers (for example two LEDs with
-   * opposite pin labels) therefore each get their own lib id.
+   * joins symbol pins to wires by position and footprint pads by number.
+   * Components may share a lib id only when their drawings and pin definitions
+   * agree, including pin names, numbers, positions, directions and library
+   * properties such as the footprint and pin visibility.
    */
-  private getLibraryIdForPinNumbering(
+  private getLibraryIdForSymbolDefinition(
     libId: string,
     librarySymbol: SchematicSymbol,
   ): string {
-    const pinNumbering = librarySymbol.subSymbols
-      .flatMap((subSymbol) => subSymbol.pins.map((pin) => pin.numberString))
-      .join(",")
-    const numberings = this.pinNumberingsByLibId.get(libId) ?? []
-    this.pinNumberingsByLibId.set(libId, numberings)
+    const definition = librarySymbol.getString()
+    const definitions =
+      this.symbolDefinitionsByLibId.get(libId) ?? new Map<string, string>()
+    this.symbolDefinitionsByLibId.set(libId, definitions)
+    const existingId = definitions.get(definition)
+    if (existingId) return existingId
 
-    let index = numberings.indexOf(pinNumbering)
-    if (index === -1) {
-      numberings.push(pinNumbering)
-      index = numberings.length - 1
+    let resolvedId = libId
+    let suffix = 2
+    if (this.usedLibraryIds.has(resolvedId)) {
+      do {
+        resolvedId = `${libId}_${suffix++}`
+      } while (
+        this.reservedLibraryIds.has(resolvedId) ||
+        this.usedLibraryIds.has(resolvedId)
+      )
     }
-    return index === 0 ? libId : `${libId}_${index + 1}`
+    this.usedLibraryIds.add(resolvedId)
+    definitions.set(definition, resolvedId)
+    return resolvedId
   }
 
   /**
@@ -271,13 +293,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       // Fall back to standard symbol handling if schematic_symbol not found
       return null
     }
-
-    // Check if we've already processed this symbol name
-    // If two symbols have the same name, we assume they're the same symbol
-    if (this.processedSymbolNames.has(libraryId)) {
-      return null // Skip duplicate symbol definitions
-    }
-    this.processedSymbolNames.add(libraryId)
 
     // Build symbol data from schematic primitives linked to this schematic_symbol
     const symbolData = buildSymbolDataFromSchematicPrimitives({
@@ -455,7 +470,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicComponent,
       schematicPorts: this.ctx.db.schematic_port.list(),
       sourcePorts: this.ctx.db.source_port.list(),
-      c2kMatSchScale: symbolScale,
+      c2kMatSch: this.ctx.c2kMatSch!,
     })
     symbol.subSymbols.push(pinSymbol)
 

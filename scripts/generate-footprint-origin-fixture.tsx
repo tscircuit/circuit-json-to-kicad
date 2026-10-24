@@ -1,5 +1,5 @@
-// Regenerate with a tscircuit release containing core#4806.
-import { Circuit } from "tscircuit"
+// Regenerate with the published core release containing core#4806.
+import { Circuit } from "@tscircuit/core"
 import board from "../tests/fixtures/footprint-origin-board"
 
 const circuit = new Circuit()

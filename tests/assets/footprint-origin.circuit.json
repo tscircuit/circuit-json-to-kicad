@@ -2,7 +2,7 @@
   {
     "type": "source_project_metadata",
     "source_project_metadata_id": "source_project_metadata_0",
-    "software_used_string": "@tscircuit/core@0.0.2182"
+    "software_used_string": "@tscircuit/core@0.0.2203"
   },
   {
     "type": "source_group",
@@ -277,8 +277,8 @@
       "x": 2.865,
       "y": -3.135
     },
-    "width": 1.5700000000000003,
-    "height": 1.5700000000000003,
+    "width": 1.5699999999999998,
+    "height": 1.5699999999999994,
     "layer": "top",
     "rotation": 180,
     "source_component_id": "source_component_2",
@@ -303,7 +303,7 @@
       "y": -3.135
     },
     "width": 1.5700000000000003,
-    "height": 1.5700000000000003,
+    "height": 1.5699999999999998,
     "layer": "top",
     "rotation": 270,
     "source_component_id": "source_component_3",
@@ -377,8 +377,8 @@
       "x": 3.135,
       "y": 2.865
     },
-    "width": 1.5700000000000003,
-    "height": 1.5700000000000003,
+    "width": 1.5699999999999994,
+    "height": 1.5699999999999998,
     "layer": "bottom",
     "rotation": 180,
     "source_component_id": "source_component_6",
@@ -403,7 +403,7 @@
       "y": 3.135
     },
     "width": 1.5700000000000003,
-    "height": 1.5700000000000003,
+    "height": 1.5699999999999994,
     "layer": "bottom",
     "rotation": 270,
     "source_component_id": "source_component_7",

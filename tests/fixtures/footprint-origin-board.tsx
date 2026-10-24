@@ -1,15 +1,15 @@
 export default (
   <board width={28} height={16} routingDisabled schematicDisabled>
     {["top", "bottom"].map((layer, layerIndex) =>
-      [0, 90, 180, 270].map((rotation, rotationIndex) => (
+      [0, 90, 180, 270].map((ccwRotationDegrees, rotationIndex) => (
         <chip
-          key={`${layer}_${rotation}`}
+          key={`${layer}_${ccwRotationDegrees}`}
           name={`U${layerIndex * 4 + rotationIndex + 1}`}
           pinLabels={{ pin1: "CONTACT" }}
           layer={layer as "top" | "bottom"}
           pcbX={-9 + rotationIndex * 6}
           pcbY={-3 + layerIndex * 6}
-          pcbRotation={rotation}
+          pcbRotation={ccwRotationDegrees}
           cadModel={{ stepUrl: "https://example.com/contact.step" }}
           footprint={
             <footprint>

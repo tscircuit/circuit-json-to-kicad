@@ -44,7 +44,7 @@ test(
 
     for (const libraryLink of [
       "tscircuit:resistor_res0402",
-      "tscircuit:capacitor_0402",
+      "tscircuit:capacitor_cap0402",
     ]) {
       const footprint = kicadPcb.footprints.find(
         (candidate) => candidate.libraryLink === libraryLink,
