@@ -9,7 +9,7 @@ export interface FootprintGraphicsPlacement {
 /**
  * Map points from right-handed board-world mm (+X right, +Y up) into KiCad
  * footprint-local mm (+X right, +Y down). Undo placement around the authored
- * origin, including the Y reflection. This is the same composition used by
+ * origin and invert the Y coordinate. This is the same composition used by
  * convertSilkscreenRects and convertCourtyardRects; KiCad applies the opposite
  * footprint angle when placing these local points back on its board.
  */

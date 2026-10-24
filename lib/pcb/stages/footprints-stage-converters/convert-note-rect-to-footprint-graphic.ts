@@ -7,7 +7,10 @@ import {
   getBoardToFootprintTransform,
 } from "./get-board-to-footprint-transform"
 
-/** Preserve the board-world corners of an axis-aligned note rectangle in mm. */
+/**
+ * Preserve rectangle corner points from board-world mm (+X right, +Y up)
+ * in KiCad footprint-local mm (+X right, +Y down).
+ */
 export function convertNoteRectToFootprintGraphic({
   rect,
   layer,
