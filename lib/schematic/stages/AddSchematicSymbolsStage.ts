@@ -24,7 +24,10 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
-import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getKicadCompatibleComponentName,
+  getReferenceDesignator,
+} from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
@@ -69,6 +72,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         cadComponents: db.cad_component?.list?.() ?? [],
       })
       const {
+        cadComponent,
         schematicSymbol,
         schematicSymbolId,
         hasLinkedSymbolPrimitives,
@@ -191,10 +195,27 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         ),
       })
 
+      // Link to the PCB footprint emitted for this component (same naming as
+      // AddFootprintsStage) so importers don't see an empty footprint.
+      let footprintRef = ""
+      const hasPcbFootprint = db.pcb_component
+        .list()
+        .some(
+          (pcbComponent) =>
+            pcbComponent.source_component_id ===
+            schematicComponent.source_component_id,
+        )
+      if (hasPcbFootprint) {
+        footprintRef = `tscircuit:${getKicadCompatibleComponentName(
+          sourceComponent,
+          cadComponent,
+        )}`
+      }
+
       const fpMeta = symbolMetadata?.properties?.Footprint
       const footprintProperty = new SymbolProperty({
         key: "Footprint",
-        value: fpMeta?.value ?? "",
+        value: fpMeta?.value ?? footprintRef,
         id: 2,
         at: [x - 1.778, y, 90],
         effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
