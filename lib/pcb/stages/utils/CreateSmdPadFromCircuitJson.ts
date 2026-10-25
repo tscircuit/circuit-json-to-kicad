@@ -1,19 +1,19 @@
 import type { PcbSmtPad } from "circuit-json"
 import {
   FootprintPad,
-  PadPrimitives,
+  PadNet,
+  PadOptions,
   PadPrimitiveGrPoly,
+  PadPrimitives,
   Pts,
   Xy,
-  PadOptions,
-  PadNet,
 } from "kicadts"
 import {
   applyToPoint,
   compose,
-  translate,
-  scale,
   rotate,
+  scale,
+  translate,
 } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
@@ -28,6 +28,8 @@ export function createSmdPadFromCircuitJson({
   componentRotation = 0,
   netInfo,
   componentId,
+  hasPaste,
+  hasMask,
 }: {
   pcbPad: PcbSmtPad
   componentCenter: { x: number; y: number }
@@ -35,6 +37,8 @@ export function createSmdPadFromCircuitJson({
   componentRotation?: number
   netInfo?: PcbNetInfo
   componentId?: string
+  hasPaste?: boolean
+  hasMask?: boolean
 }): FootprintPad {
   // For polygon pads, calculate the center from the points
   let padX: number
@@ -155,13 +159,29 @@ export function createSmdPadFromCircuitJson({
     shape: padShape,
     at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
-    layers: [
-      `${padLayer}`,
-      ...(pcbPad.is_covered_with_solder_mask
-        ? []
-        : [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]),
-      `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
-    ],
+    layers: (() => {
+      const padPrefix = padLayer === "F.Cu" ? "F" : "B"
+      const padLevelPasteDisabled =
+        (pcbPad as any).has_solder_paste === false ||
+        (pcbPad as any).solder_paste === false ||
+        (pcbPad as any).solderPaste === false
+
+      const shouldIncludePaste =
+        !pcbPad.is_covered_with_solder_mask &&
+        (hasPaste !== undefined ? hasPaste : !padLevelPasteDisabled)
+
+      const shouldIncludeMask =
+        hasMask !== undefined ? hasMask : !pcbPad.is_covered_with_solder_mask
+
+      const resolvedLayers: string[] = [`${padLayer}`]
+      if (shouldIncludePaste) {
+        resolvedLayers.push(`${padPrefix}.Paste`)
+      }
+      if (shouldIncludeMask) {
+        resolvedLayers.push(`${padPrefix}.Mask`)
+      }
+      return resolvedLayers
+    })(),
     solderMaskMargin: pcbPad.soldermask_margin,
     roundrectRatio: roundrect_rratio,
     uuid: generateDeterministicUuid(padData),

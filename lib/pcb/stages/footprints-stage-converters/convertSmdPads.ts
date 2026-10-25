@@ -1,7 +1,7 @@
-import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import type { PcbSmtPad } from "circuit-json"
 import type { FootprintPad } from "kicadts"
 import type { ConverterContext, PcbNetInfo } from "../../../types"
+import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import { createSmdPadFromCircuitJson } from "../utils/CreateSmdPadFromCircuitJson"
 
 export function convertSmdPads(
@@ -24,6 +24,12 @@ export function convertSmdPads(
 ): { pads: FootprintPad[]; nextPadNumber: number } {
   const pads: FootprintPad[] = []
   let padNumber = startPadNumber
+
+  const solderPastes = (ctx.db as any).pcb_solder_paste?.list?.() ?? []
+  const hasAnySolderPasteInCircuit = solderPastes.length > 0
+  const solderPastePadIds = hasAnySolderPasteInCircuit
+    ? new Set(solderPastes.map((sp: any) => sp.pcb_smtpad_id).filter(Boolean))
+    : null
 
   for (const pcbPad of pcbPads) {
     const netInfo = getNetInfo(pcbPad.pcb_port_id)
@@ -51,6 +57,11 @@ export function convertSmdPads(
           ? pinHint.replace(/^pin/i, "")
           : (gridHint ?? String(padNumber)))
 
+    let hasPaste: boolean | undefined
+    if (solderPastePadIds !== null) {
+      hasPaste = solderPastePadIds.has(pcbPad.pcb_smtpad_id)
+    }
+
     const pad = createSmdPadFromCircuitJson({
       pcbPad,
       componentCenter,
@@ -58,6 +69,7 @@ export function convertSmdPads(
       componentRotation,
       netInfo,
       componentId,
+      hasPaste,
     })
     pads.push(pad)
     padNumber++

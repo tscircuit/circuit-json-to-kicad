@@ -1,22 +1,22 @@
 import type {
   CircuitJson,
   PcbHole,
+  PcbHoleCircularWithRectPad,
+  PcbHolePillWithRectPad,
+  PcbHoleRotatedPillWithRectPad,
   PcbPlatedHole,
   PcbPlatedHoleOval,
-  PcbHolePillWithRectPad,
-  PcbHoleCircularWithRectPad,
-  PcbHoleRotatedPillWithRectPad,
   PcbSmtPad,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
-import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { type ConverterContext, ConverterStage } from "../../types"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
-import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
-import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
+import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
+import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
@@ -69,6 +69,16 @@ export class AddStandalonePcbElements extends ConverterStage<
         uuid: generateDeterministicUuid(footprintSeed),
       })
 
+      const solderPastes = (this.ctx.db as any).pcb_solder_paste?.list?.() ?? []
+      const hasAnySolderPasteInCircuit = solderPastes.length > 0
+      let hasPaste: boolean | undefined
+      if (hasAnySolderPasteInCircuit) {
+        const solderPastePadIds = new Set(
+          solderPastes.map((sp: any) => sp.pcb_smtpad_id).filter(Boolean),
+        )
+        hasPaste = solderPastePadIds.has(pcbPad.pcb_smtpad_id)
+      }
+
       footprint.fpPads = [
         createSmdPadFromCircuitJson({
           pcbPad,
@@ -76,6 +86,7 @@ export class AddStandalonePcbElements extends ConverterStage<
           padNumber: 1,
           componentRotation: 0,
           componentId: pcbPad.pcb_smtpad_id,
+          hasPaste,
         }),
       ]
       applyInferredFootprintType(footprint)
