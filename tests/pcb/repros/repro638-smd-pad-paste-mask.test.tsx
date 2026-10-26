@@ -2,6 +2,9 @@ import { expect, test } from "bun:test"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
+import sharp from "sharp"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const Repro638SmdPadPasteMask = () => (
@@ -15,6 +18,7 @@ const Repro638SmdPadPasteMask = () => (
             shape="rect"
             width={2}
             height={2}
+            solderPasteMargin={0}
             pcbX={-7}
             portHints={["1"]}
           />
@@ -44,6 +48,7 @@ const Repro638SmdPadPasteMask = () => (
       shape="rect"
       width={2}
       height={2}
+      solderPasteMargin={0}
       pcbX={-7}
       pcbY={-3}
       layer="bottom"
@@ -69,11 +74,26 @@ const Repro638SmdPadPasteMask = () => (
       layer="bottom"
       coveredWithSolderMask
     />
-    <silkscreentext text="NORMAL" pcbX={-7} pcbY={7} fontSize={0.8} />
-    <silkscreentext text="NO PASTE" pcbX={0} pcbY={7} fontSize={0.8} />
-    <silkscreentext text="COVERED" pcbX={7} pcbY={7} fontSize={0.8} />
+    <silkscreentext text="SOLDERED" pcbX={-7} pcbY={7} fontSize={0.7} />
+    <silkscreentext text="PROBE" pcbX={0} pcbY={7} fontSize={0.7} />
+    <silkscreentext text="COVERED" pcbX={7} pcbY={7} fontSize={0.7} />
     <silkscreentext text="TOP / FOOTPRINT" pcbY={5.5} fontSize={0.65} />
     <silkscreentext text="BOTTOM / STANDALONE" pcbY={-0.5} fontSize={0.65} />
+    <silkscreentext
+      text="Probe: exposed copper, no paste"
+      pcbY={-5.5}
+      fontSize={0.6}
+    />
+    <silkscreentext
+      text="Paste shapes = stencil openings"
+      pcbY={-6.7}
+      fontSize={0.6}
+    />
+    <silkscreentext
+      text="Mask shapes = exposed copper"
+      pcbY={-7.9}
+      fontSize={0.6}
+    />
   </board>
 )
 
@@ -117,17 +137,47 @@ test("pcb repro638 SMD pad paste and mask layers", async () => {
     ),
   ).toMatchSnapshot()
 
-  // The standard PCB snapshot hides these manufacturing layers. Plot each
-  // separately: paste should show only NORMAL, mask only NORMAL and NO PASTE.
-  for (const layer of ["Paste", "Mask"]) {
+  // Compare the source renderer with KiCad's native layer plots. The copper
+  // view keeps all six pads visible; paste and mask views show only openings.
+  for (const layer of ["Cu", "Paste", "Mask"]) {
+    const circuitJsonSnapshot = await takeCircuitJsonSnapshot({
+      circuitJson,
+      outputType: "pcb",
+      pcbOptions: {
+        width: 800,
+        height: 600,
+        includeVersion: false,
+        showCourtyards: false,
+        showSolderPaste: layer === "Paste",
+        showSolderMask: layer === "Mask",
+        // Isolate paste by hiding copper. In the mask view, paint covered
+        // areas like the background so exposed copper represents openings.
+        colorOverrides: {
+          copper:
+            layer === "Paste"
+              ? { top: "transparent", bottom: "transparent" }
+              : undefined,
+          soldermask: { top: "black", bottom: "black" },
+          soldermaskWithCopperUnderneath: { top: "black", bottom: "black" },
+        },
+      },
+    })
     const snapshot = await takeKicadSnapshot({
       kicadFileContent: output,
       kicadFileType: "pcb",
+      generatePng: false,
       pcbLayers: [`F.${layer}`, `B.${layer}`, "F.SilkS", "Edge.Cuts"],
     })
     expect(snapshot.exitCode).toBe(0)
     await expect(
-      snapshot.generatedFileContent["temp_file.png"]!,
+      stackCircuitJsonKicadPngs(
+        circuitJsonSnapshot,
+        await sharp(snapshot.generatedFileContent["temp_file.svg"]!)
+          .resize({ width: 800 })
+          .flatten({ background: "black" })
+          .png()
+          .toBuffer(),
+      ),
     ).toMatchPngSnapshot(
       import.meta.path,
       `repro638-smd-pad-${layer.toLowerCase()}`,
