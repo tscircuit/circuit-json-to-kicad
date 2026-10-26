@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test"
+import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 import sharp from "sharp"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const Repro638SmdPadPasteMask = () => (
@@ -140,28 +140,27 @@ test("pcb repro638 SMD pad paste and mask layers", async () => {
   // Compare the source renderer with KiCad's native layer plots. The copper
   // view keeps all six pads visible; paste and mask views show only openings.
   for (const layer of ["Cu", "Paste", "Mask"]) {
-    const circuitJsonSnapshot = await takeCircuitJsonSnapshot({
-      circuitJson,
-      outputType: "pcb",
-      pcbOptions: {
-        width: 800,
-        height: 600,
-        includeVersion: false,
-        showCourtyards: false,
-        showSolderPaste: layer === "Paste",
-        showSolderMask: layer === "Mask",
-        // Isolate paste by hiding copper. In the mask view, paint covered
-        // areas like the background so exposed copper represents openings.
-        colorOverrides: {
-          copper:
-            layer === "Paste"
-              ? { top: "transparent", bottom: "transparent" }
-              : undefined,
-          soldermask: { top: "black", bottom: "black" },
-          soldermaskWithCopperUnderneath: { top: "black", bottom: "black" },
-        },
+    const circuitJsonSvg = convertCircuitJsonToPcbSvg(circuitJson, {
+      width: 800,
+      height: 600,
+      includeVersion: false,
+      showCourtyards: false,
+      showSolderPaste: layer === "Paste",
+      showSolderMask: layer === "Mask",
+      // Isolate paste by hiding copper. In the mask view, paint covered
+      // areas like the background so exposed copper represents openings.
+      colorOverrides: {
+        copper:
+          layer === "Paste"
+            ? { top: "transparent", bottom: "transparent" }
+            : undefined,
+        soldermask: { top: "black", bottom: "black" },
+        soldermaskWithCopperUnderneath: { top: "black", bottom: "black" },
       },
     })
+    const circuitJsonSnapshot = await sharp(Buffer.from(circuitJsonSvg))
+      .png()
+      .toBuffer()
     const snapshot = await takeKicadSnapshot({
       kicadFileContent: output,
       kicadFileType: "pcb",
