@@ -53,6 +53,9 @@ export function convertSmdPads(
 
     const pad = createSmdPadFromCircuitJson({
       pcbPad,
+      hasSolderPaste: ctx.db.pcb_solder_paste
+        .list()
+        .some((paste) => paste.pcb_smtpad_id === pcbPad.pcb_smtpad_id),
       componentCenter,
       padNumber: resolvedPadNumber,
       componentRotation,

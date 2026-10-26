@@ -126,8 +126,8 @@ test("pcb repro638 SMD pad paste and mask layers", async () => {
   const output = converter.getOutputString()
   const pcb = KicadPcb.parse(output)[0] as KicadPcb
 
-  // Capture the exported layers as well as the artwork. On main, the probe
-  // polygons incorrectly have paste and the covered circles have mask openings.
+  // Capture the exported layers as well as the artwork: probe polygons must
+  // have no paste and covered circles must have no mask openings.
   expect(
     pcb.footprints.flatMap((footprint) =>
       footprint.fpPads.map((pad) => ({

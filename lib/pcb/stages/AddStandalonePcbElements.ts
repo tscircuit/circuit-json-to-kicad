@@ -72,6 +72,9 @@ export class AddStandalonePcbElements extends ConverterStage<
       footprint.fpPads = [
         createSmdPadFromCircuitJson({
           pcbPad,
+          hasSolderPaste: this.ctx.db.pcb_solder_paste
+            .list()
+            .some((paste) => paste.pcb_smtpad_id === pcbPad.pcb_smtpad_id),
           componentCenter: padCenter,
           padNumber: 1,
           componentRotation: 0,
