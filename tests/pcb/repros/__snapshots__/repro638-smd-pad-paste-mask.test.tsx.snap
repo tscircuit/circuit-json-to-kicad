@@ -1,0 +1,48 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`pcb repro638 SMD pad paste and mask layers 1`] = `
+[
+  {
+    "layers": [
+      "F.Cu",
+      "F.Paste",
+      "F.Mask",
+    ],
+    "shape": "rect",
+  },
+  {
+    "layers": [
+      "F.Cu",
+      "F.Mask",
+    ],
+    "shape": "custom",
+  },
+  {
+    "layers": [
+      "F.Cu",
+    ],
+    "shape": "circle",
+  },
+  {
+    "layers": [
+      "B.Cu",
+      "B.Paste",
+      "B.Mask",
+    ],
+    "shape": "rect",
+  },
+  {
+    "layers": [
+      "B.Cu",
+      "B.Mask",
+    ],
+    "shape": "custom",
+  },
+  {
+    "layers": [
+      "B.Cu",
+    ],
+    "shape": "circle",
+  },
+]
+`;
