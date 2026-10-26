@@ -16,7 +16,7 @@
     "sharp"
   ],
   "scripts": {
-    "build": "tsup-node lib/index.ts --format esm --dts",
+    "build": "tsup lib/index.ts --format esm && dts-bundle-generator --config dts-bundle-generator.config.json",
     "build:site": "bun build ./site/index.html --outdir site-build",
     "download-demos": "git clone --depth 1 --branch 9.0.9-rc1 --filter=blob:none --sparse https://gitlab.com/kicad/code/kicad.git kicad-demos && cd kicad-demos && git sparse-checkout set demos",
     "download-references": "bun run scripts/download-references.ts",
@@ -45,9 +45,19 @@
     "transformation-matrix": "^3.1.0",
     "tscircuit": "^0.0.2991",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
-    "tsup": "^8.5.0"
+    "tsup": "^8.5.0",
+    "@tscircuit/circuit-json-util": "^0.0.106",
+    "@types/node": "^22.5.5",
+    "dts-bundle-generator": "^9.5.1",
+    "schematic-symbols": "^0.0.231",
+    "typescript": "5.9.3"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "circuit-json": "*",
+    "@tscircuit/circuit-json-util": "*"
+  },
+  "overrides": {
+    "typescript": "5.9.3"
   }
 }
