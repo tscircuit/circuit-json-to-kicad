@@ -1,30 +1,39 @@
 import type { PcbFabricationNoteRect } from "circuit-json"
-import { FpPoly, FpRect } from "kicadts"
-import { convertNoteRectToFootprintGraphic } from "./convert-note-rect-to-footprint-graphic"
-import type { FootprintGraphicsPlacement } from "./get-board-to-footprint-transform"
+import { FpRect, Stroke } from "kicadts"
 
 export function convertFabricationNoteRects(
   fabRects: PcbFabricationNoteRect[],
-  placement: FootprintGraphicsPlacement,
-): { fpRects: FpRect[]; fpPolys: FpPoly[] } {
+  componentCenter: { x: number; y: number },
+): FpRect[] {
   const fpRects: FpRect[] = []
-  const fpPolys: FpPoly[] = []
 
   for (const rect of fabRects) {
+    const relX = rect.center.x - componentCenter.x
+    const relY = -(rect.center.y - componentCenter.y)
+    const halfW = rect.width / 2
+    const halfH = rect.height / 2
+
     const layerMap: Record<string, string> = {
       top: "F.Fab",
       bottom: "B.Fab",
     }
     const kicadLayer = layerMap[rect.layer] || rect.layer || "F.Fab"
 
-    const graphic = convertNoteRectToFootprintGraphic({
-      rect,
+    const fpRect = new FpRect({
+      start: { x: relX - halfW, y: relY - halfH },
+      end: { x: relX + halfW, y: relY + halfH },
       layer: kicadLayer,
-      ...placement,
+      stroke: new Stroke(),
+      fill: false,
     })
-    if (graphic instanceof FpRect) fpRects.push(graphic)
-    else fpPolys.push(graphic)
+
+    if (fpRect.stroke) {
+      fpRect.stroke.width = rect.stroke_width || 0.1
+      fpRect.stroke.type = "default"
+    }
+
+    fpRects.push(fpRect)
   }
 
-  return { fpRects, fpPolys }
+  return fpRects
 }
