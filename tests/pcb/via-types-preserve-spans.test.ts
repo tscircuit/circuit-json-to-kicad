@@ -47,8 +47,9 @@ test("preserves through, blind and buried via types for standalone and route via
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
-  expect(output).not.toContain("(type blind)")
-  expect(output.match(/\(via blind/g)).toHaveLength(8)
+  expect(output).not.toMatch(/\(type (?:blind|buried)\)/)
+  expect(output.match(/\(via blind/g)).toHaveLength(6)
+  expect(output.match(/\(via buried/g)).toHaveLength(2)
   const vias = parseKicadPcb(output).vias
   expect(vias).toHaveLength(10)
   expect(vias.map((v) => v.type)).toEqual([
@@ -56,12 +57,12 @@ test("preserves through, blind and buried via types for standalone and route via
     "blind",
     "blind",
     "blind",
-    "blind",
+    "buried",
     undefined,
     "blind",
     "blind",
     "blind",
-    "blind",
+    "buried",
   ])
   const expectedLayers = [
     ["F.Cu", "B.Cu"],
