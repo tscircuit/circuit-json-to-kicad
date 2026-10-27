@@ -322,7 +322,13 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
         layer: kicadLayer,
         uuid: generateDeterministicUuid(`zone:${pour.pcb_copper_pour_id}`),
         hatch: new ZoneHatch("edge", 0.5),
-        connectPads: new ZoneConnectPads({ enabled: true, clearance: 0.15 }),
+        connectPads: new ZoneConnectPads({
+          enabled: true,
+          clearance:
+            "clearance" in pour && typeof pour.clearance === "number"
+              ? pour.clearance
+              : 0.15,
+        }),
         minThickness: 0.25,
         filledAreasThickness: false,
         fill: new ZoneFill({
