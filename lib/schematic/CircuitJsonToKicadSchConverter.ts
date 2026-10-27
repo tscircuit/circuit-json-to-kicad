@@ -26,8 +26,6 @@ import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
 
-import { snapSchematicToGrid } from "./snapSchematicToGrid"
-
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
 const COMPACT_LARGE_SHEET_MARGIN_MM = 15
 const TITLE_BLOCK_CONTENT_OFFSET_MM = 5
@@ -81,8 +79,6 @@ export interface KicadSchFileOutputOptions {
 }
 
 export interface CircuitJsonToKicadSchConverterOptions {
-  /** Optional electrical grid in KiCad millimeters, e.g. 1.27 (50 mil) or 0.25. Omit to preserve coordinates. */
-  schematicGridSize?: number
   paperSize?: PaperDimensions
   schematicSheets?: KicadSchematicSheetOptions[]
   titleBlock?: KicadSchematicTitleBlockMetadata
@@ -176,15 +172,6 @@ export class CircuitJsonToKicadSchConverter {
     circuitJson: CircuitJson,
     options: CircuitJsonToKicadSchConverterOptions = {},
   ) {
-    if (
-      options.schematicGridSize !== undefined &&
-      (!Number.isFinite(options.schematicGridSize) ||
-        options.schematicGridSize <= 0)
-    ) {
-      throw new Error(
-        "schematicGridSize must be a finite positive number in millimeters",
-      )
-    }
     this.circuitJson = circuitJson
     this.options = options
     this.schematicSheetPlan = buildSchematicSheetPlan(circuitJson)
@@ -246,9 +233,6 @@ export class CircuitJsonToKicadSchConverter {
     }
 
     if (!this.currentStage) {
-      if (this.options.schematicGridSize !== undefined && !this.finished) {
-        snapSchematicToGrid(this.ctx.kicadSch!, this.options.schematicGridSize)
-      }
       this.finished = true
       return
     }
@@ -453,9 +437,6 @@ export class CircuitJsonToKicadSchConverter {
       kicadSch.sheets = childSheetNodes
     }
 
-    if (this.options.schematicGridSize !== undefined) {
-      snapSchematicToGrid(kicadSch, this.options.schematicGridSize)
-    }
     return kicadSch
   }
 }

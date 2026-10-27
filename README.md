@@ -32,25 +32,6 @@ const kicadSchContent = converter.getOutputString()
 Bun.write("output.kicad_sch", kicadSchContent)
 ```
 
-### Aligning schematic connections to a grid
-
-By default, schematic conversion preserves coordinates. To align electrical
-connections with a KiCad grid, set `schematicGridSize` in millimeters:
-
-```typescript
-const converter = new CircuitJsonToKicadSchConverter(circuitJson, {
-  schematicGridSize: 1.27, // 50 mil; use 0.25 for a 0.25 mm grid
-})
-converter.runUntilFinished()
-```
-
-The option aligns symbol origins, pin connection points, wire vertices,
-junctions and label anchors on each sheet. Each instance receives its own
-library definition so shared symbols can retain the correct local pin offsets.
-Artwork shapes and the input Circuit JSON are preserved. A grid that would
-merge distinct pins is rejected; choose a finer grid in that case. Existing
-exports are unchanged when this option is omitted.
-
 ### Converting to KiCad PCB
 
 ```typescript
