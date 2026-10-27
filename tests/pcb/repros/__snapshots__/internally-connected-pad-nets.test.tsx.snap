@@ -1,0 +1,14 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`export nets for internally connected pads 1`] = `
+[
+  {
+    "net": "GND",
+    "number": "1",
+  },
+  {
+    "net": null,
+    "number": "15",
+  },
+]
+`;
