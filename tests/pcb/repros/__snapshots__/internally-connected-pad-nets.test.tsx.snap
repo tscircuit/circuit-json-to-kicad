@@ -7,7 +7,7 @@ exports[`export nets for internally connected pads 1`] = `
     "number": "1",
   },
   {
-    "net": null,
+    "net": "GND",
     "number": "15",
   },
 ]
