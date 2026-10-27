@@ -3,6 +3,7 @@ import type { CircuitJson } from "circuit-json"
 import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
+import type { KicadSchFile } from "./schematic/CircuitJsonToKicadSchConverter"
 
 // Type aliases for IDs to make context clearer
 export type SchematicPortId = string
@@ -105,6 +106,8 @@ export interface ConverterContext {
   libraryName?: string
   fpLibraryName?: string
   kicadSchString?: string
+  /** Root and child schematics used when collecting library symbols. */
+  kicadSchFiles?: KicadSchFile[]
   kicadPcbString?: string
   symbolEntries?: SymbolEntry[]
   footprintEntries?: FootprintEntry[]
