@@ -183,6 +183,8 @@ export class CircuitJsonToKicadProConverter {
     const minTraceToPadClearance =
       pcbBoard?.min_trace_to_pad_edge_clearance ?? 0.1
     const minTrackWidth = pcbBoard?.min_trace_width ?? 0.1
+    const minCopperEdgeClearance = pcbBoard?.min_board_edge_clearance
+    const minClearance = pcbBoard?.min_trace_to_pad_edge_clearance
     const netClasses: KicadProNetClass[] = [
       this.createBaseNetClass({
         name: "Default",
@@ -251,6 +253,8 @@ export class CircuitJsonToKicadProConverter {
             min_via_diameter: minViaDiameter,
             min_track_width: minTrackWidth,
             min_through_hole_diameter: minViaDrill, // Minimum Drill Size in kicad ui constraints
+            min_copper_edge_clearance: minCopperEdgeClearance,
+            min_clearance: minClearance,
           },
         },
         last_opened_board: pcbFilename,
