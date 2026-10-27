@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
+import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import sharp from "sharp"
 import { Circuit } from "tscircuit"
@@ -25,7 +26,7 @@ const flashOutRoute = (
   layer: "bottom" as const,
 }))
 
-const Example = () => (
+const ReproOpenRingFlexViaDepth = () => (
   <board width={1.4} height={1.2} layers={4} thickness={0.22} schematicDisabled>
     <net name="GND" />
     <via
@@ -42,18 +43,40 @@ const Example = () => (
   </board>
 )
 
-export default Example
+export default ReproOpenRingFlexViaDepth
 
 test("repro: open-ring-flex blind via appears on bottom copper", async () => {
   const circuit = new Circuit()
-  circuit.add(<Example />)
+  circuit.add(<ReproOpenRingFlexViaDepth />)
   await circuit.renderUntilSettled()
   const circuitJson = circuit.getCircuitJson()
+  const sourceVias = circuitJson.filter((element) => element.type === "pcb_via")
+  expect(sourceVias).toHaveLength(1)
+  expect(sourceVias[0]).toMatchObject({
+    layers: ["top", "inner1"],
+    outer_diameter: 0.2,
+    hole_diameter: 0.1,
+  })
+  expect(
+    circuitJson.find((element) => element.type === "pcb_trace")?.route,
+  ).toEqual(flashOutRoute)
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
+  const output = converter.getOutputString()
+
+  // Record the native via type as well as the bottom-layer artwork.
+  // The missing type currently makes this top-to-inner1 via through-hole.
+  expect(
+    parseKicadPcb(output).vias.map((via) => ({
+      type: via.type ?? null,
+      layers: via.layers?.names,
+      diameter: via.size,
+      drill: via.drill,
+    })),
+  ).toMatchSnapshot()
 
   const snapshot = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutputString(),
+    kicadFileContent: output,
     kicadFileType: "pcb",
     pcbLayers: ["B.Cu", "Edge.Cuts"],
     pcbDrillHoleColor: "white",
@@ -67,11 +90,14 @@ test("repro: open-ring-flex blind via appears on bottom copper", async () => {
         drawPaddingOutsideBoard: false,
         width: 800,
         height: 686,
+        includeVersion: false,
+        showCourtyards: false,
       }),
     ),
   )
     .png()
     .toBuffer()
+  expect(snapshot.exitCode).toBe(0)
   const kicadPng = await sharp(snapshot.generatedFileContent["temp_file.svg"]!)
     .resize({ width: 800 })
     .flatten({ background: "#000" })
