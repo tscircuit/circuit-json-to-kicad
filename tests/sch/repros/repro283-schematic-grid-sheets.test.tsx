@@ -1,14 +1,14 @@
 import { expect, test } from "bun:test"
 import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 
 test("grid alignment applies independently to hierarchical child sheets", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board routingDisabled>
       {["Power", "Logic"].map((name, index) => (
-        <schematicsheet name={name} displayName={name} sheetIndex={index}>
+        <schematicsheet key={name} name={name} displayName={name} sheetIndex={index}>
           <resistor
             name={`R${index + 1}`}
             resistance="1k"
