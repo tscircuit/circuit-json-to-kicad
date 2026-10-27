@@ -210,6 +210,12 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     // Create a via with deterministic UUID
     const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${via.net?.id ?? 0}`
     const kicadVia = new Via({
+      // KiCad defaults to a through via when this token is omitted, even
+      // when the serialized layer pair describes a partial-stack span.
+      type:
+        viaLayers.includes("F.Cu") && viaLayers.includes("B.Cu")
+          ? undefined
+          : "blind",
       at: [transformedPos.x, transformedPos.y],
       size: viaSize,
       drill: viaDrill,
