@@ -38,7 +38,10 @@ import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSil
 import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
-import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
+import {
+  collectExplicitPadNumbers,
+  convertSmdPads,
+} from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
@@ -249,6 +252,18 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (pad: any) => pad.pcb_component_id === component.pcb_component_id,
         ) || []
 
+    const pcbPlatedHoles =
+      this.ctx.db.pcb_plated_hole
+        ?.list()
+        .filter(
+          (hole: any) => hole.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const usedPadNumbers = collectExplicitPadNumbers(
+      [...pcbPads, ...pcbPlatedHoles],
+      this.ctx,
+    )
+
     const { pads: smdPads, nextPadNumber } = convertSmdPads(
       {
         pcbPads,
@@ -257,17 +272,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentId: component.pcb_component_id,
         startPadNumber: 1,
         getNetInfo,
+        usedPadNumbers,
       },
       this.ctx,
     )
     fpPads.push(...smdPads)
-
-    const pcbPlatedHoles =
-      this.ctx.db.pcb_plated_hole
-        ?.list()
-        .filter(
-          (hole: any) => hole.pcb_component_id === component.pcb_component_id,
-        ) || []
 
     const { pads: thruHolePads } = convertPlatedHoles(
       {
@@ -277,6 +286,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentId: component.pcb_component_id,
         startPadNumber: nextPadNumber,
         getNetInfo,
+        usedPadNumbers,
       },
       this.ctx,
     )
