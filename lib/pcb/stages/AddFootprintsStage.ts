@@ -16,11 +16,7 @@ import {
   MODEL_CDN_BASE_URL,
   getBasename,
 } from "../../kicad-library/stages/ExtractFootprintsStage"
-import {
-  ConverterStage,
-  type ConverterContext,
-  type PcbNetInfo,
-} from "../../types"
+import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
@@ -43,6 +39,8 @@ import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedH
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
 
+type KicadPadNumber = string
+
 /**
  * Adds footprints to the PCB from circuit JSON components
  */
@@ -50,45 +48,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
-  private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
-
-  private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
-    if (!pcbPortId) return undefined
-    const pcbPort = this.ctx.db.pcb_port?.get(pcbPortId)
-    if (!pcbPort) return undefined
-
-    const sourcePortId = pcbPort.source_port_id
-    if (!sourcePortId) return undefined
-
-    const sourcePort = this.ctx.db.source_port?.get(sourcePortId)
-    if (!sourcePort) return undefined
-
-    const keys = [
-      ...(this.sourcePortNetKeys[sourcePortId] ?? []),
-      sourcePort.subcircuit_connectivity_map_key,
-    ]
-    const nets: PcbNetInfo[] = []
-    for (const key of keys) {
-      const net = key ? this.ctx.pcbNetMap?.get(key) : undefined
-      if (net && !nets.some((existing) => existing.id === net.id)) {
-        nets.push(net)
-      }
-    }
-    if (nets.length > 1) {
-      const component = sourcePort.source_component_id
-        ? this.ctx.db.source_component.get(sourcePort.source_component_id)
-        : undefined
-      const reference =
-        component?.name ||
-        sourcePort.source_component_id ||
-        pcbPort.pcb_component_id
-      throw new Error(
-        `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${nets.map((net) => net.name).join(", ")})`,
-      )
-    }
-    return nets[0]
-  }
-
   private getCadComponentForPcbComponent(
     pcbComponentId: string,
   ): CadComponent | undefined {
@@ -106,21 +65,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     super(input, ctx)
     this.pcbComponents = this.ctx.db.pcb_component.list()
     this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
-
-    // Imported ports may have trace membership without connectivity keys.
-    for (const trace of ctx.db.source_trace.list()) {
-      const keys = [
-        trace.subcircuit_connectivity_map_key,
-        ...(trace.connected_source_net_ids ?? []).map((id) => {
-          const net = ctx.db.source_net.get(id)
-          return net?.subcircuit_connectivity_map_key || net?.source_net_id
-        }),
-      ].filter((key): key is string => Boolean(key))
-      for (const portId of trace.connected_source_port_ids ?? []) {
-        this.sourcePortNetKeys[portId] ??= []
-        this.sourcePortNetKeys[portId].push(...keys)
-      }
-    }
   }
 
   override _step(): void {
@@ -240,7 +184,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     // Convert pads
     const fpPads = footprint.fpPads
     const getNetInfo = (pcbPortId?: string) =>
-      this.getNetInfoForPcbPort(pcbPortId)
+      pcbPortId ? this.ctx.pcbNetMap?.get(pcbPortId) : undefined
 
     const pcbPads =
       this.ctx.db.pcb_smtpad
@@ -298,6 +242,37 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpPads.push(...npthPads)
 
     footprint.fpPads = fpPads
+
+    const padsByNumber = new Map<KicadPadNumber, typeof fpPads>()
+    for (const pad of fpPads) {
+      if (!pad.number) continue
+      const pads = padsByNumber.get(pad.number) ?? []
+      pads.push(pad)
+      padsByNumber.set(pad.number, pads)
+    }
+    const duplicatePads = [...padsByNumber.values()].filter(
+      (pads) => pads.length > 1,
+    )
+    // KiCad's flag applies to every repeated number: require explicit internal connectivity for all of them.
+    if (
+      duplicatePads.length > 0 &&
+      duplicatePads.every((pads) => {
+        const sourceIds = pcbPads.flatMap((pad, index) => {
+          const sourceId =
+            pad.pcb_port_id &&
+            this.ctx.db.pcb_port.get(pad.pcb_port_id)?.source_port_id
+          return smdPads[index]?.number === pads[0]!.number && sourceId
+            ? [sourceId]
+            : []
+        })
+        return (
+          sourceIds.length === pads.length &&
+          this.ctx.pcbInternalPortConnections?.areAllIdsConnected(sourceIds)
+        )
+      })
+    ) {
+      footprint.duplicatePadNumbersAreJumpers = "yes"
+    }
 
     // Convert circles
     const pcbSilkscreenCircles =

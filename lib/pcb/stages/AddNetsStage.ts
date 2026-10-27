@@ -1,6 +1,9 @@
 import type { CircuitJson } from "circuit-json"
 import { getElementId } from "@tscircuit/circuit-json-util"
-import { getFullConnectivityMapFromCircuitJson } from "circuit-json-to-connectivity-map"
+import {
+  getFullConnectivityMapFromCircuitJson,
+  getSourcePortConnectivityMapFromCircuitJson,
+} from "circuit-json-to-connectivity-map"
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
 import {
@@ -13,6 +16,80 @@ import {
  * Adds nets to the PCB from circuit JSON connections
  */
 export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
+  private addPcbPortNets(): void {
+    const { db, pcbNetMap } = this.ctx
+    if (!pcbNetMap) throw new Error("PCB net map not initialized in context")
+
+    const sourcePortNetKeys: Record<string, string[]> = Object.create(null)
+    // Imported ports may have trace membership without connectivity keys.
+    for (const trace of db.source_trace.list()) {
+      const keys = [
+        trace.subcircuit_connectivity_map_key,
+        ...(trace.connected_source_net_ids ?? []).map((id) => {
+          const net = db.source_net.get(id)
+          return net?.subcircuit_connectivity_map_key || net?.source_net_id
+        }),
+      ].filter((key): key is string => Boolean(key))
+      for (const portId of trace.connected_source_port_ids ?? []) {
+        sourcePortNetKeys[portId] ??= []
+        sourcePortNetKeys[portId].push(...keys)
+      }
+    }
+
+    this.ctx.pcbInternalPortConnections =
+      getSourcePortConnectivityMapFromCircuitJson(
+        this.input.filter(
+          (element) =>
+            element.type === "source_component" ||
+            element.type === "source_component_internal_connection",
+        ),
+      )
+    // Share existing net keys across declared internal connections, including overlapping groups.
+    for (const members of Object.values(
+      this.ctx.pcbInternalPortConnections.netMap,
+    )) {
+      const keys = members
+        .flatMap((id) => [
+          id,
+          ...(sourcePortNetKeys[id] ?? []),
+          db.source_port.get(id)?.subcircuit_connectivity_map_key,
+        ])
+        .filter((key): key is string => Boolean(key))
+      for (const id of members) sourcePortNetKeys[id] = keys
+    }
+
+    for (const pcbPort of db.pcb_port.list()) {
+      // Pad ownership comes from source connections, not nearby PCB copper.
+      pcbNetMap.delete(pcbPort.pcb_port_id)
+      const sourcePort = db.source_port.get(pcbPort.source_port_id)
+      if (!sourcePort) continue
+      const keys = [
+        ...(sourcePortNetKeys[sourcePort.source_port_id] ?? []),
+        sourcePort.subcircuit_connectivity_map_key,
+      ]
+      const nets: PcbNetInfo[] = []
+      for (const key of keys) {
+        const net = key ? pcbNetMap.get(key) : undefined
+        if (net && !nets.some((existing) => existing.id === net.id)) {
+          nets.push(net)
+        }
+      }
+      if (nets.length > 1) {
+        const component = sourcePort.source_component_id
+          ? db.source_component.get(sourcePort.source_component_id)
+          : undefined
+        const reference =
+          component?.name ||
+          sourcePort.source_component_id ||
+          pcbPort.pcb_component_id
+        throw new Error(
+          `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${nets.map((net) => net.name).join(", ")})`,
+        )
+      }
+      if (nets[0]) pcbNetMap.set(pcbPort.pcb_port_id, nets[0])
+    }
+  }
+
   override _step(): void {
     const { kicadPcb } = this.ctx
 
@@ -117,6 +194,7 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    this.addPcbPortNets()
     kicadPcb.nets = nets
 
     this.finished = true
