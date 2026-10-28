@@ -2,14 +2,16 @@ import type { CircuitJson } from "circuit-json"
 import {
   convertCircuitJsonToSchematicSvg,
   convertCircuitJsonToPcbSvg,
+  type PcbSvgOptions,
 } from "circuit-to-svg"
 import sharp from "sharp"
 
 export const takeCircuitJsonSnapshot = async (params: {
   circuitJson: CircuitJson
   outputType: "pcb" | "schematic"
+  pcbSvgOptions?: PcbSvgOptions
 }): Promise<Buffer> => {
-  const { circuitJson, outputType } = params
+  const { circuitJson, outputType, pcbSvgOptions } = params
   if (outputType === "schematic") {
     const svg = await convertCircuitJsonToSchematicSvg(circuitJson)
     const png = await sharp(Buffer.from(svg)).png().toBuffer()
@@ -17,6 +19,7 @@ export const takeCircuitJsonSnapshot = async (params: {
   }
   if (outputType === "pcb") {
     const svg = await convertCircuitJsonToPcbSvg(circuitJson, {
+      ...pcbSvgOptions,
       showCourtyards: true,
     })
     const png = await sharp(Buffer.from(svg)).png().toBuffer()
