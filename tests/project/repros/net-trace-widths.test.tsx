@@ -27,7 +27,7 @@ type NetWidthResult = {
 }
 
 const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
-  <board width="30mm" height="20mm" schematicDisabled>
+  <board width="30mm" height="20mm" routingDisabled schematicDisabled>
     <pcbnotetext
       pcbX={0}
       pcbY={8.3}
@@ -35,45 +35,36 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
       fontSize={0.8}
       anchorAlignment="center"
     />
-    {rows.map(({ netName, expectedWidth, kicadWidth }, index) => {
-      const y = index === 0 ? 3 : -4
-      const matches = kicadWidth === expectedWidth
-      const leftRef = `R${index * 2 + 1}`
-      const rightRef = `R${index * 2 + 2}`
-
-      return (
-        <Fragment key={netName}>
-          <resistor
-            name={leftRef}
-            resistance="0ohm"
-            footprint="0402"
-            pcbX={-11}
-            pcbY={y}
-          />
-          <resistor
-            name={rightRef}
-            resistance="0ohm"
-            footprint="0402"
-            pcbX={11}
-            pcbY={y}
-          />
-          <trace
-            from={`.${leftRef} > .pin1`}
-            to={`.${rightRef} > .pin1`}
-            thickness={`${kicadWidth}mm`}
-            pcbStraightLine
-          />
-          <pcbnotetext
-            pcbX={0}
-            pcbY={y + 2.1}
-            text={`${netName}: REQUESTED ${expectedWidth}mm | KICAD ${kicadWidth}mm`}
-            fontSize={0.62}
-            anchorAlignment="center"
-            color={matches ? "#22c55e" : "#ef4444"}
-          />
-        </Fragment>
-      )
-    })}
+    <chip
+      name="U_WIDTHS"
+      footprint={
+        <footprint>
+          {rows.map(({ netName, kicadWidth }, index) => (
+            <Fragment key={netName}>
+              <smtpad
+                portHints={[`${index + 1}`]}
+                pcbY={index === 0 ? 3 : -4}
+                width="22mm"
+                height={`${kicadWidth}mm`}
+                shape="rect"
+              />
+            </Fragment>
+          ))}
+        </footprint>
+      }
+    />
+    {rows.map(({ netName, expectedWidth, kicadWidth }, index) => (
+      <Fragment key={netName}>
+        <pcbnotetext
+          pcbX={0}
+          pcbY={(index === 0 ? 3 : -4) + 2.1}
+          text={`${netName}: REQUESTED ${expectedWidth}mm | KICAD ${kicadWidth}mm`}
+          fontSize={0.62}
+          anchorAlignment="center"
+          color={kicadWidth === expectedWidth ? "#22c55e" : "#ef4444"}
+        />
+      </Fragment>
+    ))}
     <pcbnotetext
       pcbX={0}
       pcbY={-8.2}
