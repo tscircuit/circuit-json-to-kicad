@@ -27,16 +27,25 @@ type NetWidthResult = {
 }
 
 const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
-  <board width="30mm" height="20mm" routingDisabled schematicDisabled>
+  <board
+    width="30mm"
+    height="20mm"
+    pcbX={0}
+    pcbY={0}
+    routingDisabled
+    schematicDisabled
+  >
     <pcbnotetext
       pcbX={0}
-      pcbY={6.8}
-      text="COPPER WIDTHS FROM KICAD PROJECT RULES"
+      pcbY={5.2}
+      text="KICAD COPPER WIDTHS"
       fontSize={0.8}
       anchorAlignment="center"
     />
     <chip
       name="U_WIDTHS"
+      pcbX={0}
+      pcbY={0}
       footprint={
         <footprint>
           {rows.map(({ netName, kicadWidth }, index) => (
@@ -57,7 +66,7 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
       <Fragment key={netName}>
         <pcbnotetext
           pcbX={0}
-          pcbY={(index === 0 ? 3 : -4) + 2.1}
+          pcbY={(index === 0 ? 3 : -4) + 1.5}
           text={`${netName}: REQUESTED ${expectedWidth}mm | KICAD ${kicadWidth}mm`}
           fontSize={0.62}
           anchorAlignment="center"
@@ -65,13 +74,6 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
         />
       </Fragment>
     ))}
-    <pcbnotetext
-      pcbX={0}
-      pcbY={-7.2}
-      text="THE DRAWN COPPER USES THE WIDTH KICAD WILL APPLY WHEN REROUTING"
-      fontSize={0.52}
-      anchorAlignment="center"
-    />
   </board>
 )
 
@@ -131,6 +133,7 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
       pcbSvgOptions: {
         viewport: { minX: -16, minY: -11, maxX: 16, maxY: 11 },
         drawPaddingOutsideBoard: false,
+        showSolderMask: false,
       },
     }),
   ).toMatchPngSnapshot(import.meta.path)
