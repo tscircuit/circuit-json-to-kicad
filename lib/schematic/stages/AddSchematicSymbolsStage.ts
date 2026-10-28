@@ -34,6 +34,11 @@ import {
 
 const DEFAULT_PROPERTY_FONT_SIZE = 1.27
 
+type SourceComponent = Extract<
+  CircuitJson[number],
+  { type: "source_component" }
+>
+
 /**
  * Adds schematic symbol instances (placed components) to the schematic
  */
@@ -107,8 +112,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       ;(symbol as any)._sxLibId = symLibId
 
       // Get component metadata
-      const { reference, value, description } =
-        this.getComponentMetadata(sourceComponent)
+      const { reference, value, description } = this.getComponentMetadata(
+        sourceComponent,
+        schematicComponent,
+      )
       const hasManufacturerValueForValuePlacement =
         (sourceComponent.ftype === "simple_chip" ||
           sourceComponent.ftype === "simple_connector") &&
@@ -559,7 +566,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   /**
    * Get component metadata (reference, value, description)
    */
-  private getComponentMetadata(sourceComp: any): {
+  private getComponentMetadata(
+    sourceComp: SourceComponent,
+    schematicComp: SchematicComponent,
+  ): {
     reference: string
     value: string
     description: string
@@ -651,7 +661,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Default
     return {
       reference,
-      value: name,
+      value: schematicComp.symbol_display_value ?? name,
       description: "Component",
     }
   }

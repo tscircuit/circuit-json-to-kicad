@@ -6,7 +6,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro: fuse symbol display value is lost in KiCad", async () => {
+test("repro: fuse symbol display value is preserved in KiCad", async () => {
   const circuit = new Circuit()
 
   circuit.add(
@@ -45,7 +45,7 @@ test("repro: fuse symbol display value is lost in KiCad", async () => {
     (property) => property.key === "Value",
   )
 
-  expect(valueProperty?.value).toBe("F1")
+  expect(valueProperty?.value).toBe("3A / 125V")
 
   Bun.write("./debug-output/repro-fuse-symbol-display-value.kicad_sch", output)
 
