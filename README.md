@@ -12,17 +12,6 @@ npm install circuit-json-to-kicad
 bun add circuit-json-to-kicad
 ```
 
-### Browser builds
-
-CDNs and bundlers that honor the `browser` field use `dist/index.browser.js`,
-which embeds the Git-pinned `kicadts` implementation. Other npm imports are
-resolved by the CDN or bundler. The default `dist/index.js` build keeps `kicadts`
-external so Node and Bun consumers share its classes.
-
-Objects returned by the browser build's `getOutput()` belong to the bundled
-classes; `instanceof` against a separately imported `kicadts` constructor will
-not match. Use `getOutputString()` or `getOutputFiles()` to export KiCad files.
-
 ## Usage
 
 ### Converting to KiCad Schematic
