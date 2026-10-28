@@ -2,8 +2,8 @@ import { expect, test } from "bun:test"
 import type { SourceComponentBase, SourcePort } from "circuit-json"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
-import sharp from "sharp"
 import { Circuit } from "tscircuit"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { SmdUsbC } from "./assets/smd-usb-c-obj-only"
 
 const InternallyConnectedPadNetsRepro = () => (
@@ -15,44 +15,64 @@ const InternallyConnectedPadNetsRepro = () => (
 
 export default InternallyConnectedPadNetsRepro
 
-const createPadNetComparisonPng = async (
-  rows: Array<{
-    padNumber: string
-    expectedNet: string
-    kicadNet: string | null
-  }>,
-) => {
-  const rowHeight = 64
-  const rowsSvg = rows
-    .map(({ padNumber, expectedNet, kicadNet }, index) => {
-      const y = 156 + index * rowHeight
-      const matches = kicadNet === expectedNet
-      return `
-        <rect x="24" y="${y - 36}" width="852" height="52" rx="8" fill="${matches ? "#ecfdf5" : "#fef2f2"}" />
-        <text x="48" y="${y}" font-size="23" fill="#111827">Pad ${padNumber}</text>
-        <text x="270" y="${y}" font-size="23" fill="#111827">${expectedNet}</text>
-        <text x="520" y="${y}" font-size="23" fill="#111827">${kicadNet ?? "unassigned"}</text>
-        <text x="810" y="${y}" font-size="19" font-weight="700" text-anchor="end" fill="${matches ? "#047857" : "#b91c1c"}">${matches ? "MATCH" : "MISSING"}</text>
-      `
-    })
-    .join("")
+const ExportedPadNetPcb = ({
+  pad1Net,
+  pad15Net,
+}: {
+  pad1Net: string | null
+  pad15Net: string | null
+}) => (
+  <board width="20mm" height="15mm" routingDisabled schematicDisabled>
+    <SmdUsbC name="J1" pcbY={-2} />
 
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="900" height="${184 + rows.length * rowHeight}">
-      <rect width="100%" height="100%" fill="#ffffff" />
-      <text x="24" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#111827">Internally connected pad nets</text>
-      <text x="24" y="72" font-family="Arial, sans-serif" font-size="17" fill="#4b5563">Expected from the TSX circuit vs. emitted in the KiCad footprint</text>
-      <g font-family="Arial, sans-serif">
-        <text x="48" y="108" font-size="17" font-weight="700" fill="#374151">PAD</text>
-        <text x="270" y="108" font-size="17" font-weight="700" fill="#374151">TSX / CIRCUIT JSON</text>
-        <text x="520" y="108" font-size="17" font-weight="700" fill="#374151">KICAD EXPORT</text>
-        ${rowsSvg}
-      </g>
-    </svg>
-  `
-
-  return sharp(Buffer.from(svg)).png().toBuffer()
-}
+    <pcbnotetext
+      pcbX={0}
+      pcbY={6.2}
+      text="KICAD-EXPORTED PAD NETS"
+      fontSize={0.8}
+      anchorAlignment="center"
+    />
+    <pcbnotetext
+      pcbX={-5.8}
+      pcbY={3.8}
+      text={`PAD 1: ${pad1Net ?? "UNASSIGNED"}`}
+      fontSize={0.65}
+      anchorAlignment="center"
+      color={pad1Net === "GND" ? "#22c55e" : "#ef4444"}
+    />
+    <pcbnoteline
+      x1={-5.8}
+      y1={3.2}
+      x2={-3.35}
+      y2={0.45}
+      strokeWidth={0.18}
+      color={pad1Net === "GND" ? "#22c55e" : "#ef4444"}
+    />
+    <pcbnotetext
+      pcbX={5.8}
+      pcbY={3.8}
+      text={`PAD 15: ${pad15Net ?? "UNASSIGNED"}`}
+      fontSize={0.65}
+      anchorAlignment="center"
+      color={pad15Net === "GND" ? "#22c55e" : "#ef4444"}
+    />
+    <pcbnoteline
+      x1={5.8}
+      y1={3.2}
+      x2={3.35}
+      y2={0.45}
+      strokeWidth={0.18}
+      color={pad15Net === "GND" ? "#22c55e" : "#ef4444"}
+    />
+    <pcbnotetext
+      pcbX={0}
+      pcbY={-6}
+      text="PADS 1 + 15 ARE INTERNALLY CONNECTED; BOTH SHOULD BE GND"
+      fontSize={0.55}
+      anchorAlignment="center"
+    />
+  </board>
+)
 
 test("export nets for internally connected pads", async () => {
   const circuit = new Circuit()
@@ -89,13 +109,23 @@ test("export nets for internally connected pads", async () => {
   }))
 
   expect(padNets).toMatchSnapshot()
+
+  const exportedNetByPad = new Map(
+    padNets.map(({ number, net }) => [number, net]),
+  )
+  const visualizationCircuit = new Circuit()
+  visualizationCircuit.add(
+    <ExportedPadNetPcb
+      pad1Net={exportedNetByPad.get("1") ?? null}
+      pad15Net={exportedNetByPad.get("15") ?? null}
+    />,
+  )
+  await visualizationCircuit.renderUntilSettled()
+
   await expect(
-    createPadNetComparisonPng(
-      padNets.map(({ number, net }) => ({
-        padNumber: number,
-        expectedNet: "GND",
-        kicadNet: net,
-      })),
-    ),
+    takeCircuitJsonSnapshot({
+      circuitJson: visualizationCircuit.getCircuitJson(),
+      outputType: "pcb",
+    }),
   ).toMatchPngSnapshot(import.meta.path)
 })
