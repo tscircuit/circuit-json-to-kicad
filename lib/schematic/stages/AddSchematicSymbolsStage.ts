@@ -107,8 +107,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       ;(symbol as any)._sxLibId = symLibId
 
       // Get component metadata
-      const { reference, value, description } =
-        this.getComponentMetadata(sourceComponent)
+      const { reference, value, description } = this.getComponentMetadata(
+        sourceComponent,
+        schematicComponent,
+      )
       const hasManufacturerValueForValuePlacement =
         (sourceComponent.ftype === "simple_chip" ||
           sourceComponent.ftype === "simple_connector") &&
@@ -559,7 +561,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   /**
    * Get component metadata (reference, value, description)
    */
-  private getComponentMetadata(sourceComp: any): {
+  private getComponentMetadata(
+    sourceComp: any,
+    schematicComp: SchematicComponent,
+  ): {
     reference: string
     value: string
     description: string
@@ -651,7 +656,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Default
     return {
       reference,
-      value: name,
+      value: schematicComp.symbol_display_value ?? name,
       description: "Component",
     }
   }
