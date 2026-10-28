@@ -137,6 +137,10 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
     takeCircuitJsonSnapshot({
       circuitJson: visualizationCircuit.getCircuitJson(),
       outputType: "pcb",
+      pcbSvgOptions: {
+        viewport: { minX: -16, minY: -11, maxX: 16, maxY: 11 },
+        drawPaddingOutsideBoard: false,
+      },
     }),
   ).toMatchPngSnapshot(import.meta.path)
 })
