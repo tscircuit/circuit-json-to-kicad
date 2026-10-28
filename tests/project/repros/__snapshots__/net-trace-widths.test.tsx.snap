@@ -1,0 +1,31 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`repro: source net trace widths are omitted from KiCad net settings 1`] = `
+{
+  "generatedNetSettings": {
+    "classes": [
+      {
+        "clearance": 0.1,
+        "name": "Default",
+        "track_width": 0.1,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+      },
+    ],
+    "last_net_id": 0,
+    "meta": {
+      "version": 1,
+    },
+  },
+  "sourceNets": [
+    {
+      "name": "MOTOR_PHASE",
+      "trace_width": 2,
+    },
+    {
+      "name": "LOGIC_3V3",
+      "trace_width": 0.3,
+    },
+  ],
+}
+`;
