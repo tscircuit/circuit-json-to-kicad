@@ -1,8 +1,11 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadProConverter } from "lib"
+import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Fragment } from "react"
 import { Circuit } from "tscircuit"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const NetTraceWidthsRepro = () => (
   <board
@@ -26,18 +29,30 @@ type NetWidthResult = {
   kicadWidth: number
 }
 
-const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
+const NetWidthCoupon = ({
+  rows,
+  widthSource,
+}: {
+  rows: NetWidthResult[]
+  widthSource: "circuit-json" | "kicad"
+}) => (
   <board width="30mm" height="20mm" schematicDisabled>
     <pcbnotetext
       pcbX={0}
       pcbY={8.3}
-      text="COPPER WIDTHS FROM KICAD PROJECT RULES"
+      text={
+        widthSource === "circuit-json"
+          ? "AUTHORED CIRCUIT JSON NET WIDTHS"
+          : "KICAD PROJECT REROUTE WIDTHS"
+      }
       fontSize={0.8}
       anchorAlignment="center"
     />
     {rows.map(({ netName, expectedWidth, kicadClass, kicadWidth }, index) => {
       const y = index === 0 ? 3 : -4
       const matches = kicadWidth === expectedWidth
+      const displayedWidth =
+        widthSource === "circuit-json" ? expectedWidth : kicadWidth
       const leftRef = `${netName}_LEFT`
       const rightRef = `${netName}_RIGHT`
 
@@ -60,15 +75,21 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
           <trace
             from={`.${leftRef} > .pin1`}
             to={`.${rightRef} > .pin1`}
-            thickness={`${kicadWidth}mm`}
+            thickness={`${displayedWidth}mm`}
           />
           <pcbnotetext
             pcbX={0}
             pcbY={y + 2.1}
-            text={`${netName}: TSX ${expectedWidth}mm -> KICAD ${kicadWidth}mm (${kicadClass})`}
+            text={
+              widthSource === "circuit-json"
+                ? `${netName}: ${expectedWidth}mm`
+                : `${netName}: ${kicadWidth}mm (${kicadClass})`
+            }
             fontSize={0.62}
             anchorAlignment="center"
-            color={matches ? "#22c55e" : "#ef4444"}
+            color={
+              widthSource === "kicad" && !matches ? "#ef4444" : "#22c55e"
+            }
           />
         </Fragment>
       )
@@ -76,7 +97,11 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
     <pcbnotetext
       pcbX={0}
       pcbY={-8.2}
-      text="THE DRAWN COPPER USES THE WIDTH KICAD WILL APPLY WHEN REROUTING"
+      text={
+        widthSource === "circuit-json"
+          ? "SOURCE RULES: MOTOR 2mm / LOGIC 0.3mm"
+          : "KICAD REROUTES BOTH NETS AT THE DEFAULT WIDTH"
+      }
       fontSize={0.52}
       anchorAlignment="center"
     />
@@ -128,14 +153,34 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
     }
   })
 
-  const visualizationCircuit = new Circuit()
-  visualizationCircuit.add(<ExportedNetWidthPcb rows={widthResults} />)
-  await visualizationCircuit.renderUntilSettled()
+  const sourceVisualization = new Circuit()
+  sourceVisualization.add(
+    <NetWidthCoupon rows={widthResults} widthSource="circuit-json" />,
+  )
+  await sourceVisualization.renderUntilSettled()
+
+  const kicadVisualization = new Circuit()
+  kicadVisualization.add(
+    <NetWidthCoupon rows={widthResults} widthSource="kicad" />,
+  )
+  await kicadVisualization.renderUntilSettled()
+  const kicadPcbConverter = new CircuitJsonToKicadPcbConverter(
+    kicadVisualization.getCircuitJson(),
+  )
+  kicadPcbConverter.runUntilFinished()
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: kicadPcbConverter.getOutputString(),
+    kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
+  })
 
   await expect(
-    takeCircuitJsonSnapshot({
-      circuitJson: visualizationCircuit.getCircuitJson(),
-      outputType: "pcb",
-    }),
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson: sourceVisualization.getCircuitJson(),
+        outputType: "pcb",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
   ).toMatchPngSnapshot(import.meta.path)
 })
