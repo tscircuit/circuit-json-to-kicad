@@ -34,6 +34,11 @@ import {
 
 const DEFAULT_PROPERTY_FONT_SIZE = 1.27
 
+type SourceComponent = Extract<
+  CircuitJson[number],
+  { type: "source_component" }
+>
+
 /**
  * Adds schematic symbol instances (placed components) to the schematic
  */
@@ -562,7 +567,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
    * Get component metadata (reference, value, description)
    */
   private getComponentMetadata(
-    sourceComp: any,
+    sourceComp: SourceComponent,
     schematicComp: SchematicComponent,
   ): {
     reference: string
