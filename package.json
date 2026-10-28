@@ -1,6 +1,7 @@
 {
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
+  "browser": "dist/index.browser.js",
   "version": "0.0.252",
   "repository": {
     "type": "git",
@@ -16,7 +17,7 @@
     "sharp"
   ],
   "scripts": {
-    "build": "tsup-node lib/index.ts --format esm --dts",
+    "build": "tsup-node",
     "build:site": "bun build ./site/index.html --outdir site-build",
     "download-demos": "git clone --depth 1 --branch 9.0.9-rc1 --filter=blob:none --sparse https://gitlab.com/kicad/code/kicad.git kicad-demos && cd kicad-demos && git sparse-checkout set demos",
     "download-references": "bun run scripts/download-references.ts",
