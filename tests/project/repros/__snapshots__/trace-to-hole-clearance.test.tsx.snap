@@ -1,0 +1,17 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`repro: KiCad hole clearance uses trace-to-pad clearance 1`] = `
+{
+  "generatedRules": {
+    "min_hole_clearance": 0.1,
+    "min_through_hole_diameter": 0.3,
+    "min_track_width": 0.1,
+    "min_via_annular_width": 0.15,
+    "min_via_diameter": 0.6,
+  },
+  "sourceClearances": {
+    "traceToHole": 0.2,
+    "traceToPad": 0.1,
+  },
+}
+`;
