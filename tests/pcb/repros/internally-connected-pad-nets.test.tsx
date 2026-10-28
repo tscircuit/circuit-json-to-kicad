@@ -96,7 +96,7 @@ test("export nets for internally connected pads", async () => {
       element.connected_source_port_ids.includes(sourcePin1.source_port_id) &&
       element.connected_source_net_ids.includes(sourceGndNet.source_net_id),
   )
-  const sourcePad1Net = sourceGndTrace ? sourceGndNet?.name ?? null : null
+  const sourcePad1Net = sourceGndTrace ? (sourceGndNet?.name ?? null) : null
   const sourcePad15Net = internallyConnectedPinNumbers.some(
     (group) => group.includes(1) && group.includes(15),
   )
