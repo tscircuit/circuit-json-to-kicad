@@ -61,7 +61,6 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
             from={`.${leftRef} > .pin1`}
             to={`.${rightRef} > .pin1`}
             thickness={`${kicadWidth}mm`}
-            pcbStraightLine
           />
           <pcbnotetext
             pcbX={0}
