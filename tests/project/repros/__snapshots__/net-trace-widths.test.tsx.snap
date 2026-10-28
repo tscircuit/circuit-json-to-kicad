@@ -11,10 +11,28 @@ exports[`repro: source net trace widths are omitted from KiCad net settings 1`] 
         "via_diameter": 0.6,
         "via_drill": 0.3,
       },
+      {
+        "clearance": 0.1,
+        "name": "Trace Width 0.3 mm",
+        "track_width": 0.3,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+      },
+      {
+        "clearance": 0.1,
+        "name": "Trace Width 2 mm",
+        "track_width": 2,
+        "via_diameter": 0.6,
+        "via_drill": 0.3,
+      },
     ],
     "last_net_id": 0,
     "meta": {
       "version": 1,
+    },
+    "netclass_assignments": {
+      "LOGIC_3V3": "Trace Width 0.3 mm",
+      "MOTOR_PHASE": "Trace Width 2 mm",
     },
   },
   "sourceNets": [

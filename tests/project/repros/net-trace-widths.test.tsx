@@ -186,3 +186,39 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
     ),
   ).toMatchPngSnapshot(import.meta.path)
 })
+
+test("conflicting widths for the same exported KiCad net name are rejected", async () => {
+  const circuit = new Circuit()
+  circuit.add(
+    <board width="20mm" height="20mm" routingDisabled>
+      <subcircuit name="BLOCK_A">
+        <net name="SENSE" nominalTraceWidth="0.2mm" />
+        <resistor
+          name="R1"
+          resistance="1k"
+          footprint="0402"
+          connections={{ pin1: "net.SENSE", pin2: "net.GND" }}
+        />
+      </subcircuit>
+      <subcircuit name="BLOCK_B">
+        <net name="SENSE" nominalTraceWidth="0.5mm" />
+        <resistor
+          name="R1"
+          resistance="1k"
+          footprint="0402"
+          connections={{ pin1: "net.SENSE", pin2: "net.GND" }}
+        />
+      </subcircuit>
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+
+  expect(
+    () =>
+      new CircuitJsonToKicadProConverter(circuit.getCircuitJson(), {
+        projectName: "conflicting-net-trace-widths",
+      }),
+  ).toThrow(
+    'Cannot preserve conflicting trace widths for KiCad net "SENSE": Trace Width 0.2 mm and Trace Width 0.5 mm',
+  )
+})
