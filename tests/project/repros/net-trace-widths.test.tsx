@@ -42,28 +42,17 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
       fontSize={0.8}
       anchorAlignment="center"
     />
-    <chip
-      name="U_WIDTHS"
-      pcbX={0}
-      pcbY={0}
-      footprint={
-        <footprint>
-          {rows.map(({ netName, kicadWidth }, index) => (
-            <Fragment key={netName}>
-              <smtpad
-                portHints={[`${index + 1}`]}
-                pcbY={index === 0 ? 3 : -4}
-                width="22mm"
-                height={`${kicadWidth}mm`}
-                shape="rect"
-              />
-            </Fragment>
-          ))}
-        </footprint>
-      }
-    />
     {rows.map(({ netName, expectedWidth, kicadWidth }, index) => (
       <Fragment key={netName}>
+        <pcbnoterect
+          pcbX={0}
+          pcbY={index === 0 ? 3 : -4}
+          width={22}
+          height={kicadWidth}
+          isFilled
+          hasStroke={false}
+          color="#ef4444"
+        />
         <pcbnotetext
           pcbX={0}
           pcbY={(index === 0 ? 3 : -4) + 1.5}
@@ -133,7 +122,6 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
       pcbSvgOptions: {
         viewport: { minX: -16, minY: -11, maxX: 16, maxY: 11 },
         drawPaddingOutsideBoard: false,
-        showSolderMask: false,
       },
     }),
   ).toMatchPngSnapshot(import.meta.path)
