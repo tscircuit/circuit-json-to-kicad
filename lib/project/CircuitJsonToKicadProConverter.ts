@@ -295,6 +295,7 @@ export class CircuitJsonToKicadProConverter {
         meta: {
           version: 1,
         },
+        // Retained as 0 for output compatibility; KiCad does not use this field because electrical net IDs live in the .kicad_pcb file.
         last_net_id: 0,
         classes: netClasses,
         ...(hasNetclassAssignments
