@@ -35,11 +35,11 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
       fontSize={0.8}
       anchorAlignment="center"
     />
-    {rows.map(({ netName, expectedWidth, kicadClass, kicadWidth }, index) => {
+    {rows.map(({ netName, expectedWidth, kicadWidth }, index) => {
       const y = index === 0 ? 3 : -4
       const matches = kicadWidth === expectedWidth
-      const leftRef = `${netName}_LEFT`
-      const rightRef = `${netName}_RIGHT`
+      const leftRef = `R${index * 2 + 1}`
+      const rightRef = `R${index * 2 + 2}`
 
       return (
         <Fragment key={netName}>
@@ -66,7 +66,7 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
           <pcbnotetext
             pcbX={0}
             pcbY={y + 2.1}
-            text={`${netName}: TSX ${expectedWidth}mm -> KICAD ${kicadWidth}mm (${kicadClass})`}
+            text={`${netName}: REQUESTED ${expectedWidth}mm | KICAD ${kicadWidth}mm`}
             fontSize={0.62}
             anchorAlignment="center"
             color={matches ? "#22c55e" : "#ef4444"}
