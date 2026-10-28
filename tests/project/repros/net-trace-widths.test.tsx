@@ -30,7 +30,7 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
   <board width="30mm" height="20mm" routingDisabled schematicDisabled>
     <pcbnotetext
       pcbX={0}
-      pcbY={8.3}
+      pcbY={6.8}
       text="COPPER WIDTHS FROM KICAD PROJECT RULES"
       fontSize={0.8}
       anchorAlignment="center"
@@ -67,7 +67,7 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
     ))}
     <pcbnotetext
       pcbX={0}
-      pcbY={-8.2}
+      pcbY={-7.2}
       text="THE DRAWN COPPER USES THE WIDTH KICAD WILL APPLY WHEN REROUTING"
       fontSize={0.52}
       anchorAlignment="center"
