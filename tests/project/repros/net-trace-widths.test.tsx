@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadProConverter } from "lib"
-import sharp from "sharp"
+import { Fragment } from "react"
 import { Circuit } from "tscircuit"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 
 const NetTraceWidthsRepro = () => (
   <board
@@ -18,45 +19,77 @@ const NetTraceWidthsRepro = () => (
 
 export default NetTraceWidthsRepro
 
-const createNetWidthComparisonPng = async (
-  rows: Array<{
-    netName: string
-    expectedWidth: number
-    kicadClass: string
-    kicadWidth: number
-  }>,
-) => {
-  const rowHeight = 64
-  const rowsSvg = rows
-    .map(({ netName, expectedWidth, kicadClass, kicadWidth }, index) => {
-      const y = 156 + index * rowHeight
-      const matches = kicadWidth === expectedWidth
-      return `
-        <rect x="24" y="${y - 36}" width="852" height="52" rx="8" fill="${matches ? "#ecfdf5" : "#fef2f2"}" />
-        <text x="48" y="${y}" font-size="23" fill="#111827">${netName}</text>
-        <text x="310" y="${y}" font-size="23" fill="#111827">${expectedWidth} mm</text>
-        <text x="490" y="${y}" font-size="21" fill="#111827">${kicadClass} (${kicadWidth} mm)</text>
-        <text x="850" y="${y}" font-size="19" font-weight="700" text-anchor="end" fill="${matches ? "#047857" : "#b91c1c"}">${matches ? "MATCH" : "WRONG WIDTH"}</text>
-      `
-    })
-    .join("")
-
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="900" height="${184 + rows.length * rowHeight}">
-      <rect width="100%" height="100%" fill="#ffffff" />
-      <text x="24" y="40" font-family="Arial, sans-serif" font-size="28" font-weight="700" fill="#111827">Per-net trace widths</text>
-      <text x="24" y="72" font-family="Arial, sans-serif" font-size="17" fill="#4b5563">Expected from the TSX circuit vs. the KiCad project routing rules</text>
-      <g font-family="Arial, sans-serif">
-        <text x="48" y="108" font-size="17" font-weight="700" fill="#374151">NET</text>
-        <text x="310" y="108" font-size="17" font-weight="700" fill="#374151">TSX WIDTH</text>
-        <text x="490" y="108" font-size="17" font-weight="700" fill="#374151">KICAD CLASS / WIDTH</text>
-        ${rowsSvg}
-      </g>
-    </svg>
-  `
-
-  return sharp(Buffer.from(svg)).png().toBuffer()
+type NetWidthResult = {
+  netName: string
+  expectedWidth: number
+  kicadClass: string
+  kicadWidth: number
 }
+
+const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
+  <board width="30mm" height="20mm" schematicDisabled>
+    <pcbnotetext
+      pcbX={0}
+      pcbY={8.3}
+      text="COPPER WIDTHS FROM KICAD PROJECT RULES"
+      fontSize={0.8}
+      anchorAlignment="center"
+    />
+    {rows.map(({ netName, expectedWidth, kicadClass, kicadWidth }, index) => {
+      const y = index === 0 ? 3 : -4
+      const matches = kicadWidth === expectedWidth
+      const leftRef = `${netName}_LEFT`
+      const rightRef = `${netName}_RIGHT`
+
+      return (
+        <Fragment key={netName}>
+          <resistor
+            name={leftRef}
+            resistance="0ohm"
+            footprint="0402"
+            pcbX={-11}
+            pcbY={y}
+          />
+          <resistor
+            name={rightRef}
+            resistance="0ohm"
+            footprint="0402"
+            pcbX={11}
+            pcbY={y}
+          />
+          <trace
+            from={`.${leftRef} > .pin1`}
+            to={`.${rightRef} > .pin1`}
+            thickness={`${kicadWidth}mm`}
+          />
+          <pcbnotetext
+            pcbX={0}
+            pcbY={y + 2.1}
+            text={`${netName}: TSX ${expectedWidth}mm -> KICAD ${kicadWidth}mm (${kicadClass})`}
+            fontSize={0.62}
+            anchorAlignment="center"
+            color={matches ? "#22c55e" : "#ef4444"}
+          />
+          <pcbnoteline
+            x1={-10.5}
+            y1={y + 1.45}
+            x2={-9}
+            y2={y}
+            strokeWidth={0.16}
+            color={matches ? "#22c55e" : "#ef4444"}
+          />
+        </Fragment>
+      )
+    })}
+    <pcbnotetext
+      pcbX={0}
+      pcbY={-8.2}
+      text="THE DRAWN COPPER USES THE WIDTH KICAD WILL APPLY WHEN REROUTING"
+      fontSize={0.52}
+      anchorAlignment="center"
+    />
+  </board>
+)
 
 test("repro: source net trace widths are omitted from KiCad net settings", async () => {
   const circuit = new Circuit()
@@ -93,17 +126,24 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
       track_width,
     ]),
   )
+  const widthResults = sourceNets.map(({ name, trace_width }) => {
+    const kicadClass = generatedNetClassAssignments?.[name] ?? "Default"
+    return {
+      netName: name,
+      expectedWidth: trace_width,
+      kicadClass,
+      kicadWidth: classWidthByName.get(kicadClass) ?? 0,
+    }
+  })
+
+  const visualizationCircuit = new Circuit()
+  visualizationCircuit.add(<ExportedNetWidthPcb rows={widthResults} />)
+  await visualizationCircuit.renderUntilSettled()
+
   await expect(
-    createNetWidthComparisonPng(
-      sourceNets.map(({ name, trace_width }) => {
-        const kicadClass = generatedNetClassAssignments?.[name] ?? "Default"
-        return {
-          netName: name,
-          expectedWidth: trace_width,
-          kicadClass,
-          kicadWidth: classWidthByName.get(kicadClass) ?? 0,
-        }
-      }),
-    ),
+    takeCircuitJsonSnapshot({
+      circuitJson: visualizationCircuit.getCircuitJson(),
+      outputType: "pcb",
+    }),
   ).toMatchPngSnapshot(import.meta.path)
 })
