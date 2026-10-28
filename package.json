@@ -2,7 +2,7 @@
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
   "browser": "dist/index.browser.js",
-  "version": "0.0.252",
+  "version": "0.0.257",
   "repository": {
     "type": "git",
     "url": "https://github.com/tscircuit/circuit-json-to-kicad"
