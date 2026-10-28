@@ -87,9 +87,7 @@ const NetWidthCoupon = ({
             }
             fontSize={0.62}
             anchorAlignment="center"
-            color={
-              widthSource === "kicad" && !matches ? "#ef4444" : "#22c55e"
-            }
+            color={widthSource === "kicad" && !matches ? "#ef4444" : "#22c55e"}
           />
         </Fragment>
       )
