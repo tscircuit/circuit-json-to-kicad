@@ -64,6 +64,9 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     if (!sourcePort) return undefined
 
     const keys = [
+      // AddNetsStage indexes every Circuit JSON element ID through the
+      // connectivity map, including internally connected source ports.
+      sourcePortId,
       ...(this.sourcePortNetKeys[sourcePortId] ?? []),
       sourcePort.subcircuit_connectivity_map_key,
     ]
@@ -119,25 +122,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       for (const portId of trace.connected_source_port_ids ?? []) {
         this.sourcePortNetKeys[portId] ??= []
         this.sourcePortNetKeys[portId].push(...keys)
-      }
-    }
-
-    // Pads in an internal connection group are physically the same conductor.
-    // Share their explicit trace/connectivity keys so every pad receives the net.
-    for (const component of ctx.db.source_component.list()) {
-      for (const portIds of component.internally_connected_source_port_ids ??
-        []) {
-        const groupKeys = portIds.flatMap((portId) => {
-          const port = ctx.db.source_port.get(portId)
-          return [
-            ...(this.sourcePortNetKeys[portId] ?? []),
-            port?.subcircuit_connectivity_map_key,
-          ].filter((key): key is string => Boolean(key))
-        })
-        for (const portId of portIds) {
-          this.sourcePortNetKeys[portId] ??= []
-          this.sourcePortNetKeys[portId].push(...groupKeys)
-        }
       }
     }
   }
