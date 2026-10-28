@@ -70,14 +70,6 @@ const ExportedNetWidthPcb = ({ rows }: { rows: NetWidthResult[] }) => (
             anchorAlignment="center"
             color={matches ? "#22c55e" : "#ef4444"}
           />
-          <pcbnoteline
-            x1={-10.5}
-            y1={y + 1.45}
-            x2={-9}
-            y2={y}
-            strokeWidth={0.16}
-            color={matches ? "#22c55e" : "#ef4444"}
-          />
         </Fragment>
       )
     })}
