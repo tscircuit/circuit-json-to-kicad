@@ -82,7 +82,7 @@ test("the real NEMA34 fixture requests 0.20 mm global edge clearance", () => {
   expect(circuitJson).toHaveLength(4)
 })
 
-test.failing("preserves the real NEMA34 board's global edge clearance", () => {
+test("preserves the real NEMA34 board's global edge clearance", () => {
   expect(project.board.design_settings.rules).toMatchObject({
     min_copper_edge_clearance: 0.2,
     min_track_width: 0.15,
@@ -96,6 +96,29 @@ test("KiCad's missing-rule control reports the unintended 0.50 mm limit", () => 
   ).toBe(true)
 })
 
-test.failing("the actual exported project has no false copper-edge errors", () => {
+test("the actual exported project has no false copper-edge errors", () => {
   expect(exportedRuleErrors).toEqual([])
+})
+
+test.each([0, 0.35])("preserves an explicit %s mm edge clearance", (value) => {
+  const input = structuredClone(circuitJson)
+  const board = input.find((item) => item.type === "pcb_board") as PcbBoard
+  board.min_board_edge_clearance = value
+  const project = new CircuitJsonToKicadProConverter(input).getOutput()
+  expect(project.board.design_settings.rules).toHaveProperty(
+    "min_copper_edge_clearance",
+    value,
+  )
+})
+
+test("leaves an unspecified edge clearance to KiCad", () => {
+  const input = structuredClone(circuitJson)
+  const board = input.find((item) => item.type === "pcb_board") as PcbBoard
+  delete board.min_board_edge_clearance
+  for (const data of [input, [] as CircuitJson]) {
+    const project = new CircuitJsonToKicadProConverter(data).getOutput()
+    expect(project.board.design_settings.rules).not.toHaveProperty(
+      "min_copper_edge_clearance",
+    )
+  }
 })
