@@ -100,7 +100,11 @@ const NetWidthCoupon = ({
       text={
         widthSource === "circuit-json"
           ? "SOURCE RULES: MOTOR 2mm / LOGIC 0.3mm"
-          : "KICAD REROUTES BOTH NETS AT THE DEFAULT WIDTH"
+          : rows.every(({ expectedWidth, kicadWidth }) =>
+                Object.is(expectedWidth, kicadWidth),
+              )
+            ? "KICAD NET CLASSES MATCH AUTHORED WIDTHS"
+            : "KICAD REROUTES BOTH NETS AT THE DEFAULT WIDTH"
       }
       fontSize={0.52}
       anchorAlignment="center"
