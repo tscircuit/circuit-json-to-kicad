@@ -109,12 +109,6 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             }
             if (
               physicalVias.some((physicalVia) => {
-                if (
-                  Math.abs(physicalVia.x - via.x) > VIA_POSITION_TOLERANCE ||
-                  Math.abs(physicalVia.y - via.y) > VIA_POSITION_TOLERANCE
-                ) {
-                  return false
-                }
                 const sameTrace =
                   physicalVia.pcb_trace_id !== undefined &&
                   physicalVia.pcb_trace_id === via.pcb_trace_id
@@ -132,13 +126,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
                   return false
                 }
 
-                // The shared helper requires exact positions. Align only this
-                // coverage check after confirming proximity; keep the physical
-                // via's exported coordinates and all size/span checks intact.
-                return isRouteViaCoveredByPhysicalVia(physicalVia, {
-                  ...via,
-                  x: physicalVia.x,
-                  y: physicalVia.y,
+                return isRouteViaCoveredByPhysicalVia(physicalVia, via, {
+                  positionTolerance: VIA_POSITION_TOLERANCE,
                 })
               })
             ) {
