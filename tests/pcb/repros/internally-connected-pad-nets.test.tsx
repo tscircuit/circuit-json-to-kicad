@@ -1,9 +1,11 @@
 import { expect, test } from "bun:test"
-import type { SourceComponentBase, SourcePort } from "circuit-json"
+import type { SourceComponentBase, SourceNet, SourcePort } from "circuit-json"
 import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
+import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
+import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 import { SmdUsbC } from "./assets/smd-usb-c-obj-only"
 
 const InternallyConnectedPadNetsRepro = () => (
@@ -15,60 +17,46 @@ const InternallyConnectedPadNetsRepro = () => (
 
 export default InternallyConnectedPadNetsRepro
 
-const ExportedPadNetPcb = ({
+const PadNetComparisonPcb = ({
+  title,
   pad1Net,
   pad15Net,
 }: {
+  title: string
   pad1Net: string | null
   pad15Net: string | null
 }) => (
-  <board width="20mm" height="15mm" routingDisabled schematicDisabled>
-    <SmdUsbC name="J1" pcbY={-2} />
+  <board width="30mm" height="20mm" routingDisabled schematicDisabled>
+    <SmdUsbC name="J1" pcbY={-1.5} />
 
     <pcbnotetext
       pcbX={0}
-      pcbY={6.2}
-      text="KICAD-EXPORTED PAD NETS"
+      pcbY={8.3}
+      text={title}
       fontSize={0.8}
       anchorAlignment="center"
     />
     <pcbnotetext
-      pcbX={-5.8}
-      pcbY={3.8}
+      pcbX={-7}
+      pcbY={5.2}
       text={`PAD 1: ${pad1Net ?? "UNASSIGNED"}`}
       fontSize={0.65}
       anchorAlignment="center"
       color={pad1Net === "GND" ? "#22c55e" : "#ef4444"}
     />
-    <pcbnoteline
-      x1={-5.8}
-      y1={3.2}
-      x2={-3.35}
-      y2={0.45}
-      strokeWidth={0.18}
-      color={pad1Net === "GND" ? "#22c55e" : "#ef4444"}
-    />
     <pcbnotetext
-      pcbX={5.8}
-      pcbY={3.8}
+      pcbX={7}
+      pcbY={5.2}
       text={`PAD 15: ${pad15Net ?? "UNASSIGNED"}`}
       fontSize={0.65}
       anchorAlignment="center"
       color={pad15Net === "GND" ? "#22c55e" : "#ef4444"}
     />
-    <pcbnoteline
-      x1={5.8}
-      y1={3.2}
-      x2={3.35}
-      y2={0.45}
-      strokeWidth={0.18}
-      color={pad15Net === "GND" ? "#22c55e" : "#ef4444"}
-    />
     <pcbnotetext
       pcbX={0}
-      pcbY={-6}
-      text="PADS 1 + 15 ARE INTERNALLY CONNECTED; BOTH SHOULD BE GND"
-      fontSize={0.55}
+      pcbY={-8.2}
+      text="PADS 1 + 15: INTERNALLY CONNECTED"
+      fontSize={0.52}
       anchorAlignment="center"
     />
   </board>
@@ -96,6 +84,25 @@ test("export nets for internally connected pads", async () => {
     ) ?? []
   expect(internallyConnectedPinNumbers).toContainEqual([1, 15])
 
+  const sourceGndNet = circuitJson.find(
+    (element) => element.type === "source_net" && element.name === "GND",
+  ) as SourceNet | undefined
+  const sourcePin1 = sourcePorts.find((port) => port.pin_number === 1)
+  const sourceGndTrace = circuitJson.find(
+    (element) =>
+      element.type === "source_trace" &&
+      sourcePin1 !== undefined &&
+      sourceGndNet !== undefined &&
+      element.connected_source_port_ids.includes(sourcePin1.source_port_id) &&
+      element.connected_source_net_ids.includes(sourceGndNet.source_net_id),
+  )
+  const sourcePad1Net = sourceGndTrace ? sourceGndNet?.name ?? null : null
+  const sourcePad15Net = internallyConnectedPinNumbers.some(
+    (group) => group.includes(1) && group.includes(15),
+  )
+    ? sourcePad1Net
+    : null
+
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   const output = converter.getOutputString()
@@ -113,19 +120,42 @@ test("export nets for internally connected pads", async () => {
   const exportedNetByPad = new Map(
     padNets.map(({ number, net }) => [number, net]),
   )
-  const visualizationCircuit = new Circuit()
-  visualizationCircuit.add(
-    <ExportedPadNetPcb
+  const sourceVisualization = new Circuit()
+  sourceVisualization.add(
+    <PadNetComparisonPcb
+      title="CIRCUIT JSON PAD NETS"
+      pad1Net={sourcePad1Net}
+      pad15Net={sourcePad15Net}
+    />,
+  )
+  await sourceVisualization.renderUntilSettled()
+
+  const kicadVisualization = new Circuit()
+  kicadVisualization.add(
+    <PadNetComparisonPcb
+      title="KICAD-EXPORTED PAD NETS"
       pad1Net={exportedNetByPad.get("1") ?? null}
       pad15Net={exportedNetByPad.get("15") ?? null}
     />,
   )
-  await visualizationCircuit.renderUntilSettled()
+  await kicadVisualization.renderUntilSettled()
+  const kicadVisualizationConverter = new CircuitJsonToKicadPcbConverter(
+    kicadVisualization.getCircuitJson(),
+  )
+  kicadVisualizationConverter.runUntilFinished()
+  const kicadSnapshot = await takeKicadSnapshot({
+    kicadFileContent: kicadVisualizationConverter.getOutputString(),
+    kicadFileType: "pcb",
+    pcbDrillHoleColor: "white",
+  })
 
   await expect(
-    takeCircuitJsonSnapshot({
-      circuitJson: visualizationCircuit.getCircuitJson(),
-      outputType: "pcb",
-    }),
+    stackCircuitJsonKicadPngs(
+      await takeCircuitJsonSnapshot({
+        circuitJson: sourceVisualization.getCircuitJson(),
+        outputType: "pcb",
+      }),
+      kicadSnapshot.generatedFileContent["temp_file.png"]!,
+    ),
   ).toMatchPngSnapshot(import.meta.path)
 })
