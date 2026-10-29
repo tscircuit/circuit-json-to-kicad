@@ -72,8 +72,11 @@ interface KicadProProject {
     }
     last_net_id: number
     classes: KicadProNetClass[]
-    /** KiCad net-settings schema v1 stores one class name per exported net name. */
-    netclass_assignments?: Record<string, string>
+    /** User-authored project assignments shown in Board Setup > Net Classes. */
+    netclass_patterns: Array<{
+      netclass: string
+      pattern: string
+    }>
   }
   pcbnew: {
     page_layout_descr_file: string
@@ -225,7 +228,7 @@ export class CircuitJsonToKicadProConverter {
       netClassNameByTraceWidth.set(traceWidth, netClassName)
     }
 
-    const netclassAssignments: Record<string, string> = {}
+    const netClassByNetName = new Map<string, string>()
     const sourceNetsWithTraceWidths = sourceNets
       .filter((sourceNet) => sourceNet.trace_width !== undefined)
       .map((sourceNet) => {
@@ -247,7 +250,7 @@ export class CircuitJsonToKicadProConverter {
 
     for (const { sourceNet, netName } of sourceNetsWithTraceWidths) {
       const netClassName = netClassNameByTraceWidth.get(sourceNet.trace_width!)!
-      const existingNetClassName = netclassAssignments[netName]
+      const existingNetClassName = netClassByNetName.get(netName)
 
       if (
         existingNetClassName !== undefined &&
@@ -258,9 +261,12 @@ export class CircuitJsonToKicadProConverter {
         )
       }
 
-      netclassAssignments[netName] = netClassName
+      netClassByNetName.set(netName, netClassName)
     }
-    const hasNetclassAssignments = Object.keys(netclassAssignments).length > 0
+    const netclassPatterns = Array.from(
+      netClassByNetName,
+      ([pattern, netclass]) => ({ pattern, netclass }),
+    )
 
     this.project = {
       version: 1,
@@ -298,9 +304,7 @@ export class CircuitJsonToKicadProConverter {
         // Retained as 0 for output compatibility; KiCad does not use this field because electrical net IDs live in the .kicad_pcb file.
         last_net_id: 0,
         classes: netClasses,
-        ...(hasNetclassAssignments
-          ? { netclass_assignments: netclassAssignments }
-          : {}),
+        netclass_patterns: netclassPatterns,
       },
       pcbnew: {
         page_layout_descr_file: "",
