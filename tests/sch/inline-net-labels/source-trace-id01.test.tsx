@@ -3,6 +3,7 @@ import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { applyToPoint } from "transformation-matrix"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
+import { getNativeNetParity } from "../../fixtures/get-native-net-conflicts"
 
 test("source-trace-backed inline labels connect without a source_net record", async () => {
   const circuit = new Circuit()
@@ -63,4 +64,5 @@ test("source-trace-backed inline labels connect without a source_net record", as
       (net) => net.pins.includes("R1.2") || net.pins.includes("R2.1"),
     ),
   ).toEqual([{ name: "/SIGNAL", pins: ["R1.2", "R2.1"] }])
+  expect((await getNativeNetParity(circuitJson)).conflicts).toEqual([])
 }, 30_000)

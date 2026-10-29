@@ -51,6 +51,10 @@ export interface ConverterContext {
   kicadSch?: KicadSch
   kicadPcb?: KicadPcb
 
+  /** Shared full-input names and existing local-label keys, before sheet partitioning. */
+  kicadNetNames?: Map<string, string>
+  inlineTraceNetKeys?: Set<string>
+
   /** Scale factor used to convert circuit-json schematic units into KiCad mm */
   kicadSchematicScaleFactor?: number
 
