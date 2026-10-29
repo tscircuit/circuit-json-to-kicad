@@ -28,7 +28,7 @@ exports[`source net trace widths are preserved as KiCad netclass patterns 1`] = 
     ],
     "last_net_id": 0,
     "meta": {
-      "version": 1,
+      "version": 3,
     },
     "netclass_patterns": [
       {
