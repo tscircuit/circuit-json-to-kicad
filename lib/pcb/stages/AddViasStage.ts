@@ -221,6 +221,14 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     // Create a via with deterministic UUID
     const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${via.net?.id ?? 0}`
     const kicadVia = new Via({
+      // KiCad 10 distinguishes blind (one outer layer) from buried (inner-only)
+      // vias. Omitting the token creates a through via.
+      type:
+        viaLayers.includes("F.Cu") && viaLayers.includes("B.Cu")
+          ? undefined
+          : viaLayers.includes("F.Cu") || viaLayers.includes("B.Cu")
+            ? "blind"
+            : "buried",
       at: [transformedPos.x, transformedPos.y],
       size: viaSize,
       drill: viaDrill,
