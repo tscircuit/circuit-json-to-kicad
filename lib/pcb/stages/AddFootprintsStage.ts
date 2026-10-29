@@ -5,6 +5,7 @@ import type {
   PcbHole,
   PcbFabricationNotePath,
   PcbSilkscreenPath,
+  PcbSolderPaste,
 } from "circuit-json"
 import {
   getReferenceDesignator,
@@ -42,6 +43,7 @@ import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
+import { convertSolderPaste } from "./footprints-stage-converters/convertSolderPaste"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -267,6 +269,28 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       this.ctx,
     )
     fpPads.push(...smdPads)
+
+    const pcbSolderPaste =
+      this.ctx.db.pcb_solder_paste?.list().filter((paste: PcbSolderPaste) => {
+        if (paste.pcb_component_id === component.pcb_component_id) {
+          return true
+        }
+        const linkedPad = paste.pcb_smtpad_id
+          ? this.ctx.db.pcb_smtpad.get(paste.pcb_smtpad_id)
+          : undefined
+        return (
+          !paste.pcb_component_id &&
+          linkedPad?.pcb_component_id === component.pcb_component_id
+        )
+      }) || []
+
+    fpPads.push(
+      ...convertSolderPaste({
+        solderPaste: pcbSolderPaste,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
+    )
 
     const pcbPlatedHoles =
       this.ctx.db.pcb_plated_hole

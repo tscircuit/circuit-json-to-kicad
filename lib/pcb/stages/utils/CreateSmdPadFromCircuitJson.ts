@@ -23,7 +23,6 @@ import { generateDeterministicUuid } from "./generateDeterministicUuid"
  */
 export function createSmdPadFromCircuitJson({
   pcbPad,
-  hasSolderPaste,
   componentCenter,
   padNumber,
   componentRotation = 0,
@@ -31,7 +30,6 @@ export function createSmdPadFromCircuitJson({
   componentId,
 }: {
   pcbPad: PcbSmtPad
-  hasSolderPaste: boolean
   componentCenter: { x: number; y: number }
   padNumber: number | string
   componentRotation?: number
@@ -159,7 +157,6 @@ export function createSmdPadFromCircuitJson({
     size: padSize,
     layers: [
       `${padLayer}`,
-      ...(hasSolderPaste ? [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`] : []),
       ...(pcbPad.is_covered_with_solder_mask
         ? []
         : [`${padLayer === "F.Cu" ? "F" : "B"}.Mask`]),

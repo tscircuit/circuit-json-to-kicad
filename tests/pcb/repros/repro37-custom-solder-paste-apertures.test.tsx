@@ -197,7 +197,7 @@ const SolderPasteShapeVariants = () => (
   </board>
 )
 
-test("repro37: custom solder-paste aperture geometry is lost", async () => {
+test("repro37: custom solder-paste aperture geometry is preserved", async () => {
   const circuit = new Circuit()
   circuit.add(<CustomSolderPasteApertures />)
   await circuit.renderUntilSettled()
@@ -218,12 +218,24 @@ test("repro37: custom solder-paste aperture geometry is lost", async () => {
     ),
   )
 
-  // The source has seven explicit paste apertures. The current export keeps
-  // only the two linked-pad paste flags, expands them to the copper-pad
-  // geometry, and drops the four windows plus the standalone circle.
-  expect(exportedPastePads).toHaveLength(2)
-  expect(exportedPastePads.some((pad) => pad.size?.width === 4)).toBe(true)
-  expect(exportedPastePads.some((pad) => pad.shape === "custom")).toBe(true)
+  expect(
+    exportedPastePads
+      .map((pad) => ({
+        shape: pad.shape,
+        width: pad.size?.width,
+        height: pad.size?.height,
+        layers: pad.layers?.layers,
+      }))
+      .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+  ).toEqual([
+    { shape: "circle", width: 2, height: 2, layers: ["F.Paste"] },
+    { shape: "custom", width: 0.001, height: 0.001, layers: ["F.Paste"] },
+    { shape: "rect", width: 1.5, height: 1.5, layers: ["F.Paste"] },
+    { shape: "rect", width: 1.5, height: 1.5, layers: ["F.Paste"] },
+    { shape: "rect", width: 1.5, height: 1.5, layers: ["F.Paste"] },
+    { shape: "rect", width: 1.5, height: 1.5, layers: ["F.Paste"] },
+    { shape: "rect", width: 3, height: 2, layers: ["F.Paste"] },
+  ])
 
   const circuitJsonSvg = convertCircuitJsonToPcbSvg(circuitJson, {
     width: 900,

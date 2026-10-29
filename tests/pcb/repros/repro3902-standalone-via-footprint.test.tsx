@@ -55,7 +55,7 @@ test("repro: standalone vias export an extra anonymous footprint", async () => {
       },
       {
         "libraryLink": "tscircuit:resistor_res0402",
-        "padCount": 2,
+        "padCount": 4,
         "reference": "R1",
       },
     ]
