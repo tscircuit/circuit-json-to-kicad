@@ -3,6 +3,7 @@
 exports[`repro: KiCad hole clearance uses trace-to-pad clearance 1`] = `
 {
   "generatedRules": {
+    "min_copper_edge_clearance": 0.2,
     "min_hole_clearance": 0.2,
     "min_through_hole_diameter": 0.3,
     "min_track_width": 0.1,

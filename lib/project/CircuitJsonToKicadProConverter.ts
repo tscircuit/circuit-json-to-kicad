@@ -253,6 +253,9 @@ export class CircuitJsonToKicadProConverter {
             min_via_diameter: minViaDiameter,
             min_track_width: minTrackWidth,
             min_through_hole_diameter: minViaDrill, // Minimum Drill Size in kicad ui constraints
+            ...(pcbBoard?.min_board_edge_clearance !== undefined
+              ? { min_copper_edge_clearance: pcbBoard.min_board_edge_clearance }
+              : {}),
           },
         },
         last_opened_board: pcbFilename,
