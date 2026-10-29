@@ -110,7 +110,7 @@ const NetWidthCoupon = ({
   </board>
 )
 
-test("repro: source net trace widths are omitted from KiCad net settings", async () => {
+test("source net trace widths are preserved as KiCad netclass patterns", async () => {
   const circuit = new Circuit()
   circuit.add(<NetTraceWidthsRepro />)
   await circuit.renderUntilSettled()
@@ -128,11 +128,12 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
         net.trace_width !== undefined,
     )
   const generatedNetSettings = converter.getOutput().net_settings
-  const generatedNetClassAssignments = (
-    generatedNetSettings as typeof generatedNetSettings & {
-      netclass_assignments?: Record<string, string>
-    }
-  ).netclass_assignments
+  const generatedNetClassByPattern = new Map(
+    generatedNetSettings.netclass_patterns.map(({ pattern, netclass }) => [
+      pattern,
+      netclass,
+    ]),
+  )
 
   expect({
     sourceNets,
@@ -146,7 +147,7 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
     ]),
   )
   const widthResults = sourceNets.map(({ name, trace_width }) => {
-    const kicadClass = generatedNetClassAssignments?.[name] ?? "Default"
+    const kicadClass = generatedNetClassByPattern.get(name) ?? "Default"
     return {
       netName: name,
       expectedWidth: trace_width,
