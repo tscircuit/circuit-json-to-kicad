@@ -27,15 +27,16 @@ this fixture contains no pour.
 Run with KiCad 10 on PATH, or set `KICAD_CLI` to its executable:
 
 ```sh
-bun test tests/project/board-edge-clearance.test.ts
+bun test tests/project/board-edge-clearance*.test.ts
 ```
 
-The reproduction PR changes no production code. Two `test.failing` assertions
-record the missing project setting and the resulting native KiCad errors.
-The stacked fix makes both ordinary passing tests. A separate passing control
+The original reproduction PR changes no production code. Its two `test.failing`
+assertions record the missing project setting and resulting native KiCad errors.
+The stacked fix makes both ordinary passing tests, with one test per numbered
+file (`board-edge-clearance01.test.ts` through `08.test.ts`). A separate control
 confirms that omitting the setting really triggers KiCad's 0.5000 mm rule.
-KiCad runs in `beforeAll`, outside the expected-failure assertions, so executable
-or process failures fail the suite rather than masquerading as the repro.
+The two native tests use `run-nema34-board-edge-drc.ts`; executable or process
+failures throw and fail the test rather than masquerading as the repro.
 
 Both DRC runs use byte-identical PCB geometry and no suppressed categories.
 The missing-rule control and actual exported project are saved with their full
