@@ -6,7 +6,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro: standalone schematic line styles are lost on export", async () => {
+test("standalone schematic line styles are preserved on export", async () => {
   const circuit = new Circuit()
 
   circuit.add(
@@ -65,8 +65,8 @@ test("repro: standalone schematic line styles are lost on export", async () => {
       type: polyline.stroke?.type,
     })),
   ).toEqual([
-    { width: 0, type: "default" },
-    { width: 0, type: "default" },
+    { width: 1.2, type: "default" },
+    { width: 0.6, type: "dash" },
   ])
 
   const kicadSnapshot = await takeKicadSnapshot({

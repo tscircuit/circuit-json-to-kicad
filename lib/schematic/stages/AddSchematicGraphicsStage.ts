@@ -147,8 +147,9 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         ])
 
         const stroke = new Stroke()
-        stroke.width = 0
-        stroke.type = "default"
+        stroke.width =
+          (line.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
+        stroke.type = line.is_dashed ? "dash" : "default"
         stroke.color = preserveStandaloneGraphics
           ? (parseColor(line.color) ?? DEFAULT_SECTION_LINE_COLOR)
           : DEFAULT_SECTION_LINE_COLOR
