@@ -299,7 +299,8 @@ export class CircuitJsonToKicadProConverter {
       },
       net_settings: {
         meta: {
-          version: 1,
+          // Schema 3 introduced persisted netclass_patterns.
+          version: 3,
         },
         // Retained as 0 for output compatibility; KiCad does not use this field because electrical net IDs live in the .kicad_pcb file.
         last_net_id: 0,
