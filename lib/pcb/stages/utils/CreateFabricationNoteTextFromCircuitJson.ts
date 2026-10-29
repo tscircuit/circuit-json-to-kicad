@@ -77,9 +77,13 @@ export function createFabricationNoteTextFromCircuitJson({
     textEffects.justify = justify
   }
 
+  const rotation =
+    textElement.type === "pcb_fabrication_note_text"
+      ? (textElement.ccw_rotation ?? 0)
+      : 0
+
   // Create position object (At constructor expects an array: [x, y, angle])
-  // Fabrication notes don't have a rotation property in the interface
-  const position = new At([transformedPos.x, transformedPos.y, 0])
+  const position = new At([transformedPos.x, transformedPos.y, rotation])
 
   // Create a graphics text element
   const grText = new GrText({

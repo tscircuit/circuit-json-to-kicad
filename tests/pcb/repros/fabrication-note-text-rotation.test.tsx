@@ -6,7 +6,7 @@ import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadP
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
-test("repro: fabrication note text rotation is lost on export", async () => {
+test("fabrication note text rotation is preserved on export", async () => {
   const circuit = new Circuit()
 
   circuit.add(
@@ -54,7 +54,7 @@ test("repro: fabrication note text rotation is lost on export", async () => {
       }
     }),
   ).toEqual([
-    { text: "ROTATED 37 DEG", angle: 0 },
+    { text: "ROTATED 37 DEG", angle: 37 },
     { text: "0 DEG CONTROL", angle: 0 },
   ])
 
