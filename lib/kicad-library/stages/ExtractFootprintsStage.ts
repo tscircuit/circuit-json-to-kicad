@@ -278,8 +278,10 @@ export class ExtractFootprintsStage extends ConverterStage<
     for (let i = 0; i < pads.length; i++) {
       const pad = pads[i]
       if (pad) {
+        const padIdentity =
+          pad.number === "" ? `unnumbered-${i}` : (pad.number ?? i)
         pad.uuid = generateDeterministicUuid(
-          `${footprintName}-pad-${pad.number ?? i}`,
+          `${footprintName}-pad-${padIdentity}`,
         )
         pad.net = undefined
       }

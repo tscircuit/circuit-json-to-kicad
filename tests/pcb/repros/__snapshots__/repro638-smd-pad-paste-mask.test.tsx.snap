@@ -5,7 +5,6 @@ exports[`pcb repro638 SMD pad paste and mask layers 1`] = `
   {
     "layers": [
       "F.Cu",
-      "F.Paste",
       "F.Mask",
     ],
     "shape": "rect",
@@ -25,9 +24,20 @@ exports[`pcb repro638 SMD pad paste and mask layers 1`] = `
   },
   {
     "layers": [
+      "F.Paste",
+    ],
+    "shape": "rect",
+  },
+  {
+    "layers": [
       "B.Cu",
-      "B.Paste",
       "B.Mask",
+    ],
+    "shape": "rect",
+  },
+  {
+    "layers": [
+      "B.Paste",
     ],
     "shape": "rect",
   },

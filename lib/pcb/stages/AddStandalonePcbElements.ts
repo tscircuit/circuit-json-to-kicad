@@ -7,6 +7,7 @@ import type {
   PcbHoleCircularWithRectPad,
   PcbHoleRotatedPillWithRectPad,
   PcbSmtPad,
+  PcbSolderPaste,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
@@ -17,12 +18,18 @@ import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles
 import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
+import {
+  createSolderPastePadFromCircuitJson,
+  getSolderPasteCenter,
+} from "./utils/CreateSolderPastePadFromCircuitJson"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
 > {
-  private unprocessedElements: Array<PcbHole | PcbPlatedHole | PcbSmtPad> = []
+  private unprocessedElements: Array<
+    PcbHole | PcbPlatedHole | PcbSmtPad | PcbSolderPaste
+  > = []
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
@@ -35,6 +42,9 @@ export class AddStandalonePcbElements extends ConverterStage<
       ),
       ...(this.ctx.db.pcb_smtpad.list() as PcbSmtPad[]).filter(
         (pad) => !pad.pcb_component_id,
+      ),
+      ...(this.ctx.db.pcb_solder_paste.list() as PcbSolderPaste[]).filter(
+        (paste) => !paste.pcb_component_id && !paste.pcb_smtpad_id,
       ),
     ]
   }
@@ -69,16 +79,44 @@ export class AddStandalonePcbElements extends ConverterStage<
         uuid: generateDeterministicUuid(footprintSeed),
       })
 
+      const linkedSolderPaste = (
+        this.ctx.db.pcb_solder_paste.list() as PcbSolderPaste[]
+      ).filter((paste) => paste.pcb_smtpad_id === pcbPad.pcb_smtpad_id)
+
       footprint.fpPads = [
         createSmdPadFromCircuitJson({
           pcbPad,
-          hasSolderPaste: this.ctx.db.pcb_solder_paste
-            .list()
-            .some((paste) => paste.pcb_smtpad_id === pcbPad.pcb_smtpad_id),
           componentCenter: padCenter,
           padNumber: 1,
           componentRotation: 0,
           componentId: pcbPad.pcb_smtpad_id,
+        }),
+        ...linkedSolderPaste.map((solderPaste) =>
+          createSolderPastePadFromCircuitJson({
+            solderPaste,
+            componentCenter: padCenter,
+          }),
+        ),
+      ]
+      applyInferredFootprintType(footprint)
+      const footprints = kicadPcb.footprints
+      footprints.push(footprint)
+      kicadPcb.footprints = footprints
+    } else if (elm.type === "pcb_solder_paste") {
+      const center = getSolderPasteCenter(elm)
+      const footprintSeed = `standalone_solder_paste:${elm.pcb_solder_paste_id}`
+      const kicadPos = applyToPoint(c2kMatPcb, center)
+      const footprint = new Footprint({
+        libraryLink: `tscircuit:solderpaste_${elm.shape}`,
+        layer: elm.layer === "bottom" ? "B.Cu" : "F.Cu",
+        at: [kicadPos.x, kicadPos.y, 0],
+        uuid: generateDeterministicUuid(footprintSeed),
+      })
+
+      footprint.fpPads = [
+        createSolderPastePadFromCircuitJson({
+          solderPaste: elm,
+          componentCenter: center,
         }),
       ]
       applyInferredFootprintType(footprint)
