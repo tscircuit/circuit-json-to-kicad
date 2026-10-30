@@ -114,16 +114,16 @@ test("repro28: source pin electrical types are preserved in KiCad", async () => 
   )
   expect(pinTypes).toMatchInlineSnapshot(`
     {
-      "BIDIRECTIONAL": "passive",
-      "INPUT": "passive",
-      "OPEN_COLLECTOR": "passive",
-      "OPEN_DRAIN": "passive",
-      "OPEN_EMITTER": "passive",
-      "OUTPUT": "passive",
+      "BIDIRECTIONAL": "bidirectional",
+      "INPUT": "input",
+      "OPEN_COLLECTOR": "open_collector",
+      "OPEN_DRAIN": "open_collector",
+      "OPEN_EMITTER": "open_emitter",
+      "OUTPUT": "output",
       "PASSIVE": "passive",
-      "POWER_IN": "passive",
-      "POWER_OUT": "passive",
-      "TRI_STATE": "passive",
+      "POWER_IN": "power_in",
+      "POWER_OUT": "power_out",
+      "TRI_STATE": "tri_state",
     }
   `)
 

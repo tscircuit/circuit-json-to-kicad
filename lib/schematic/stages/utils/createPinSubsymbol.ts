@@ -16,6 +16,7 @@ import type { SchSymbol } from "schematic-symbols"
 import { calculatePinPosition } from "./calculatePinPosition"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { toSchematicInternalUnits } from "./schematicCoordinates"
+import { getKicadPinElectricalType } from "./getKicadPinElectricalType"
 
 type PortSide = "left" | "right" | "up" | "down"
 type SymbolPort = SchSymbol["ports"][number] & {
@@ -201,7 +202,6 @@ export function createPinSubsymbol({
 
   for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
-    pin.pinElectricalType = "passive"
     pin.pinGraphicStyle = "line"
 
     const { x, y, angle } = calculatePinPosition({
@@ -264,6 +264,7 @@ export function createPinSubsymbol({
     const sourcePort = sourcePorts.find(
       (candidate) => candidate.source_port_id === schematicPort?.source_port_id,
     )
+    pin.pinElectricalType = getKicadPinElectricalType(sourcePort)
     pin._sxNumber = new SymbolPinNumber({
       value: getPhysicalPinName(sourcePort) ?? pinNum,
       effects: numEffects,
