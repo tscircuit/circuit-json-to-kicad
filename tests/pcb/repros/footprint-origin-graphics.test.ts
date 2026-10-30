@@ -37,10 +37,22 @@ function expectGraphicsStayInBoardSpace(circuitJson: CircuitJson) {
   const components = circuitJson.filter(
     (element) => element.type === "pcb_component",
   )
-  expect(output.footprints).toHaveLength(10)
+  const standaloneSolderPasteCount = circuitJson.filter(
+    (element) =>
+      element.type === "pcb_solder_paste" &&
+      !element.pcb_component_id &&
+      !element.pcb_smtpad_id,
+  ).length
+  expect(output.footprints).toHaveLength(
+    components.length + standaloneSolderPasteCount,
+  )
+  const componentFootprints = output.footprints.filter(
+    (footprint) => !footprint.libraryLink?.startsWith("tscircuit:solderpaste_"),
+  )
+  expect(componentFootprints).toHaveLength(components.length)
 
   for (const [componentIndex, component] of components.entries()) {
-    const footprint = output.footprints[componentIndex]!
+    const footprint = componentFootprints[componentIndex]!
     const position = footprint.position!
     const ccwRotationDegrees = "angle" in position ? (position.angle ?? 0) : 0
     // KiCad places footprint-local points on its PCB in mm (+X right, +Y down).

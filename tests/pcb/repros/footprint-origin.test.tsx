@@ -19,10 +19,13 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
   const output = KicadPcb.parse(converter.getOutputString())[0] as KicadPcb
+  const componentFootprints = output.footprints.filter(
+    (footprint) => !footprint.libraryLink?.startsWith("tscircuit:solderpaste_"),
+  )
   // Points in board-world mm (+X right, +Y up) become KiCad PCB points
   // (+X right, +Y down) through the converter's shared placement transform.
   const boardToKicadTransform = converter.ctx.c2kMatPcb!
-  const labels = output.footprints
+  const labels = componentFootprints
     .map((footprint, footprintIndex) => {
       const referencePad = footprint.fpPads.find((pad) => pad.drill)!
       const modelOffset = footprint.models[0]!.offset!
@@ -36,9 +39,18 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
   await expect(sharp(Buffer.from(svg)).png().toBuffer()).toMatchPngSnapshot(
     import.meta.path,
   )
-  expect(output.footprints).toHaveLength(8)
+  const standaloneSolderPasteCount = circuitJson.filter(
+    (element) =>
+      element.type === "pcb_solder_paste" &&
+      !element.pcb_component_id &&
+      !element.pcb_smtpad_id,
+  ).length
+  expect(output.footprints).toHaveLength(
+    components.length + standaloneSolderPasteCount,
+  )
+  expect(componentFootprints).toHaveLength(components.length)
   for (const [componentIndex, component] of components.entries()) {
-    const footprint = output.footprints[componentIndex]!
+    const footprint = componentFootprints[componentIndex]!
     const expectedFootprintPosition = applyToPoint(
       boardToKicadTransform,
       component.footprint_origin!,
@@ -58,15 +70,18 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
   const legacy = KicadPcb.parse(
     legacyConverter.getOutputString(),
   )[0] as KicadPcb
+  const legacyComponentFootprints = legacy.footprints.filter(
+    (footprint) => !footprint.libraryLink?.startsWith("tscircuit:solderpaste_"),
+  )
   for (const [componentIndex, component] of components.entries()) {
     const expectedLegacyPosition = applyToPoint(
       boardToKicadTransform,
       component.center,
     )
-    expect(legacy.footprints[componentIndex]!.position!.x).toBeCloseTo(
+    expect(legacyComponentFootprints[componentIndex]!.position!.x).toBeCloseTo(
       expectedLegacyPosition.x,
     )
-    expect(legacy.footprints[componentIndex]!.position!.y).toBeCloseTo(
+    expect(legacyComponentFootprints[componentIndex]!.position!.y).toBeCloseTo(
       expectedLegacyPosition.y,
     )
   }

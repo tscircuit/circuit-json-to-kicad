@@ -88,9 +88,20 @@ test("pcb repro28 fiducial without pcb_solder_paste omits F.Paste", async () => 
   )
 
   expect(resistorFootprint).toBeDefined()
+  const resistorCopperPads = resistorFootprint!.fpPads.filter((pad) =>
+    pad.layers?.layers.includes("F.Cu"),
+  )
+  const resistorPastePads = resistorFootprint!.fpPads.filter((pad) =>
+    pad.layers?.layers.includes("F.Paste"),
+  )
+  expect(resistorCopperPads).toHaveLength(2)
   expect(
-    resistorFootprint!.fpPads.every((pad) =>
-      pad.layers?.layers.includes("F.Paste"),
+    resistorCopperPads.every((pad) => !pad.layers?.layers.includes("F.Paste")),
+  ).toBe(true)
+  expect(resistorPastePads).toHaveLength(2)
+  expect(
+    resistorPastePads.every(
+      (pad) => pad.layers?.layers.join(",") === "F.Paste",
     ),
   ).toBe(true)
   expect(fiducialFootprint).toBeDefined()
