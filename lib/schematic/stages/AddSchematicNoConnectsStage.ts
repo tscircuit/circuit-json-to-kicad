@@ -48,4 +48,8 @@ export class AddSchematicNoConnectsStage extends ConverterStage<
     kicadSch.noConnects = [...kicadSch.noConnects, ...noConnects]
     this.finished = true
   }
+
+  override getOutput(): KicadSch {
+    return this.ctx.kicadSch!
+  }
 }
