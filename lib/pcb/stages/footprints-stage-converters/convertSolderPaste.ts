@@ -1,4 +1,4 @@
-import type { PcbSolderPaste } from "circuit-json"
+import type { PcbSolderPaste, Point } from "circuit-json"
 import type { FootprintPad } from "kicadts"
 import { createSolderPastePadFromCircuitJson } from "../utils/CreateSolderPastePadFromCircuitJson"
 
@@ -8,7 +8,7 @@ export const convertSolderPaste = ({
   componentRotation = 0,
 }: {
   solderPaste: PcbSolderPaste[]
-  componentCenter: { x: number; y: number }
+  componentCenter: Point
   componentRotation?: number
 }): FootprintPad[] =>
   solderPaste.map((aperture) =>

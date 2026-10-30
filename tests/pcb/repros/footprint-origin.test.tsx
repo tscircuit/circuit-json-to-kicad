@@ -20,7 +20,7 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
   converter.runUntilFinished()
   const output = KicadPcb.parse(converter.getOutputString())[0] as KicadPcb
   const componentFootprints = output.footprints.filter(
-    (footprint) => footprint.models.length > 0,
+    (footprint) => !footprint.libraryLink?.startsWith("tscircuit:solderpaste_"),
   )
   // Points in board-world mm (+X right, +Y up) become KiCad PCB points
   // (+X right, +Y down) through the converter's shared placement transform.
@@ -71,7 +71,7 @@ test("KiCad preserves authored footprint origins and legacy center fallback", as
     legacyConverter.getOutputString(),
   )[0] as KicadPcb
   const legacyComponentFootprints = legacy.footprints.filter(
-    (footprint) => footprint.models.length > 0,
+    (footprint) => !footprint.libraryLink?.startsWith("tscircuit:solderpaste_"),
   )
   for (const [componentIndex, component] of components.entries()) {
     const expectedLegacyPosition = applyToPoint(
