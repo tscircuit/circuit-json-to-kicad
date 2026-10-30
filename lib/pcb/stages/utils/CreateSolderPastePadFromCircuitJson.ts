@@ -1,4 +1,4 @@
-import type { PcbSolderPaste } from "circuit-json"
+import type { PcbSolderPaste, Point } from "circuit-json"
 import earcut from "earcut"
 import {
   FootprintPad,
@@ -8,16 +8,10 @@ import {
   Pts,
   Xy,
 } from "kicadts"
-import {
-  applyToPoint,
-  compose,
-  rotate,
-  scale,
-  translate,
-} from "transformation-matrix"
+import { applyToPoint, compose, scale, translate } from "transformation-matrix"
+import { getBoardToFootprintTransform } from "../footprints-stage-converters/get-board-to-footprint-transform"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
-type Point = { x: number; y: number }
 type Triangle = [Point, Point, Point]
 
 const ELLIPSE_SEGMENT_COUNT = 64
@@ -159,9 +153,7 @@ const createFilledPolygonPrimitives = ({
   return primitives
 }
 
-export const getSolderPasteCenter = (
-  solderPaste: PcbSolderPaste,
-): { x: number; y: number } => {
+export const getSolderPasteCenter = (solderPaste: PcbSolderPaste): Point => {
   if ("x" in solderPaste && "y" in solderPaste) {
     return { x: solderPaste.x, y: solderPaste.y }
   }
@@ -183,7 +175,7 @@ export const createSolderPastePadFromCircuitJson = ({
   componentRotation = 0,
 }: {
   solderPaste: PcbSolderPaste
-  componentCenter: { x: number; y: number }
+  componentCenter: Point
   componentRotation?: number
 }): FootprintPad => {
   const polygonAnchor =
@@ -191,13 +183,10 @@ export const createSolderPastePadFromCircuitJson = ({
       ? getPolygonAnchor(solderPaste.points, solderPaste.holes)
       : undefined
   const center = polygonAnchor?.center ?? getSolderPasteCenter(solderPaste)
-  const boardToFootprint = compose(
-    componentRotation !== 0
-      ? rotate((componentRotation * Math.PI) / 180)
-      : { a: 1, b: 0, c: 0, d: 1, e: 0, f: 0 },
-    scale(1, -1),
-    translate(-componentCenter.x, -componentCenter.y),
-  )
+  const boardToFootprint = getBoardToFootprintTransform({
+    footprintOrigin: componentCenter,
+    ccwRotationDegrees: componentRotation,
+  })
   const position = applyToPoint(boardToFootprint, center)
 
   let shape: string
@@ -242,18 +231,14 @@ export const createSolderPastePadFromCircuitJson = ({
       shape = "roundrect"
       size = [solderPaste.width, solderPaste.height]
       roundrectRatio =
-        (solderPaste.radius ??
-          Math.min(solderPaste.width, solderPaste.height) / 2) /
-        Math.min(solderPaste.width, solderPaste.height)
+        solderPaste.radius / Math.min(solderPaste.width, solderPaste.height)
       break
     case "rotated_pill":
       shape = "roundrect"
       size = [solderPaste.width, solderPaste.height]
       rotation = solderPaste.ccw_rotation
       roundrectRatio =
-        (solderPaste.radius ??
-          Math.min(solderPaste.width, solderPaste.height) / 2) /
-        Math.min(solderPaste.width, solderPaste.height)
+        solderPaste.radius / Math.min(solderPaste.width, solderPaste.height)
       break
     case "polygon": {
       if (!polygonAnchor) {
