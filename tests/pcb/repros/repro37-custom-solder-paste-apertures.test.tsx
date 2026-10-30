@@ -5,7 +5,7 @@ import type {
   PcbSolderPaste,
   PcbSolderPasteRotatedRect,
 } from "circuit-json"
-import { KicadPcb } from "kicadts"
+import { KicadPcb, PadPrimitiveGrPoly } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import sharp from "sharp"
 import { Circuit } from "tscircuit"
@@ -270,10 +270,9 @@ test("repro37: custom solder-paste aperture geometry is preserved", async () => 
   ).toMatchPngSnapshot(import.meta.path)
 }, 120_000)
 
-test("repro37: polygon solder-paste holes are lost", async () => {
+test("repro37: polygon solder-paste apertures preserve holes", async () => {
   // Polygon holes are part of Circuit JSON but are not currently exposed by
-  // the <solderpaste> JSX element, so this adds only that unsupported JSX shape
-  // to the otherwise TSX-based visual reproduction.
+  // the <solderpaste> JSX element, so this exercises that typed schema shape.
   const solderPaste = {
     type: "pcb_solder_paste",
     shape: "polygon",
@@ -300,14 +299,16 @@ test("repro37: polygon solder-paste holes are lost", async () => {
   converter.runUntilFinished()
   const output = converter.getOutputString()
   const pcb = KicadPcb.parse(output)[0] as KicadPcb
-  const exportedPastePads = pcb.footprints.flatMap((footprint) =>
-    footprint.fpPads.filter((pad) =>
-      pad.layers?.layers.some((layer) => layer.endsWith(".Paste")),
-    ),
-  )
+  const pastePad = pcb.footprints[0]?.fpPads[0]
+  const graphics = pastePad?.primitives?.graphics ?? []
 
-  // The standalone polygon aperture, including its hole, is dropped.
-  expect(exportedPastePads).toHaveLength(0)
+  expect(graphics.length).toBeGreaterThan(1)
+  expect(
+    graphics.every(
+      (graphic) =>
+        graphic instanceof PadPrimitiveGrPoly && graphic.contours.length === 1,
+    ),
+  ).toBe(true)
 
   const kicadSnapshot = await takeKicadSnapshot({
     kicadFileContent: output,
@@ -335,7 +336,6 @@ test("repro37: polygon solder-paste holes are lost", async () => {
     ),
   ).toMatchPngSnapshot(import.meta.path, "repro37-polygon-hole")
 }, 120_000)
-
 test("repro37: additional solder-paste shapes are lost", async () => {
   const circuit = new Circuit()
   circuit.add(<SolderPasteShapeVariants />)
