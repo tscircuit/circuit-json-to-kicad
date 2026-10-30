@@ -110,7 +110,7 @@ const NetWidthCoupon = ({
   </board>
 )
 
-test("repro: source net trace widths are omitted from KiCad net settings", async () => {
+test("source net trace widths are preserved as KiCad netclass patterns", async () => {
   const circuit = new Circuit()
   circuit.add(<NetTraceWidthsRepro />)
   await circuit.renderUntilSettled()
@@ -128,11 +128,12 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
         net.trace_width !== undefined,
     )
   const generatedNetSettings = converter.getOutput().net_settings
-  const generatedNetClassAssignments = (
-    generatedNetSettings as typeof generatedNetSettings & {
-      netclass_assignments?: Record<string, string>
-    }
-  ).netclass_assignments
+  const generatedNetClassByPattern = new Map(
+    generatedNetSettings.netclass_patterns.map(({ pattern, netclass }) => [
+      pattern,
+      netclass,
+    ]),
+  )
 
   expect({
     sourceNets,
@@ -146,7 +147,7 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
     ]),
   )
   const widthResults = sourceNets.map(({ name, trace_width }) => {
-    const kicadClass = generatedNetClassAssignments?.[name] ?? "Default"
+    const kicadClass = generatedNetClassByPattern.get(name) ?? "Default"
     return {
       netName: name,
       expectedWidth: trace_width,
@@ -185,4 +186,40 @@ test("repro: source net trace widths are omitted from KiCad net settings", async
       kicadSnapshot.generatedFileContent["temp_file.png"]!,
     ),
   ).toMatchPngSnapshot(import.meta.path)
+})
+
+test("conflicting widths for the same exported KiCad net name are rejected", async () => {
+  const circuit = new Circuit()
+  circuit.add(
+    <board width="20mm" height="20mm" routingDisabled>
+      <subcircuit name="BLOCK_A">
+        <net name="SENSE" nominalTraceWidth="0.2mm" />
+        <resistor
+          name="R1"
+          resistance="1k"
+          footprint="0402"
+          connections={{ pin1: "net.SENSE", pin2: "net.GND" }}
+        />
+      </subcircuit>
+      <subcircuit name="BLOCK_B">
+        <net name="SENSE" nominalTraceWidth="0.5mm" />
+        <resistor
+          name="R1"
+          resistance="1k"
+          footprint="0402"
+          connections={{ pin1: "net.SENSE", pin2: "net.GND" }}
+        />
+      </subcircuit>
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+
+  expect(
+    () =>
+      new CircuitJsonToKicadProConverter(circuit.getCircuitJson(), {
+        projectName: "conflicting-net-trace-widths",
+      }),
+  ).toThrow(
+    'Cannot preserve conflicting trace widths for KiCad net "SENSE": Trace Width 0.2 mm and Trace Width 0.5 mm',
+  )
 })
