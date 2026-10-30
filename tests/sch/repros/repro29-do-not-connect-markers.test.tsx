@@ -52,7 +52,18 @@ test("repro29: do-not-connect source pins emit KiCad no-connect markers", async 
   const schematic = parseKicadSch(output)
   expect(
     schematic.noConnects.map((marker) => [marker.at?.x, marker.at?.y]),
-  ).toMatchInlineSnapshot(`[]`)
+  ).toMatchInlineSnapshot(`
+    [
+      [
+        132,
+        106.5,
+      ],
+      [
+        165,
+        106.5,
+      ],
+    ]
+  `)
 
   await Bun.write(
     "./debug-output/repro29-do-not-connect-markers.kicad_sch",
