@@ -170,7 +170,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // KiCad vias must list exactly two layers (top-most + bottom-most span);
     // Circuit JSON may enumerate every traversed copper layer.
-    return getViaLayerSpan(kicadLayers, numLayers)
+    return getViaLayerSpan(kicadLayers)
   }
 
   override _step(): void {
