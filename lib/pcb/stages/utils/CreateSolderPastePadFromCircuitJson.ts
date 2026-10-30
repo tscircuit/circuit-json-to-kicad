@@ -1,4 +1,5 @@
 import type { PcbSolderPaste } from "circuit-json"
+import earcut from "earcut"
 import {
   FootprintPad,
   PadOptions,
@@ -15,6 +16,88 @@ import {
   translate,
 } from "transformation-matrix"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
+
+type Point = { x: number; y: number }
+
+const getDistance = (a: Point, b: Point): number =>
+  Math.hypot(a.x - b.x, a.y - b.y)
+
+const getPolygonAnchor = (
+  outerContour: Point[],
+  holes: Point[][] = [],
+): { center: Point; diameter: number } => {
+  const flattenedPoints: number[] = []
+  const holeIndices: number[] = []
+  let pointCount = 0
+
+  const addContour = (contour: Point[]) => {
+    for (const point of contour) {
+      flattenedPoints.push(point.x, point.y)
+    }
+    pointCount += contour.length
+  }
+
+  addContour(outerContour)
+  for (const hole of holes) {
+    holeIndices.push(pointCount)
+    addContour(hole)
+  }
+
+  const triangleIndices = earcut(flattenedPoints, holeIndices, 2)
+  let bestTriangle: { center: Point; inradius: number } | undefined
+
+  for (let i = 0; i < triangleIndices.length; i += 3) {
+    const aIndex = triangleIndices[i]
+    const bIndex = triangleIndices[i + 1]
+    const cIndex = triangleIndices[i + 2]
+    if (aIndex === undefined || bIndex === undefined || cIndex === undefined) {
+      continue
+    }
+
+    const a = {
+      x: flattenedPoints[aIndex * 2]!,
+      y: flattenedPoints[aIndex * 2 + 1]!,
+    }
+    const b = {
+      x: flattenedPoints[bIndex * 2]!,
+      y: flattenedPoints[bIndex * 2 + 1]!,
+    }
+    const c = {
+      x: flattenedPoints[cIndex * 2]!,
+      y: flattenedPoints[cIndex * 2 + 1]!,
+    }
+
+    const sideA = getDistance(b, c)
+    const sideB = getDistance(c, a)
+    const sideC = getDistance(a, b)
+    const perimeter = sideA + sideB + sideC
+    const twiceArea = Math.abs(
+      a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y),
+    )
+    if (perimeter === 0 || twiceArea === 0) continue
+
+    const inradius = twiceArea / perimeter
+    const center = {
+      x: (sideA * a.x + sideB * b.x + sideC * c.x) / perimeter,
+      y: (sideA * a.y + sideB * b.y + sideC * c.y) / perimeter,
+    }
+
+    if (!bestTriangle || inradius > bestTriangle.inradius) {
+      bestTriangle = { center, inradius }
+    }
+  }
+
+  if (!bestTriangle) {
+    throw new Error("Solder-paste polygon must contain a valid filled area")
+  }
+
+  return {
+    center: bestTriangle.center,
+    // KiCad requires a custom-pad anchor. Keep it inside the chosen triangle
+    // so it cannot add material outside the authored paste contour.
+    diameter: Math.min(0.001, bestTriangle.inradius),
+  }
+}
 
 export const getSolderPasteCenter = (
   solderPaste: PcbSolderPaste,
@@ -43,7 +126,11 @@ export const createSolderPastePadFromCircuitJson = ({
   componentCenter: { x: number; y: number }
   componentRotation?: number
 }): FootprintPad => {
-  const center = getSolderPasteCenter(solderPaste)
+  const polygonAnchor =
+    solderPaste.shape === "polygon"
+      ? getPolygonAnchor(solderPaste.points, solderPaste.holes)
+      : undefined
+  const center = polygonAnchor?.center ?? getSolderPasteCenter(solderPaste)
   const boardToFootprint = compose(
     componentRotation !== 0
       ? rotate((componentRotation * Math.PI) / 180)
@@ -97,7 +184,8 @@ export const createSolderPastePadFromCircuitJson = ({
       break
     case "polygon": {
       shape = "custom"
-      size = [0.2, 0.2]
+      const anchorDiameter = polygonAnchor!.diameter
+      size = [anchorDiameter, anchorDiameter]
       options = new PadOptions()
       options.anchor = "circle"
 
