@@ -20,6 +20,8 @@ import { generateDeterministicUuid } from "./generateDeterministicUuid"
 type Point = { x: number; y: number }
 type Triangle = [Point, Point, Point]
 
+const ELLIPSE_SEGMENT_COUNT = 64
+
 const getDistance = (a: Point, b: Point): number =>
   Math.hypot(a.x - b.x, a.y - b.y)
 
@@ -104,6 +106,59 @@ const getPolygonAnchor = (
   }
 }
 
+const getEllipseContour = ({
+  center,
+  width,
+  height,
+}: {
+  center: Point
+  width: number
+  height: number
+}): Point[] => {
+  if (width <= 0 || height <= 0) {
+    throw new Error("Solder-paste oval must have positive dimensions")
+  }
+
+  // KiCad has no elliptical pad primitive. A 64-sided custom polygon keeps
+  // the maximum radial approximation error below 0.13% of the ellipse radius.
+  return Array.from({ length: ELLIPSE_SEGMENT_COUNT }, (_, index) => {
+    const angle = (index / ELLIPSE_SEGMENT_COUNT) * Math.PI * 2
+    return {
+      x: center.x + (width / 2) * Math.cos(angle),
+      y: center.y + (height / 2) * Math.sin(angle),
+    }
+  })
+}
+
+const createFilledPolygonPrimitives = ({
+  contours,
+  center,
+}: {
+  contours: Point[][]
+  center: Point
+}): PadPrimitives => {
+  const toLocalContour = (points: Point[]) =>
+    new Pts(
+      points.map((point) => {
+        const localPoint = applyToPoint(
+          compose(scale(1, -1), translate(-center.x, -center.y)),
+          point,
+        )
+        return new Xy(localPoint.x, localPoint.y)
+      }),
+    )
+
+  const primitives = new PadPrimitives()
+  for (const contour of contours) {
+    const polygon = new PadPrimitiveGrPoly()
+    polygon.contours = [toLocalContour(contour)]
+    polygon.width = 0
+    polygon.filled = true
+    primitives.addGraphic(polygon)
+  }
+  return primitives
+}
+
 export const getSolderPasteCenter = (
   solderPaste: PcbSolderPaste,
 ): { x: number; y: number } => {
@@ -151,6 +206,7 @@ export const createSolderPastePadFromCircuitJson = ({
   let roundrectRatio: number | undefined
   let options: PadOptions | undefined
   let primitives: PadPrimitives | undefined
+  let customContours: Point[][] | undefined
 
   switch (solderPaste.shape) {
     case "circle":
@@ -167,8 +223,20 @@ export const createSolderPastePadFromCircuitJson = ({
       rotation = solderPaste.ccw_rotation
       break
     case "oval":
-      shape = "oval"
-      size = [solderPaste.width, solderPaste.height]
+      shape = "custom"
+      size = [
+        Math.min(0.001, solderPaste.width, solderPaste.height),
+        Math.min(0.001, solderPaste.width, solderPaste.height),
+      ]
+      options = new PadOptions()
+      options.anchor = "circle"
+      customContours = [
+        getEllipseContour({
+          center,
+          width: solderPaste.width,
+          height: solderPaste.height,
+        }),
+      ]
       break
     case "pill":
       shape = "roundrect"
@@ -197,34 +265,20 @@ export const createSolderPastePadFromCircuitJson = ({
       size = [anchorDiameter, anchorDiameter]
       options = new PadOptions()
       options.anchor = "circle"
-
-      const toLocalContour = (points: Array<{ x: number; y: number }>) =>
-        new Pts(
-          points.map((point) => {
-            const localPoint = applyToPoint(
-              compose(scale(1, -1), translate(-center.x, -center.y)),
-              point,
-            )
-            return new Xy(localPoint.x, localPoint.y)
-          }),
-        )
-
-      primitives = new PadPrimitives()
-      const filledContours = solderPaste.holes?.length
+      // KiCad custom-pad primitives are additive. Triangulating apertures
+      // with holes preserves the filled region without filling the holes.
+      customContours = solderPaste.holes?.length
         ? polygonAnchor.triangles
         : [solderPaste.points]
-
-      // KiCad custom-pad primitives are additive. Triangulating apertures with
-      // holes preserves the filled region without incorrectly filling a hole.
-      for (const contour of filledContours) {
-        const polygon = new PadPrimitiveGrPoly()
-        polygon.contours = [toLocalContour(contour)]
-        polygon.width = 0
-        polygon.filled = true
-        primitives.addGraphic(polygon)
-      }
       break
     }
+  }
+
+  if (customContours) {
+    primitives = createFilledPolygonPrimitives({
+      contours: customContours,
+      center,
+    })
   }
 
   const layer = solderPaste.layer === "bottom" ? "B.Paste" : "F.Paste"

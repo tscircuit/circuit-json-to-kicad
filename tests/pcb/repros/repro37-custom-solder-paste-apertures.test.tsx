@@ -336,13 +336,14 @@ test("repro37: polygon solder-paste apertures preserve holes", async () => {
     ),
   ).toMatchPngSnapshot(import.meta.path, "repro37-polygon-hole")
 }, 120_000)
-test("repro37: additional solder-paste shapes are lost", async () => {
+
+test("repro37: all solder-paste shapes, rotations and multiple holes", async () => {
   const circuit = new Circuit()
   circuit.add(<SolderPasteShapeVariants />)
   await circuit.renderUntilSettled()
 
-  // JSX exposes the linked-pad shapes above. Circuit JSON additionally
-  // supports oval apertures and polygon holes directly.
+  // JSX currently exposes the shapes above through <smtpad>. Circuit JSON
+  // additionally supports oval apertures and polygon holes directly.
   const oval = {
     type: "pcb_solder_paste",
     shape: "oval",
@@ -399,10 +400,38 @@ test("repro37: additional solder-paste shapes are lost", async () => {
     ),
   )
 
-  // The four linked-pad flags survive, but the standalone oval and polygon
-  // with two holes are dropped completely.
-  expect(exportedPastePads).toHaveLength(4)
-  expect(exportedPastePads.some((pad) => pad.shape === "custom")).toBe(false)
+  expect(exportedPastePads).toHaveLength(6)
+  expect(
+    exportedPastePads
+      .map((pad) => ({ shape: pad.shape, layers: pad.layers?.layers }))
+      .sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))),
+  ).toEqual([
+    { shape: "custom", layers: ["F.Paste"] },
+    { shape: "custom", layers: ["F.Paste"] },
+    { shape: "rect", layers: ["B.Paste"] },
+    { shape: "rect", layers: ["F.Paste"] },
+    { shape: "roundrect", layers: ["F.Paste"] },
+    { shape: "roundrect", layers: ["F.Paste"] },
+  ])
+
+  const customPads = exportedPastePads.filter((pad) => pad.shape === "custom")
+  const ellipsePad = customPads.find(
+    (pad) =>
+      pad.primitives?.graphics.length === 1 &&
+      pad.primitives.graphics[0] instanceof PadPrimitiveGrPoly &&
+      pad.primitives.graphics[0].contours[0]?.points.length === 64,
+  )
+  const twoHolePad = customPads.find(
+    (pad) => (pad.primitives?.graphics.length ?? 0) > 1,
+  )
+  expect(ellipsePad).toBeDefined()
+  expect(twoHolePad).toBeDefined()
+  expect(
+    twoHolePad?.primitives?.graphics.every(
+      (graphic) =>
+        graphic instanceof PadPrimitiveGrPoly && graphic.contours.length === 1,
+    ),
+  ).toBe(true)
 
   const bottomSourcePaste = sourcePaste.find(
     (paste): paste is PcbSolderPasteRotatedRect =>
