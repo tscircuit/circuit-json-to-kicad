@@ -18,6 +18,7 @@ import {
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
 type Point = { x: number; y: number }
+type Triangle = [Point, Point, Point]
 
 const getDistance = (a: Point, b: Point): number =>
   Math.hypot(a.x - b.x, a.y - b.y)
@@ -25,7 +26,7 @@ const getDistance = (a: Point, b: Point): number =>
 const getPolygonAnchor = (
   outerContour: Point[],
   holes: Point[][] = [],
-): { center: Point; diameter: number } => {
+): { center: Point; diameter: number; triangles: Triangle[] } => {
   const flattenedPoints: number[] = []
   const holeIndices: number[] = []
   let pointCount = 0
@@ -45,6 +46,7 @@ const getPolygonAnchor = (
 
   const triangleIndices = earcut(flattenedPoints, holeIndices, 2)
   let bestTriangle: { center: Point; inradius: number } | undefined
+  const triangles: Triangle[] = []
 
   for (let i = 0; i < triangleIndices.length; i += 3) {
     const aIndex = triangleIndices[i]
@@ -76,6 +78,8 @@ const getPolygonAnchor = (
     )
     if (perimeter === 0 || twiceArea === 0) continue
 
+    triangles.push([a, b, c])
+
     const inradius = twiceArea / perimeter
     const center = {
       x: (sideA * a.x + sideB * b.x + sideC * c.x) / perimeter,
@@ -96,6 +100,7 @@ const getPolygonAnchor = (
     // KiCad requires a custom-pad anchor. Keep it inside the chosen triangle
     // so it cannot add material outside the authored paste contour.
     diameter: Math.min(0.001, bestTriangle.inradius),
+    triangles,
   }
 }
 
@@ -183,8 +188,12 @@ export const createSolderPastePadFromCircuitJson = ({
         Math.min(solderPaste.width, solderPaste.height)
       break
     case "polygon": {
+      if (!polygonAnchor) {
+        throw new Error("Solder-paste polygon is missing its anchor geometry")
+      }
+
       shape = "custom"
-      const anchorDiameter = polygonAnchor!.diameter
+      const anchorDiameter = polygonAnchor.diameter
       size = [anchorDiameter, anchorDiameter]
       options = new PadOptions()
       options.anchor = "circle"
@@ -200,16 +209,20 @@ export const createSolderPastePadFromCircuitJson = ({
           }),
         )
 
-      const polygon = new PadPrimitiveGrPoly()
-      polygon.contours = [
-        toLocalContour(solderPaste.points),
-        ...(solderPaste.holes ?? []).map(toLocalContour),
-      ]
-      polygon.width = 0
-      polygon.filled = true
-
       primitives = new PadPrimitives()
-      primitives.addGraphic(polygon)
+      const filledContours = solderPaste.holes?.length
+        ? polygonAnchor.triangles
+        : [solderPaste.points]
+
+      // KiCad custom-pad primitives are additive. Triangulating apertures with
+      // holes preserves the filled region without incorrectly filling a hole.
+      for (const contour of filledContours) {
+        const polygon = new PadPrimitiveGrPoly()
+        polygon.contours = [toLocalContour(contour)]
+        polygon.width = 0
+        polygon.filled = true
+        primitives.addGraphic(polygon)
+      }
       break
     }
   }
