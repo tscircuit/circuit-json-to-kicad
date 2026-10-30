@@ -17,6 +17,12 @@ import {
 
 const DEFAULT_VIA_OUTER_DIAMETER = 0.8
 const DEFAULT_VIA_HOLE_DIAMETER = 0.4
+const VIA_POSITION_TOLERANCE = 1e-6 // mm
+
+const getViaPositionCell = (via: { x: number; y: number }) => ({
+  x: Math.floor(via.x / VIA_POSITION_TOLERANCE),
+  y: Math.floor(via.y / VIA_POSITION_TOLERANCE),
+})
 
 type ViaLike = {
   pcb_via_id?: string
@@ -59,7 +65,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const seenRouteViaKeys = new Set<string>()
     const standaloneViasByPosition = new Map<string, ViaLike[]>()
     for (const via of standaloneVias) {
-      const positionKey = `${via.x}:${via.y}`
+      const { x, y } = getViaPositionCell(via)
+      const positionKey = `${x}:${y}`
       const viasAtPosition = standaloneViasByPosition.get(positionKey) ?? []
       viasAtPosition.push(via)
       standaloneViasByPosition.set(positionKey, viasAtPosition)
@@ -89,11 +96,19 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             }),
           )
           .filter((via: ViaLike) => {
-            const physicalVias = standaloneViasByPosition.get(
-              `${via.x}:${via.y}`,
-            )
+            const { x, y } = getViaPositionCell(via)
+            const physicalVias: ViaLike[] = []
+            // Nearby positions can straddle a cell boundary, including zero.
+            for (let dx = -1; dx <= 1; dx++) {
+              for (let dy = -1; dy <= 1; dy++) {
+                physicalVias.push(
+                  ...(standaloneViasByPosition.get(`${x + dx}:${y + dy}`) ??
+                    []),
+                )
+              }
+            }
             if (
-              physicalVias?.some((physicalVia) => {
+              physicalVias.some((physicalVia) => {
                 const sameTrace =
                   physicalVia.pcb_trace_id !== undefined &&
                   physicalVia.pcb_trace_id === via.pcb_trace_id
@@ -111,7 +126,9 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
                   return false
                 }
 
-                return isRouteViaCoveredByPhysicalVia(physicalVia, via)
+                return isRouteViaCoveredByPhysicalVia(physicalVia, via, {
+                  positionTolerance: VIA_POSITION_TOLERANCE,
+                })
               })
             ) {
               return false
