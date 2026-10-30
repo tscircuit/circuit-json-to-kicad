@@ -24,7 +24,10 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
-import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getKicadCompatibleComponentName,
+  getReferenceDesignator,
+} from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
@@ -74,6 +77,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         cadComponents: db.cad_component?.list?.() ?? [],
       })
       const {
+        cadComponent,
         schematicSymbol,
         schematicSymbolId,
         hasLinkedSymbolPrimitives,
@@ -198,10 +202,21 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         ),
       })
 
+      // KiCad reads the footprint from the placed symbol, not lib_symbols,
+      // so write the same name the PCB footprint gets. Parts without a PCB
+      // component (e.g. imported power symbols) have no footprint.
+      const hasPcbComponent =
+        db.pcb_component.list({
+          source_component_id: sourceComponent.source_component_id,
+        }).length > 0
+      const footprintName = hasPcbComponent
+        ? getKicadCompatibleComponentName(sourceComponent, cadComponent)
+        : null
       const fpMeta = symbolMetadata?.properties?.Footprint
       const footprintProperty = new SymbolProperty({
         key: "Footprint",
-        value: fpMeta?.value ?? "",
+        value:
+          fpMeta?.value ?? (footprintName ? `tscircuit:${footprintName}` : ""),
         id: 2,
         at: [x - 1.778, y, 90],
         effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
