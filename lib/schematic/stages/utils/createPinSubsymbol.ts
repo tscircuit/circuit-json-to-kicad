@@ -16,6 +16,7 @@ import type { SchSymbol } from "schematic-symbols"
 import { calculatePinPosition } from "./calculatePinPosition"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 import { toSchematicInternalUnits } from "./schematicCoordinates"
+import { getKicadPinElectricalType } from "./getKicadPinElectricalType"
 
 type PortSide = "left" | "right" | "up" | "down"
 type SymbolPort = SchSymbol["ports"][number] & {
@@ -48,19 +49,16 @@ function getCircuitPinNumbers({
   symbolData,
   schematicComponent,
   schematicPorts,
-  sourcePorts,
+  sourcePortsById,
 }: {
   symbolData: SymbolData
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
-  sourcePorts: SourcePort[]
+  sourcePortsById: ReadonlyMap<string, SourcePort>
 }): Map<number, string> {
   const matches = new Map<number, string>()
   if (!schematicComponent) return matches
 
-  const sourcePortsById = new Map(
-    sourcePorts.map((port) => [port.source_port_id, port]),
-  )
   const symbolCenter = symbolData.center ?? { x: 0, y: 0 }
   const componentPorts = schematicPorts.filter(
     (port) =>
@@ -181,6 +179,9 @@ export function createPinSubsymbol({
   const CHIP_PIN_LENGTH = 6.0
   // Non-chip artwork already draws the visible lead up to each port.
   const CUSTOM_SYMBOL_PIN_LENGTH = 0.01
+  const sourcePortsById = new Map(
+    sourcePorts.map((port) => [port.source_port_id, port]),
+  )
 
   const inferredPinNumbers = isChip
     ? new Map<number, string>()
@@ -188,7 +189,7 @@ export function createPinSubsymbol({
         symbolData,
         schematicComponent,
         schematicPorts,
-        sourcePorts,
+        sourcePortsById,
       })
   const circuitPinNumbers = validateInferredPinNumbers(
     symbolData,
@@ -201,7 +202,6 @@ export function createPinSubsymbol({
 
   for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
-    pin.pinElectricalType = "passive"
     pin.pinGraphicStyle = "line"
 
     const { x, y, angle } = calculatePinPosition({
@@ -255,15 +255,23 @@ export function createPinSubsymbol({
     const numEffects = new TextEffects({ font: numFont })
     const pinNum =
       port.pinNumber?.toString() ?? circuitPinNumbers.get(i) ?? `${i + 1}`
-    const schematicPort = schematicPorts.find(
-      (candidate) =>
-        candidate.schematic_component_id ===
-          schematicComponent?.schematic_component_id &&
-        String(candidate.pin_number) === pinNum,
-    )
-    const sourcePort = sourcePorts.find(
-      (candidate) => candidate.source_port_id === schematicPort?.source_port_id,
-    )
+    const schematicPort = schematicPorts.find((candidate) => {
+      if (
+        candidate.schematic_component_id !==
+        schematicComponent?.schematic_component_id
+      ) {
+        return false
+      }
+
+      const linkedSourcePort = sourcePortsById.get(candidate.source_port_id)
+      return (
+        String(candidate.pin_number ?? linkedSourcePort?.pin_number) === pinNum
+      )
+    })
+    const sourcePort = schematicPort
+      ? sourcePortsById.get(schematicPort.source_port_id)
+      : undefined
+    pin.pinElectricalType = getKicadPinElectricalType(sourcePort)
     pin._sxNumber = new SymbolPinNumber({
       value: getPhysicalPinName(sourcePort) ?? pinNum,
       effects: numEffects,
