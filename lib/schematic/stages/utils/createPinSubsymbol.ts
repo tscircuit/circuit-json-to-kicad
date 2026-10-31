@@ -1,4 +1,3 @@
-import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import type {
   SchematicComponent,
   SchematicPort,
@@ -13,10 +12,11 @@ import {
   TextEffectsFont,
 } from "kicadts"
 import type { SchSymbol } from "schematic-symbols"
-import { calculatePinPosition } from "./calculatePinPosition"
 import { applyToPoint, type Matrix } from "transformation-matrix"
-import { toSchematicInternalUnits } from "./schematicCoordinates"
+import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
+import { calculatePinPosition } from "./calculatePinPosition"
 import { getKicadPinElectricalType } from "./getKicadPinElectricalType"
+import { toSchematicInternalUnits } from "./schematicCoordinates"
 
 type PortSide = "left" | "right" | "up" | "down"
 type SymbolPort = SchSymbol["ports"][number] & {
@@ -218,17 +218,26 @@ export function createPinSubsymbol({
     // Custom/builtin artwork ports are positioned in symbolData's coordinate
     // system. Translate that source point directly into the sheet; rebuilding
     // it from the scaled local offset can change rounding at half-unit ties.
-    const sheetPosition =
-      !isChip && schematicComponent
-        ? applyToPoint(c2kMatSch, {
-            x:
-              (port.x ?? 0) +
-              (schematicComponent.center.x - (symbolData.center?.x ?? 0)),
-            y:
-              (port.y ?? 0) +
-              (schematicComponent.center.y - (symbolData.center?.y ?? 0)),
-          })
-        : { x: origin.x + x, y: origin.y - y }
+    const sourceDx = (port.x ?? 0) - (symbolData.center?.x ?? 0)
+    const sourceDy = (port.y ?? 0) - (symbolData.center?.y ?? 0)
+    const directSheetPosition = schematicComponent
+      ? applyToPoint(c2kMatSch, {
+          x: schematicComponent.center.x + sourceDx,
+          y: schematicComponent.center.y + sourceDy,
+        })
+      : undefined
+    const sheetPosition = {
+      x:
+        directSheetPosition &&
+        (!isChip || Math.abs(sourceDx * c2kMatSch.a - x) < 1e-6)
+          ? directSheetPosition.x
+          : origin.x + x,
+      y:
+        directSheetPosition &&
+        (!isChip || Math.abs(sourceDy * c2kMatSch.a - y) < 1e-6)
+          ? directSheetPosition.y
+          : origin.y - y,
+    }
 
     // KiCad rounds the placed origin and each wire endpoint separately. Derive
     // the local pin offset from those integer positions so their sum is exact.

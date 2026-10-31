@@ -1,9 +1,10 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { SchematicText } from "circuit-json"
 import { Label, TextEffectsJustify } from "kicadts"
-import { applyToPoint, type Matrix } from "transformation-matrix"
+import type { Matrix } from "transformation-matrix"
 import { createTextEffects } from "../symbols-stage-converters/createTextEffects"
 import { getTextJustificationFromAnchor } from "./getTextJustificationFromAnchor"
+import { transformSchematicPoint } from "./schematicCoordinates"
 
 /** Convert trace-backed text at its supplied wire attachment to a local label. */
 export function createInlineTraceLabel({
@@ -21,7 +22,7 @@ export function createInlineTraceLabel({
     return undefined
   }
 
-  const { x, y } = applyToPoint(transform, text.position)
+  const { x, y } = transformSchematicPoint(transform, text.position)
   const effects = createTextEffects(fontSize, false)
   // KiCad local labels sit above horizontal wires (left of vertical wires).
   // Keep its native placement even when core chose the opposite text side.

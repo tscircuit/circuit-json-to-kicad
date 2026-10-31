@@ -1,4 +1,3 @@
-import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
 import type {
   CircuitJson,
   SchematicComponent,
@@ -25,12 +24,17 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
+import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
   getTextJustificationFromAnchor,
   type TextJustification,
 } from "./utils/getTextJustificationFromAnchor"
+import {
+  roundSchematicCoordinate,
+  transformSchematicPoint,
+} from "./utils/schematicCoordinates"
 
 const DEFAULT_PROPERTY_FONT_SIZE = 1.27
 
@@ -83,7 +87,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
       if (!this.ctx.c2kMatSch) continue
-      const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+      const { x, y } = transformSchematicPoint(this.ctx.c2kMatSch, {
         x: schematicComponent.center.x,
         y: schematicComponent.center.y,
       })
@@ -149,8 +153,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const referencePosition = customReferencePosition?.position ?? refTextPos
       let referenceFontSize = DEFAULT_PROPERTY_FONT_SIZE
       if (customReferenceText) {
-        referenceFontSize =
-          customReferenceText.font_size * this.ctx.kicadSchematicScaleFactor!
+        referenceFontSize = roundSchematicCoordinate(
+          customReferenceText.font_size * this.ctx.kicadSchematicScaleFactor!,
+        )
       }
 
       // Add properties for this instance, applying metadata if available
@@ -162,8 +167,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: refMeta?.value ?? reference,
         id: 0,
         at: [
-          referencePosition.x,
-          referencePosition.y,
+          roundSchematicCoordinate(referencePosition.x),
+          roundSchematicCoordinate(referencePosition.y),
           customReferenceText?.rotation ?? 0,
         ],
         effects: this.createTextEffects(
@@ -191,7 +196,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         key: "Value",
         value: valMeta?.value ?? value,
         id: 1,
-        at: [valTextPos.x, valTextPos.y, 0],
+        at: [
+          roundSchematicCoordinate(valTextPos.x),
+          roundSchematicCoordinate(valTextPos.y),
+          0,
+        ],
         effects: this.createTextEffects(
           Number(valMeta?.effects?.font?.size?.x ?? DEFAULT_PROPERTY_FONT_SIZE),
           { hide: valMeta?.effects?.hide ?? hideValue, justify: valJustify },
@@ -203,7 +212,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         key: "Footprint",
         value: fpMeta?.value ?? "",
         id: 2,
-        at: [x - 1.778, y, 90],
+        at: [roundSchematicCoordinate(x - 1.778), y, 90],
         effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
           hide: fpMeta?.effects?.hide ?? true,
         }),
