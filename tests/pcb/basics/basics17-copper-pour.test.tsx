@@ -79,3 +79,59 @@ test("pcb basics17 copper pour", async () => {
     ),
   ).toMatchPngSnapshot(import.meta.path)
 })
+
+test("preserves per-pour clearance on exported KiCad zones", () => {
+  const converter = new CircuitJsonToKicadPcbConverter([
+    {
+      type: "pcb_board",
+      pcb_board_id: "pcb_board_0",
+      center: { x: 0, y: 0 },
+      width: 20,
+      height: 20,
+      num_layers: 4,
+      thickness: 1.6,
+    },
+    {
+      type: "source_net",
+      source_net_id: "source_net_EFUSE_IN",
+      name: "EFUSE_IN",
+    },
+    {
+      type: "source_net",
+      source_net_id: "source_net_GND",
+      name: "GND",
+    },
+    {
+      type: "pcb_copper_pour",
+      pcb_copper_pour_id: "pcb_copper_pour_0",
+      layer: "bottom",
+      shape: "polygon",
+      clearance: 0.16,
+      source_net_id: "source_net_EFUSE_IN",
+      points: [
+        { x: -5, y: -5 },
+        { x: 5, y: -5 },
+        { x: 5, y: 5 },
+        { x: -5, y: 5 },
+      ],
+    } as any,
+    {
+      type: "pcb_copper_pour",
+      pcb_copper_pour_id: "pcb_copper_pour_1",
+      layer: "inner1",
+      shape: "polygon",
+      clearance: 0.3,
+      source_net_id: "source_net_GND",
+      points: [
+        { x: -4, y: -4 },
+        { x: 4, y: -4 },
+        { x: 4, y: 4 },
+        { x: -4, y: 4 },
+      ],
+    } as any,
+  ])
+  converter.runUntilFinished()
+  const pcb = parseKicadPcb(converter.getOutputString())
+
+  expect(pcb.zones.map((z) => z.connectPads?.clearance)).toEqual([0.16, 0.3])
+})
