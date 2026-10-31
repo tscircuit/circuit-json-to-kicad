@@ -54,7 +54,32 @@ export function selectSchematicPaperSize(
     }
   }
 
-  // If even A0 is too small, return A0 (largest available)
-  // In this case, content will be scaled down by the existing transform
-  return PAPER_SIZES[PAPER_SIZES.length - 1]!
+  // If landscape A0 is too small, try portrait A0 before falling back to a custom sheet size
+  const largestPaperSize = PAPER_SIZES[PAPER_SIZES.length - 1]!
+  if (
+    requiredWidth <= largestPaperSize.height &&
+    requiredHeight <= largestPaperSize.width
+  ) {
+    return {
+      name: largestPaperSize.name,
+      width: largestPaperSize.height,
+      height: largestPaperSize.width,
+      isPortrait: true,
+    }
+  }
+
+  const customWidth = Math.max(Math.ceil(requiredWidth), largestPaperSize.width)
+  const customHeight = Math.max(
+    Math.ceil(requiredHeight),
+    largestPaperSize.height,
+  )
+  return {
+    name: "User",
+    width: customWidth,
+    height: customHeight,
+    customSize: {
+      width: customWidth,
+      height: customHeight,
+    },
+  }
 }
