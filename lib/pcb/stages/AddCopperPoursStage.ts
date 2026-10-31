@@ -5,8 +5,8 @@ import type {
   PcbCopperPourPolygon,
   PcbCopperPourRect,
 } from "circuit-json"
-import type { KicadPcb } from "kicadts"
 import earcut from "earcut"
+import type { KicadPcb } from "kicadts"
 import {
   Layer,
   Pts,
@@ -315,6 +315,13 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       const netInfo = getCopperPourNetInfo(pour, this.ctx)
       const kicadLayer = getKicadLayer(pour.layer)
+      const pourClearance = (pour as { clearance?: number }).clearance
+      const clearance =
+        typeof pourClearance === "number" &&
+        Number.isFinite(pourClearance) &&
+        pourClearance >= 0
+          ? pourClearance
+          : 0.15
 
       const zone = new Zone({
         net: netInfo?.id ?? 0,
@@ -322,7 +329,7 @@ export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {
         layer: kicadLayer,
         uuid: generateDeterministicUuid(`zone:${pour.pcb_copper_pour_id}`),
         hatch: new ZoneHatch("edge", 0.5),
-        connectPads: new ZoneConnectPads({ enabled: true, clearance: 0.15 }),
+        connectPads: new ZoneConnectPads({ enabled: true, clearance }),
         minThickness: 0.25,
         filledAreasThickness: false,
         fill: new ZoneFill({
