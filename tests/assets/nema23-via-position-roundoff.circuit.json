@@ -1,0 +1,299 @@
+[
+  {
+    "type": "pcb_board",
+    "pcb_board_id": "pcb_board_0",
+    "source_board_id": "source_board_0",
+    "subcircuit_id": "subcircuit_source_group_30",
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "thickness": 1.6,
+    "num_layers": 4,
+    "width": 56,
+    "height": 56,
+    "material": "fr4",
+    "is_via_in_pad_allowed": true,
+    "min_trace_width": 0.1,
+    "min_via_hole_diameter": 0.3,
+    "min_via_pad_diameter": 0.45,
+    "min_via_hole_edge_to_via_hole_edge_clearance": 0.1,
+    "min_via_edge_to_pad_edge_clearance": 0.17,
+    "min_trace_to_hole_edge_clearance": 0.2,
+    "min_trace_to_pad_edge_clearance": 0.1,
+    "min_pad_edge_to_pad_edge_clearance": 0.15,
+    "min_plated_hole_drill_edge_to_drill_edge_clearance": 0.15,
+    "min_board_edge_clearance": 0.2
+  },
+  {
+    "type": "source_net",
+    "source_net_id": "source_net_0",
+    "name": "GND",
+    "member_source_group_ids": [],
+    "is_ground": true,
+    "is_power": false,
+    "is_positive_voltage_source": false,
+    "subcircuit_id": "subcircuit_source_group_30",
+    "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_30_connectivity_net23"
+  },
+  {
+    "type": "source_trace",
+    "source_trace_id": "source_trace_30",
+    "connected_source_port_ids": ["source_port_97"],
+    "connected_source_net_ids": ["source_net_0"],
+    "subcircuit_id": "subcircuit_source_group_30",
+    "name": "ADC_G",
+    "display_name": "GND",
+    "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_30_connectivity_net23"
+  },
+  {
+    "type": "pcb_via",
+    "pcb_via_id": "pcb_via_145",
+    "pcb_trace_id": "source_trace_68__source_trace_82__source_trace_100__source_net_0_mst0_0",
+    "x": -3.1012932134428732,
+    "y": -1.960857774086319,
+    "hole_diameter": 0.3,
+    "outer_diameter": 0.45,
+    "layers": ["top", "inner1", "inner2", "bottom"],
+    "from_layer": "bottom",
+    "to_layer": "top",
+    "subcircuit_id": "subcircuit_source_group_30",
+    "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_30_connectivity_net23"
+  },
+  {
+    "type": "pcb_via",
+    "pcb_via_id": "pcb_via_175",
+    "pcb_trace_id": "source_trace_68__source_trace_82__source_trace_100__source_net_0_mst90_0",
+    "x": -5.799,
+    "y": -3.37,
+    "hole_diameter": 0.3,
+    "outer_diameter": 0.45,
+    "layers": ["top", "inner1", "inner2", "bottom"],
+    "from_layer": "top",
+    "to_layer": "bottom",
+    "subcircuit_id": "subcircuit_source_group_30",
+    "subcircuit_connectivity_map_key": "unnamedsubcircuitsubcircuit_source_group_30_connectivity_net23"
+  },
+  {
+    "type": "pcb_trace",
+    "pcb_trace_id": "source_trace_68__source_trace_82__source_trace_100__source_net_0_mst0_0",
+    "connection_name": "source_trace_68",
+    "connectsTo": ["pcb_port_97", "pcb_port_483"],
+    "route": [
+      {
+        "route_type": "wire",
+        "x": -2.49,
+        "y": -2.9000000000000004,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_28",
+        "start_pcb_port_id": "pcb_port_97"
+      },
+      {
+        "route_type": "wire",
+        "x": -3.1012932134428732,
+        "y": -2.2887067865571273,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_28"
+      },
+      {
+        "route_type": "wire",
+        "x": -3.1012932134428732,
+        "y": -1.960857774086319,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_28"
+      },
+      {
+        "route_type": "via",
+        "x": -3.1012932134428732,
+        "y": -1.960857774086319,
+        "from_layer": "bottom",
+        "to_layer": "top",
+        "via_diameter": 0.45,
+        "via_hole_diameter": 0.3
+      },
+      {
+        "route_type": "wire",
+        "x": -3.1012932134428732,
+        "y": -1.960857774086319,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89"
+      },
+      {
+        "route_type": "wire",
+        "x": -3.0976552538320425,
+        "y": -1.96449573369715,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89"
+      },
+      {
+        "route_type": "wire",
+        "x": -2.3570509875291927,
+        "y": -2.7051,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89"
+      },
+      {
+        "route_type": "wire",
+        "x": -1.905,
+        "y": -2.7051,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89",
+        "end_pcb_port_id": "pcb_port_483"
+      }
+    ],
+    "subcircuit_id": "subcircuit_source_group_30",
+    "source_trace_id": "source_trace_30"
+  },
+  {
+    "type": "pcb_trace",
+    "pcb_trace_id": "source_trace_68__source_trace_82__source_trace_100__source_net_0_mst90_0",
+    "connection_name": "source_trace_68",
+    "connectsTo": ["pcb_port_74", "pcb_port_97"],
+    "route": [
+      {
+        "route_type": "wire",
+        "x": -2.49,
+        "y": -2.9000000000000004,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_28",
+        "start_pcb_port_id": "pcb_port_97"
+      },
+      {
+        "route_type": "wire",
+        "x": -3.1012932134428732,
+        "y": -2.2887067865571273,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_28"
+      },
+      {
+        "route_type": "wire",
+        "x": -3.1012932134428732,
+        "y": -1.9608577740863191,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_28"
+      },
+      {
+        "route_type": "via",
+        "x": -3.1012932134428732,
+        "y": -1.9608577740863191,
+        "from_layer": "bottom",
+        "to_layer": "top",
+        "via_diameter": 0.45,
+        "via_hole_diameter": 0.3
+      },
+      {
+        "route_type": "wire",
+        "x": -3.1012932134428732,
+        "y": -1.9608577740863191,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89"
+      },
+      {
+        "route_type": "wire",
+        "x": -3.0851492419192157,
+        "y": -1.9770017456099767,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89"
+      },
+      {
+        "route_type": "wire",
+        "x": -4.478147496309239,
+        "y": -3.37,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89"
+      },
+      {
+        "route_type": "wire",
+        "x": -5.799,
+        "y": -3.37,
+        "width": 0.15,
+        "layer": "bottom",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_89"
+      },
+      {
+        "route_type": "via",
+        "x": -5.799,
+        "y": -3.37,
+        "from_layer": "top",
+        "to_layer": "bottom",
+        "via_diameter": 0.45,
+        "via_hole_diameter": 0.3
+      },
+      {
+        "route_type": "wire",
+        "x": -5.799,
+        "y": -3.37,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_87"
+      },
+      {
+        "route_type": "wire",
+        "x": -5.801001628780887,
+        "y": -3.3679983712191133,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_87"
+      },
+      {
+        "route_type": "wire",
+        "x": -5.8425323120586965,
+        "y": -3.3679983712191133,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_87"
+      },
+      {
+        "route_type": "wire",
+        "x": -6.21053068327781,
+        "y": -3,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_87"
+      },
+      {
+        "route_type": "wire",
+        "x": -7.6899999999999995,
+        "y": -3,
+        "width": 0.15,
+        "layer": "top",
+        "is_inside_copper_pour": true,
+        "copper_pour_id": "pcb_copper_pour_87",
+        "end_pcb_port_id": "pcb_port_74"
+      }
+    ],
+    "subcircuit_id": "subcircuit_source_group_30",
+    "source_trace_id": "source_trace_30"
+  }
+]
