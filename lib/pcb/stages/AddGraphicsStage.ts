@@ -242,7 +242,12 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           { x: panel.center.x - halfWidth, y: panel.center.y + halfHeight },
         ]
       }
-      appendPolygonRingToEdgeCuts(kicadPcb, panelCorners, c2kMatPcb, edgeCutsWidth)
+      appendPolygonRingToEdgeCuts(
+        kicadPcb,
+        panelCorners,
+        c2kMatPcb,
+        edgeCutsWidth,
+      )
     }
 
     // Build cutout geometries
@@ -254,7 +259,9 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         const cutoutCorners = getRectCutoutCorners(cutout)
         cutoutGeoms.set(cutout, [[cutoutCorners.map((c) => [c.x, c.y])]])
       } else if (cutout.shape === "circle") {
-        cutoutGeoms.set(cutout, [[circleToPolygon(cutout.center, cutout.radius)]])
+        cutoutGeoms.set(cutout, [
+          [circleToPolygon(cutout.center, cutout.radius)],
+        ])
       } else if (cutout.shape === "polygon") {
         cutoutGeoms.set(cutout, [[cutout.points.map((c) => [c.x, c.y])]])
       }
@@ -294,12 +301,20 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
 
       if (intersectingCutoutGeoms.length > 0) {
-        boardGeom = polygonClipping.difference(boardGeom, ...intersectingCutoutGeoms)
+        boardGeom = polygonClipping.difference(
+          boardGeom,
+          ...intersectingCutoutGeoms,
+        )
       }
 
       for (const poly of boardGeom) {
         for (const ring of poly) {
-          appendPolygonRingToEdgeCuts(kicadPcb, ring as Array<[number, number]>, c2kMatPcb, edgeCutsWidth)
+          appendPolygonRingToEdgeCuts(
+            kicadPcb,
+            ring as Array<[number, number]>,
+            c2kMatPcb,
+            edgeCutsWidth,
+          )
         }
       }
     }
@@ -333,7 +348,12 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         if (cutoutGeom) {
           for (const poly of cutoutGeom) {
             for (const ring of poly) {
-              appendPolygonRingToEdgeCuts(kicadPcb, ring as Array<[number, number]>, c2kMatPcb, edgeCutsWidth)
+              appendPolygonRingToEdgeCuts(
+                kicadPcb,
+                ring as Array<[number, number]>,
+                c2kMatPcb,
+                edgeCutsWidth,
+              )
             }
           }
         }
