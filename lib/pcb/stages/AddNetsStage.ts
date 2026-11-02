@@ -72,8 +72,22 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const nets: PcbNet[] = []
     nets.push(new PcbNet(0, ""))
 
+    // KiCad identifies nets by name when loading the file, even if their
+    // numeric IDs differ. Reserve original names before allocating suffixes
+    // so a duplicate GND cannot steal another net's existing GND_2 name.
+    const reservedNetNames = new Set(netNameByKey.values())
+    const exportedNetNames = new Set<string>()
+
     let netNumber = 1
-    for (const [connectivityKey, netName] of sortedEntries) {
+    for (const [connectivityKey, candidateName] of sortedEntries) {
+      let netName = candidateName
+      if (exportedNetNames.has(netName)) {
+        let suffix = 2
+        do {
+          netName = `${candidateName}_${suffix++}`
+        } while (reservedNetNames.has(netName) || exportedNetNames.has(netName))
+      }
+      exportedNetNames.add(netName)
       const pcbNet = new PcbNet(netNumber, netName)
       nets.push(pcbNet)
 

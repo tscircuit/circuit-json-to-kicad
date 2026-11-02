@@ -6,22 +6,62 @@ exports[`repeated board-local trace names stay separate after KiCad loads the pa
     "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1",
     "pins": [
       "C1.1",
-      "C1_1.1",
-      "C1_2.1",
-      "C1_3.1",
-      "C1_4.1",
-      "C1_5.1",
-      "C1_6.1",
-      "C1_7.1",
-      "C1_8.1",
       "R1.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_2",
+    "pins": [
+      "C1_1.1",
       "R1_1.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_3",
+    "pins": [
+      "C1_2.1",
       "R1_2.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_4",
+    "pins": [
+      "C1_3.1",
       "R1_3.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_5",
+    "pins": [
+      "C1_4.1",
       "R1_4.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_6",
+    "pins": [
+      "C1_5.1",
       "R1_5.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_7",
+    "pins": [
+      "C1_6.1",
       "R1_6.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_8",
+    "pins": [
+      "C1_7.1",
       "R1_7.2",
+    ],
+  },
+  {
+    "name": ".R1 &gt; .pin2 to .C1 &gt; .pin1_9",
+    "pins": [
+      "C1_8.1",
       "R1_8.2",
     ],
   },
