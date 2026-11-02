@@ -89,6 +89,35 @@ const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
   })
 }
 
+const appendPolygonRingToEdgeCuts = (
+  kicadPcb: KicadPcb,
+  ring: Array<[number, number] | { x: number; y: number }>,
+  c2kMatPcb: any,
+  edgeCutsWidth: number,
+) => {
+  const transformedRing = ring.map((point) => {
+    const pt = Array.isArray(point) ? { x: point[0], y: point[1] } : point
+    return applyToPoint(c2kMatPcb, pt)
+  })
+
+  for (let i = 0; i < transformedRing.length; i++) {
+    const start = transformedRing[i]
+    const end = transformedRing[(i + 1) % transformedRing.length]
+
+    if (!start || !end) continue
+    if (pointsAreEqual(start, end)) continue
+
+    const edgeLine = new GrLine({
+      start: { x: start.x, y: start.y },
+      end: { x: end.x, y: end.y },
+      layer: "Edge.Cuts",
+      width: edgeCutsWidth,
+    })
+
+    appendGraphicLine(kicadPcb, edgeLine)
+  }
+}
+
 /**
  * Adds graphics (silkscreen, board outline, etc.) to the PCB from circuit JSON
  */
@@ -193,29 +222,58 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add board outline from pcb_board
+    // Add panel outline from pcb_panel if present
+    const pcbPanels =
+      (this.ctx.db.pcb_panel?.list() as any[]) ||
+      (this.ctx.circuitJson as any[]).filter((e) => e.type === "pcb_panel") ||
+      []
+
+    for (const panel of pcbPanels) {
+      let panelCorners: Array<{ x: number; y: number }>
+      if (panel.outline && panel.outline.length > 0) {
+        panelCorners = normalizeOutlineCorners(panel.outline)
+      } else {
+        const halfWidth = panel.width ? panel.width / 2 : 0
+        const halfHeight = panel.height ? panel.height / 2 : 0
+        panelCorners = [
+          { x: panel.center.x - halfWidth, y: panel.center.y - halfHeight },
+          { x: panel.center.x + halfWidth, y: panel.center.y - halfHeight },
+          { x: panel.center.x + halfWidth, y: panel.center.y + halfHeight },
+          { x: panel.center.x - halfWidth, y: panel.center.y + halfHeight },
+        ]
+      }
+      appendPolygonRingToEdgeCuts(kicadPcb, panelCorners, c2kMatPcb, edgeCutsWidth)
+    }
+
+    // Build cutout geometries
+    const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
+    const cutoutGeoms = new Map<PcbCutout, Geom>()
+
+    for (const cutout of pcbCutouts) {
+      if (cutout.shape === "rect") {
+        const cutoutCorners = getRectCutoutCorners(cutout)
+        cutoutGeoms.set(cutout, [[cutoutCorners.map((c) => [c.x, c.y])]])
+      } else if (cutout.shape === "circle") {
+        cutoutGeoms.set(cutout, [[circleToPolygon(cutout.center, cutout.radius)]])
+      } else if (cutout.shape === "polygon") {
+        cutoutGeoms.set(cutout, [[cutout.points.map((c) => [c.x, c.y])]])
+      }
+    }
+
+    const subtractedCutouts = new Set<PcbCutout>()
+
+    // Add board outline from all pcb_boards
     const pcbBoards = this.ctx.db.pcb_board?.list() || []
 
-    if (pcbBoards.length > 0) {
-      const board = pcbBoards[0]
-
-      if (!board) {
-        this.finished = true
-        return
-      }
-
+    for (const board of pcbBoards) {
       let corners: Array<{ x: number; y: number }>
 
-      // Check if board has a custom outline, otherwise use width/height to create rectangle
       if (board.outline && board.outline.length > 0) {
-        // Use the custom outline points
         corners = normalizeOutlineCorners(board.outline)
       } else {
-        // Fallback to rectangular outline based on width and height
         const halfWidth = board.width ? board.width / 2 : 0
         const halfHeight = board.height ? board.height / 2 : 0
 
-        // Define the 4 corners of the board relative to center
         corners = [
           { x: board.center.x - halfWidth, y: board.center.y - halfHeight },
           { x: board.center.x + halfWidth, y: board.center.y - halfHeight },
@@ -224,58 +282,29 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ]
       }
 
-      const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
+      let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
+      const intersectingCutoutGeoms: Geom[] = []
 
-      const cutoutPolys: Geom[] = []
-      for (const cutout of pcbCutouts) {
-        if (cutout.shape === "rect") {
-          const cutoutCorners = getRectCutoutCorners(cutout)
-          cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
-        } else if (cutout.shape === "circle") {
-          // Approximate the circle as a polygon so polygon-clipping can process it.
-          // Scaling the number of steps based on the radius to maintain smooth curves
-          cutoutPolys.push([[circleToPolygon(cutout.center, cutout.radius)]])
-        } else if (cutout.shape === "polygon") {
-          cutoutPolys.push([[cutout.points.map((c) => [c.x, c.y])]])
+      for (const [cutout, cutoutGeom] of cutoutGeoms.entries()) {
+        const intersection = polygonClipping.intersection(boardGeom, cutoutGeom)
+        if (intersection.length > 0 && Boolean(intersection[0]?.length)) {
+          intersectingCutoutGeoms.push(cutoutGeom)
+          subtractedCutouts.add(cutout)
         }
       }
 
-      let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
-      if (cutoutPolys.length > 0) {
-        boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
+      if (intersectingCutoutGeoms.length > 0) {
+        boardGeom = polygonClipping.difference(boardGeom, ...intersectingCutoutGeoms)
       }
 
-      // Convert resulting polygons back to lines on Edge.Cuts
       for (const poly of boardGeom) {
         for (const ring of poly) {
-          const transformedRing = ring.map((point: [number, number]) =>
-            applyToPoint(c2kMatPcb, { x: point[0], y: point[1] }),
-          )
-
-          for (let i = 0; i < transformedRing.length; i++) {
-            const start = transformedRing[i]
-            const end = transformedRing[(i + 1) % transformedRing.length]
-
-            if (!start || !end) continue
-            if (pointsAreEqual(start, end)) continue
-
-            const edgeLine = new GrLine({
-              start: { x: start.x, y: start.y },
-              end: { x: end.x, y: end.y },
-              layer: "Edge.Cuts",
-              width: edgeCutsWidth,
-            })
-
-            appendGraphicLine(kicadPcb, edgeLine)
-          }
+          appendPolygonRingToEdgeCuts(kicadPcb, ring as Array<[number, number]>, c2kMatPcb, edgeCutsWidth)
         }
       }
     }
 
-    const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
-
-    // Independent edge.cuts for path cutouts, since polygon-clipping doesn't handle paths natively.
-    // Polygon, rect, and circle cutouts were already subtracted from the board outline.
+    // Emit remaining cutouts that were not subtracted from a board
     for (const cutout of pcbCutouts) {
       if (cutout.shape === "path") {
         if (!cutout.route || cutout.route.length < 2) continue
@@ -299,9 +328,17 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
             }),
           )
         }
+      } else if (!subtractedCutouts.has(cutout)) {
+        const cutoutGeom = cutoutGeoms.get(cutout)
+        if (cutoutGeom) {
+          for (const poly of cutoutGeom) {
+            for (const ring of poly) {
+              appendPolygonRingToEdgeCuts(kicadPcb, ring as Array<[number, number]>, c2kMatPcb, edgeCutsWidth)
+            }
+          }
+        }
       }
     }
-
     this.finished = true
   }
 
