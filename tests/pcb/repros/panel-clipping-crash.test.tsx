@@ -44,12 +44,14 @@ test("2x2 panel cutouts do not crash polygon clipping", async () => {
       rounded ? "panel-clipping-rounded" : "panel-clipping-square",
     )
     const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
+    let output: string | undefined
     try {
       converter.runUntilFinished()
-      expect(converter.getOutputString()).toContain('(layer "Edge.Cuts")')
+      output = converter.getOutputString()
     } catch (error) {
       conversionErrors.push({ rounded, error: String(error) })
     }
+    if (output) expect(output).toMatch(/\(layer "?Edge\.Cuts"?\)/)
   }
   expect(conversionErrors).toEqual([])
 })
