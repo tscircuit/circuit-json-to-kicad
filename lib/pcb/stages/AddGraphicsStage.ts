@@ -193,21 +193,22 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add board outline from pcb_board
+    // A panel is one physical substrate. Its routing slots are removed from
+    // the outer boundary; emitting complete board loops as well would cross
+    // those slots and turn the board interiors into holes in the panel.
     const pcbBoards = this.ctx.db.pcb_board?.list() || []
+    const pcbPanels = this.ctx.db.pcb_panel.list()
+    const outlineRegions = pcbPanels.length > 0 ? pcbPanels : pcbBoards
 
-    if (pcbBoards.length > 0) {
-      const board = pcbBoards[0]
-
-      if (!board) {
-        this.finished = true
-        return
-      }
-
+    for (const board of outlineRegions) {
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
-      if (board.outline && board.outline.length > 0) {
+      if (
+        board.type === "pcb_board" &&
+        board.outline &&
+        board.outline.length > 0
+      ) {
         // Use the custom outline points
         corners = normalizeOutlineCorners(board.outline)
       } else {
