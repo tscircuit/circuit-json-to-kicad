@@ -19,6 +19,28 @@ const ELLIPSE_SEGMENT_COUNT = 64
 const getDistance = (a: Point, b: Point): number =>
   Math.hypot(a.x - b.x, a.y - b.y)
 
+const getPillRoundrectRatio = ({
+  width,
+  height,
+  radius,
+}: {
+  width: number
+  height: number
+  radius?: number
+}): number => {
+  const shorterSide = Math.min(width, height)
+
+  // Historical Circuit JSON omitted radius from pill-shaped paste apertures.
+  // A pill has semicircular ends, so half the shorter side is its unambiguous
+  // radius when that legacy field is absent.
+  const resolvedRadius =
+    typeof radius === "number" && Number.isFinite(radius)
+      ? radius
+      : shorterSide / 2
+
+  return resolvedRadius / shorterSide
+}
+
 const getPolygonAnchor = (
   outerContour: Point[],
   holes: Point[][] = [],
@@ -230,15 +252,13 @@ export const createSolderPastePadFromCircuitJson = ({
     case "pill":
       shape = "roundrect"
       size = [solderPaste.width, solderPaste.height]
-      roundrectRatio =
-        solderPaste.radius / Math.min(solderPaste.width, solderPaste.height)
+      roundrectRatio = getPillRoundrectRatio(solderPaste)
       break
     case "rotated_pill":
       shape = "roundrect"
       size = [solderPaste.width, solderPaste.height]
       rotation = solderPaste.ccw_rotation
-      roundrectRatio =
-        solderPaste.radius / Math.min(solderPaste.width, solderPaste.height)
+      roundrectRatio = getPillRoundrectRatio(solderPaste)
       break
     case "polygon": {
       if (!polygonAnchor) {
