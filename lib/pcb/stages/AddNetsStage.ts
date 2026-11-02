@@ -1,13 +1,10 @@
-import type { CircuitJson } from "circuit-json"
 import { getElementId } from "@tscircuit/circuit-json-util"
+import type { CircuitJson } from "circuit-json"
 import { getFullConnectivityMapFromCircuitJson } from "circuit-json-to-connectivity-map"
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
-import {
-  ConverterStage,
-  type ConverterContext,
-  type PcbNetInfo,
-} from "../../types"
+import { ConverterStage, type PcbNetInfo } from "../../types"
+import { resolveKicadPcbNetName } from "../utils/resolveKicadPcbNetName"
 
 /**
  * Adds nets to the PCB from circuit JSON connections
@@ -31,11 +28,10 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
         sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
       if (!connectivityKey) continue
 
-      const candidateName = sourceNet.name || sourceNet.source_net_id || ""
-      const netName =
-        candidateName && candidateName.trim().length > 0
-          ? candidateName
-          : connectivityKey
+      const netName = resolveKicadPcbNetName(
+        sourceNet.name || sourceNet.source_net_id,
+        connectivityKey,
+      )
 
       netNameByKey.set(connectivityKey, netName)
     }
@@ -60,12 +56,10 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       if (!connectivityKey) continue
 
       if (!netNameByKey.has(connectivityKey)) {
-        const candidateName =
-          sourceTrace.display_name || sourceTrace.source_trace_id || ""
-        const netName =
-          candidateName && candidateName.trim().length > 0
-            ? candidateName
-            : connectivityKey
+        const netName = resolveKicadPcbNetName(
+          sourceTrace.display_name || sourceTrace.source_trace_id,
+          connectivityKey,
+        )
 
         netNameByKey.set(connectivityKey, netName)
       }
