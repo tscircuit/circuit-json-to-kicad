@@ -290,21 +290,37 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
 
       let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
-      const intersectingCutoutGeoms: Geom[] = []
+      const intersectingCutouts: Array<{ cutout: PcbCutout; geom: Geom }> = []
 
       for (const [cutout, cutoutGeom] of cutoutGeoms.entries()) {
-        const intersection = polygonClipping.intersection(boardGeom, cutoutGeom)
-        if (intersection.length > 0 && Boolean(intersection[0]?.length)) {
-          intersectingCutoutGeoms.push(cutoutGeom)
-          subtractedCutouts.add(cutout)
+        try {
+          const intersection = polygonClipping.intersection(
+            boardGeom,
+            cutoutGeom,
+          )
+          if (intersection.length > 0 && Boolean(intersection[0]?.length)) {
+            intersectingCutouts.push({ cutout, geom: cutoutGeom })
+          }
+        } catch {
+          // Ignore sweep-line errors during intersection test
         }
       }
 
-      if (intersectingCutoutGeoms.length > 0) {
-        boardGeom = polygonClipping.difference(
-          boardGeom,
-          ...intersectingCutoutGeoms,
-        )
+      if (intersectingCutouts.length > 0) {
+        // Attempt difference cutout by cutout to avoid complex multi-polygon sweep-line errors
+        let currentBoardGeom = boardGeom
+        for (const { cutout, geom } of intersectingCutouts) {
+          try {
+            const nextGeom = polygonClipping.difference(currentBoardGeom, geom)
+            if (nextGeom.length > 0 && Boolean(nextGeom[0]?.length)) {
+              currentBoardGeom = nextGeom
+              subtractedCutouts.add(cutout)
+            }
+          } catch {
+            // If polygon clipping fails for this cutout, leave it for direct emission
+          }
+        }
+        boardGeom = currentBoardGeom
       }
 
       for (const poly of boardGeom) {
