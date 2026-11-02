@@ -15,13 +15,16 @@ export async function exportNativePcbNets(kicadPcb: string) {
     const xml = await readFile(ipcPath, "utf8")
     return [...xml.matchAll(/<Set\b[^>]*net="([^"]+)"[^>]*>([\s\S]*?)<\/Set>/g)]
       .map(([, name, body]) => ({
-        name,
+        name: name!.replace(/^NET:/, ""),
         pins: [
           ...body!.matchAll(
             /<PinRef componentRef="([^"]*)" pin="([^"]*)"\s*\/>/g,
           ),
         ]
-          .map(([, reference, pin]) => `${reference}.${pin}`)
+          .map(
+            ([, reference, pin]) =>
+              `${reference!.replace(/^CMP:/, "")}.${pin!.replace(/^PIN:/, "")}`,
+          )
           .sort(),
       }))
       .filter((net) => net.pins.length > 0)
