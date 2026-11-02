@@ -1,4 +1,4 @@
-type SimplePadGeometryInput =
+type NativePadGeometryInput =
   | { shape: "circle"; radius: number }
   | {
       shape: "rect" | "rotated_rect"
@@ -16,13 +16,17 @@ type SimplePadGeometryInput =
       ccw_rotation?: number
     }
 
-export interface SimpleKicadPadGeometry {
+export interface KicadNativePadGeometry {
   shape: "circle" | "rect" | "roundrect"
   size: [number, number]
   rotation: number
   roundrectRatio?: number
 }
 
+/**
+ * Older Circuit JSON files omitted radius for pill-shaped paste apertures.
+ * A pill's radius is unambiguously half its shorter side in those files.
+ */
 export const getResolvedPillRadius = ({
   width,
   height,
@@ -36,10 +40,10 @@ export const getResolvedPillRadius = ({
     ? radius
     : Math.min(width, height) / 2
 
-/** Maps Circuit JSON's simple pad shapes to their native KiCad geometry. */
-export const getSimpleKicadPadGeometry = (
-  pad: SimplePadGeometryInput,
-): SimpleKicadPadGeometry => {
+/** Maps Circuit JSON shapes that have native KiCad pad equivalents. */
+export const getKicadNativePadGeometry = (
+  pad: NativePadGeometryInput,
+): KicadNativePadGeometry => {
   switch (pad.shape) {
     case "circle":
       return {

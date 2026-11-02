@@ -10,7 +10,7 @@ import {
 import type { PcbNetInfo } from "../../../types"
 import { createFilledPolygonPrimitives } from "./custom-pad-geometry"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
-import { getSimpleKicadPadGeometry } from "./getSimpleKicadPadGeometry"
+import { getKicadNativePadGeometry } from "./getKicadNativePadGeometry"
 
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
@@ -89,7 +89,7 @@ export function createSmdPadFromCircuitJson({
     // Set a small anchor size (the anchor is just for the pad number)
     padSize = [0.2, 0.2]
   } else {
-    const geometry = getSimpleKicadPadGeometry(pcbPad)
+    const geometry = getKicadNativePadGeometry(pcbPad)
     padShape = geometry.shape
     padSize = geometry.size
     rotation = geometry.rotation

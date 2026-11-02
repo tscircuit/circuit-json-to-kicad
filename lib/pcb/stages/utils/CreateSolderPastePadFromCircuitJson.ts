@@ -8,7 +8,7 @@ import {
   getSafePolygonAnchor,
 } from "./custom-pad-geometry"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
-import { getSimpleKicadPadGeometry } from "./getSimpleKicadPadGeometry"
+import { getKicadNativePadGeometry } from "./getKicadNativePadGeometry"
 
 export const getSolderPasteCenter = (solderPaste: PcbSolderPaste): Point => {
   if ("x" in solderPaste && "y" in solderPaste) {
@@ -83,7 +83,7 @@ export const createSolderPastePadFromCircuitJson = ({
       ? polygonAnchor.triangles
       : [solderPaste.points]
   } else {
-    const geometry = getSimpleKicadPadGeometry(solderPaste)
+    const geometry = getKicadNativePadGeometry(solderPaste)
     shape = geometry.shape
     size = geometry.size
     rotation = geometry.rotation

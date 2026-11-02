@@ -33,13 +33,22 @@ export const triangulatePolygonWithHoles = (
   const triangles: Triangle[] = []
 
   for (let index = 0; index < triangleIndices.length; index += 3) {
-    const pointIndices = triangleIndices.slice(index, index + 3)
-    if (pointIndices.length !== 3) continue
+    const aIndex = triangleIndices[index]
+    const bIndex = triangleIndices[index + 1]
+    const cIndex = triangleIndices[index + 2]
+    if (aIndex === undefined || bIndex === undefined || cIndex === undefined) {
+      continue
+    }
 
-    const triangle = pointIndices.map((pointIndex) => ({
+    const getPoint = (pointIndex: number): Point => ({
       x: flattenedPoints[pointIndex * 2]!,
       y: flattenedPoints[pointIndex * 2 + 1]!,
-    })) as Triangle
+    })
+    const triangle: Triangle = [
+      getPoint(aIndex),
+      getPoint(bIndex),
+      getPoint(cIndex),
+    ]
 
     if (getTriangleTwiceArea(...triangle) === 0) continue
     triangles.push(triangle)
@@ -131,6 +140,8 @@ export const createEllipseContour = ({
     throw new Error("Ellipse must have positive dimensions")
   }
 
+  // KiCad has no elliptical pad primitive. With the default 64 segments, the
+  // maximum radial approximation error is below 0.13% of the ellipse radius.
   return Array.from({ length: segmentCount }, (_, index) => {
     const angle = (index / segmentCount) * Math.PI * 2
     return {

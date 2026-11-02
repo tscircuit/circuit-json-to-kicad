@@ -1,6 +1,6 @@
 import type { PcbSolderPaste, Point } from "circuit-json"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
-import { getResolvedPillRadius } from "./getSimpleKicadPadGeometry"
+import { getResolvedPillRadius } from "./getKicadNativePadGeometry"
 
 const normalizePolygonPoints = (points: Point[], origin: Point): Point[] =>
   points.map((point) => ({

@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import type { CircuitJson, PcbSolderPaste } from "circuit-json"
+import { KicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 
 const rectPaste = ({
@@ -41,10 +42,9 @@ test("repro37: standalone paste footprint names identify their geometry", () => 
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
+  const pcb = KicadPcb.parse(converter.getOutputString())[0] as KicadPcb
 
-  expect(
-    converter.getOutput().footprints.map((footprint) => footprint.libraryLink),
-  ).toEqual([
+  expect(pcb.footprints.map((footprint) => footprint.libraryLink)).toEqual([
     "tscircuit:solderpaste_top_rect_width1mm_height1mm",
     "tscircuit:solderpaste_top_rect_width3mm_height2mm",
     "tscircuit:solderpaste_top_rect_width1mm_height1mm",

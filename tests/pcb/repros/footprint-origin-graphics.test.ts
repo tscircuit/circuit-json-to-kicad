@@ -46,9 +46,7 @@ function expectGraphicsStayInBoardSpace(circuitJson: CircuitJson) {
   expect(output.footprints).toHaveLength(
     components.length + standaloneSolderPasteCount,
   )
-  const componentFootprints = output.footprints.filter(
-    (footprint) => !footprint.libraryLink?.startsWith("tscircuit:solderpaste_"),
-  )
+  const componentFootprints = output.footprints.slice(0, components.length)
   expect(componentFootprints).toHaveLength(components.length)
 
   for (const [componentIndex, component] of components.entries()) {
