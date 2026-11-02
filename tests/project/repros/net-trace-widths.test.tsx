@@ -1,5 +1,9 @@
 import { expect, test } from "bun:test"
-import { CircuitJsonToKicadProConverter } from "lib"
+import {
+  CircuitJsonToKicadPcbConverter,
+  CircuitJsonToKicadProConverter,
+} from "lib"
+import { parseKicadPcb } from "kicadts"
 import { Circuit } from "tscircuit"
 
 const NetTraceWidthsRepro = () => (
@@ -12,6 +16,12 @@ const NetTraceWidthsRepro = () => (
   >
     <net name="MOTOR_PHASE" nominalTraceWidth="2mm" />
     <net name="LOGIC_3V3" nominalTraceWidth="0.3mm" />
+    <resistor
+      name="R1"
+      resistance="1k"
+      footprint="0402"
+      connections={{ pin1: "net.MOTOR_PHASE", pin2: "net.LOGIC_3V3" }}
+    />
   </board>
 )
 
@@ -38,6 +48,12 @@ test("source net trace widths are preserved as KiCad netclass patterns", async (
     converter.getOutputString(),
   ) as ReturnType<typeof converter.getOutput>
   const generatedNetSettings = generatedProject.net_settings
+  const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  pcbConverter.runUntilFinished()
+  const exportedPcbNetNames = parseKicadPcb(pcbConverter.getOutputString())
+    .nets.map((net) => net.name)
+    .filter(Boolean)
+    .sort()
 
   expect(generatedNetSettings.meta.version).toBe(3)
   expect(generatedNetSettings.classes).toEqual([
@@ -73,10 +89,14 @@ test("source net trace widths are preserved as KiCad netclass patterns", async (
       pattern: "MOTOR_PHASE",
     },
   ])
+  expect(
+    generatedNetSettings.netclass_patterns.map(({ pattern }) => pattern).sort(),
+  ).toEqual(exportedPcbNetNames)
 
   expect({
     sourceNets,
     generatedNetSettings,
+    exportedPcbNetNames,
   }).toMatchSnapshot()
 })
 

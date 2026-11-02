@@ -2,6 +2,10 @@
 
 exports[`source net trace widths are preserved as KiCad netclass patterns 1`] = `
 {
+  "exportedPcbNetNames": [
+    "LOGIC_3V3",
+    "MOTOR_PHASE",
+  ],
   "generatedNetSettings": {
     "classes": [
       {
