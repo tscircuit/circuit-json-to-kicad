@@ -1,0 +1,29 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`repeated board-local trace names stay separate after KiCad loads the panel 1`] = `
+[
+  {
+    "name": "NET:.R1 &gt; .pin2 to .C1 &gt; .pin1",
+    "pins": [
+      "CMP:C1.PIN:1",
+      "CMP:C1_1.PIN:1",
+      "CMP:C1_2.PIN:1",
+      "CMP:C1_3.PIN:1",
+      "CMP:C1_4.PIN:1",
+      "CMP:C1_5.PIN:1",
+      "CMP:C1_6.PIN:1",
+      "CMP:C1_7.PIN:1",
+      "CMP:C1_8.PIN:1",
+      "CMP:R1.PIN:2",
+      "CMP:R1_1.PIN:2",
+      "CMP:R1_2.PIN:2",
+      "CMP:R1_3.PIN:2",
+      "CMP:R1_4.PIN:2",
+      "CMP:R1_5.PIN:2",
+      "CMP:R1_6.PIN:2",
+      "CMP:R1_7.PIN:2",
+      "CMP:R1_8.PIN:2",
+    ],
+  },
+]
+`;
