@@ -1,27 +1,28 @@
 import type {
   CircuitJson,
   PcbHole,
+  PcbHoleCircularWithRectPad,
+  PcbHolePillWithRectPad,
+  PcbHoleRotatedPillWithRectPad,
   PcbPlatedHole,
   PcbPlatedHoleOval,
-  PcbHolePillWithRectPad,
-  PcbHoleCircularWithRectPad,
-  PcbHoleRotatedPillWithRectPad,
   PcbSmtPad,
   PcbSolderPaste,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
 import { Footprint } from "kicadts"
-import { ConverterStage, type ConverterContext } from "../../types"
 import { applyToPoint } from "transformation-matrix"
-import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { type ConverterContext, ConverterStage } from "../../types"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
-import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
-import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
+import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import {
   createSolderPastePadFromCircuitJson,
   getSolderPasteCenter,
 } from "./utils/CreateSolderPastePadFromCircuitJson"
+import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromCircuitJson"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { getSolderPasteLibraryLink } from "./utils/getSolderPasteLibraryLink"
 
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
@@ -107,7 +108,7 @@ export class AddStandalonePcbElements extends ConverterStage<
       const footprintSeed = `standalone_solder_paste:${elm.pcb_solder_paste_id}`
       const kicadPos = applyToPoint(c2kMatPcb, center)
       const footprint = new Footprint({
-        libraryLink: `tscircuit:solderpaste_${elm.shape}`,
+        libraryLink: getSolderPasteLibraryLink(elm),
         layer: elm.layer === "bottom" ? "B.Cu" : "F.Cu",
         at: [kicadPos.x, kicadPos.y, 0],
         uuid: generateDeterministicUuid(footprintSeed),
