@@ -41,6 +41,14 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
 
 const DEFAULT_EDGE_CUTS_WIDTH = 0.1
 
+// KiCad stores PCB coordinates on a 1 nm grid (Circuit JSON uses mm).
+// Quantize before Boolean operations so coincident rotated edges do not
+// become almost-coincident segments that break polygon-clipping's sweep tree.
+const toClippingPoint = (point: { x: number; y: number }): [number, number] => [
+  Math.round(point.x * 1e6) / 1e6,
+  Math.round(point.y * 1e6) / 1e6,
+]
+
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
   graphicLines.push(grLine)
@@ -230,18 +238,25 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
-          cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([[cutoutCorners.map(toClippingPoint)]])
         } else if (cutout.shape === "circle") {
           // Approximate the circle as a polygon so polygon-clipping can process it.
           // Scaling the number of steps based on the radius to maintain smooth curves
-          cutoutPolys.push([[circleToPolygon(cutout.center, cutout.radius)]])
+          cutoutPolys.push([
+            [
+              circleToPolygon(cutout.center, cutout.radius).map(([x, y]) =>
+                toClippingPoint({ x, y }),
+              ),
+            ],
+          ])
         } else if (cutout.shape === "polygon") {
-          cutoutPolys.push([[cutout.points.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([[cutout.points.map(toClippingPoint)]])
         }
       }
 
       let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
       if (cutoutPolys.length > 0) {
+        boardGeom = [[corners.map(toClippingPoint)]]
         boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
       }
 
