@@ -11,6 +11,7 @@ import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricat
 import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
+import { getRectanglePoints } from "./utils/getRectanglePoints"
 import polygonClipping, { type MultiPolygon } from "polygon-clipping"
 import { roundPolygonToKicadPrecision } from "./utils/roundPolygonToKicadPrecision"
 
@@ -41,6 +42,11 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
 }
 
 const DEFAULT_EDGE_CUTS_WIDTH = 0.1
+// KiCad board coordinates have 1 nm resolution (six decimal places in mm).
+// https://dev-docs.kicad.org/en/file-formats/sexpr-intro/#_board_coordinates
+const KICAD_UNITS_PER_MM = 1_000_000
+const roundBoardCoordinate = (value: number) =>
+  Math.round(value * KICAD_UNITS_PER_MM) / KICAD_UNITS_PER_MM
 
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
@@ -70,17 +76,7 @@ const rotatePointAroundOrigin = (
 }
 
 const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
-  const halfWidth = cutout.width / 2
-  const halfHeight = cutout.height / 2
-
-  const localCorners = [
-    { x: -halfWidth, y: -halfHeight },
-    { x: halfWidth, y: -halfHeight },
-    { x: halfWidth, y: halfHeight },
-    { x: -halfWidth, y: halfHeight },
-  ]
-
-  return localCorners.map((point) => {
+  return getRectanglePoints(cutout).map((point) => {
     const rotatedPoint = rotatePointAroundOrigin(point, cutout.rotation)
 
     return {
@@ -194,6 +190,18 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    // Clip geometry on KiCad's coordinate grid. Coincident rounded slots must
+    // share vertices instead of differing by sub-nanometer rotation noise.
+    const toKicadPoint = (point: {
+      x: number
+      y: number
+    }): [number, number] => {
+      const transformed = applyToPoint(c2kMatPcb, point)
+      return [
+        roundBoardCoordinate(transformed.x),
+        roundBoardCoordinate(transformed.y),
+      ]
+    }
     const outlineElements = [
       ...this.ctx.db.pcb_panel.list(),
       ...this.ctx.db.pcb_board.list(),
@@ -224,7 +232,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ]
       }
 
-      outlinePolys.push([[corners.map((c) => [c.x, c.y])]])
+      outlinePolys.push([[corners.map(toKicadPoint)]])
     }
 
     const [firstOutline, ...otherOutlines] = outlinePolys
@@ -235,13 +243,19 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
-          cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([[cutoutCorners.map(toKicadPoint)]])
         } else if (cutout.shape === "circle") {
           // Approximate the circle as a polygon so polygon-clipping can process it.
           // Scaling the number of steps based on the radius to maintain smooth curves
-          cutoutPolys.push([[circleToPolygon(cutout.center, cutout.radius)]])
+          cutoutPolys.push([
+            [
+              circleToPolygon(cutout.center, cutout.radius).map(([x, y]) =>
+                toKicadPoint({ x, y }),
+              ),
+            ],
+          ])
         } else if (cutout.shape === "polygon") {
-          cutoutPolys.push([[cutout.points.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([[cutout.points.map(toKicadPoint)]])
         }
       }
 
@@ -264,9 +278,12 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       // Convert resulting polygons back to lines on Edge.Cuts
       for (const poly of boardGeom) {
         for (const ring of poly) {
-          const transformedRing = ring.map((point: [number, number]) =>
-            applyToPoint(c2kMatPcb, { x: point[0], y: point[1] }),
-          )
+          // Intersections can lie between grid points. Quantize them before
+          // the existing duplicate-endpoint check to avoid zero-length edges.
+          const transformedRing = ring.map(([x, y]) => ({
+            x: roundBoardCoordinate(x),
+            y: roundBoardCoordinate(y),
+          }))
 
           for (let i = 0; i < transformedRing.length; i++) {
             const start = transformedRing[i]
