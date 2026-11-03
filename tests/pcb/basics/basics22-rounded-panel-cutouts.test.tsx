@@ -80,6 +80,7 @@ test("preserves rounded slot ends on angled panel edges", async () => {
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
     kicadFileType: "pcb",
+    pcbDrillHoleColor: "#1ac4d2",
     pcbViewport: {
       ...applyToPoint(converter.ctx.c2kMatPcb!, { x: -17, y: 15 }),
       width: 34,
