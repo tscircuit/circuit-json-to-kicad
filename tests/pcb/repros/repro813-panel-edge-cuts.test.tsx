@@ -169,6 +169,7 @@ test("pcb repro813 panel Edge.Cuts match snapshots", async () => {
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: converter.getOutputString(),
       kicadFileType: "pcb",
+      pcbDrillHoleColor: "#1ac4d2",
       pcbLayers: ["F.Cu", "F.SilkS", "Edge.Cuts"],
       pcbViewport: {
         x: topLeft.x,
