@@ -85,7 +85,15 @@ export class AddSchematicTracesStage extends ConverterStage<
       )
     }
     const names = new Map<string, string>()
+    // Core already labels these traces via schematic_text
+    const labeledTraceIds = new Set(
+      db.schematic_text
+        ?.list()
+        .map((text) => text.source_trace_id)
+        .filter(Boolean),
+    )
     for (const sourceTrace of db.source_trace?.list() ?? []) {
+      if (labeledTraceIds.has(sourceTrace.source_trace_id)) continue
       const key = getSourceTraceConnectivityKey(db, sourceTrace)
       if (!key || namedKeys.has(key) || names.has(key)) continue
       names.set(key, getUnnamedNetName(sourceTrace, key))
