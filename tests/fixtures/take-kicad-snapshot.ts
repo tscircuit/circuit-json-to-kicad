@@ -220,6 +220,7 @@ export const takeKicadSnapshot = async (params: {
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
   pcbLayers?: string[]
+  pcbPageSizeMode?: 0 | 1 | 2
 }): Promise<KicadOutput> => {
   const {
     kicadFilePath,
@@ -229,6 +230,7 @@ export const takeKicadSnapshot = async (params: {
     includeSvg = false,
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
+    pcbPageSizeMode = 2,
     pcbLayers = [
       "B.Cu",
       "In1.Cu",
@@ -321,7 +323,7 @@ export const takeKicadSnapshot = async (params: {
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
-        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers ${pcbLayers.join(",")} --mode-single --page-size-mode 2 --exclude-drawing-sheet`
+        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers ${pcbLayers.join(",")} --mode-single --page-size-mode ${pcbPageSizeMode} --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
 
