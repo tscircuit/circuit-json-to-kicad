@@ -23,12 +23,19 @@ test("panel score drawing paths survive on native KiCad fabrication layers", asy
   )
     .png()
     .toBuffer()
-  await expect(
-    stackCircuitJsonKicadPngs(
-      sourcePng,
-      snapshot.generatedFileContent["temp_file.png"]!,
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
+  const comparisonPng = await stackCircuitJsonKicadPngs(
+    sourcePng,
+    snapshot.generatedFileContent["temp_file.png"]!,
+  )
+  if (process.env.CI)
+    await Bun.write(
+      new URL(
+        "./__snapshots__/panel-score-annotations.actual.snap.png",
+        import.meta.url,
+      ),
+      comparisonPng,
+    )
+  await expect(comparisonPng).toMatchPngSnapshot(import.meta.path)
   const scoreLines = converter
     .getOutput()
     .graphicLines.filter((line) =>
