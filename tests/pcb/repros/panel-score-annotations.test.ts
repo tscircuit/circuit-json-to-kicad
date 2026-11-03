@@ -15,7 +15,24 @@ test("panel score drawing paths survive on native KiCad fabrication layers", asy
     kicadFileContent: converter.getOutputString(),
     kicadFileType: "pcb",
     pcbLayers: ["Edge.Cuts", "F.Fab", "B.Fab"],
+    includeSvg: true,
   })
+  if (process.env.CI) {
+    await Bun.write(
+      new URL(
+        "./__snapshots__/panel-score-annotations.actual.snap.png",
+        import.meta.url,
+      ),
+      snapshot.generatedFileContent["temp_file.png"]!,
+    )
+    await Bun.write(
+      new URL(
+        "./__snapshots__/panel-score-annotations.native.received.svg",
+        import.meta.url,
+      ),
+      snapshot.generatedFileContent["temp_file.svg"]!,
+    )
+  }
   const sourcePng = await sharp(
     Buffer.from(
       convertCircuitJsonToPcbSvg(circuitJson, { showFabricationNotes: true }),
