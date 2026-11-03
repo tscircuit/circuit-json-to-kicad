@@ -194,21 +194,20 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add board outline from pcb_board
-    const pcbBoards = this.ctx.db.pcb_board?.list() || []
-
-    if (pcbBoards.length > 0) {
-      const board = pcbBoards[0]
-
-      if (!board) {
-        this.finished = true
-        return
-      }
-
+    const outlineElements = [
+      ...this.ctx.db.pcb_panel.list(),
+      ...this.ctx.db.pcb_board.list(),
+    ]
+    const outlinePolys: MultiPolygon[] = []
+    for (const board of outlineElements) {
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
-      if (board.outline && board.outline.length > 0) {
+      if (
+        board.type === "pcb_board" &&
+        board.outline &&
+        board.outline.length > 0
+      ) {
         // Use the custom outline points
         corners = normalizeOutlineCorners(board.outline)
       } else {
@@ -225,6 +224,11 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ]
       }
 
+      outlinePolys.push([[corners.map((c) => [c.x, c.y])]])
+    }
+
+    const [firstOutline, ...otherOutlines] = outlinePolys
+    if (firstOutline) {
       const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
       const cutoutPolys: MultiPolygon[] = []
@@ -241,7 +245,13 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
-      let boardGeom: MultiPolygon = [[corners.map((c) => [c.x, c.y])]]
+      // Boards inside a panel are part of the same substrate. Union their
+      // outlines before subtracting routing slots, so board interiors do not
+      // become holes or add crossing Edge.Cuts. Disjoint boards remain islands.
+      let boardGeom: MultiPolygon =
+        otherOutlines.length > 0
+          ? polygonClipping.union(firstOutline, ...otherOutlines)
+          : firstOutline
       if (cutoutPolys.length > 0) {
         boardGeom = roundPolygonToKicadPrecision(
           polygonClipping.difference(

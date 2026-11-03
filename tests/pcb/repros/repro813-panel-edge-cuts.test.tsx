@@ -6,6 +6,8 @@ import { applyToPoint } from "transformation-matrix"
 import { Circuit } from "tscircuit"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+import { getKicadPcbDrc } from "../../fixtures/get-kicad-pcb-drc"
+import { isPointInsideEdgeCuts } from "../../fixtures/is-point-inside-edge-cuts"
 
 const B = () => (
   <board width="14mm" height="18mm">
@@ -61,8 +63,42 @@ test("pcb repro813 panel Edge.Cuts match snapshots", async () => {
 
     expect(boards).toHaveLength(9)
     expect(cutouts).toHaveLength(panelizationMethod === "tab-routing" ? 72 : 36)
-    // Records #813: the export has only the first board's four edges.
-    expect(edgeCuts).toHaveLength(4)
+    const edgePoints = edgeCuts.flatMap((line) => [line.start!, line.end!])
+    const panelTopLeft = applyToPoint(converter.ctx.c2kMatPcb!, {
+      x: panel.center.x - panel.width / 2,
+      y: panel.center.y + panel.height / 2,
+    })
+    expect(Math.min(...edgePoints.map((p) => p.x))).toBeCloseTo(panelTopLeft.x)
+    expect(Math.max(...edgePoints.map((p) => p.x))).toBeCloseTo(
+      panelTopLeft.x + panel.width,
+    )
+    expect(Math.min(...edgePoints.map((p) => p.y))).toBeCloseTo(panelTopLeft.y)
+    expect(Math.max(...edgePoints.map((p) => p.y))).toBeCloseTo(
+      panelTopLeft.y + panel.height,
+    )
+    for (const board of boards) {
+      expect(
+        isPointInsideEdgeCuts(
+          edgeCuts,
+          applyToPoint(converter.ctx.c2kMatPcb!, board.center),
+        ),
+      ).toBe(true)
+    }
+    for (const cutout of cutouts) {
+      expect(cutout.shape).toBe("rect")
+      if (cutout.shape !== "rect")
+        throw new Error("Expected rectangular routing cutouts")
+      expect(
+        isPointInsideEdgeCuts(
+          edgeCuts,
+          applyToPoint(converter.ctx.c2kMatPcb!, cutout.center),
+        ),
+      ).toBe(false)
+    }
+    const drc = await getKicadPcbDrc(converter.getOutputString())
+    expect(
+      drc.violations.filter((v) => v.type === "invalid_outline"),
+    ).toHaveLength(0)
 
     // Keep the whole panel visible even when its Edge.Cuts are missing.
     const viewport = {
