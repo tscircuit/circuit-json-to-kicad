@@ -59,7 +59,6 @@ test("pcb repro814 tab-routed panels fail during polygon clipping", async () => 
       stackCircuitJsonKicadPngs(
         await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
         kicadSnapshot.generatedFileContent["temp_file.png"]!,
-        { kicadLabel: "KiCad: partial output after export failure" },
       ),
     ).toMatchPngSnapshot(
       import.meta.path,
