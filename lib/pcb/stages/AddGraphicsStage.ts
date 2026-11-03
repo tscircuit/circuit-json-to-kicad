@@ -8,7 +8,7 @@ import type { KicadPcb } from "kicadts"
 import { GrCircle, GrLine, GrPoly } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
-import { applyToPoint, rotate } from "transformation-matrix"
+import { applyToPoint, rotate, type Matrix } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
 import { getRectanglePoints } from "./utils/getRectanglePoints"
@@ -45,8 +45,21 @@ const DEFAULT_EDGE_CUTS_WIDTH = 0.1
 // KiCad board coordinates have 1 nm resolution (six decimal places in mm).
 // https://dev-docs.kicad.org/en/file-formats/sexpr-intro/#_board_coordinates
 const KICAD_UNITS_PER_MM = 1_000_000
-const roundBoardCoordinate = (value: number) =>
-  Math.round(value * KICAD_UNITS_PER_MM) / KICAD_UNITS_PER_MM
+const roundBoardCoordinate = (coordinateMm: number) =>
+  Math.round(coordinateMm * KICAD_UNITS_PER_MM) / KICAD_UNITS_PER_MM
+
+// Clip geometry on KiCad's coordinate grid. Coincident rounded slots must
+// share vertices instead of differing by sub-nanometer rotation noise.
+const toKicadPoint = (
+  point: { x: number; y: number },
+  c2kMatPcb: Matrix,
+): [number, number] => {
+  const transformed = applyToPoint(c2kMatPcb, point)
+  return [
+    roundBoardCoordinate(transformed.x),
+    roundBoardCoordinate(transformed.y),
+  ]
+}
 
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
@@ -190,18 +203,6 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Clip geometry on KiCad's coordinate grid. Coincident rounded slots must
-    // share vertices instead of differing by sub-nanometer rotation noise.
-    const toKicadPoint = (point: {
-      x: number
-      y: number
-    }): [number, number] => {
-      const transformed = applyToPoint(c2kMatPcb, point)
-      return [
-        roundBoardCoordinate(transformed.x),
-        roundBoardCoordinate(transformed.y),
-      ]
-    }
     const outlineElements = [
       ...this.ctx.db.pcb_panel.list(),
       ...this.ctx.db.pcb_board.list(),
@@ -232,7 +233,9 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ]
       }
 
-      outlinePolys.push([[corners.map(toKicadPoint)]])
+      outlinePolys.push([
+        [corners.map((point) => toKicadPoint(point, c2kMatPcb))],
+      ])
     }
 
     const [firstOutline, ...otherOutlines] = outlinePolys
@@ -243,19 +246,23 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
-          cutoutPolys.push([[cutoutCorners.map(toKicadPoint)]])
+          cutoutPolys.push([
+            [cutoutCorners.map((point) => toKicadPoint(point, c2kMatPcb))],
+          ])
         } else if (cutout.shape === "circle") {
           // Approximate the circle as a polygon so polygon-clipping can process it.
           // Scaling the number of steps based on the radius to maintain smooth curves
           cutoutPolys.push([
             [
               circleToPolygon(cutout.center, cutout.radius).map(([x, y]) =>
-                toKicadPoint({ x, y }),
+                toKicadPoint({ x, y }, c2kMatPcb),
               ),
             ],
           ])
         } else if (cutout.shape === "polygon") {
-          cutoutPolys.push([[cutout.points.map(toKicadPoint)]])
+          cutoutPolys.push([
+            [cutout.points.map((point) => toKicadPoint(point, c2kMatPcb))],
+          ])
         }
       }
 

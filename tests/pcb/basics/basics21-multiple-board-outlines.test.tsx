@@ -1,13 +1,19 @@
 import { expect, test } from "bun:test"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
+import type { GrLine } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import sharp from "sharp"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPoint, type Matrix } from "transformation-matrix"
 import { Circuit } from "tscircuit"
 import { getKicadPcbDrc } from "../../fixtures/get-kicad-pcb-drc"
 import { isPointInsideEdgeCuts } from "../../fixtures/is-point-inside-edge-cuts"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+
+const inside = (
+  point: { x: number; y: number },
+  { edges, c2kMatPcb }: { edges: GrLine[]; c2kMatPcb: Matrix },
+) => isPointInsideEdgeCuts(edges, applyToPoint(c2kMatPcb, point))
 
 test("exports disjoint boards with a custom outline and a cutout", async () => {
   const circuit = new Circuit()
@@ -38,17 +44,18 @@ test("exports disjoint boards with a custom outline and a cutout", async () => {
     .graphicLines.filter((line) => line.layer?.names[0] === "Edge.Cuts")
   const boards = circuitJson.filter((element) => element.type === "pcb_board")
   expect(boards).toHaveLength(2)
-  const inside = (point: { x: number; y: number }) =>
-    isPointInsideEdgeCuts(edges, applyToPoint(converter.ctx.c2kMatPcb!, point))
-  for (const board of boards) expect(inside(board.center)).toBe(true)
-  expect(inside({ x: 25, y: 0 })).toBe(false)
+  const c2kMatPcb = converter.ctx.c2kMatPcb!
+  for (const board of boards)
+    expect(inside(board.center, { edges, c2kMatPcb })).toBe(true)
+  expect(inside({ x: 25, y: 0 }, { edges, c2kMatPcb })).toBe(false)
   // The clipped corners of the second board must not become a rectangle.
-  expect(inside({ x: 45.5, y: 4.5 })).toBe(false)
+  expect(inside({ x: 45.5, y: 4.5 }, { edges, c2kMatPcb })).toBe(false)
   const cutout = circuitJson.find(
     (element) => element.type === "pcb_cutout" && element.shape === "circle",
   )!
   expect(cutout.shape).toBe("circle")
-  if (cutout.shape === "circle") expect(inside(cutout.center)).toBe(false)
+  if (cutout.shape === "circle")
+    expect(inside(cutout.center, { edges, c2kMatPcb })).toBe(false)
 
   const output = converter.getOutputString()
   const report = await getKicadPcbDrc(output)

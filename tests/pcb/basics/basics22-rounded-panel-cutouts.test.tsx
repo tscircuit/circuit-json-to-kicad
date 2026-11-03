@@ -1,13 +1,25 @@
 import { expect, test } from "bun:test"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
+import type { GrLine } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import sharp from "sharp"
-import { applyToPoint, compose, rotate, translate } from "transformation-matrix"
+import {
+  applyToPoint,
+  compose,
+  rotate,
+  translate,
+  type Matrix,
+} from "transformation-matrix"
 import { Circuit } from "tscircuit"
 import { getKicadPcbDrc } from "../../fixtures/get-kicad-pcb-drc"
 import { isPointInsideEdgeCuts } from "../../fixtures/is-point-inside-edge-cuts"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
+
+const inside = (
+  point: { x: number; y: number },
+  { edges, cutoutToKicadMat }: { edges: GrLine[]; cutoutToKicadMat: Matrix },
+) => isPointInsideEdgeCuts(edges, applyToPoint(cutoutToKicadMat, point))
 
 test("preserves rounded slot ends on angled panel edges", async () => {
   const circuit = new Circuit()
@@ -45,14 +57,12 @@ test("preserves rounded slot ends on angled panel edges", async () => {
     expect(radius).toBeGreaterThan(0)
     expect(radius).toBeCloseTo(cutout.height / 2)
     expect(Math.abs((cutout.rotation ?? 0) % 90)).toBeGreaterThan(1)
-    const toKicad = compose(
+    const cutoutToKicadMat = compose(
       converter.ctx.c2kMatPcb!,
       translate(cutout.center.x, cutout.center.y),
       rotate(((cutout.rotation ?? 0) * Math.PI) / 180),
     )
-    const inside = (x: number, y: number) =>
-      isPointInsideEdgeCuts(edges, applyToPoint(toKicad, { x, y }))
-    expect(inside(0, 0)).toBe(false)
+    expect(inside({ x: 0, y: 0 }, { edges, cutoutToKicadMat })).toBe(false)
     // Each edge has two slots separated by a tab. Check the rounded end
     // facing the tab, away from the overlap at the board's corner.
     const endSign = index % 2 === 0 ? 1 : -1
@@ -60,14 +70,20 @@ test("preserves rounded slot ends on angled panel edges", async () => {
       // A square-ended cutout would incorrectly remove this material.
       expect(
         inside(
-          endSign * (cutout.width / 2 - radius * 0.1),
-          sideSign * (cutout.height / 2 - radius * 0.1),
+          {
+            x: endSign * (cutout.width / 2 - radius * 0.1),
+            y: sideSign * (cutout.height / 2 - radius * 0.1),
+          },
+          { edges, cutoutToKicadMat },
         ),
       ).toBe(true)
       expect(
         inside(
-          endSign * (cutout.width / 2 - radius / 2),
-          sideSign * (cutout.height / 2 - radius / 2),
+          {
+            x: endSign * (cutout.width / 2 - radius / 2),
+            y: sideSign * (cutout.height / 2 - radius / 2),
+          },
+          { edges, cutoutToKicadMat },
         ),
       ).toBe(false)
     }
