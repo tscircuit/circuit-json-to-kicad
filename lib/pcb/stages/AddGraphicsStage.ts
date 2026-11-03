@@ -13,7 +13,10 @@ import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson
 import { circleToPolygon } from "./utils/circleToPolygon"
 import { getRectanglePoints } from "./utils/getRectanglePoints"
 import polygonClipping, { type MultiPolygon } from "polygon-clipping"
-import { roundPolygonToKicadPrecision } from "./utils/roundPolygonToKicadPrecision"
+import {
+  roundBoardCoordinate,
+  roundPolygonToKicadPrecision,
+} from "./utils/roundPolygonToKicadPrecision"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -42,11 +45,6 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
 }
 
 const DEFAULT_EDGE_CUTS_WIDTH = 0.1
-// KiCad board coordinates have 1 nm resolution (six decimal places in mm).
-// https://dev-docs.kicad.org/en/file-formats/sexpr-intro/#_board_coordinates
-const KICAD_UNITS_PER_MM = 1_000_000
-const roundBoardCoordinate = (coordinateMm: number) =>
-  Math.round(coordinateMm * KICAD_UNITS_PER_MM) / KICAD_UNITS_PER_MM
 
 // Clip geometry on KiCad's coordinate grid. Coincident rounded slots must
 // share vertices instead of differing by sub-nanometer rotation noise.
@@ -274,22 +272,22 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           ? polygonClipping.union(firstOutline, ...otherOutlines)
           : firstOutline
       if (cutoutPolys.length > 0) {
-        boardGeom = roundPolygonToKicadPrecision(
-          polygonClipping.difference(
-            roundPolygonToKicadPrecision(boardGeom),
-            ...cutoutPolys.map(roundPolygonToKicadPrecision),
-          ),
+        boardGeom = polygonClipping.difference(
+          roundPolygonToKicadPrecision(boardGeom),
+          ...cutoutPolys,
         )
       }
+
+      // Intersections can lie between grid points. Quantize them before
+      // the existing duplicate-endpoint check to avoid zero-length edges.
+      boardGeom = roundPolygonToKicadPrecision(boardGeom)
 
       // Convert resulting polygons back to lines on Edge.Cuts
       for (const poly of boardGeom) {
         for (const ring of poly) {
-          // Intersections can lie between grid points. Quantize them before
-          // the existing duplicate-endpoint check to avoid zero-length edges.
           const transformedRing = ring.map(([x, y]) => ({
-            x: roundBoardCoordinate(x),
-            y: roundBoardCoordinate(y),
+            x,
+            y,
           }))
 
           for (let i = 0; i < transformedRing.length; i++) {

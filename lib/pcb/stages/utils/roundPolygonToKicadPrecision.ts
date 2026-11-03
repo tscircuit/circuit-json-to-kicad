@@ -7,14 +7,14 @@ import type { MultiPolygon } from "polygon-clipping"
 // https://dev-docs.kicad.org/en/file-formats/sexpr-intro/#_board_coordinates
 const KICAD_PCB_UNITS_PER_MM = 1_000_000
 
+export const roundBoardCoordinate = (coordinateMm: number) =>
+  Math.round(coordinateMm * KICAD_PCB_UNITS_PER_MM) / KICAD_PCB_UNITS_PER_MM
+
 export const roundPolygonToKicadPrecision = (
   geometry: MultiPolygon,
 ): MultiPolygon =>
   geometry.map((polygon) =>
     polygon.map((ring) =>
-      ring.map(([x, y]) => [
-        Math.round(x * KICAD_PCB_UNITS_PER_MM) / KICAD_PCB_UNITS_PER_MM,
-        Math.round(y * KICAD_PCB_UNITS_PER_MM) / KICAD_PCB_UNITS_PER_MM,
-      ]),
+      ring.map(([x, y]) => [roundBoardCoordinate(x), roundBoardCoordinate(y)]),
     ),
   )
