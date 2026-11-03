@@ -1,6 +1,7 @@
 import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
 import { resolveKicadPcbNetName } from "../pcb/utils/resolveKicadPcbNetName"
+import { getPanelBoardIdBySubcircuit } from "../pcb/utils/getPanelBoardIdBySubcircuit"
 import {
   buildSchematicSheetPlan,
   type SchematicSheetPlan,
@@ -229,6 +230,9 @@ export class CircuitJsonToKicadProConverter {
     }
 
     const netClassByNetName = new Map<string, string>()
+    const boardIdBySubcircuit = getPanelBoardIdBySubcircuit(
+      this.ctx.circuitJson,
+    )
     const sourceNetsWithTraceWidths = sourceNets
       .filter((sourceNet) => sourceNet.trace_width !== undefined)
       .map((sourceNet) => {
@@ -239,6 +243,7 @@ export class CircuitJsonToKicadProConverter {
           netName: resolveKicadPcbNetName(
             sourceNet.name || sourceNet.source_net_id,
             connectivityKey,
+            boardIdBySubcircuit.get(sourceNet.subcircuit_id ?? ""),
           ),
         }
       })

@@ -1,7 +1,11 @@
 export const resolveKicadPcbNetName = (
   candidateName: string | undefined,
   connectivityKey: string,
-): string =>
-  candidateName && candidateName.trim().length > 0
-    ? candidateName
-    : connectivityKey
+  boardId?: string,
+): string => {
+  const name =
+    candidateName && candidateName.trim().length > 0
+      ? candidateName
+      : connectivityKey
+  return boardId ? `${boardId}/${name}` : name
+}

@@ -11,19 +11,19 @@ Each connection is already routed within its own board.
 
 EXPORTED KICAD NETS
 Numeric ID | Net name
-1 | .R1 > .pin2 to .C1 > .pin1
-2 | .R1 > .pin2 to .C1 > .pin1
-3 | .R1 > .pin2 to .C1 > .pin1
-4 | .R1 > .pin2 to .C1 > .pin1
-5 | .R1 > .pin2 to .C1 > .pin1
-6 | .R1 > .pin2 to .C1 > .pin1
-7 | .R1 > .pin2 to .C1 > .pin1
-8 | .R1 > .pin2 to .C1 > .pin1
-9 | .R1 > .pin2 to .C1 > .pin1
+1 | pcb_board_0/.R1 > .pin2 to .C1 > .pin1
+2 | pcb_board_1/.R1 > .pin2 to .C1 > .pin1
+3 | pcb_board_2/.R1 > .pin2 to .C1 > .pin1
+4 | pcb_board_3/.R1 > .pin2 to .C1 > .pin1
+5 | pcb_board_4/.R1 > .pin2 to .C1 > .pin1
+6 | pcb_board_5/.R1 > .pin2 to .C1 > .pin1
+7 | pcb_board_6/.R1 > .pin2 to .C1 > .pin1
+8 | pcb_board_7/.R1 > .pin2 to .C1 > .pin1
+9 | pcb_board_8/.R1 > .pin2 to .C1 > .pin1
 
 EXPECTED VS ACTUAL
-Unique net names: expected 9, actual 1
-Native KiCad DRC missing connections: expected 0, actual 8
+Unique net names: expected 9, actual 9
+Native KiCad DRC missing connections: expected 0, actual 0
 
-BUG: KiCad requests connections between boards that should be independent."
+PASS: KiCad does not request connections between the independent boards."
 `;
