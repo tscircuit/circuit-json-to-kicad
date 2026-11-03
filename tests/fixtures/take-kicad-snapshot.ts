@@ -220,8 +220,6 @@ export const takeKicadSnapshot = async (params: {
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
   pcbLayers?: string[]
-  /** Include all plotted objects on the page, even outside Edge.Cuts. */
-  pcbFraming?: "board" | "content"
 }): Promise<KicadOutput> => {
   const {
     kicadFilePath,
@@ -231,7 +229,6 @@ export const takeKicadSnapshot = async (params: {
     includeSvg = false,
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
-    pcbFraming = "board",
     pcbLayers = [
       "B.Cu",
       "In1.Cu",
@@ -324,7 +321,7 @@ export const takeKicadSnapshot = async (params: {
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
-        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers ${pcbLayers.join(",")} --mode-single --page-size-mode ${pcbFraming === "content" ? 1 : 2} --exclude-drawing-sheet`
+        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers ${pcbLayers.join(",")} --mode-single --page-size-mode 2 --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
 
@@ -368,29 +365,9 @@ export const takeKicadSnapshot = async (params: {
 
       // For PCB files, scale 3x and add black background
       if (isPcbSnapshot) {
-        if (pcbFraming === "content") {
-          // Export the whole page first, then remove only transparent margins.
-          // Board-area export can hide objects when Edge.Cuts is incomplete.
-          // Rasterize at the final scale before trimming to keep text sharp.
-          const pageMetadata = await pngProcessor.metadata()
-          const fullPagePng = await pngProcessor
-            .resize(
-              (pageMetadata.width || 0) * 3,
-              (pageMetadata.height || 0) * 3,
-            )
-            .png()
-            .toBuffer()
-          pngProcessor = sharp(
-            await sharp(fullPagePng)
-              .trim({ background: "#00000000", threshold: 0 })
-              .png()
-              .toBuffer(),
-          )
-        }
         const metadata = await pngProcessor.metadata()
-        const scale = pcbFraming === "content" ? 1 : 3
-        const width = (metadata.width || 0) * scale
-        const height = (metadata.height || 0) * scale
+        const width = (metadata.width || 0) * 3
+        const height = (metadata.height || 0) * 3
 
         // Create black background
         const blackBg = await sharp({
