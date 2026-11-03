@@ -78,6 +78,7 @@ test("pcb repro814 tab-routed panels export without polygon clipping failures", 
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: converter.getOutputString(),
       kicadFileType: "pcb",
+      pcbFraming: "content",
     })
     expect(kicadSnapshot.exitCode).toBe(0)
     await expect(
