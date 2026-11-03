@@ -12,7 +12,7 @@ import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
 import polygonClipping, { type MultiPolygon } from "polygon-clipping"
-import { normalizePolygonForKicad } from "./utils/normalizePolygonForKicad"
+import { roundPolygonToKicadPrecision } from "./utils/roundPolygonToKicadPrecision"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -243,10 +243,10 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       let boardGeom: MultiPolygon = [[corners.map((c) => [c.x, c.y])]]
       if (cutoutPolys.length > 0) {
-        boardGeom = normalizePolygonForKicad(
+        boardGeom = roundPolygonToKicadPrecision(
           polygonClipping.difference(
-            normalizePolygonForKicad(boardGeom),
-            ...cutoutPolys.map(normalizePolygonForKicad),
+            roundPolygonToKicadPrecision(boardGeom),
+            ...cutoutPolys.map(roundPolygonToKicadPrecision),
           ),
         )
       }
