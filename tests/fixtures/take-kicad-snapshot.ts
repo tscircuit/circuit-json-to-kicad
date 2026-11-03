@@ -8,6 +8,13 @@ import sharp from "sharp"
 type FilePath = string
 type FileContent = Buffer
 
+interface PcbSnapshotViewport {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
 export interface KicadOutput {
   exitCode: number
   generatedFileContent: Record<FilePath, FileContent>
@@ -140,13 +147,25 @@ export function normalizePcbSvgForSnapshot(
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
     zoneFilledPolygonCountsByLayer,
+    pcbViewport,
   }: {
     pcbDrillHoleColor?: string
     pcbCopperPourOpacity?: number
     zoneFilledPolygonCountsByLayer?: Map<string, number>
+    pcbViewport?: PcbSnapshotViewport
   } = {},
 ): string {
   let normalizedSvg = svg
+
+  if (pcbViewport) {
+    const { x, y, width, height } = pcbViewport
+    normalizedSvg = normalizedSvg.replace(/<svg\b[\s\S]*?>/, (root) =>
+      root
+        .replace(/\bwidth="[^"]*"/, `width="${width}mm"`)
+        .replace(/\bheight="[^"]*"/, `height="${height}mm"`)
+        .replace(/\bviewBox="[^"]*"/, `viewBox="${x} ${y} ${width} ${height}"`),
+    )
+  }
 
   if (pcbDrillHoleColor) {
     const drillFillStyle = `fill:${pcbDrillHoleColor}; fill-opacity:1.0000; stroke:none;`
@@ -220,6 +239,8 @@ export const takeKicadSnapshot = async (params: {
   pcbDrillHoleColor?: string
   pcbCopperPourOpacity?: number
   pcbLayers?: string[]
+  /** Viewport in KiCad millimetres, including objects outside Edge.Cuts. */
+  pcbViewport?: PcbSnapshotViewport
 }): Promise<KicadOutput> => {
   const {
     kicadFilePath,
@@ -229,6 +250,7 @@ export const takeKicadSnapshot = async (params: {
     includeSvg = false,
     pcbDrillHoleColor,
     pcbCopperPourOpacity,
+    pcbViewport,
     pcbLayers = [
       "B.Cu",
       "In1.Cu",
@@ -321,7 +343,7 @@ export const takeKicadSnapshot = async (params: {
     const exportCmd =
       kicadFileType === "sch"
         ? $`kicad-cli sch export svg ${inputFilePath} -o ${outputDir} --theme Modern`
-        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers ${pcbLayers.join(",")} --mode-single --page-size-mode 2 --exclude-drawing-sheet`
+        : $`kicad-cli pcb export svg ${inputFilePath} -o ${join(outputDir, "temp_file.svg")} --layers ${pcbLayers.join(",")} --mode-single --page-size-mode ${pcbViewport ? 0 : 2} --exclude-drawing-sheet`
 
     const exportResult = await exportCmd
 
@@ -351,6 +373,7 @@ export const takeKicadSnapshot = async (params: {
               pcbDrillHoleColor,
               pcbCopperPourOpacity,
               zoneFilledPolygonCountsByLayer,
+              pcbViewport,
             }),
           )
         : rawSvgBuffer
