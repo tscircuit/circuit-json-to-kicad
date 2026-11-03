@@ -1,12 +1,7 @@
 import { beforeAll, expect, test } from "bun:test"
-import type { CircuitJson } from "circuit-json"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
-import sharp from "sharp"
 import { Circuit } from "tscircuit"
 import { runKicadPcbDrc } from "../../fixtures/run-kicad-pcb-drc"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const PanelNetNamesRepro = () => (
   <panel
@@ -29,7 +24,8 @@ const PanelNetNamesRepro = () => (
 
 export default PanelNetNamesRepro
 
-let circuitJson: CircuitJson
+let boardCount: number
+let independentNetCount: number
 let converter: CircuitJsonToKicadPcbConverter
 let drc: Awaited<ReturnType<typeof runKicadPcbDrc>>
 
@@ -37,8 +33,15 @@ beforeAll(async () => {
   const circuit = new Circuit()
   circuit.add(<PanelNetNamesRepro />)
   await circuit.renderUntilSettled()
-  circuitJson = circuit.getCircuitJson()
-  expect(circuitJson.filter((e) => e.type === "pcb_board")).toHaveLength(9)
+  const circuitJson = circuit.getCircuitJson()
+  boardCount = circuitJson.filter((e) => e.type === "pcb_board").length
+  independentNetCount = new Set(
+    circuitJson
+      .filter((e) => e.type === "source_trace")
+      .map((trace) => trace.subcircuit_connectivity_map_key),
+  ).size
+  expect(boardCount).toBe(9)
+  expect(independentNetCount).toBe(9)
   expect(circuitJson.filter((e) => e.type === "pcb_trace")).toHaveLength(9)
 
   converter = new CircuitJsonToKicadPcbConverter(circuitJson)
@@ -49,34 +52,35 @@ beforeAll(async () => {
   drc = await runKicadPcbDrc(converter.getOutputString())
 }, 120000)
 
-test("repro815: stacked Circuit JSON/KiCad panel and native connectivity", async () => {
-  const snapshot = await takeKicadSnapshot({
-    kicadFileContent: converter.getOutputString(),
-    kicadFileType: "pcb",
-    pcbDrillHoleColor: "white",
-    // #813 leaves only one board outline; board-area cropping hides the rest.
-    pcbPageSizeMode: 1,
-  })
-  expect(snapshot.exitCode).toBe(0)
-  await expect(
-    stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({ circuitJson, outputType: "pcb" }),
-      await sharp(snapshot.generatedFileContent["temp_file.png"]!)
-        .trim({ background: "#000000" })
-        .png()
-        .toBuffer(),
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
+test("repro815: board independence before and after KiCad export", () => {
+  const nets = converter.getOutput().nets.filter((net) => net.id !== 0)
+  const uniqueNames = new Set(nets.map((net) => net.name)).size
+  const missingConnections = drc.unconnected_items.length
 
-  // Copper geometry alone cannot show KiCad merging identically named nets.
-  expect({
-    exportedNetNames: converter
-      .getOutput()
-      .nets.filter((net) => net.id !== 0)
-      .map((net) => net.name),
-    unconnectedItems: drc.unconnected_items.length,
-  }).toMatchSnapshot()
-}, 120000)
+  expect(
+    [
+      "Issue #815: separate boards must not need connections to each other.",
+      "KiCad merges nets with the same name, even if their numeric IDs differ.",
+      "",
+      "CIRCUIT JSON INPUT",
+      `Boards: ${boardCount}`,
+      `Independent R1.pin2 -> C1.pin1 connections: ${independentNetCount}`,
+      "Each connection is already routed within its own board.",
+      "",
+      "EXPORTED KICAD NETS",
+      "Numeric ID | Net name",
+      ...nets.map((net) => `${net.id} | ${net.name}`),
+      "",
+      "EXPECTED VS ACTUAL",
+      `Unique net names: expected ${independentNetCount}, actual ${uniqueNames}`,
+      `Native KiCad DRC missing connections: expected 0, actual ${missingConnections}`,
+      "",
+      missingConnections === 0
+        ? "PASS: KiCad does not request connections between the independent boards."
+        : "BUG: KiCad requests connections between boards that should be independent.",
+    ].join("\n"),
+  ).toMatchSnapshot()
+})
 
 // #815: nine independently routed boards must not need inter-board connections.
 test.failing("repro815: native KiCad keeps each board electrically isolated", () => {

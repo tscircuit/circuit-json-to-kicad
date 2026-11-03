@@ -1,18 +1,29 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`repro815: stacked Circuit JSON/KiCad panel and native connectivity 1`] = `
-{
-  "exportedNetNames": [
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-    ".R1 > .pin2 to .C1 > .pin1",
-  ],
-  "unconnectedItems": 8,
-}
+exports[`repro815: board independence before and after KiCad export 1`] = `
+"Issue #815: separate boards must not need connections to each other.
+KiCad merges nets with the same name, even if their numeric IDs differ.
+
+CIRCUIT JSON INPUT
+Boards: 9
+Independent R1.pin2 -> C1.pin1 connections: 9
+Each connection is already routed within its own board.
+
+EXPORTED KICAD NETS
+Numeric ID | Net name
+1 | .R1 > .pin2 to .C1 > .pin1
+2 | .R1 > .pin2 to .C1 > .pin1
+3 | .R1 > .pin2 to .C1 > .pin1
+4 | .R1 > .pin2 to .C1 > .pin1
+5 | .R1 > .pin2 to .C1 > .pin1
+6 | .R1 > .pin2 to .C1 > .pin1
+7 | .R1 > .pin2 to .C1 > .pin1
+8 | .R1 > .pin2 to .C1 > .pin1
+9 | .R1 > .pin2 to .C1 > .pin1
+
+EXPECTED VS ACTUAL
+Unique net names: expected 9, actual 1
+Native KiCad DRC missing connections: expected 0, actual 8
+
+BUG: KiCad requests connections between boards that should be independent."
 `;
