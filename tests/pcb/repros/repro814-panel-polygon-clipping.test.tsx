@@ -13,7 +13,7 @@ const PanelBoard = ({ borderRadius }: { borderRadius?: string }) => (
   </board>
 )
 
-test("pcb repro814 tab-routed panels fail during polygon clipping", async () => {
+test("pcb repro814 tab-routed panels export without polygon clipping failures", async () => {
   for (const borderRadius of [undefined, "2mm"]) {
     const circuit = new Circuit()
     circuit.add(
@@ -33,23 +33,48 @@ test("pcb repro814 tab-routed panels fail during polygon clipping", async () => 
     )
     await circuit.renderUntilSettled()
     const circuitJson = circuit.getCircuitJson()
+    const originalCircuitJson = structuredClone(circuitJson)
     expect(circuitJson.filter((e) => e.type === "pcb_board")).toHaveLength(4)
     expect(circuitJson.filter((e) => e.type === "pcb_panel")).toHaveLength(1)
     expect(circuitJson.some((e) => e.type === "pcb_cutout")).toBe(true)
 
     const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
-    expect(() => converter.runUntilFinished()).toThrow(
-      borderRadius ? /in SweepLine tree/ : /Unable to complete output ring/,
-    )
-    expect(converter.finished).toBe(false)
+    converter.runUntilFinished()
+    expect(converter.finished).toBe(true)
+    expect(circuitJson).toEqual(originalCircuitJson)
     expect(
       converter
         .getOutput()
-        .graphicLines.filter((line) => line.layer?.names[0] === "Edge.Cuts"),
-    ).toHaveLength(0)
+        .footprints.filter((footprint) =>
+          footprint.properties.some(
+            (property) =>
+              property.key === "Reference" &&
+              ["R1", "C1"].includes(property.value),
+          ),
+        ),
+    ).toHaveLength(8)
+    const edgeCuts = converter
+      .getOutput()
+      .graphicLines.filter((line) => line.layer?.names[0] === "Edge.Cuts")
+    expect(edgeCuts.length).toBeGreaterThan(0)
+    const endpointCounts = new Map<string, number>()
+    for (const line of edgeCuts) {
+      const startKey = `${line.start!.x.toFixed(6)},${line.start!.y.toFixed(6)}`
+      const endKey = `${line.end!.x.toFixed(6)},${line.end!.y.toFixed(6)}`
+      expect(startKey).not.toBe(endKey)
+      for (const point of [line.start!, line.end!]) {
+        expect(Number.isFinite(point.x) && Number.isFinite(point.y)).toBe(true)
+      }
+      for (const key of [startKey, endKey]) {
+        endpointCounts.set(key, (endpointCounts.get(key) ?? 0) + 1)
+      }
+    }
+    // Every segment joins another at each end, including at KiCad's precision.
+    expect([...endpointCounts.values()].every((count) => count === 2)).toBe(
+      true,
+    )
 
-    // Render only the partial PCB left at the failure, not a successful export.
-    // Keep the source Circuit JSON and converter output unmodified.
+    // Issue #813 separately tracks the missing outlines of the other boards.
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: converter.getOutputString(),
       kicadFileType: "pcb",
