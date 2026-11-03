@@ -2,10 +2,10 @@
 
 exports[`pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C 1`] = `
 {
-  "exportedFootprints": 1,
+  "exportedFootprints": 9,
   "exportedModelPath": "\${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/C165948.step",
   "exportedModels": 1,
-  "exportedPads": 22,
+  "exportedPads": 38,
   "inputHasObj": true,
   "inputHasStep": false,
   "inputHasWrl": false,
