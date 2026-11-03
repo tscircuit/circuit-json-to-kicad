@@ -240,11 +240,12 @@ export class CircuitJsonToKicadProConverter {
           sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
         return {
           sourceNet,
-          netName: resolveKicadPcbNetName(
-            sourceNet.name || sourceNet.source_net_id,
+          netName: resolveKicadPcbNetName({
+            candidateName: sourceNet.name || sourceNet.source_net_id,
             connectivityKey,
-            boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")?.pcb_board_id,
-          ),
+            boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")
+              ?.pcb_board_id,
+          }),
         }
       })
       .sort(

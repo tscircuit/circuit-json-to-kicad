@@ -32,11 +32,12 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
         sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
       if (!connectivityKey) continue
 
-      const netName = resolveKicadPcbNetName(
-        sourceNet.name || sourceNet.source_net_id,
+      const netName = resolveKicadPcbNetName({
+        candidateName: sourceNet.name || sourceNet.source_net_id,
         connectivityKey,
-        boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")?.pcb_board_id,
-      )
+        boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")
+          ?.pcb_board_id,
+      })
 
       netNameByKey.set(connectivityKey, netName)
     }
@@ -61,11 +62,13 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       if (!connectivityKey) continue
 
       if (!netNameByKey.has(connectivityKey)) {
-        const netName = resolveKicadPcbNetName(
-          sourceTrace.display_name || sourceTrace.source_trace_id,
+        const netName = resolveKicadPcbNetName({
+          candidateName:
+            sourceTrace.display_name || sourceTrace.source_trace_id,
           connectivityKey,
-          boardOwnerMap?.get(sourceTrace.subcircuit_id ?? "")?.pcb_board_id,
-        )
+          boardId: boardOwnerMap?.get(sourceTrace.subcircuit_id ?? "")
+            ?.pcb_board_id,
+        })
 
         netNameByKey.set(connectivityKey, netName)
       }
