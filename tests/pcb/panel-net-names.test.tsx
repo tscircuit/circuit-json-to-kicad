@@ -32,11 +32,12 @@ const PowerCircuit = ({ traceWidth }: { traceWidth: number }) => (
 )
 
 test("panel net names preserve board ownership and project rules", async () => {
-  for (const { boardCount, nested } of [
+  for (const { boardCount, nested, parentSourceGroupOnly } of [
     { boardCount: 1, nested: false },
     { boardCount: 1, nested: true },
     { boardCount: 2, nested: false },
     { boardCount: 2, nested: true },
+    { boardCount: 2, nested: true, parentSourceGroupOnly: true },
   ]) {
     const circuit = new Circuit()
     const boards = Array.from({ length: boardCount }, (_, i) => (
@@ -63,6 +64,14 @@ test("panel net names preserve board ownership and project rules", async () => {
     )
     await circuit.renderUntilSettled()
     const circuitJson = circuit.getCircuitJson()
+    if (parentSourceGroupOnly) {
+      // Circuit JSON also permits ancestry through parent_source_group_id alone.
+      for (const element of circuitJson) {
+        if (element.type === "source_group") {
+          delete element.parent_subcircuit_id
+        }
+      }
+    }
     const pcbBoards = circuitJson.filter((e) => e.type === "pcb_board")
     expect(pcbBoards).toHaveLength(boardCount)
 
