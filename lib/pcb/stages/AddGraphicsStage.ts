@@ -11,7 +11,8 @@ import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricat
 import { applyToPoint, rotate } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
-import polygonClipping, { type Geom } from "polygon-clipping"
+import polygonClipping, { type MultiPolygon } from "polygon-clipping"
+import { normalizePolygonForKicad } from "./utils/normalizePolygonForKicad"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -226,7 +227,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
       const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
-      const cutoutPolys: Geom[] = []
+      const cutoutPolys: MultiPolygon[] = []
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
@@ -240,9 +241,14 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         }
       }
 
-      let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
+      let boardGeom: MultiPolygon = [[corners.map((c) => [c.x, c.y])]]
       if (cutoutPolys.length > 0) {
-        boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
+        boardGeom = normalizePolygonForKicad(
+          polygonClipping.difference(
+            normalizePolygonForKicad(boardGeom),
+            ...cutoutPolys.map(normalizePolygonForKicad),
+          ),
+        )
       }
 
       // Convert resulting polygons back to lines on Edge.Cuts
