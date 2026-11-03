@@ -73,12 +73,38 @@ const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
   const halfWidth = cutout.width / 2
   const halfHeight = cutout.height / 2
 
+  const radius = Math.max(
+    0,
+    Math.min(cutout.corner_radius ?? 0, halfWidth, halfHeight),
+  )
   const localCorners = [
     { x: -halfWidth, y: -halfHeight },
     { x: halfWidth, y: -halfHeight },
     { x: halfWidth, y: halfHeight },
     { x: -halfWidth, y: halfHeight },
   ]
+
+  if (radius > 0) {
+    localCorners.length = 0
+    // Match the circle cutout approximation: 0.2 mm segments, with 4–32
+    // segments per quarter circle.
+    const steps = Math.max(
+      4,
+      Math.min(32, Math.ceil((Math.PI * radius) / 2 / 0.2)),
+    )
+    for (let corner = 0; corner < 4; corner++) {
+      const centerX =
+        (corner === 0 || corner === 3 ? 1 : -1) * (halfWidth - radius)
+      const centerY = (corner < 2 ? 1 : -1) * (halfHeight - radius)
+      for (let step = 0; step <= steps; step++) {
+        const angle = ((corner + step / steps) * Math.PI) / 2
+        localCorners.push({
+          x: centerX + radius * Math.cos(angle),
+          y: centerY + radius * Math.sin(angle),
+        })
+      }
+    }
+  }
 
   return localCorners.map((point) => {
     const rotatedPoint = rotatePointAroundOrigin(point, cutout.rotation)
@@ -194,21 +220,18 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add board outline from pcb_board
+    // A panel is the physical substrate; its cutouts define the child boards'
+    // routed edges and leave connecting tabs intact. Drawing each child outline
+    // as well would add cuts through those tabs.
+    const pcbPanels = this.ctx.db.pcb_panel?.list() || []
     const pcbBoards = this.ctx.db.pcb_board?.list() || []
+    const outlineSources = pcbPanels.length > 0 ? pcbPanels : pcbBoards
 
-    if (pcbBoards.length > 0) {
-      const board = pcbBoards[0]
-
-      if (!board) {
-        this.finished = true
-        return
-      }
-
+    for (const board of outlineSources) {
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
-      if (board.outline && board.outline.length > 0) {
+      if ("outline" in board && board.outline && board.outline.length > 0) {
         // Use the custom outline points
         corners = normalizeOutlineCorners(board.outline)
       } else {

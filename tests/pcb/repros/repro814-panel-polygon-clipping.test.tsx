@@ -74,7 +74,6 @@ test("pcb repro814 tab-routed panels export without polygon clipping failures", 
       true,
     )
 
-    // Issue #813 separately tracks the missing outlines of the other boards.
     const kicadSnapshot = await takeKicadSnapshot({
       kicadFileContent: converter.getOutputString(),
       kicadFileType: "pcb",
