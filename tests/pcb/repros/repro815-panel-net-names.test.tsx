@@ -82,9 +82,9 @@ test("repro815: board independence before and after KiCad export", async () => {
       ].join("\n"),
     ).toMatchSnapshot()
 
-    // Record the bug: nine independent boards share one exported net name.
-    expect(uniqueNames).toBe(1)
-    expect(missingConnections).toBe(8)
+    // Each board must keep its own net without needing inter-board connections.
+    expect(uniqueNames).toBe(9)
+    expect(missingConnections).toBe(0)
   } finally {
     await rm(tempDir, { recursive: true, force: true })
   }
