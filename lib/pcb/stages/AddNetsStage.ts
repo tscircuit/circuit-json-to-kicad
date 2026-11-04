@@ -4,6 +4,10 @@ import { getFullConnectivityMapFromCircuitJson } from "circuit-json-to-connectiv
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
 import { ConverterStage, type PcbNetInfo } from "../../types"
+import {
+  getSourceTraceConnectivityKey,
+  getUnnamedNetName,
+} from "../../utils/getUnnamedNetName"
 import { resolveKicadPcbNetName } from "../utils/resolveKicadPcbNetName"
 
 /**
@@ -44,27 +48,15 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const sourceTraces = this.ctx.db.source_trace?.list() ?? []
     for (const sourceTrace of sourceTraces) {
-      let connectivityKey = sourceTrace.subcircuit_connectivity_map_key
-
-      if (!connectivityKey && sourceTrace.connected_source_net_ids?.length) {
-        for (const sourceNetId of sourceTrace.connected_source_net_ids) {
-          const connectedNet = this.ctx.db.source_net?.get(sourceNetId)
-          if (
-            connectedNet?.subcircuit_connectivity_map_key &&
-            connectedNet.subcircuit_connectivity_map_key.length > 0
-          ) {
-            connectivityKey = connectedNet.subcircuit_connectivity_map_key
-            break
-          }
-        }
-      }
-
+      const connectivityKey = getSourceTraceConnectivityKey(
+        this.ctx.db,
+        sourceTrace,
+      )
       if (!connectivityKey) continue
 
       if (!netNameByKey.has(connectivityKey)) {
         const netName = resolveKicadPcbNetName({
-          candidateName:
-            sourceTrace.display_name || sourceTrace.source_trace_id,
+          candidateName: getUnnamedNetName(sourceTrace, connectivityKey),
           connectivityKey,
           boardId: boardOwnerMap?.get(sourceTrace.subcircuit_id ?? "")
             ?.pcb_board_id,

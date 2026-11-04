@@ -1,8 +1,15 @@
+import { createBoardOwnerMap } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
-import { Wire, Pts, Xy, Stroke, Junction, Uuid } from "kicadts"
+import { Junction, Label, Pts, Stroke, Uuid, Wire, Xy } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
-import { ConverterStage, type ConverterContext } from "../../types"
+import { resolveKicadPcbNetName } from "../../pcb/utils/resolveKicadPcbNetName"
+import { type ConverterContext, ConverterStage } from "../../types"
+import {
+  getSourceTraceConnectivityKey,
+  getUnnamedNetName,
+} from "../../utils/getUnnamedNetName"
+import { createTextEffects } from "./symbols-stage-converters/createTextEffects"
 
 const DEFAULT_LINE_WIDTH_MM = 0.254
 
@@ -30,6 +37,9 @@ export class AddSchematicTracesStage extends ConverterStage<
 
     const wires: Wire[] = []
     const junctions: Junction[] = []
+    const labels: Label[] = []
+    const unnamedNetNames = this.getUnnamedNetNames()
+    const labeledKeys = new Set<string>()
 
     // Process each trace
     for (const schematicTrace of schematicTraces) {
@@ -37,6 +47,16 @@ export class AddSchematicTracesStage extends ConverterStage<
       for (const edge of schematicTrace.edges) {
         const wire = this.createWireFromEdge(edge)
         wires.push(wire)
+      }
+
+      // Name nets that only exist as traces, so KiCad doesn't auto-name them
+      // differently from the PCB.
+      const key = schematicTrace.subcircuit_connectivity_map_key
+      const netName = key ? unnamedNetNames.get(key) : undefined
+      const firstEdge = schematicTrace.edges[0]
+      if (key && netName && firstEdge && !labeledKeys.has(key)) {
+        labeledKeys.add(key)
+        labels.push(this.createNetNameLabel(netName, firstEdge.from))
       }
 
       // Add junctions at junction points
@@ -49,8 +69,63 @@ export class AddSchematicTracesStage extends ConverterStage<
     // Add wires and junctions to the schematic
     kicadSch.wires = wires
     kicadSch.junctions = junctions
+    kicadSch.labels = [...(kicadSch.labels || []), ...labels]
 
     this.finished = true
+  }
+
+  /**
+   * Names the PCB converter gives to nets that have no source_net, by
+   * connectivity key.
+   */
+  private getUnnamedNetNames(): Map<string, string> {
+    const { db } = this.ctx
+    const boardOwnerMap =
+      db.pcb_board.list().length > 1
+        ? createBoardOwnerMap(this.input)
+        : undefined
+    const namedKeys = new Set<string>()
+    for (const sourceNet of db.source_net?.list() ?? []) {
+      namedKeys.add(
+        sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id,
+      )
+    }
+    const names = new Map<string, string>()
+    // Core already labels these traces via schematic_text
+    const labeledTraceIds = new Set(
+      db.schematic_text
+        ?.list()
+        .map((text) => text.source_trace_id)
+        .filter(Boolean),
+    )
+    for (const sourceTrace of db.source_trace?.list() ?? []) {
+      if (labeledTraceIds.has(sourceTrace.source_trace_id)) continue
+      const key = getSourceTraceConnectivityKey(db, sourceTrace)
+      if (!key || namedKeys.has(key) || names.has(key)) continue
+      names.set(
+        key,
+        resolveKicadPcbNetName({
+          candidateName: getUnnamedNetName(sourceTrace, key),
+          connectivityKey: key,
+          boardId: boardOwnerMap?.get(sourceTrace.subcircuit_id ?? "")
+            ?.pcb_board_id,
+        }),
+      )
+    }
+    return names
+  }
+
+  private createNetNameLabel(
+    name: string,
+    position: { x: number; y: number },
+  ): Label {
+    const { x, y } = applyToPoint(this.ctx.c2kMatSch!, position)
+    return new Label({
+      value: name,
+      at: [x, y, 0],
+      effects: createTextEffects(1.27, false),
+      uuid: crypto.randomUUID(),
+    })
   }
 
   /**
