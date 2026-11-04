@@ -1,0 +1,21 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`deduplicates the NEMA23 route via without changing its physical geometry 1`] = `
+"(via
+  (at 96.89870678655713 101.96085777408632)
+  (size 0.45)
+  (drill 0.3)
+  (layers F.Cu B.Cu)
+  (net 1)
+  (uuid 11ad8ec0-366a-1601-7e81-bac23966a07d)
+)
+
+(via
+  (at 94.201 103.37)
+  (size 0.45)
+  (drill 0.3)
+  (layers F.Cu B.Cu)
+  (net 1)
+  (uuid 529e3a26-05cb-abe6-4706-e25a6c268f66)
+)"
+`;
