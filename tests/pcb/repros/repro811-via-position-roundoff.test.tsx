@@ -50,6 +50,7 @@ test("repro811: route via position roundoff exports a duplicate via", async () =
   converter.runUntilFinished()
   expect(circuitJson).toEqual(originalCircuitJson)
   const vias = converter.getOutput().vias
+  expect(vias).toHaveLength(physicalVias.length)
   expect(vias.map((via) => via.getString()).join("\n\n")).toMatchSnapshot()
 
   const { x, y } = vias[0]!.at!
