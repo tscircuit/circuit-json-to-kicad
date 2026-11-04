@@ -47,7 +47,7 @@
     "tscircuit": "^0.0.3014",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
     "tsup": "^8.5.0",
-    "@tscircuit/circuit-json-util": "^0.0.128"
+    "@tscircuit/circuit-json-util": "^0.0.131"
   },
   "peerDependencies": {
     "typescript": "^5"
