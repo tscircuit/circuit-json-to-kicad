@@ -126,17 +126,10 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
                   return false
                 }
 
-                const samePosition =
-                  Math.abs(physicalVia.x - via.x) <= VIA_POSITION_TOLERANCE &&
-                  Math.abs(physicalVia.y - via.y) <= VIA_POSITION_TOLERANCE
-                if (!samePosition) return false
-
-                // The published helper requires exact positions. Align only this
-                // comparison copy; input and exported coordinates stay unchanged.
-                return isRouteViaCoveredByPhysicalVia(physicalVia, {
-                  ...via,
-                  x: physicalVia.x,
-                  y: physicalVia.y,
+                return isRouteViaCoveredByPhysicalVia({
+                  viaWithLayers: physicalVia,
+                  routeVia: via,
+                  positionTolerance: VIA_POSITION_TOLERANCE,
                 })
               })
             ) {
