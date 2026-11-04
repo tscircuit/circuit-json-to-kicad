@@ -53,6 +53,52 @@ test("repro811: route via position roundoff exports a duplicate via", async () =
   expect(vias).toHaveLength(physicalVias.length)
   expect(vias.map((via) => via.getString()).join("\n\n")).toMatchSnapshot()
 
+  // Cross x/y bucket boundaries separately, and diagonal neighbors at zero.
+  // Outside-tolerance pairs also use neighboring buckets, so lookup finds the
+  // candidate and the distance check must keep the two via objects separate.
+  for (const [scenario, physicalPosition, routePosition, expectedViaCount] of [
+    [
+      "positive x bucket boundary",
+      [0.9999999999e-6, 0],
+      [1.0000000001e-6, 0],
+      1,
+    ],
+    [
+      "negative y bucket boundary",
+      [0, -0.9999999999e-6],
+      [0, -1.0000000001e-6],
+      1,
+    ],
+    ["opposite sides of zero", [-1e-10, -1e-10], [1e-10, 1e-10], 1],
+    ["inclusive per-axis tolerance", [-0.5e-6, -0.5e-6], [0.5e-6, 0.5e-6], 1],
+    ["just outside x tolerance", [-0.5e-6, 0], [0.500001e-6, 0], 2],
+    ["just outside y tolerance", [0, 0.5e-6], [0, -0.500001e-6], 2],
+  ] as const) {
+    const caseCircuitJson = structuredClone(originalCircuitJson)
+    const casePhysicalVia = caseCircuitJson.find(
+      (element) => element.type === "pcb_via",
+    )!
+    const caseRouteVia = caseCircuitJson
+      .filter((element) => element.type === "pcb_trace")
+      .flatMap((trace) => trace.route)
+      .find((point) => point.route_type === "via")!
+
+    casePhysicalVia.x = physicalPosition[0]
+    casePhysicalVia.y = physicalPosition[1]
+    caseRouteVia.x = routePosition[0]
+    caseRouteVia.y = routePosition[1]
+
+    const caseConverter = new CircuitJsonToKicadPcbConverter(caseCircuitJson)
+    caseConverter.runUntilFinished()
+    expect({
+      scenario,
+      viaCount: caseConverter.getOutput().vias.length,
+    }).toEqual({
+      scenario,
+      viaCount: expectedViaCount,
+    })
+  }
+
   const { x, y } = vias[0]!.at!
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),
