@@ -1,0 +1,21 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`repro811: route via position roundoff exports a duplicate via 1`] = `
+"(via
+  (at 99.5 99)
+  (size 0.3)
+  (drill 0.2)
+  (layers F.Cu B.Cu)
+  (net 1)
+  (uuid 302f22e0-030b-5981-2a18-6fde573c393d)
+)
+
+(via
+  (at 99.5 99)
+  (size 0.8)
+  (drill 0.4)
+  (layers F.Cu B.Cu)
+  (net 1)
+  (uuid 7b97b080-4e73-e721-2150-1dc20bd3ab9d)
+)"
+`;
