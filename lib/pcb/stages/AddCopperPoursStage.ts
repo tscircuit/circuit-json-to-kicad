@@ -44,17 +44,71 @@ const getCopperPourNetInfo = (
   pour: PcbCopperPour,
   ctx: ConverterContext,
 ): PcbNetInfo | undefined => {
+  const directNetInfo = ctx.pcbNetMap?.get(pour.pcb_copper_pour_id)
+  if (directNetInfo) return directNetInfo
+
   let connectivityKey = pour.source_net_id
 
   if (connectivityKey) {
     const sourceNet = ctx.db.source_net?.get(connectivityKey)
     connectivityKey =
-      sourceNet?.subcircuit_connectivity_map_key || sourceNet?.source_net_id
+      sourceNet?.subcircuit_connectivity_map_key ||
+      sourceNet?.source_net_id ||
+      connectivityKey
   }
 
   if (!connectivityKey) return undefined
 
   return ctx.pcbNetMap?.get(connectivityKey)
+}
+
+const BULGE_EPSILON = 1e-9
+
+const tessellateBrepRingVertices = (
+  vertices: readonly { x: number; y: number; bulge?: number }[] | undefined,
+): { x: number; y: number }[] => {
+  if (!vertices || vertices.length === 0) return []
+
+  const points: { x: number; y: number }[] = []
+
+  for (let i = 0; i < vertices.length; i++) {
+    const start = vertices[i]
+    const end = vertices[(i + 1) % vertices.length]
+    if (!start || !end) continue
+
+    points.push({ x: start.x, y: start.y })
+
+    const bulge = start.bulge
+    if (!bulge || Math.abs(bulge) < BULGE_EPSILON) continue
+
+    const chordX = end.x - start.x
+    const chordY = end.y - start.y
+    const chordLength = Math.hypot(chordX, chordY)
+    if (chordLength < BULGE_EPSILON) continue
+
+    const sweepAngle = 4 * Math.atan(bulge)
+    const centerOffset = (chordLength * (1 - bulge * bulge)) / (4 * bulge)
+    const center = {
+      x: (start.x + end.x) / 2 - (chordY / chordLength) * centerOffset,
+      y: (start.y + end.y) / 2 + (chordX / chordLength) * centerOffset,
+    }
+    const radius = Math.hypot(start.x - center.x, start.y - center.y)
+    const startAngle = Math.atan2(start.y - center.y, start.x - center.x)
+    const segmentCount = Math.max(
+      4,
+      Math.ceil((Math.abs(sweepAngle) / (Math.PI * 2)) * 32),
+    )
+
+    for (let step = 1; step < segmentCount; step++) {
+      const angle = startAngle + (sweepAngle * step) / segmentCount
+      points.push({
+        x: center.x + radius * Math.cos(angle),
+        y: center.y + radius * Math.sin(angle),
+      })
+    }
+  }
+
+  return points
 }
 
 const convertPointsToKicadXy = (
@@ -160,16 +214,22 @@ const getBrepZoneRings = (
   removeRepeatedClosingPoint(
     removeConsecutiveDuplicatePoints(
       rotateRingToStartAtTopRight(
-        convertPointsToKicadXy(pour.brep_shape.outer_ring.vertices, c2kMatPcb),
+        convertPointsToKicadXy(
+          tessellateBrepRingVertices(pour.brep_shape.outer_ring.vertices),
+          c2kMatPcb,
+        ),
       ),
     ),
   ),
-  pour.brep_shape.inner_rings
+  (pour.brep_shape.inner_rings ?? [])
     .map((ring) =>
       removeRepeatedClosingPoint(
         removeConsecutiveDuplicatePoints(
           rotateRingToStartAtTopRight(
-            convertPointsToKicadXy(ring.vertices, c2kMatPcb),
+            convertPointsToKicadXy(
+              tessellateBrepRingVertices(ring.vertices),
+              c2kMatPcb,
+            ),
           ),
         ),
       ),
