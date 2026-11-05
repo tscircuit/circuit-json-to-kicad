@@ -21,7 +21,10 @@ export class GenerateKicadSchAndPcbStage extends ConverterStage<
       this.ctx.circuitJson,
     )
     schConverter.runUntilFinished()
-    this.ctx.kicadSchString = schConverter.getOutputString()
+    this.ctx.kicadSchFiles = schConverter.getOutputFiles({
+      schematicFilename: "schematic.kicad_sch",
+    })
+    this.ctx.kicadSchString = this.ctx.kicadSchFiles[0]!.content
 
     // Generate PCB to extract footprints
     const pcbConverter = new CircuitJsonToKicadPcbConverter(
