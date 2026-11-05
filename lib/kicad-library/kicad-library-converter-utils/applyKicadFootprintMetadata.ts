@@ -1,3 +1,4 @@
+import { applyCustomFootprintProperties } from "../../pcb/stages/utils/applyCustomFootprintProperties"
 import {
   parseKicadSexpr,
   Footprint,
@@ -155,6 +156,12 @@ export function applyKicadFootprintMetadata(
           hidden: descMeta?.hide ?? true,
         }),
       )
+
+      applyCustomFootprintProperties({
+        properties: newProperties,
+        metadata,
+        footprintName,
+      })
 
       footprint.properties = newProperties
     }

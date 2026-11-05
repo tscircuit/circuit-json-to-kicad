@@ -1,3 +1,4 @@
+import { applyCustomFootprintProperties } from "../../pcb/stages/utils/applyCustomFootprintProperties"
 import type {
   CircuitJson,
   CadComponent,
@@ -21,7 +22,10 @@ import {
   type KicadLibraryOutput,
   type FootprintEntry,
 } from "../../types"
-import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getKicadCompatibleComponentName,
+  getReferenceDesignator,
+} from "../../utils/getKicadCompatibleComponentName"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
 import { applyInferredFootprintType } from "../../pcb/stages/utils/applyInferredFootprintType"
 
@@ -222,6 +226,25 @@ export class ExtractFootprintsStage extends ConverterStage<
     // Position value below pads with 0.5mm margin
     const valY = maxY + 0.5
 
+    // The generated Reference UUID identifies the source even when metadata
+    // overrides its displayed reference text.
+    const referenceUuid = footprint.properties.find(
+      (property) => property.key === "Reference",
+    )?.uuid?.value
+    const pcbComponent = this.ctx.db.pcb_component
+      .list()
+      .find((pcbComponent) => {
+        const sourceComponent = this.ctx.db.source_component.get(
+          pcbComponent.source_component_id,
+        )
+        return (
+          sourceComponent &&
+          referenceUuid ===
+            generateDeterministicUuid(
+              `${getReferenceDesignator(sourceComponent)}-property-Reference`,
+            )
+        )
+      })
     footprint.properties = [
       new Property({
         key: "Reference",
@@ -260,6 +283,14 @@ export class ExtractFootprintsStage extends ConverterStage<
         effects: defaultEffects,
       }),
     ]
+
+    const properties = footprint.properties
+    applyCustomFootprintProperties({
+      properties,
+      metadata: pcbComponent?.metadata?.kicad_footprint,
+      footprintName,
+    })
+    footprint.properties = properties
 
     // Clean up texts
     const texts = footprint.fpTexts ?? []

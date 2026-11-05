@@ -1,3 +1,4 @@
+import { applySymbolProperty } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
 import type {
   CircuitJson,
@@ -267,6 +268,40 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           }),
         })
         symbol.properties.push(fpFiltersProperty)
+      }
+
+      const builtInPropertyNames = new Set([
+        "Reference",
+        "Value",
+        "Footprint",
+        "Datasheet",
+        "Description",
+        "ki_keywords",
+        "ki_fp_filters",
+      ])
+      let nextPropertyId = 7
+      for (const propertyMeta of Object.values(
+        symbolMetadata?.properties ?? {},
+      )) {
+        const propertyId = Number(propertyMeta?.id)
+        if (Number.isFinite(propertyId)) {
+          nextPropertyId = Math.max(nextPropertyId, propertyId + 1)
+        }
+      }
+      for (const [key, propertyMeta] of Object.entries(
+        symbolMetadata?.properties ?? {},
+      )) {
+        if (!propertyMeta || builtInPropertyNames.has(key)) continue
+        applySymbolProperty({
+          symbol,
+          key,
+          propertyMeta: {
+            ...propertyMeta,
+            id: propertyMeta.id ?? nextPropertyId++,
+            at: propertyMeta.at ?? { x, y, rotation: 0 },
+            effects: { hide: true, ...propertyMeta.effects },
+          },
+        })
       }
 
       // Apply additional symbol metadata fields
