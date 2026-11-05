@@ -176,6 +176,23 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
+    const standaloneCopperTexts =
+      this.ctx.db.pcb_copper_text
+        ?.list()
+        .filter((text: any) => !text.pcb_component_id) || []
+
+    for (const textElement of standaloneCopperTexts) {
+      const grText = createGrTextFromCircuitJson({
+        textElement,
+        c2kMatPcb,
+      })
+      if (grText) {
+        const graphicTexts = kicadPcb.graphicTexts
+        graphicTexts.push(grText)
+        kicadPcb.graphicTexts = graphicTexts
+      }
+    }
+
     // Component-owned PCB notes are already exported as footprint text.
     const standaloneNoteTexts =
       this.ctx.db.pcb_note_text

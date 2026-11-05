@@ -196,6 +196,21 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }),
     )
 
+    const pcbCopperTexts =
+      this.ctx.db.pcb_copper_text
+        ?.list()
+        .filter(
+          (text: any) => text.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    fpTexts.push(
+      ...convertSilkscreenTexts({
+        silkscreenTexts: pcbCopperTexts,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
+    )
+
     const pcbNoteTexts =
       this.ctx.db.pcb_note_text
         ?.list()
