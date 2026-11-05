@@ -30,7 +30,7 @@ const isBuiltinModelPath = (modelPath: string) =>
   modelPath.startsWith("http://modelcdn.tscircuit.com") ||
   modelPath.startsWith("https://modelcdn.tscircuit.com")
 
-const getModelFileName = (modelPath: string) => {
+export const getModelFileName = (modelPath: string) => {
   // Strip URL suffixes and normalize local paths before taking the filename.
   const modelPathWithoutQuery = modelPath.split("?")[0] || modelPath
   const modelPathWithoutHash =
@@ -38,6 +38,53 @@ const getModelFileName = (modelPath: string) => {
   const normalizedModelPath = modelPathWithoutHash.replaceAll("\\", "/")
 
   return normalizedModelPath.split("/").pop() || modelPath
+}
+
+const normalizeModelSourceKey = (modelPath: string) => {
+  const withoutQuery = modelPath.split("?")[0] || modelPath
+  return withoutQuery.split("#")[0] || withoutQuery
+}
+
+export class Kicad3dModelFilenameResolver {
+  private sourceToFilenameByDir = new Map<string, Map<string, string>>()
+  private usedFilenamesByDir = new Map<string, Set<string>>()
+
+  resolveFilename(
+    shapesDir: string,
+    sourcePath: string,
+    rawFilename = getModelFileName(sourcePath),
+  ): string {
+    const normalizedSource = normalizeModelSourceKey(sourcePath)
+    let sourceMap = this.sourceToFilenameByDir.get(shapesDir)
+    if (!sourceMap) {
+      sourceMap = new Map()
+      this.sourceToFilenameByDir.set(shapesDir, sourceMap)
+    }
+    const existing = sourceMap.get(normalizedSource)
+    if (existing) return existing
+
+    let usedSet = this.usedFilenamesByDir.get(shapesDir)
+    if (!usedSet) {
+      usedSet = new Set()
+      this.usedFilenamesByDir.set(shapesDir, usedSet)
+    }
+
+    let candidate = rawFilename
+    if (usedSet.has(candidate)) {
+      const dotIndex = rawFilename.lastIndexOf(".")
+      const stem = dotIndex > 0 ? rawFilename.slice(0, dotIndex) : rawFilename
+      const ext = dotIndex > 0 ? rawFilename.slice(dotIndex) : ""
+      let suffix = 2
+      while (usedSet.has(`${stem}_${suffix}${ext}`)) {
+        suffix++
+      }
+      candidate = `${stem}_${suffix}${ext}`
+    }
+
+    usedSet.add(candidate)
+    sourceMap.set(normalizedSource, candidate)
+    return candidate
+  }
 }
 
 export const resolveAndLoadKicad3dModelFiles = async ({
@@ -48,6 +95,8 @@ export const resolveAndLoadKicad3dModelFiles = async ({
   onModelFile,
   onError,
 }: ResolveAndLoadKicad3dModelFilesOptions) => {
+  const filenameResolver = new Kicad3dModelFilenameResolver()
+
   for (const sourcePath of model3dSourcePaths) {
     // Builtin tscircuit models share one KiCad 3D model folder.
     let shapesDir = `${projectName}.3dshapes`
@@ -55,7 +104,8 @@ export const resolveAndLoadKicad3dModelFiles = async ({
       shapesDir = "tscircuit_builtin.3dshapes"
     }
 
-    const outputPath = `3dmodels/${shapesDir}/${getModelFileName(sourcePath)}`
+    const filename = filenameResolver.resolveFilename(shapesDir, sourcePath)
+    const outputPath = `3dmodels/${shapesDir}/${filename}`
 
     let content: Uint8Array
     try {
