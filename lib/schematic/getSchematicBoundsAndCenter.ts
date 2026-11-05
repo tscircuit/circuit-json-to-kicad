@@ -67,6 +67,41 @@ export function getSchematicBoundsAndCenter(
     includePoint({ x: arc.center.x + arc.radius, y: arc.center.y + arc.radius })
   }
 
+  for (const path of db.schematic_path.list()) {
+    if (
+      path.schematic_component_id ||
+      ("schematic_symbol_id" in path && path.schematic_symbol_id)
+    ) {
+      continue
+    }
+    for (const point of path.points) includePoint(point)
+  }
+
+  for (const rect of db.schematic_rect.list()) {
+    if (
+      rect.schematic_component_id ||
+      ("schematic_symbol_id" in rect && rect.schematic_symbol_id)
+    ) {
+      continue
+    }
+    const halfWidth = rect.width / 2
+    const halfHeight = rect.height / 2
+    const rotationRadians = ((rect.rotation ?? 0) * Math.PI) / 180
+    const cos = Math.cos(rotationRadians)
+    const sin = Math.sin(rotationRadians)
+    for (const corner of [
+      { x: -halfWidth, y: -halfHeight },
+      { x: halfWidth, y: -halfHeight },
+      { x: halfWidth, y: halfHeight },
+      { x: -halfWidth, y: halfHeight },
+    ]) {
+      includePoint({
+        x: rect.center.x + corner.x * cos - corner.y * sin,
+        y: rect.center.y + corner.x * sin + corner.y * cos,
+      })
+    }
+  }
+
   if (useComponentLevelSourceGeometry) {
     for (const line of db.schematic_line.list()) {
       if (
