@@ -21,7 +21,7 @@ import {
   type KicadLibraryOutput,
   type FootprintEntry,
 } from "../../types"
-import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import { getKicadCompatibleFootprintName } from "../../utils/getKicadCompatibleComponentName"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
 import { applyInferredFootprintType } from "../../pcb/stages/utils/applyInferredFootprintType"
 
@@ -71,7 +71,8 @@ export class ExtractFootprintsStage extends ConverterStage<
 
       if (!sourceComp) continue
 
-      const footprintName = getKicadCompatibleComponentName(
+      const footprintName = getKicadCompatibleFootprintName(
+        this.ctx.circuitJson,
         sourceComp as SourceComponentBase,
         cadComponent,
       )
@@ -94,6 +95,34 @@ export class ExtractFootprintsStage extends ConverterStage<
           pcbComp.metadata?.kicad_footprint?.footprintName
         ) {
           // Match the bare name used by sanitizeFootprint for library links.
+          customFootprintNames.add(
+            pcbComp.metadata.kicad_footprint.footprintName.split(":").pop()!,
+          )
+        }
+      }
+    }
+
+    const pcbComponents = (this.ctx.db.pcb_component?.list() ??
+      []) as PcbComponent[]
+    for (const pcbComp of pcbComponents) {
+      const sourceComp = pcbComp.source_component_id
+        ? sourceComponents?.get(pcbComp.source_component_id)
+        : null
+      if (!sourceComp) continue
+
+      const cadComp = (cadComponents as CadComponent[]).find(
+        (c) =>
+          c.pcb_component_id === pcbComp.pcb_component_id ||
+          c.source_component_id === pcbComp.source_component_id,
+      )
+      if (!cadComp?.footprinter_string) {
+        const footprintName = getKicadCompatibleFootprintName(
+          this.ctx.circuitJson,
+          sourceComp as SourceComponentBase,
+          cadComp,
+        )
+        customFootprintNames.add(footprintName)
+        if (pcbComp.metadata?.kicad_footprint?.footprintName) {
           customFootprintNames.add(
             pcbComp.metadata.kicad_footprint.footprintName.split(":").pop()!,
           )

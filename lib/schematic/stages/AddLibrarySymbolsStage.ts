@@ -17,7 +17,7 @@ import {
 import { symbols } from "schematic-symbols"
 import { ConverterStage } from "../../types"
 import {
-  getKicadCompatibleComponentName,
+  getKicadCompatibleFootprintName,
   getReferencePrefixForComponent,
 } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
@@ -177,7 +177,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
           texts: [],
         }
 
-        const footprintName = getKicadCompatibleComponentName(
+        const footprintName = getKicadCompatibleFootprintName(
+          this.ctx.circuitJson,
           sourceComp,
           cadComponent,
         )
@@ -216,7 +217,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     if (!symbolData) return null
 
     // Get footprint name for symbol-footprint linkage using ergonomic naming
-    const footprintName = getKicadCompatibleComponentName(
+    const footprintName = getKicadCompatibleFootprintName(
+      this.ctx.circuitJson,
       sourceComp,
       cadComponent,
     )
@@ -316,7 +318,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     }
 
     // Get footprint name for symbol-footprint linkage
-    const footprintName = getKicadCompatibleComponentName(
+    const footprintName = getKicadCompatibleFootprintName(
+      this.ctx.circuitJson,
       sourceComp,
       cadComponent,
     )
