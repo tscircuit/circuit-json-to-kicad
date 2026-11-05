@@ -1,4 +1,4 @@
-import type { PcbSmtPad } from "circuit-json"
+import type { PcbSmtPad, Point } from "circuit-json"
 import { FootprintPad, PadNet, PadOptions, type PadPrimitives } from "kicadts"
 import {
   applyToPoint,
@@ -8,7 +8,11 @@ import {
   translate,
 } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
-import { createFilledPolygonPrimitives } from "./custom-pad-geometry"
+import {
+  createEllipseContour,
+  createFilledPolygonPrimitives,
+  getSafePolygonAnchor,
+} from "./custom-pad-geometry"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 import { getKicadNativePadGeometry } from "./getKicadNativePadGeometry"
 
@@ -30,11 +34,20 @@ export function createSmdPadFromCircuitJson({
   netInfo?: PcbNetInfo
   componentId?: string
 }): FootprintPad {
-  // For polygon pads, calculate the center from the points
+  const polygonHoles = (pcbPad as PcbSmtPad & { holes?: Point[][] }).holes
+  const polygonAnchor =
+    pcbPad.shape === "polygon"
+      ? getSafePolygonAnchor(pcbPad.points, polygonHoles)
+      : undefined
+
+  // For polygon pads, use the safe interior anchor center
   let padX: number
   let padY: number
 
-  if ("x" in pcbPad && "y" in pcbPad) {
+  if (polygonAnchor) {
+    padX = polygonAnchor.center.x
+    padY = polygonAnchor.center.y
+  } else if ("x" in pcbPad && "y" in pcbPad) {
     padX = pcbPad.x
     padY = pcbPad.y
   } else if ("points" in pcbPad && Array.isArray(pcbPad.points)) {
@@ -75,19 +88,44 @@ export function createSmdPadFromCircuitJson({
   let rotation = 0
 
   if (pcbPad.shape === "polygon") {
-    // For polygon pads, use custom shape with primitives
+    if (!polygonAnchor) {
+      throw new Error("Polygon pad is missing its anchor geometry")
+    }
+    const contours = polygonHoles?.length
+      ? polygonAnchor.triangles
+      : [pcbPad.points]
     padPrimitives = createFilledPolygonPrimitives({
-      contours: [pcbPad.points],
+      contours,
       center: { x: padX, y: padY },
     })
 
-    // Use custom shape with a circle anchor
+    // Use custom shape with a safe interior circle anchor
     padShape = "custom"
     padOptions = new PadOptions()
     padOptions.anchor = "circle"
-
-    // Set a small anchor size (the anchor is just for the pad number)
-    padSize = [0.2, 0.2]
+    padSize = [polygonAnchor.diameter, polygonAnchor.diameter]
+  } else if ((pcbPad as { shape: string }).shape === "oval") {
+    const ovalPad = pcbPad as unknown as {
+      width: number
+      height: number
+    }
+    padShape = "custom"
+    padSize = [
+      Math.min(0.001, ovalPad.width, ovalPad.height),
+      Math.min(0.001, ovalPad.width, ovalPad.height),
+    ]
+    padOptions = new PadOptions()
+    padOptions.anchor = "circle"
+    padPrimitives = createFilledPolygonPrimitives({
+      contours: [
+        createEllipseContour({
+          center: { x: padX, y: padY },
+          width: ovalPad.width,
+          height: ovalPad.height,
+        }),
+      ],
+      center: { x: padX, y: padY },
+    })
   } else {
     const geometry = getKicadNativePadGeometry(pcbPad)
     padShape = geometry.shape

@@ -1,6 +1,7 @@
 import type { PcbSilkscreenPath } from "circuit-json"
 import { FpLine, Stroke } from "kicadts"
 import { applyToPoint, identity, rotate } from "transformation-matrix"
+import { parseColor } from "../../../schematic/stages/utils/parseColor"
 
 interface ConvertSilkscreenPathsOptions {
   componentCenter: { x: number; y: number }
@@ -20,6 +21,18 @@ export function convertSilkscreenPaths(
 
   for (const path of silkscreenPaths) {
     if (!path.route || path.route.length < 2) continue
+
+    const pathWithStyle = path as PcbSilkscreenPath & {
+      stroke_type?: string
+      is_stroke_dashed?: boolean
+      color?: string
+    }
+    const isDashed =
+      pathWithStyle.stroke_type === "dashed" ||
+      Boolean(pathWithStyle.is_stroke_dashed)
+    const parsedColor = pathWithStyle.color
+      ? parseColor(pathWithStyle.color)
+      : undefined
 
     const layerMap: Record<string, string> = {
       top: "F.SilkS",
@@ -51,7 +64,8 @@ export function convertSilkscreenPaths(
 
       if (fpLine.stroke) {
         fpLine.stroke.width = path.stroke_width || 0.15
-        fpLine.stroke.type = "default"
+        fpLine.stroke.type = isDashed ? "dash" : "default"
+        if (parsedColor) fpLine.stroke.color = parsedColor
       }
 
       fpLines.push(fpLine)
