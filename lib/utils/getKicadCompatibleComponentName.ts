@@ -1,4 +1,9 @@
-import type { SourceComponentBase, CadComponent } from "circuit-json"
+import type {
+  CircuitJson,
+  PcbComponent,
+  SourceComponentBase,
+  CadComponent,
+} from "circuit-json"
 
 /**
  * Generates an ergonomic component name for use in KiCad symbols and footprints.
@@ -58,6 +63,282 @@ export function getKicadCompatibleCustomSymbolName(
   return sanitizeName(
     `custom_${getCleanTypeName(sourceComponent.ftype)}_${schematicSymbolId}`,
   )
+}
+
+function roundCoord(value: number): number {
+  return Math.round(value * 1e6) / 1e6
+}
+
+function toFootprintLocalPoint(
+  point: { x: number; y: number },
+  origin: { x: number; y: number },
+  rotationDeg: number,
+): { x: number; y: number } {
+  const dx = point.x - origin.x
+  const dy = point.y - origin.y
+  if (rotationDeg === 0) {
+    return { x: roundCoord(dx), y: roundCoord(dy) }
+  }
+  const rad = (-rotationDeg * Math.PI) / 180
+  const cos = Math.cos(rad)
+  const sin = Math.sin(rad)
+  return {
+    x: roundCoord(dx * cos - dy * sin),
+    y: roundCoord(dx * sin + dy * cos),
+  }
+}
+
+function getFootprintGeometrySignature(
+  circuitJson: CircuitJson,
+  pcbComponent: PcbComponent,
+  sourceComponent: SourceComponentBase,
+  cadComponent?: CadComponent | null,
+): string {
+  const origin = (
+    pcbComponent as { footprint_origin?: { x: number; y: number } }
+  ).footprint_origin ??
+    pcbComponent.center ?? { x: 0, y: 0 }
+  const rotation = pcbComponent.rotation ?? 0
+
+  const omittedKeys = new Set([
+    "pcb_component_id",
+    "pcb_port_id",
+    "source_component_id",
+    "subcircuit_id",
+    "pcb_group_id",
+    "pcb_smtpad_id",
+    "pcb_plated_hole_id",
+    "pcb_hole_id",
+    "pcb_silkscreen_text_id",
+    "pcb_silkscreen_path_id",
+    "pcb_silkscreen_rect_id",
+    "pcb_silkscreen_circle_id",
+    "pcb_fabrication_note_path_id",
+    "pcb_fabrication_note_rect_id",
+    "pcb_fabrication_note_text_id",
+    "pcb_courtyard_rect_id",
+    "pcb_courtyard_outline_id",
+    "pcb_courtyard_circle_id",
+    "pcb_note_rect_id",
+    "pcb_note_text_id",
+    "pcb_solder_paste_id",
+    "pcb_copper_text_id",
+    "port_hints",
+  ])
+
+  const primitiveSignatures: string[] = []
+  for (const el of circuitJson) {
+    if (
+      !("pcb_component_id" in el) ||
+      el.pcb_component_id !== pcbComponent.pcb_component_id ||
+      el.type === "pcb_component" ||
+      el.type === "pcb_port"
+    ) {
+      continue
+    }
+
+    const record: Record<string, unknown> = {}
+    for (const key of Object.keys(el).sort()) {
+      if (omittedKeys.has(key)) continue
+      const val = (el as Record<string, unknown>)[key]
+      if (val === undefined) continue
+      if (
+        (key === "center" || key === "anchor_position") &&
+        val &&
+        typeof val === "object" &&
+        "x" in val &&
+        "y" in val
+      ) {
+        record[key] = toFootprintLocalPoint(
+          val as { x: number; y: number },
+          origin,
+          rotation,
+        )
+      } else if (
+        (key === "route" ||
+          key === "outline" ||
+          key === "points" ||
+          key === "pad_outline") &&
+        Array.isArray(val)
+      ) {
+        record[key] = val.map((pt) =>
+          pt && typeof pt === "object" && "x" in pt && "y" in pt
+            ? {
+                ...pt,
+                ...toFootprintLocalPoint(
+                  pt as { x: number; y: number },
+                  origin,
+                  rotation,
+                ),
+              }
+            : pt,
+        )
+      } else if (
+        key === "text" &&
+        sourceComponent.name &&
+        val === sourceComponent.name
+      ) {
+        record[key] = "{REF}"
+      } else {
+        record[key] = val
+      }
+    }
+
+    if (
+      "x" in el &&
+      "y" in el &&
+      typeof el.x === "number" &&
+      typeof el.y === "number"
+    ) {
+      const rel = toFootprintLocalPoint({ x: el.x, y: el.y }, origin, rotation)
+      record.x = rel.x
+      record.y = rel.y
+    }
+
+    primitiveSignatures.push(JSON.stringify(record))
+  }
+
+  primitiveSignatures.sort()
+
+  const modelSignature = cadComponent
+    ? [
+        cadComponent.model_step_url,
+        cadComponent.model_stl_url,
+        cadComponent.model_obj_url,
+        cadComponent.model_gltf_url,
+        cadComponent.model_wrl_url,
+      ]
+        .filter(Boolean)
+        .join("|")
+    : ""
+
+  if (primitiveSignatures.length === 0 && !modelSignature) {
+    return `empty:${roundCoord(pcbComponent.width ?? 0)}x${roundCoord(pcbComponent.height ?? 0)}`
+  }
+
+  return `${primitiveSignatures.join(";")}|${modelSignature}`
+}
+
+/**
+ * Returns a consistent KiCad footprint name for a component across schematic
+ * symbol references, placed PCB footprints, and extracted footprint libraries.
+ *
+ * When multiple anonymous inline footprints share the same fallback base name
+ * (e.g., two `<chip>` components with different inline `<footprint>` geometries
+ * and no `manufacturer_part_number` or `footprinter_string`), distinct footprint
+ * geometries receive disambiguated names (`chip`, `chip_2`, ...).
+ */
+export function getKicadCompatibleFootprintName(
+  circuitJson: CircuitJson,
+  sourceComponent: SourceComponentBase,
+  cadComponent?: CadComponent | null,
+): string {
+  const baseName = getKicadCompatibleComponentName(
+    sourceComponent,
+    cadComponent,
+  )
+  if (
+    sourceComponent.manufacturer_part_number ||
+    cadComponent?.footprinter_string
+  ) {
+    return baseName
+  }
+
+  const pcbComponents = circuitJson.filter(
+    (el): el is PcbComponent => el.type === "pcb_component",
+  )
+  const pcbComponent = pcbComponents.find(
+    (el) => el.source_component_id === sourceComponent.source_component_id,
+  )
+  if (!pcbComponent) {
+    return baseName
+  }
+
+  if (pcbComponent.metadata?.kicad_footprint?.footprintName) {
+    return (
+      pcbComponent.metadata.kicad_footprint.footprintName.split(":").pop() ||
+      baseName
+    )
+  }
+
+  const sourceComponents = circuitJson.filter(
+    (el): el is Extract<CircuitJson[number], { type: "source_component" }> =>
+      el.type === "source_component",
+  ) as SourceComponentBase[]
+  const cadComponents = circuitJson.filter(
+    (el): el is CadComponent => el.type === "cad_component",
+  )
+
+  const reservedNames = new Set<string>()
+  for (const sc of sourceComponents) {
+    const cad = cadComponents.find(
+      (c) => c.source_component_id === sc.source_component_id,
+    )
+    reservedNames.add(getKicadCompatibleComponentName(sc, cad))
+  }
+  for (const pc of pcbComponents) {
+    const metaName = pc.metadata?.kicad_footprint?.footprintName
+      ?.split(":")
+      .pop()
+    if (metaName) reservedNames.add(metaName)
+  }
+
+  const nameBySignature = new Map<string, string>()
+  const usedNames = new Set<string>()
+  let suffix = 2
+
+  for (const candidatePcb of pcbComponents) {
+    if (!candidatePcb.source_component_id) continue
+    if (candidatePcb.metadata?.kicad_footprint?.footprintName) continue
+
+    const candidateSource = sourceComponents.find(
+      (sc) => sc.source_component_id === candidatePcb.source_component_id,
+    )
+    if (!candidateSource) continue
+
+    const candidateCad = cadComponents.find(
+      (c) =>
+        c.pcb_component_id === candidatePcb.pcb_component_id ||
+        c.source_component_id === candidatePcb.source_component_id,
+    )
+    if (
+      candidateSource.manufacturer_part_number ||
+      candidateCad?.footprinter_string
+    ) {
+      continue
+    }
+
+    const candidateBase = getKicadCompatibleComponentName(
+      candidateSource,
+      candidateCad,
+    )
+    if (candidateBase !== baseName) continue
+
+    const signature = getFootprintGeometrySignature(
+      circuitJson,
+      candidatePcb,
+      candidateSource,
+      candidateCad,
+    )
+    let resolvedName = nameBySignature.get(signature)
+    if (!resolvedName) {
+      if (!usedNames.has(baseName)) {
+        resolvedName = baseName
+      } else {
+        do {
+          resolvedName = `${baseName}_${suffix++}`
+        } while (reservedNames.has(resolvedName) || usedNames.has(resolvedName))
+      }
+      nameBySignature.set(signature, resolvedName)
+      usedNames.add(resolvedName)
+    }
+
+    if (candidatePcb.pcb_component_id === pcbComponent.pcb_component_id) {
+      return resolvedName
+    }
+  }
+
+  return baseName
 }
 
 /**

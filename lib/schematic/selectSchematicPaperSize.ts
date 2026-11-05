@@ -54,7 +54,32 @@ export function selectSchematicPaperSize(
     }
   }
 
-  // If even A0 is too small, return A0 (largest available)
-  // In this case, content will be scaled down by the existing transform
-  return PAPER_SIZES[PAPER_SIZES.length - 1]!
+  // If no landscape ISO sheet fits, check portrait ISO sheets (e.g., tall designs)
+  for (let i = 0; i < PAPER_SIZES.length; i++) {
+    const paperSize = PAPER_SIZES[i]!
+    const portraitWidth = paperSize.height
+    const portraitHeight = paperSize.width
+    if (requiredWidth <= portraitWidth && requiredHeight <= portraitHeight) {
+      return {
+        name: paperSize.name,
+        width: portraitWidth,
+        height: portraitHeight,
+        isPortrait: true,
+      }
+    }
+  }
+
+  // If content exceeds both landscape and portrait A0, use a custom "User" paper size
+  // so coordinates at DEFAULT_SCHEMATIC_SCALE_FACTOR are never silently clipped
+  const customWidth = Math.ceil(requiredWidth)
+  const customHeight = Math.ceil(requiredHeight)
+  return {
+    name: "User",
+    width: customWidth,
+    height: customHeight,
+    customSize: {
+      width: customWidth,
+      height: customHeight,
+    },
+  }
 }

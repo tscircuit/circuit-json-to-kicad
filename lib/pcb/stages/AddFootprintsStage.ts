@@ -9,7 +9,7 @@ import type {
 } from "circuit-json"
 import {
   getReferenceDesignator,
-  getKicadCompatibleComponentName,
+  getKicadCompatibleFootprintName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
 import { Footprint, FootprintModel, FootprintAttr } from "kicadts"
@@ -155,7 +155,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     )
 
     const footprintName = sourceComponent
-      ? getKicadCompatibleComponentName(
+      ? getKicadCompatibleFootprintName(
+          this.ctx.circuitJson,
           sourceComponent as SourceComponentBase,
           cadComponent,
         )
