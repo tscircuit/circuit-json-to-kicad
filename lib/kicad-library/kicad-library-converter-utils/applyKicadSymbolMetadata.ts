@@ -104,11 +104,15 @@ const createJustify = (
   return new TextEffectsJustify(options)
 }
 
-const applySymbolProperty = (
-  symbol: SymbolEntry["symbol"],
-  key: string,
-  propertyMeta: KicadSymbolProperty,
-): void => {
+export const applySymbolProperty = ({
+  symbol,
+  key,
+  propertyMeta,
+}: {
+  symbol: SymbolEntry["symbol"]
+  key: string
+  propertyMeta: KicadSymbolProperty
+}): void => {
   const existingProperty = symbol.properties.find((prop) => prop.key === key)
   const nextId =
     propertyMeta.id !== undefined
@@ -194,7 +198,7 @@ export function applyKicadSymbolMetadata(
   if (metadata.properties) {
     for (const [key, propertyMeta] of Object.entries(metadata.properties)) {
       if (!propertyMeta) continue
-      applySymbolProperty(symbol, key, propertyMeta)
+      applySymbolProperty({ symbol, key, propertyMeta })
     }
   }
 
