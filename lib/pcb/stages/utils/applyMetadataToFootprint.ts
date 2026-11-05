@@ -50,10 +50,16 @@ export function applyMetadataToFootprint({
   let newProperties: Property[] = []
   // Reference property - use explicit metadata value if provided, otherwise fall back to componentLabels.reference
   const refMeta = metadata?.properties?.Reference
+  const refValue =
+    refMeta?.value &&
+    refMeta.value.trim().length > 0 &&
+    (refMeta.value !== "REF**" || componentProperty.reference === "REF**")
+      ? refMeta.value
+      : componentProperty.reference
   newProperties.push(
     new Property({
       key: "Reference",
-      value: refMeta?.value ?? componentProperty.reference,
+      value: refValue,
       position: refMeta?.at
         ? [
             Number(refMeta.at.x),

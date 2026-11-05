@@ -2,6 +2,16 @@ import { FootprintPad, PadDrill } from "kicadts"
 import type { PcbHole } from "circuit-json"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
 
+const DEFAULT_NPTH_DIAMETER = 1.0
+
+const getFinitePositiveDimension = (
+  value: unknown,
+  fallback = DEFAULT_NPTH_DIAMETER,
+): number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback
+
 export function createNpthPadFromCircuitJson({
   pcbHole,
   componentCenter,
@@ -38,7 +48,7 @@ export function createNpthPadFromCircuitJson({
   if (pcbHole.hole_shape === "circle") {
     // Circular non-plated hole
     padShape = "circle"
-    const diameter = pcbHole.hole_diameter
+    const diameter = getFinitePositiveDimension(pcbHole.hole_diameter)
     padSize = [diameter, diameter]
     drill = new PadDrill({
       diameter: diameter,
@@ -46,8 +56,8 @@ export function createNpthPadFromCircuitJson({
   } else if (pcbHole.hole_shape === "oval" || pcbHole.hole_shape === "pill") {
     // Oval or Pill-shaped non-plated hole
     padShape = "oval"
-    const width = pcbHole.hole_width
-    const height = pcbHole.hole_height
+    const width = getFinitePositiveDimension(pcbHole.hole_width)
+    const height = getFinitePositiveDimension(pcbHole.hole_height)
     padSize = [width, height]
     drill = new PadDrill({
       oval: true,
@@ -57,19 +67,22 @@ export function createNpthPadFromCircuitJson({
   } else if (pcbHole.hole_shape === "rotated_pill") {
     // Rotated pill-shaped non-plated hole
     padShape = "oval"
-    const width = pcbHole.hole_width
-    const height = pcbHole.hole_height
+    const width = getFinitePositiveDimension(pcbHole.hole_width)
+    const height = getFinitePositiveDimension(pcbHole.hole_height)
     padSize = [width, height]
     drill = new PadDrill({
       oval: true,
       diameter: width,
       width: height,
     })
-    rotation = pcbHole.ccw_rotation || 0
+    rotation = Number.isFinite(pcbHole.ccw_rotation) ? pcbHole.ccw_rotation : 0
   } else {
     // Default fallback for unknown shapes
     padShape = "circle"
-    const diameter = "hole_diameter" in pcbHole ? pcbHole.hole_diameter : 1.0
+    const diameter =
+      "hole_diameter" in pcbHole
+        ? getFinitePositiveDimension(pcbHole.hole_diameter)
+        : DEFAULT_NPTH_DIAMETER
     padSize = [diameter, diameter]
     drill = new PadDrill({ diameter: diameter })
   }
