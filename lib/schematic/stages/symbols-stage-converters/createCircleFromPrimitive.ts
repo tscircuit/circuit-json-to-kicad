@@ -14,6 +14,7 @@ type CirclePrimitive = {
   fillColor?: string
   kicadFillType?: "outline"
   strokeWidth?: number | null
+  isDashed?: boolean
 }
 
 export function createCircleFromPrimitive({
@@ -41,7 +42,7 @@ export function createCircleFromPrimitive({
           primitive.strokeWidth == null ? 0.254 : primitive.strokeWidth * scale,
         ),
       ],
-      ["type", "default"],
+      ["type", primitive.isDashed ? "dash" : "default"],
     ],
     [
       "fill",

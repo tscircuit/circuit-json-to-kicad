@@ -14,7 +14,7 @@ export function createTextFromPrimitive({
     text: string
     x: number
     y: number
-    fontSize: number
+    fontSize?: number
     anchor?: string
   }
   transform: Matrix
@@ -31,7 +31,9 @@ export function createTextFromPrimitive({
   symbolText.at = [scaledPos.x, scaledPos.y, 0]
 
   // Scale font size to match symbol scaling
-  const scaledFontSize = roundSchematicCoordinate(schText.fontSize * scale)
+  const scaledFontSize = roundSchematicCoordinate(
+    (schText.fontSize ?? 0.2) * scale,
+  )
   const font = new TextEffectsFont()
   font.size = { height: scaledFontSize, width: scaledFontSize }
   symbolText.effects = new TextEffects({ font })
