@@ -40,6 +40,56 @@ const getModelFileName = (modelPath: string) => {
   return normalizedModelPath.split("/").pop() || modelPath
 }
 
+export const normalizeModel3dSourcePath = (modelPath: string) => {
+  const withoutQuery = modelPath.split("?")[0] || modelPath
+  return withoutQuery.split("#")[0] || withoutQuery
+}
+
+export const allocateDistinctModelFilename = ({
+  sourcePath,
+  shapesDir,
+  sourcePathToFilename,
+  usedFilenamesByDir,
+}: {
+  sourcePath: string
+  shapesDir: string
+  sourcePathToFilename: Map<string, string>
+  usedFilenamesByDir: Map<string, Set<string>>
+}): string => {
+  const cleanSourcePath = normalizeModel3dSourcePath(sourcePath)
+  const cacheKey = `${shapesDir}::${cleanSourcePath}`
+  const existing = sourcePathToFilename.get(cacheKey)
+  if (existing) return existing
+
+  let usedInDir = usedFilenamesByDir.get(shapesDir)
+  if (!usedInDir) {
+    usedInDir = new Set<string>()
+    usedFilenamesByDir.set(shapesDir, usedInDir)
+  }
+
+  const baseFilename = getModelFileName(cleanSourcePath)
+  if (!usedInDir.has(baseFilename)) {
+    usedInDir.add(baseFilename)
+    sourcePathToFilename.set(cacheKey, baseFilename)
+    return baseFilename
+  }
+
+  const dotIndex = baseFilename.lastIndexOf(".")
+  const stem = dotIndex > 0 ? baseFilename.slice(0, dotIndex) : baseFilename
+  const ext = dotIndex > 0 ? baseFilename.slice(dotIndex) : ""
+
+  let suffix = 2
+  let candidate = `${stem}_${suffix}${ext}`
+  while (usedInDir.has(candidate)) {
+    suffix++
+    candidate = `${stem}_${suffix}${ext}`
+  }
+
+  usedInDir.add(candidate)
+  sourcePathToFilename.set(cacheKey, candidate)
+  return candidate
+}
+
 export const resolveAndLoadKicad3dModelFiles = async ({
   model3dSourcePaths,
   projectName,
@@ -48,6 +98,9 @@ export const resolveAndLoadKicad3dModelFiles = async ({
   onModelFile,
   onError,
 }: ResolveAndLoadKicad3dModelFilesOptions) => {
+  const sourcePathToFilename = new Map<string, string>()
+  const usedFilenamesByDir = new Map<string, Set<string>>()
+
   for (const sourcePath of model3dSourcePaths) {
     // Builtin tscircuit models share one KiCad 3D model folder.
     let shapesDir = `${projectName}.3dshapes`
@@ -55,7 +108,13 @@ export const resolveAndLoadKicad3dModelFiles = async ({
       shapesDir = "tscircuit_builtin.3dshapes"
     }
 
-    const outputPath = `3dmodels/${shapesDir}/${getModelFileName(sourcePath)}`
+    const filename = allocateDistinctModelFilename({
+      sourcePath,
+      shapesDir,
+      sourcePathToFilename,
+      usedFilenamesByDir,
+    })
+    const outputPath = `3dmodels/${shapesDir}/${filename}`
 
     let content: Uint8Array
     try {
