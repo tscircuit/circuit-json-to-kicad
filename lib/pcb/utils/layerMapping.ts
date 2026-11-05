@@ -29,29 +29,31 @@ export function getKicadLayer(circuitJsonLayer: string | undefined): string {
 }
 
 /**
- * Get the KiCad copper layer index based on number of layers
- * For a 4-layer board:
- *   - F.Cu (front) = 0
- *   - In1.Cu = 1
- *   - In2.Cu = 2
- *   - B.Cu (back) = 31
- *
- * For a 2-layer board:
- *   - F.Cu (front) = 0
- *   - B.Cu (back) = 31
+ * Get the KiCad 9 layer ordinal for a copper layer.
+ *   - F.Cu = 0
+ *   - B.Cu = 2
+ *   - In<n>.Cu = 2 * n + 2 (In1.Cu = 4, In2.Cu = 6, ...)
  */
-export function getKicadCopperLayerIndex(
-  layerName: string,
-  numLayers: number,
-): number {
+export function getKicadCopperLayerIndex(layerName: string): number {
   if (layerName === "F.Cu") return 0
-  if (layerName === "B.Cu") return 31
+  if (layerName === "B.Cu") return 2
 
-  // Inner layers use sequential indices starting from 1
   const match = layerName.match(/^In(\d+)\.Cu$/)
-  if (match?.[1]) {
-    return parseInt(match[1], 10)
-  }
+  if (match?.[1]) return 2 * parseInt(match[1], 10) + 2
+
+  return 0
+}
+
+/**
+ * Position of a copper layer in the stackup, front-most first. KiCad 9
+ * ordinals are not in stackup order (B.Cu = 2 sits before the inner layers).
+ */
+function getCopperStackupPosition(layerName: string): number {
+  if (layerName === "F.Cu") return 0
+  if (layerName === "B.Cu") return Number.MAX_SAFE_INTEGER
+
+  const match = layerName.match(/^In(\d+)\.Cu$/)
+  if (match?.[1]) return parseInt(match[1], 10)
 
   return 0
 }
@@ -76,18 +78,15 @@ export function getViaLayers(numLayers: number): string[] {
  * [F.Cu, In1.Cu, In2.Cu, B.Cu], which KiCad rejects) or the two span layers in
  * either order (e.g. [B.Cu, F.Cu]); both are normalized here.
  */
-export function getViaLayerSpan(
-  kicadLayers: string[],
-  numLayers: number,
-): string[] {
+export function getViaLayerSpan(kicadLayers: string[]): string[] {
   if (kicadLayers.length <= 1) return kicadLayers
 
   let top = kicadLayers[0]!
   let bottom = kicadLayers[0]!
-  let topIndex = getKicadCopperLayerIndex(top, numLayers)
+  let topIndex = getCopperStackupPosition(top)
   let bottomIndex = topIndex
   for (const layer of kicadLayers) {
-    const index = getKicadCopperLayerIndex(layer, numLayers)
+    const index = getCopperStackupPosition(layer)
     if (index < topIndex) {
       topIndex = index
       top = layer
