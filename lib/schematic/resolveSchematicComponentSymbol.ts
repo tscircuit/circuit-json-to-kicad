@@ -97,6 +97,12 @@ export function resolveSchematicComponentSymbol({
     circuitJson,
     schematicComponent,
   )
+  const connectorPinCount = circuitJson.filter(
+    (element) =>
+      element.type === "schematic_port" &&
+      element.schematic_component_id ===
+        schematicComponent.schematic_component_id,
+  ).length
   const libraryId = usesComponentLevelSymbolPrimitives
     ? getComponentLevelLibraryId(
         sourceComponent,
@@ -108,6 +114,7 @@ export function resolveSchematicComponentSymbol({
         schematicComponent,
         cadComponent,
         schematicSymbolName,
+        connectorPinCount,
       )
   // Named artwork already defines its pins and leads, even when its source
   // component is a chip (as with <schematicsymbol chipRef>). Only generated
