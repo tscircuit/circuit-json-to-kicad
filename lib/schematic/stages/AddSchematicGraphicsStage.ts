@@ -77,12 +77,12 @@ export class AddSchematicGraphicsStage extends ConverterStage<
       .some((component) =>
         hasComponentLevelSymbolPrimitives(this.ctx.circuitJson, component),
       )
-    const schematicRects = preserveStandaloneGraphics
-      ? (db.schematic_rect?.list() || []).filter(isStandaloneSchematicElement)
-      : []
-    const schematicPaths = preserveStandaloneGraphics
-      ? (db.schematic_path?.list() || []).filter(isStandaloneSchematicElement)
-      : []
+    const schematicRects = (db.schematic_rect?.list() || []).filter(
+      isStandaloneSchematicElement,
+    )
+    const schematicPaths = (db.schematic_path?.list() || []).filter(
+      isStandaloneSchematicElement,
+    )
 
     if (
       schematicLines.length === 0 &&
@@ -170,9 +170,8 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         stroke.width =
           (path.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
         stroke.type = path.is_dashed ? "dash" : "default"
-        stroke.color = preserveStandaloneGraphics
-          ? (parseColor(path.stroke_color ?? "") ?? DEFAULT_SECTION_LINE_COLOR)
-          : DEFAULT_SECTION_LINE_COLOR
+        stroke.color =
+          parseColor(path.stroke_color ?? "") ?? DEFAULT_SECTION_LINE_COLOR
 
         polylines.push(
           new Polyline({
@@ -192,9 +191,43 @@ export class AddSchematicGraphicsStage extends ConverterStage<
 
     if (schematicRects.length > 0) {
       const rectangles = kicadSch.rectangles || []
+      const polylines = kicadSch.polylines || []
       for (const rect of schematicRects) {
         const halfWidth = rect.width / 2
         const halfHeight = rect.height / 2
+
+        const stroke = new Stroke()
+        stroke.width =
+          (rect.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
+        stroke.type = rect.is_dashed ? "dash" : "default"
+        stroke.color = parseColor(rect.color) ?? DEFAULT_SECTION_LINE_COLOR
+
+        if ((rect.rotation ?? 0) % 360 !== 0) {
+          const rotationRadians = ((rect.rotation ?? 0) * Math.PI) / 180
+          const cos = Math.cos(rotationRadians)
+          const sin = Math.sin(rotationRadians)
+          const corners = [
+            { x: -halfWidth, y: -halfHeight },
+            { x: halfWidth, y: -halfHeight },
+            { x: halfWidth, y: halfHeight },
+            { x: -halfWidth, y: halfHeight },
+          ].map((corner) =>
+            applyToPoint(this.ctx.c2kMatSch!, {
+              x: rect.center.x + corner.x * cos - corner.y * sin,
+              y: rect.center.y + corner.x * sin + corner.y * cos,
+            }),
+          )
+          const closedCorners = [...corners, corners[0]!]
+          polylines.push(
+            new Polyline({
+              points: new Pts(closedCorners.map((pt) => new Xy(pt.x, pt.y))),
+              stroke,
+              uuid: crypto.randomUUID(),
+            }),
+          )
+          continue
+        }
+
         const firstCorner = applyToPoint(this.ctx.c2kMatSch, {
           x: rect.center.x - halfWidth,
           y: rect.center.y - halfHeight,
@@ -203,14 +236,6 @@ export class AddSchematicGraphicsStage extends ConverterStage<
           x: rect.center.x + halfWidth,
           y: rect.center.y + halfHeight,
         })
-
-        const stroke = new Stroke()
-        stroke.width =
-          (rect.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
-        stroke.type = rect.is_dashed ? "dash" : "default"
-        stroke.color = preserveStandaloneGraphics
-          ? (parseColor(rect.color) ?? DEFAULT_SECTION_LINE_COLOR)
-          : DEFAULT_SECTION_LINE_COLOR
 
         const fill = new SymbolRectangleFill()
         const fillColor = rect.fill_color
@@ -239,7 +264,12 @@ export class AddSchematicGraphicsStage extends ConverterStage<
           }),
         )
       }
-      kicadSch.rectangles = rectangles
+      if (rectangles.length > 0) {
+        kicadSch.rectangles = rectangles
+      }
+      if (polylines.length > 0) {
+        kicadSch.polylines = polylines
+      }
     }
 
     if (schematicTexts.length > 0) {
