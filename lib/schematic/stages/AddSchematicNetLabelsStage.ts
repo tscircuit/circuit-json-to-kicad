@@ -1,22 +1,27 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
 import {
+  GlobalLabel,
   SchematicSymbol,
-  SymbolLibId,
-  SymbolProperty,
-  SymbolPin,
+  SymbolInstancePath,
   SymbolInstances,
   SymbolInstancesProject,
-  SymbolInstancePath,
+  SymbolLibId,
+  SymbolPin,
+  SymbolProperty,
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
-  GlobalLabel,
 } from "kicadts"
+import { symbols } from "schematic-symbols"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
-import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
+import {
+  roundSchematicCoordinate,
+  toSchematicInternalUnits,
+  transformSchematicPoint,
+} from "./utils/schematicCoordinates"
 
 /**
  * Adds schematic net labels to the schematic
@@ -106,7 +111,8 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     }
 
     const anchorInKicad = applyToPoint(this.ctx.c2kMatSch, anchorPoint)
-    let { x, y } = anchorInKicad
+    let x = roundSchematicCoordinate(anchorInKicad.x)
+    let y = roundSchematicCoordinate(anchorInKicad.y)
 
     const symbolData = symbols[symbolName as keyof typeof symbols]
     const port = symbolData?.ports?.[0]
@@ -119,8 +125,14 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
         schematicPorts: [],
         c2kMatSchScale: this.ctx.kicadSchematicScaleFactor ?? 1,
       })
-      x -= pinPosition.x
-      y += pinPosition.y
+      x =
+        (toSchematicInternalUnits(anchorInKicad.x) -
+          toSchematicInternalUnits(pinPosition.x)) /
+        10_000
+      y =
+        (toSchematicInternalUnits(anchorInKicad.y) +
+          toSchematicInternalUnits(pinPosition.y)) /
+        10_000
     }
 
     const reference = `#PWR${netLabel.schematic_net_label_id}`
@@ -151,7 +163,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Reference",
       value: reference,
       id: 0,
-      at: [x, y + referenceOffset, 0],
+      at: [x, roundSchematicCoordinate(y + referenceOffset), 0],
       effects: this.createTextEffects(1.27, true),
     })
 
@@ -159,7 +171,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Value",
       value: labelText,
       id: 1,
-      at: [x, y + referenceOffset, 0],
+      at: [x, roundSchematicCoordinate(y + referenceOffset), 0],
       effects: this.createTextEffects(1.27, false),
     })
 
@@ -167,7 +179,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Footprint",
       value: "",
       id: 2,
-      at: [x - 1.778, y, 90],
+      at: [roundSchematicCoordinate(x - 1.778), y, 90],
       effects: this.createTextEffects(1.27, true),
     })
 
@@ -229,7 +241,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     // Transform circuit-json coordinates to KiCad coordinates
     // Use anchor_position as primary source, fallback to center if not available
-    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+    const { x, y } = transformSchematicPoint(this.ctx.c2kMatSch, {
       x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     })
