@@ -31,6 +31,7 @@
     "@biomejs/biome": "2.5.15",
     "@tscircuit/common": "^0.0.5",
     "@tscircuit/core": "^0.0.2289",
+    "@tscircuit/props": "^0.0.719",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
     "circuit-json": "^0.0.547",
@@ -53,6 +54,7 @@
     "typescript": "^5"
   },
   "overrides": {
+    "@tscircuit/props": "^0.0.719",
     "circuit-json": "^0.0.547"
   }
 }
