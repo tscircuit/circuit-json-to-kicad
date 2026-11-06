@@ -121,3 +121,97 @@ test("calls onError and continues when a model file cannot be loaded", async () 
     "3dmodels/my_project.3dshapes/custom-switch.step",
   ])
 })
+
+test("different model sources with the same basename remain distinct when packaged (#531)", async () => {
+  const urls = [
+    "https://example.com/left/body.step",
+    "https://example.com/right/body.step",
+  ]
+  const circuit = new Circuit()
+  circuit.add(
+    <board width={30} height={20}>
+      <chip
+        name="U1"
+        pcbX={-5}
+        footprint="tssop8"
+        cadModel={{ stepUrl: urls[0]! }}
+      />
+      <chip
+        name="U2"
+        pcbX={5}
+        footprint="tssop8"
+        cadModel={{ stepUrl: urls[1]! }}
+      />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const converter = new CircuitJsonToKicadPcbConverter(
+    circuit.getCircuitJson(),
+    { includeBuiltin3dModels: true, projectName: "example" },
+  )
+  converter.runUntilFinished()
+  expect(converter.getModel3dSourcePaths()).toEqual(urls)
+  const writes: Array<{ source: string; path: string }> = []
+  const files = new Map<string, Uint8Array>()
+  await resolveAndLoadKicad3dModelFiles({
+    projectName: "example",
+    model3dSourcePaths: converter.getModel3dSourcePaths(),
+    fetch: async (url) => ({
+      ok: true,
+      arrayBuffer: async () => new Uint8Array([urls.indexOf(url) + 1]).buffer,
+    }),
+    onModelFile: ({ sourcePath, outputPath, content }) => {
+      writes.push({ source: sourcePath, path: outputPath })
+      files.set(outputPath, content)
+    },
+  })
+  expect(writes.map((write) => write.source)).toEqual(urls)
+  expect(files.size).toBe(2)
+  const models = converter
+    .getOutput()
+    .footprints.flatMap((fp) => fp.models.map((model) => model.path))
+  expect(new Set(models).size).toBe(2)
+})
+
+test("hint-derived KiCad pad number does not collide with real pin number (#535)", async () => {
+  const circuit = new Circuit()
+  circuit.add(
+    <board width="20mm" height="10mm" routingDisabled>
+      <chip
+        name="U1"
+        pcbX={0}
+        pcbY={0}
+        footprint={
+          <footprint>
+            <smtpad
+              portHints={["pin1"]}
+              pcbX="-1mm"
+              pcbY="0mm"
+              width="0.3mm"
+              height="0.3mm"
+              shape="rect"
+            />
+            <smtpad
+              portHints={["1"]}
+              pcbX="1mm"
+              pcbY="0mm"
+              width="0.3mm"
+              height="0.3mm"
+              shape="rect"
+            />
+          </footprint>
+        }
+      />
+    </board>,
+  )
+
+  await circuit.renderUntilSettled()
+  const converter = new CircuitJsonToKicadPcbConverter(circuit.getCircuitJson())
+  converter.runUntilFinished()
+  const padNumbers = converter
+    .getOutput()
+    .footprints.flatMap((fp) =>
+      fp.fpPads.map((pad) => pad.number).filter((num) => num !== ""),
+    )
+  expect(padNumbers).toEqual(["1", "2"])
+})

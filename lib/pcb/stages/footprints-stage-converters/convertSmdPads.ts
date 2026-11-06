@@ -12,6 +12,7 @@ export function convertSmdPads(
     componentId,
     startPadNumber,
     getNetInfo,
+    usedPadNumbers = new Set<string>(),
   }: {
     pcbPads: PcbSmtPad[]
     componentCenter: { x: number; y: number }
@@ -19,11 +20,29 @@ export function convertSmdPads(
     componentId: string
     startPadNumber: number
     getNetInfo: (pcbPortId?: string) => PcbNetInfo | undefined
+    usedPadNumbers?: Set<string>
   },
   ctx: ConverterContext,
 ): { pads: FootprintPad[]; nextPadNumber: number } {
   const pads: FootprintPad[] = []
   let padNumber = startPadNumber
+
+  for (const pcbPad of pcbPads) {
+    const pcbPort = pcbPad.pcb_port_id
+      ? ctx.db.pcb_port?.get(pcbPad.pcb_port_id)
+      : undefined
+    const sourcePort = pcbPort?.source_port_id
+      ? ctx.db.source_port?.get(pcbPort.source_port_id)
+      : undefined
+    const explicitPinNumber =
+      getPhysicalPinName(sourcePort) ??
+      (sourcePort?.pin_number != null
+        ? String(sourcePort.pin_number)
+        : undefined)
+    if (explicitPinNumber !== undefined) {
+      usedPadNumbers.add(explicitPinNumber)
+    }
+  }
 
   for (const pcbPad of pcbPads) {
     const netInfo = getNetInfo(pcbPad.pcb_port_id)
@@ -43,13 +62,28 @@ export function convertSmdPads(
     const gridHint = pcbPad.port_hints?.find((h) =>
       /^[A-Za-z]?\d+[A-Za-z0-9_]*$/.test(h),
     )
-    const resolvedPadNumber =
+    const explicitPinNumber =
       getPhysicalPinName(sourcePort) ??
       (sourcePort?.pin_number != null
         ? String(sourcePort.pin_number)
-        : pinHint
-          ? pinHint.replace(/^pin/i, "")
-          : (gridHint ?? String(padNumber)))
+        : undefined)
+    const hintPinNumber = pinHint ? pinHint.replace(/^pin/i, "") : gridHint
+
+    let resolvedPadNumber: string
+    if (explicitPinNumber !== undefined) {
+      resolvedPadNumber = explicitPinNumber
+    } else if (
+      hintPinNumber !== undefined &&
+      !usedPadNumbers.has(hintPinNumber)
+    ) {
+      resolvedPadNumber = hintPinNumber
+    } else {
+      while (usedPadNumbers.has(String(padNumber))) {
+        padNumber++
+      }
+      resolvedPadNumber = String(padNumber)
+    }
+    usedPadNumbers.add(resolvedPadNumber)
 
     const pad = createSmdPadFromCircuitJson({
       pcbPad,

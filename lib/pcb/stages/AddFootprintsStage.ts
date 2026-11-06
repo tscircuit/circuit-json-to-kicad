@@ -44,6 +44,8 @@ import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedH
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
 import { convertSolderPaste } from "./footprints-stage-converters/convertSolderPaste"
+import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
+import { allocateDistinctModelFilename } from "../../utils/resolveAndLoadKicad3dModelFiles"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -53,6 +55,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
   private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
+  private modelSourcePathToFilename = new Map<string, string>()
+  private usedModelFilenamesByDir = new Map<string, Set<string>>()
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
     if (!pcbPortId) return undefined
@@ -257,6 +261,31 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (pad: any) => pad.pcb_component_id === component.pcb_component_id,
         ) || []
 
+    const pcbPlatedHoles =
+      this.ctx.db.pcb_plated_hole
+        ?.list()
+        .filter(
+          (hole: any) => hole.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const usedPadNumbers = new Set<string>()
+    for (const item of [...pcbPads, ...pcbPlatedHoles]) {
+      const pcbPort = item.pcb_port_id
+        ? this.ctx.db.pcb_port?.get(item.pcb_port_id)
+        : undefined
+      const sourcePort = pcbPort?.source_port_id
+        ? this.ctx.db.source_port?.get(pcbPort.source_port_id)
+        : undefined
+      const explicitPinNumber =
+        getPhysicalPinName(sourcePort) ??
+        (sourcePort?.pin_number != null
+          ? String(sourcePort.pin_number)
+          : undefined)
+      if (explicitPinNumber !== undefined) {
+        usedPadNumbers.add(explicitPinNumber)
+      }
+    }
+
     const { pads: smdPads, nextPadNumber } = convertSmdPads(
       {
         pcbPads,
@@ -265,6 +294,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentId: component.pcb_component_id,
         startPadNumber: 1,
         getNetInfo,
+        usedPadNumbers,
       },
       this.ctx,
     )
@@ -292,13 +322,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }),
     )
 
-    const pcbPlatedHoles =
-      this.ctx.db.pcb_plated_hole
-        ?.list()
-        .filter(
-          (hole: any) => hole.pcb_component_id === component.pcb_component_id,
-        ) || []
-
     const { pads: thruHolePads } = convertPlatedHoles(
       {
         platedHoles: pcbPlatedHoles,
@@ -307,6 +330,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentId: component.pcb_component_id,
         startPadNumber: nextPadNumber,
         getNetInfo,
+        usedPadNumbers,
       },
       this.ctx,
     )
@@ -468,15 +492,22 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           // Rewrite user model paths to ${KIPRJMOD}/... and track source URLs
           footprint.models = models.map((model) => {
             if (!model.path) return model
-            const filename = getBasename(model.path)
+            const rawFilename = getBasename(model.path)
             const isRemote =
               model.path.startsWith("http://modelcdn.tscircuit.com") ||
               model.path.startsWith("https://modelcdn.tscircuit.com")
             const folderName = isRemote
               ? "tscircuit_builtin"
-              : (this.ctx.projectName ?? filename.replace(/\.[^.]+$/, ""))
+              : (this.ctx.projectName ?? rawFilename.replace(/\.[^.]+$/, ""))
+            const shapesDir = `${folderName}.3dshapes`
+            const filename = allocateDistinctModelFilename({
+              sourcePath: model.path,
+              shapesDir,
+              sourcePathToFilename: this.modelSourcePathToFilename,
+              usedFilenamesByDir: this.usedModelFilenamesByDir,
+            })
             const newModel = new FootprintModel(
-              `${KICAD_3D_BASE}/${folderName}.3dshapes/${filename}`,
+              `${KICAD_3D_BASE}/${shapesDir}/${filename}`,
             )
             if (model.offset) newModel.offset = model.offset
             if (model.scale) newModel.scale = model.scale
