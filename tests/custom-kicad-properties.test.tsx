@@ -117,8 +117,19 @@ test("PCB export preserves custom footprint properties and overrides generated f
 })
 
 test("schematic instances preserve custom symbol properties and their presentation", async () => {
-  const converter = new CircuitJsonToKicadSchConverter(await getCircuitJson())
+  const circuitJson = await getCircuitJson()
+  const schematicComponent = circuitJson.find(
+    (element) => element.type === "schematic_component",
+  )
+  if (!schematicComponent) throw new Error("Missing test component")
+  schematicComponent.metadata = {
+    kicad_symbol: { properties: { Max_Current_A: { value: "99" } } },
+  }
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
+  expect(converter.getOutputString()).not.toContain(
+    '(property "Max_Current_A" "99"',
+  )
   const symbol = parseKicadSch(converter.getOutputString()).symbols[0]!
   const customProperty = symbol.properties.find(
     (property) => property.key === "Max_Current_A",
