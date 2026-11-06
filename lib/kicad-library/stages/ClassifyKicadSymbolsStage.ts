@@ -8,7 +8,12 @@ import type {
 import { renameKicadSymbol } from "../kicad-library-converter-utils/renameKicadSymbol"
 import { updateKicadSymbolFootprint } from "../kicad-library-converter-utils/updateKicadSymbolFootprint"
 import { updateBuiltinKicadSymbolFootprint } from "../kicad-library-converter-utils/updateBuiltinKicadSymbolFootprint"
-import { componentHasCustomFootprint } from "./ClassifyKicadFootprintsStage"
+import {
+  componentHasCustomFootprint,
+  getUserKicadFootprintName,
+  resolvePrimaryCustomFootprintMatchNames,
+  resolvePrimaryCustomFootprintMetadata,
+} from "./ClassifyKicadFootprintsStage"
 import { applyKicadSymbolMetadata } from "../kicad-library-converter-utils/applyKicadSymbolMetadata"
 
 // Track symbol names that have been added for deduplication
@@ -63,16 +68,23 @@ function classifySymbolsForComponent({
   let hasAddedUserSymbol = false
 
   // Build set of custom footprint names to match symbols to custom footprints
-  const customFootprintNames = new Set(
-    extractedKicadComponent.kicadFootprints
-      .filter((fp) => !fp.isBuiltin)
-      .map((fp) => fp.footprintName),
-  )
-
-  // Get metadata from circuit-json schematic_symbol element
   const builtComponent = ctx.builtTscircuitComponents.find(
     (c) => c.tscircuitComponentName === tscircuitComponentName,
   )
+  const customFootprintNames = resolvePrimaryCustomFootprintMatchNames({
+    builtComponent,
+    extractedKicadComponent,
+  })
+
+  // Get metadata from circuit-json schematic_symbol element
+  const footprintMetadata = resolvePrimaryCustomFootprintMetadata({
+    builtComponent,
+    extractedKicadComponent,
+  })
+  const userFootprintName = getUserKicadFootprintName({
+    tscircuitComponentName,
+    metadata: footprintMetadata,
+  })
   const schematicSymbol = builtComponent?.circuitJson.find(
     (el): el is SchematicSymbol => el.type === "schematic_symbol",
   )
@@ -100,7 +112,7 @@ function classifySymbolsForComponent({
         updateKicadSymbolFootprint({
           kicadSymbol,
           kicadLibraryName: ctx.kicadLibraryName,
-          kicadFootprintName: tscircuitComponentName,
+          kicadFootprintName: userFootprintName,
           isPcm: ctx.isPcm,
         })
       }
@@ -125,7 +137,7 @@ function classifySymbolsForComponent({
         updateKicadSymbolFootprint({
           kicadSymbol: renamedSymbol,
           kicadLibraryName: ctx.kicadLibraryName,
-          kicadFootprintName: tscircuitComponentName,
+          kicadFootprintName: userFootprintName,
           isPcm: ctx.isPcm,
         })
         const updatedSymbol = metadata
