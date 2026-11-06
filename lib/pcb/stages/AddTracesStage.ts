@@ -68,6 +68,11 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
     this.pcbTraces = this.ctx.db.pcb_trace.list()
+    // Process every trace and allow one final step to mark the stage finished.
+    this.MAX_ITERATIONS = Math.max(
+      this.MAX_ITERATIONS,
+      this.pcbTraces.length + 1,
+    )
   }
 
   private getRoutePointPosition(
@@ -160,8 +165,10 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
             ) {
               for (const sourceNetId of sourceTrace.connected_source_net_ids) {
                 const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
-                if (sourceNet?.subcircuit_connectivity_map_key) {
-                  connectivityKey = sourceNet.subcircuit_connectivity_map_key
+                if (sourceNet) {
+                  connectivityKey =
+                    sourceNet.subcircuit_connectivity_map_key ||
+                    sourceNet.source_net_id
                   break
                 }
               }
@@ -171,8 +178,10 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
 
         if (!connectivityKey && typeof trace.connection_name === "string") {
           const sourceNet = this.ctx.db.source_net?.get(trace.connection_name)
-          if (sourceNet?.subcircuit_connectivity_map_key) {
-            connectivityKey = sourceNet.subcircuit_connectivity_map_key
+          if (sourceNet) {
+            connectivityKey =
+              sourceNet.subcircuit_connectivity_map_key ||
+              sourceNet.source_net_id
           }
         }
 

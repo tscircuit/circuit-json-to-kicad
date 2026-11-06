@@ -8,10 +8,15 @@ import type { KicadPcb } from "kicadts"
 import { GrCircle, GrLine, GrPoly } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
-import { applyToPoint, rotate } from "transformation-matrix"
+import { applyToPoint, rotate, type Matrix } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
-import polygonClipping, { type Geom } from "polygon-clipping"
+import { getRectanglePoints } from "./utils/getRectanglePoints"
+import polygonClipping, { type MultiPolygon } from "polygon-clipping"
+import {
+  roundBoardCoordinate,
+  roundPolygonToKicadPrecision,
+} from "./utils/roundPolygonToKicadPrecision"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -39,7 +44,20 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
   return dedupedCorners
 }
 
-const EDGE_CUTS_WIDTH = 0.1
+const DEFAULT_EDGE_CUTS_WIDTH = 0.1
+
+// Clip geometry on KiCad's coordinate grid. Coincident rounded slots must
+// share vertices instead of differing by sub-nanometer rotation noise.
+const toKicadPoint = (
+  point: { x: number; y: number },
+  c2kMatPcb: Matrix,
+): [number, number] => {
+  const transformed = applyToPoint(c2kMatPcb, point)
+  return [
+    roundBoardCoordinate(transformed.x),
+    roundBoardCoordinate(transformed.y),
+  ]
+}
 
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
@@ -69,17 +87,7 @@ const rotatePointAroundOrigin = (
 }
 
 const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
-  const halfWidth = cutout.width / 2
-  const halfHeight = cutout.height / 2
-
-  const localCorners = [
-    { x: -halfWidth, y: -halfHeight },
-    { x: halfWidth, y: -halfHeight },
-    { x: halfWidth, y: halfHeight },
-    { x: -halfWidth, y: halfHeight },
-  ]
-
-  return localCorners.map((point) => {
+  return getRectanglePoints(cutout).map((point) => {
     const rotatedPoint = rotatePointAroundOrigin(point, cutout.rotation)
 
     return {
@@ -95,6 +103,7 @@ const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
 export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
   override _step(): void {
     const { kicadPcb, c2kMatPcb } = this.ctx
+    const edgeCutsWidth = this.ctx.edgeCutsWidth ?? DEFAULT_EDGE_CUTS_WIDTH
 
     if (!kicadPcb) {
       throw new Error("KicadPcb instance not initialized in context")
@@ -167,11 +176,20 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add fabrication note text elements
+    // Component-owned PCB notes are already exported as footprint text.
+    const standaloneNoteTexts =
+      this.ctx.db.pcb_note_text
+        ?.list()
+        .filter((text) => !text.pcb_component_id) || []
+
+    // Both note types belong on the fabrication layers.
     const fabricationNoteTexts =
       this.ctx.db.pcb_fabrication_note_text?.list() || []
 
-    for (const textElement of fabricationNoteTexts) {
+    for (const textElement of [
+      ...fabricationNoteTexts,
+      ...standaloneNoteTexts,
+    ]) {
       const grText = createFabricationNoteTextFromCircuitJson({
         textElement,
         c2kMatPcb,
@@ -183,21 +201,20 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add board outline from pcb_board
-    const pcbBoards = this.ctx.db.pcb_board?.list() || []
-
-    if (pcbBoards.length > 0) {
-      const board = pcbBoards[0]
-
-      if (!board) {
-        this.finished = true
-        return
-      }
-
+    const outlineElements = [
+      ...this.ctx.db.pcb_panel.list(),
+      ...this.ctx.db.pcb_board.list(),
+    ]
+    const outlinePolys: MultiPolygon[] = []
+    for (const board of outlineElements) {
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
-      if (board.outline && board.outline.length > 0) {
+      if (
+        board.type === "pcb_board" &&
+        board.outline &&
+        board.outline.length > 0
+      ) {
         // Use the custom outline points
         corners = normalizeOutlineCorners(board.outline)
       } else {
@@ -214,33 +231,64 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ]
       }
 
+      outlinePolys.push([
+        [corners.map((point) => toKicadPoint(point, c2kMatPcb))],
+      ])
+    }
+
+    const [firstOutline, ...otherOutlines] = outlinePolys
+    if (firstOutline) {
       const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
-      const cutoutPolys: Geom[] = []
+      const cutoutPolys: MultiPolygon[] = []
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
-          cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([
+            [cutoutCorners.map((point) => toKicadPoint(point, c2kMatPcb))],
+          ])
         } else if (cutout.shape === "circle") {
           // Approximate the circle as a polygon so polygon-clipping can process it.
           // Scaling the number of steps based on the radius to maintain smooth curves
-          cutoutPolys.push([[circleToPolygon(cutout.center, cutout.radius)]])
+          cutoutPolys.push([
+            [
+              circleToPolygon(cutout.center, cutout.radius).map(([x, y]) =>
+                toKicadPoint({ x, y }, c2kMatPcb),
+              ),
+            ],
+          ])
         } else if (cutout.shape === "polygon") {
-          cutoutPolys.push([[cutout.points.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([
+            [cutout.points.map((point) => toKicadPoint(point, c2kMatPcb))],
+          ])
         }
       }
 
-      let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
+      // Boards inside a panel are part of the same substrate. Union their
+      // outlines before subtracting routing slots, so board interiors do not
+      // become holes or add crossing Edge.Cuts. Disjoint boards remain islands.
+      let boardGeom: MultiPolygon =
+        otherOutlines.length > 0
+          ? polygonClipping.union(firstOutline, ...otherOutlines)
+          : firstOutline
       if (cutoutPolys.length > 0) {
-        boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
+        boardGeom = polygonClipping.difference(
+          roundPolygonToKicadPrecision(boardGeom),
+          ...cutoutPolys,
+        )
       }
+
+      // Intersections can lie between grid points. Quantize them before
+      // the existing duplicate-endpoint check to avoid zero-length edges.
+      boardGeom = roundPolygonToKicadPrecision(boardGeom)
 
       // Convert resulting polygons back to lines on Edge.Cuts
       for (const poly of boardGeom) {
         for (const ring of poly) {
-          const transformedRing = ring.map((point: [number, number]) =>
-            applyToPoint(c2kMatPcb, { x: point[0], y: point[1] }),
-          )
+          const transformedRing = ring.map(([x, y]) => ({
+            x,
+            y,
+          }))
 
           for (let i = 0; i < transformedRing.length; i++) {
             const start = transformedRing[i]
@@ -253,7 +301,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
               start: { x: start.x, y: start.y },
               end: { x: end.x, y: end.y },
               layer: "Edge.Cuts",
-              width: EDGE_CUTS_WIDTH,
+              width: edgeCutsWidth,
             })
 
             appendGraphicLine(kicadPcb, edgeLine)
@@ -285,7 +333,7 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
               start: transformedStart,
               end: transformedEnd,
               layer: "Edge.Cuts",
-              width: EDGE_CUTS_WIDTH,
+              width: edgeCutsWidth,
             }),
           )
         }

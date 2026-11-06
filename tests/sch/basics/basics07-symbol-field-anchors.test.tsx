@@ -3,7 +3,7 @@ import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { symbols } from "schematic-symbols"
 import { applyToPoint } from "transformation-matrix"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 
 test("symbol fields preserve primitive positions and anchors in every orientation", async () => {
   for (const rotation of [0, 90, 180, 270]) {

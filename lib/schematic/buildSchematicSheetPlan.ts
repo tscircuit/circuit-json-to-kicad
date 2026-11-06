@@ -61,6 +61,10 @@ export interface SchematicSheetPlan {
 
 const DEFAULT_ROOT_FILENAME = "schematic.kicad_sch"
 
+export interface BuildSchematicSheetPlanOptions {
+  reservedRootFilename?: string
+}
+
 /** Turn an arbitrary sheet name into a filesystem/KiCad friendly file stem */
 function toFileBaseName(sheetName: string, fallbackIndex: number): string {
   const baseName = sheetName
@@ -69,6 +73,13 @@ function toFileBaseName(sheetName: string, fallbackIndex: number): string {
     .replace(/[^a-z0-9]+/g, "_")
     .replace(/^_+|_+$/g, "")
   return baseName.length > 0 ? baseName : `sheet_${fallbackIndex + 1}`
+}
+
+function getReservedRootFileBaseName(rootFilename: string): string {
+  const normalizedFilename = rootFilename.replaceAll("\\", "/")
+  const filename = normalizedFilename.split("/").pop() ?? normalizedFilename
+  const filenameWithoutExtension = filename.replace(/\.kicad_sch$/i, "")
+  return toFileBaseName(filenameWithoutExtension, 0)
 }
 
 /**
@@ -81,6 +92,7 @@ function toFileBaseName(sheetName: string, fallbackIndex: number): string {
  */
 export function buildSchematicSheetPlan(
   circuitJson: CircuitJson,
+  options: BuildSchematicSheetPlanOptions = {},
 ): SchematicSheetPlan {
   const rootUuid = crypto.randomUUID()
 
@@ -99,6 +111,11 @@ export function buildSchematicSheetPlan(
     .sort((a, b) => (a.sheet_index ?? 0) - (b.sheet_index ?? 0))
 
   const usedFileBaseNames = new Set<string>(["root"])
+  if (options.reservedRootFilename) {
+    usedFileBaseNames.add(
+      getReservedRootFileBaseName(options.reservedRootFilename),
+    )
+  }
   const children: ChildSchematicSheetPlanEntry[] = []
   for (let index = 0; index < schematicSheets.length; index++) {
     const sheet = schematicSheets[index]

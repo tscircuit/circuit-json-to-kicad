@@ -9,6 +9,7 @@ import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
 import { createPolylineFromPoints } from "./createPolylineFromPoints"
 import { createRectangleFromPrimitive } from "./createRectangleFromPrimitive"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
+import { parseColor } from "../utils/parseColor"
 
 export function createDrawingSubsymbol({
   libId,
@@ -34,6 +35,11 @@ export function createDrawingSubsymbol({
   )
 
   for (const primitive of symbolData.primitives || []) {
+    const strokeColor = primitive.color
+      ? parseColor(primitive.color)
+      : undefined
+    if (strokeColor?.a === 0 && !primitive.fill) continue
+
     if (primitive.type === "arc") {
       drawingSymbol.arcs.push(
         createArcFromPrimitive({

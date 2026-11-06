@@ -1,15 +1,27 @@
 import type { PcbSilkscreenCircle } from "circuit-json"
 import { FpCircle, Stroke } from "kicadts"
+import { applyToPoint, identity, rotate } from "transformation-matrix"
+
+interface ConvertSilkscreenCirclesOptions {
+  componentCenter: { x: number; y: number }
+  componentRotation?: number
+}
 
 export function convertSilkscreenCircles(
   silkscreenCircles: PcbSilkscreenCircle[],
-  componentCenter: { x: number; y: number },
+  { componentCenter, componentRotation = 0 }: ConvertSilkscreenCirclesOptions,
 ): FpCircle[] {
   const fpCircles: FpCircle[] = []
+  const rotationMatrix =
+    componentRotation !== 0
+      ? rotate((componentRotation * Math.PI) / 180)
+      : identity()
 
   for (const circle of silkscreenCircles) {
-    const relX = circle.center.x - componentCenter.x
-    const relY = -(circle.center.y - componentCenter.y)
+    const relativeCenter = applyToPoint(rotationMatrix, {
+      x: circle.center.x - componentCenter.x,
+      y: -(circle.center.y - componentCenter.y),
+    })
 
     const layerMap: Record<string, string> = {
       top: "F.SilkS",
@@ -18,8 +30,8 @@ export function convertSilkscreenCircles(
     const kicadLayer = layerMap[circle.layer] || circle.layer || "F.SilkS"
 
     const fpCircle = new FpCircle({
-      center: { x: relX, y: relY },
-      end: { x: relX + circle.radius, y: relY },
+      center: relativeCenter,
+      end: { x: relativeCenter.x + circle.radius, y: relativeCenter.y },
       layer: kicadLayer,
       stroke: new Stroke(),
       fill: false,

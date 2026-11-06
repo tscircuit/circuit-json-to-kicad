@@ -1,5 +1,9 @@
 import { Pts, Stroke, SymbolPolyline, SymbolPolylineFill, Xy } from "kicadts"
-import { applyToPoint, type Matrix } from "transformation-matrix"
+import type { Matrix } from "transformation-matrix"
+import {
+  roundSchematicCoordinate,
+  transformSchematicPoint,
+} from "../utils/schematicCoordinates"
 import { createSymbolFillSexprPrimitives } from "./createSymbolFillSexprPrimitives"
 
 export function createPolylineFromPoints({
@@ -24,14 +28,16 @@ export function createPolylineFromPoints({
   const polyline = new SymbolPolyline()
 
   const xyPoints = points.map((p) => {
-    const transformed = applyToPoint(transform, p)
+    const transformed = transformSchematicPoint(transform, p)
     return new Xy(transformed.x, transformed.y)
   })
   const pts = new Pts(xyPoints)
   polyline.points = pts
 
   const stroke = new Stroke()
-  stroke.width = strokeWidth == null ? 0.254 : strokeWidth * scale
+  stroke.width = roundSchematicCoordinate(
+    strokeWidth == null ? 0.254 : strokeWidth * scale,
+  )
   stroke.type = isDashed ? "dash" : "default"
   polyline.stroke = stroke
 

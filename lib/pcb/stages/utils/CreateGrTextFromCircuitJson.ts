@@ -32,13 +32,17 @@ export function createGrTextFromCircuitJson({
   }
   const kicadLayer =
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
+  const kicadLayerNames = textElement.is_knockout
+    ? [kicadLayer, "knockout"]
+    : kicadLayer
 
   const font = new TextEffectsFont()
+  const fontSize = textElement.font_size || 1
   font.size = {
-    width: textElement.font_size || 1,
-    height: textElement.font_size || 1,
+    width: fontSize,
+    height: fontSize,
   }
-  font.thickness = 0.15
+  font.thickness = fontSize > 1 ? Math.min(0.3, fontSize * 0.2) : 0.15
   const textEffects = new TextEffects({ font })
 
   const justify = createPcbTextJustify({
@@ -60,7 +64,7 @@ export function createGrTextFromCircuitJson({
   // Create a graphics text element
   const grText = new GrText({
     text: textElement.text,
-    layer: kicadLayer,
+    layer: kicadLayerNames,
     effects: textEffects,
     uuid: generateDeterministicUuid(
       textElement.pcb_silkscreen_text_id ?? textElement.text,

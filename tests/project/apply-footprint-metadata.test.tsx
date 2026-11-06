@@ -37,7 +37,7 @@ test("applies all kicadFootprintMetadata fields to footprints", async () => {
     },
     // attributes
     attributes: {
-      smd: true,
+      through_hole: true,
       exclude_from_bom: true,
       exclude_from_pos_files: true,
     },
@@ -103,8 +103,8 @@ test("applies all kicadFootprintMetadata fields to footprints", async () => {
     '(property "Description" "Custom microcontroller chip"',
   )
 
-  // Verify attributes
-  expect(output).toContain("(attr smd")
+  // Explicit metadata overrides the SMD pad-based type.
+  expect(output).toContain("(attr through_hole")
   expect(output).toContain("exclude_from_bom")
   expect(output).toContain("exclude_from_pos_files")
 

@@ -1,13 +1,22 @@
 import { expect, test } from "bun:test"
 import { parseKicadSch } from "kicadts"
+import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 import { runGeneratedSystemRepro } from "../../fixtures/run-generated-system-repro"
 
 test("repro25: convert the blood pressure monitor multisheet generated system", async () => {
+  const fixtureUrl = new URL(
+    "../../assets/repro25-generated-system-blood-pressure-monitor.circuit.json",
+    import.meta.url,
+  )
+  const nets = await exportNativeSchematicNets(
+    await Bun.file(fixtureUrl).json(),
+  )
+  expect(nets).toContainEqual({
+    name: "VREF_2_5",
+    pins: ["C2.1", "C3.1", "R3.2", "R4.1", "U3.1", "U3.2"],
+  })
   await runGeneratedSystemRepro({
-    fixtureUrl: new URL(
-      "../../assets/repro25-generated-system-blood-pressure-monitor.circuit.json",
-      import.meta.url,
-    ),
+    fixtureUrl,
     rootFilename: "blood_pressure_monitor.kicad_sch",
     snapshotPath: import.meta.path,
     debugOutputName:

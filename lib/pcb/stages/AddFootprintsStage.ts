@@ -5,13 +5,14 @@ import type {
   PcbHole,
   PcbFabricationNotePath,
   PcbSilkscreenPath,
+  PcbSolderPaste,
 } from "circuit-json"
 import {
   getReferenceDesignator,
   getKicadCompatibleComponentName,
 } from "../../utils/getKicadCompatibleComponentName"
 import type { KicadPcb } from "kicadts"
-import { Footprint, FootprintModel } from "kicadts"
+import { Footprint, FootprintModel, FootprintAttr } from "kicadts"
 import {
   MODEL_CDN_BASE_URL,
   getBasename,
@@ -24,6 +25,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
+import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
 import { getkicadComponentProperty } from "./utils/getKicadComponentProperty"
 import type { KicadFootprintMetadata } from "@tscircuit/props"
 import { convertSilkscreenCircles } from "./footprints-stage-converters/convertSilkscreenCircles"
@@ -34,12 +36,14 @@ import { convertCourtyardRects } from "./footprints-stage-converters/convertCour
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
 import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
+import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
 import { convertSmdPads } from "./footprints-stage-converters/convertSmdPads"
 import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedHoles"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
+import { convertSolderPaste } from "./footprints-stage-converters/convertSolderPaste"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -48,6 +52,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
+  private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
     if (!pcbPortId) return undefined
@@ -60,10 +65,33 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const sourcePort = this.ctx.db.source_port?.get(sourcePortId)
     if (!sourcePort) return undefined
 
-    const connectivityKey = sourcePort.subcircuit_connectivity_map_key
-    if (!connectivityKey) return undefined
-
-    return this.ctx.pcbNetMap?.get(connectivityKey)
+    const keys = [
+      // AddNetsStage indexes every Circuit JSON element ID through the
+      // connectivity map, including internally connected source ports.
+      sourcePortId,
+      ...(this.sourcePortNetKeys[sourcePortId] ?? []),
+      sourcePort.subcircuit_connectivity_map_key,
+    ]
+    const nets: PcbNetInfo[] = []
+    for (const key of keys) {
+      const net = key ? this.ctx.pcbNetMap?.get(key) : undefined
+      if (net && !nets.some((existing) => existing.id === net.id)) {
+        nets.push(net)
+      }
+    }
+    if (nets.length > 1) {
+      const component = sourcePort.source_component_id
+        ? this.ctx.db.source_component.get(sourcePort.source_component_id)
+        : undefined
+      const reference =
+        component?.name ||
+        sourcePort.source_component_id ||
+        pcbPort.pcb_component_id
+      throw new Error(
+        `Cannot export ${reference} pad ${sourcePort.pin_number ?? sourcePort.name}: multiple KiCad nets (${nets.map((net) => net.name).join(", ")})`,
+      )
+    }
+    return nets[0]
   }
 
   private getCadComponentForPcbComponent(
@@ -83,6 +111,21 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     super(input, ctx)
     this.pcbComponents = this.ctx.db.pcb_component.list()
     this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
+
+    // Imported ports may have trace membership without connectivity keys.
+    for (const trace of ctx.db.source_trace.list()) {
+      const keys = [
+        trace.subcircuit_connectivity_map_key,
+        ...(trace.connected_source_net_ids ?? []).map((id) => {
+          const net = ctx.db.source_net.get(id)
+          return net?.subcircuit_connectivity_map_key || net?.source_net_id
+        }),
+      ].filter((key): key is string => Boolean(key))
+      for (const portId of trace.connected_source_port_ids ?? []) {
+        this.sourcePortNetKeys[portId] ??= []
+        this.sourcePortNetKeys[portId].push(...keys)
+      }
+    }
   }
 
   override _step(): void {
@@ -118,9 +161,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         )
       : "Unknown"
 
+    // PCB geometry is in right-handed board-world mm (+X right, +Y top,
+    // +Z above). This point becomes KiCad’s footprint-local (0, 0).
+    const footprintOrigin = component.footprint_origin ?? component.center
     const transformedPos = applyToPoint(c2kMatPcb, {
-      x: component.center.x,
-      y: component.center.y,
+      x: footprintOrigin.x,
+      y: footprintOrigin.y,
     })
 
     const footprintData = `footprint:${component.pcb_component_id}:${transformedPos.x},${transformedPos.y}`
@@ -144,7 +190,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpTexts.push(
       ...convertSilkscreenTexts({
         silkscreenTexts: pcbSilkscreenTexts,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
         sourceComponentName: sourceComponent?.name,
       }),
@@ -160,7 +206,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpTexts.push(
       ...convertNoteTexts({
         noteTexts: pcbNoteTexts,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -178,7 +224,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const fpLines = footprint.fpLines ?? []
     fpLines.push(
       ...convertSilkscreenPaths(pcbSilkscreenPaths, {
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -193,7 +239,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     fpLines.push(
       ...convertFabricationNotePaths(fabricationNotePaths, {
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
     )
@@ -214,7 +260,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const { pads: smdPads, nextPadNumber } = convertSmdPads(
       {
         pcbPads,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
         componentId: component.pcb_component_id,
         startPadNumber: 1,
@@ -223,6 +269,28 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       this.ctx,
     )
     fpPads.push(...smdPads)
+
+    const pcbSolderPaste =
+      this.ctx.db.pcb_solder_paste?.list().filter((paste: PcbSolderPaste) => {
+        if (paste.pcb_component_id === component.pcb_component_id) {
+          return true
+        }
+        const linkedPad = paste.pcb_smtpad_id
+          ? this.ctx.db.pcb_smtpad.get(paste.pcb_smtpad_id)
+          : undefined
+        return (
+          !paste.pcb_component_id &&
+          linkedPad?.pcb_component_id === component.pcb_component_id
+        )
+      }) || []
+
+    fpPads.push(
+      ...convertSolderPaste({
+        solderPaste: pcbSolderPaste,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
+    )
 
     const pcbPlatedHoles =
       this.ctx.db.pcb_plated_hole
@@ -234,7 +302,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     const { pads: thruHolePads } = convertPlatedHoles(
       {
         platedHoles: pcbPlatedHoles,
-        componentCenter: component.center,
+        componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
         componentId: component.pcb_component_id,
         startPadNumber: nextPadNumber,
@@ -254,7 +322,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const npthPads = convertNpthHoles({
       pcbHoles,
-      componentCenter: component.center,
+      componentCenter: footprintOrigin,
       componentRotation: component.rotation || 0,
     })
     fpPads.push(...npthPads)
@@ -272,7 +340,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const fpCircles = footprint.fpCircles ?? []
     fpCircles.push(
-      ...convertSilkscreenCircles(pcbSilkscreenCircles, component.center),
+      ...convertSilkscreenCircles(pcbSilkscreenCircles, {
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
     )
 
     const pcbCourtyardCircles =
@@ -283,7 +354,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     fpCircles.push(
-      ...convertCourtyardCircles(pcbCourtyardCircles, component.center),
+      ...convertCourtyardCircles(pcbCourtyardCircles, {
+        footprintOrigin,
+        ccwRotationDegrees: component.rotation || 0,
+      }),
     )
     footprint.fpCircles = fpCircles
 
@@ -296,7 +370,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ) || []
 
     const fpRects = footprint.fpRects ?? []
-    fpRects.push(...convertFabricationNoteRects(pcbFabRects, component.center))
+    const fabricationNoteRects = convertFabricationNoteRects(pcbFabRects, {
+      footprintOrigin,
+      ccwRotationDegrees: component.rotation || 0,
+    })
+    fpRects.push(...fabricationNoteRects.fpRects)
 
     const pcbNoteRects =
       this.ctx.db.pcb_note_rect
@@ -305,7 +383,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertNoteRects(pcbNoteRects, component.center))
+    const noteRects = convertNoteRects(pcbNoteRects, {
+      footprintOrigin,
+      ccwRotationDegrees: component.rotation || 0,
+    })
+    fpRects.push(...noteRects.fpRects)
 
     const pcbCourtyardRects =
       this.ctx.db.pcb_courtyard_rect
@@ -314,7 +396,12 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (rect: any) => rect.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    fpRects.push(...convertCourtyardRects(pcbCourtyardRects, component.center))
+    const courtyardRects = convertCourtyardRects({
+      courtyardRects: pcbCourtyardRects,
+      componentCenter: footprintOrigin,
+      componentRotation: component.rotation || 0,
+    })
+    fpRects.push(...courtyardRects.fpRects)
     footprint.fpRects = fpRects
 
     // Convert polygons
@@ -328,9 +415,29 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     const fpPolys = convertCourtyardOutlines({
       courtyardOutlines: pcbCourtyardOutlines,
-      componentCenter: component.center,
+      componentCenter: footprintOrigin,
       componentRotation: component.rotation || 0,
     })
+    fpPolys.push(
+      ...fabricationNoteRects.fpPolys,
+      ...noteRects.fpPolys,
+      ...courtyardRects.fpPolys,
+    )
+
+    const pcbSilkscreenRects =
+      this.ctx.db.pcb_silkscreen_rect
+        ?.list()
+        .filter(
+          (rect) => rect.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    fpPolys.push(
+      ...convertSilkscreenRects({
+        silkscreenRects: pcbSilkscreenRects,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
+    )
 
     if (fpPolys.length > 0) {
       footprint.fpPolys = fpPolys
@@ -338,9 +445,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
     // Add 3D models
     if (cadComponent) {
-      // circuit-json position.z is relative to PCB midplane (PCB center = z=0),
-      // but KiCad model offsets are relative to the PCB surface.
-      // Subtract boardThickness/2 (or -boardThickness/2 for bottom) to correct.
+      // Circuit JSON position.z is relative to the PCB midplane, while KiCad
+      // model offsets are relative to the surface containing the footprint.
       const pcbBoard = this.ctx.db.pcb_board?.list()[0]
       const boardThickness = pcbBoard?.thickness ?? 0
       const boardLayerZOffset =
@@ -349,10 +455,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           : boardThickness / 2
       const models = create3DModelsFromCadComponent(
         cadComponent,
-        component.center,
+        footprintOrigin,
         {
           boardLayerZOffset,
           footprintRotation: component.rotation || 0,
+          layer: component.layer,
         },
       )
       const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
@@ -418,6 +525,13 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         componentProperty: kicadComponentProperty,
       })
     }
+
+    if (component.do_not_place) {
+      footprint.attr ??= new FootprintAttr()
+      footprint.attr.dnp = true
+    }
+
+    applyInferredFootprintType(footprint)
 
     const footprints = kicadPcb.footprints
     footprints.push(footprint)

@@ -1,15 +1,20 @@
-import type { PcbComponent, PcbCourtyardCircle } from "circuit-json"
+import type { PcbCourtyardCircle } from "circuit-json"
 import { FpCircle, Stroke } from "kicadts"
+import { applyToPoint } from "transformation-matrix"
+import {
+  type FootprintGraphicsPlacement,
+  getBoardToFootprintTransform,
+} from "./get-board-to-footprint-transform"
 
 export function convertCourtyardCircles(
   courtyardCircles: PcbCourtyardCircle[],
-  componentCenter: { x: number; y: number },
+  placement: FootprintGraphicsPlacement,
 ): FpCircle[] {
   const fpCircles: FpCircle[] = []
+  const boardToFootprintTransform = getBoardToFootprintTransform(placement)
 
   for (const circle of courtyardCircles) {
-    const relX = circle.center.x - componentCenter.x
-    const relY = -(circle.center.y - componentCenter.y)
+    const center = applyToPoint(boardToFootprintTransform, circle.center)
 
     const layerMap: Record<string, string> = {
       top: "F.CrtYd",
@@ -18,8 +23,8 @@ export function convertCourtyardCircles(
     const kicadLayer = layerMap[circle.layer] || "F.CrtYd"
 
     const fpCircle = new FpCircle({
-      center: { x: relX, y: relY },
-      end: { x: relX + circle.radius, y: relY },
+      center,
+      end: { x: center.x + circle.radius, y: center.y },
       layer: kicadLayer,
       stroke: new Stroke(),
       fill: false,

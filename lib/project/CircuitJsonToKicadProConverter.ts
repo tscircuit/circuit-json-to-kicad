@@ -1,5 +1,6 @@
-import { cju } from "@tscircuit/circuit-json-util"
+import { cju, createBoardOwnerMap } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
+import { resolveKicadPcbNetName } from "../pcb/utils/resolveKicadPcbNetName"
 import {
   buildSchematicSheetPlan,
   type SchematicSheetPlan,
@@ -71,6 +72,11 @@ interface KicadProProject {
     }
     last_net_id: number
     classes: KicadProNetClass[]
+    /** User-authored project assignments shown in Board Setup > Net Classes. */
+    netclass_patterns: Array<{
+      netclass: string
+      pattern: string
+    }>
   }
   pcbnew: {
     page_layout_descr_file: string
@@ -182,6 +188,8 @@ export class CircuitJsonToKicadProConverter {
     const minViaAnnularWidth = (minViaDiameter - minViaDrill) / 2
     const minTraceToPadClearance =
       pcbBoard?.min_trace_to_pad_edge_clearance ?? 0.1
+    const minTraceToHoleClearance =
+      pcbBoard?.min_trace_to_hole_edge_clearance ?? minTraceToPadClearance
     const minTrackWidth = pcbBoard?.min_trace_width ?? 0.1
     const netClasses: KicadProNetClass[] = [
       this.createBaseNetClass({
@@ -192,6 +200,79 @@ export class CircuitJsonToKicadProConverter {
         trackWidth: minTrackWidth,
       }),
     ]
+    const sourceNets = this.ctx.db.source_net?.list() ?? []
+    const netClassNameByTraceWidth = new Map<number, string>([
+      [minTrackWidth, "Default"],
+    ])
+    const explicitTraceWidths = Array.from(
+      new Set(
+        sourceNets.flatMap((sourceNet) =>
+          sourceNet.trace_width === undefined ? [] : [sourceNet.trace_width],
+        ),
+      ),
+    ).sort((a, b) => a - b)
+
+    for (const traceWidth of explicitTraceWidths) {
+      if (netClassNameByTraceWidth.has(traceWidth)) continue
+
+      const netClassName = `Trace Width ${traceWidth} mm`
+      netClasses.push(
+        this.createBaseNetClass({
+          name: netClassName,
+          viaDiameter: minViaDiameter,
+          viaDrill: minViaDrill,
+          clearance: minTraceToPadClearance,
+          trackWidth: traceWidth,
+        }),
+      )
+      netClassNameByTraceWidth.set(traceWidth, netClassName)
+    }
+
+    const netClassByNetName = new Map<string, string>()
+    const boardOwnerMap =
+      this.ctx.db.pcb_board.list().length > 1
+        ? createBoardOwnerMap(this.ctx.circuitJson)
+        : undefined
+    const sourceNetsWithTraceWidths = sourceNets
+      .filter((sourceNet) => sourceNet.trace_width !== undefined)
+      .map((sourceNet) => {
+        const connectivityKey =
+          sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
+        return {
+          sourceNet,
+          netName: resolveKicadPcbNetName({
+            candidateName: sourceNet.name || sourceNet.source_net_id,
+            connectivityKey,
+            boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")
+              ?.pcb_board_id,
+          }),
+        }
+      })
+      .sort(
+        (a, b) =>
+          a.netName.localeCompare(b.netName) ||
+          a.sourceNet.source_net_id.localeCompare(b.sourceNet.source_net_id),
+      )
+
+    for (const { sourceNet, netName } of sourceNetsWithTraceWidths) {
+      const netClassName = netClassNameByTraceWidth.get(sourceNet.trace_width!)!
+      const existingNetClassName = netClassByNetName.get(netName)
+
+      if (
+        existingNetClassName !== undefined &&
+        existingNetClassName !== netClassName
+      ) {
+        throw new Error(
+          `Cannot preserve conflicting trace widths for KiCad net "${netName}": ${existingNetClassName} and ${netClassName}`,
+        )
+      }
+
+      netClassByNetName.set(netName, netClassName)
+    }
+    const netclassPatterns = Array.from(
+      netClassByNetName,
+      ([pattern, netclass]) => ({ pattern, netclass }),
+    )
 
     this.project = {
       version: 1,
@@ -224,10 +305,13 @@ export class CircuitJsonToKicadProConverter {
       },
       net_settings: {
         meta: {
-          version: 1,
+          // Schema 3 introduced persisted netclass_patterns.
+          version: 3,
         },
-        last_net_id: netClasses.length - 1,
+        // Retained as 0 for output compatibility; KiCad does not use this field because electrical net IDs live in the .kicad_pcb file.
+        last_net_id: 0,
         classes: netClasses,
+        netclass_patterns: netclassPatterns,
       },
       pcbnew: {
         page_layout_descr_file: "",
@@ -247,10 +331,13 @@ export class CircuitJsonToKicadProConverter {
         design_settings: {
           rules: {
             min_via_annular_width: minViaAnnularWidth,
-            min_hole_clearance: minTraceToPadClearance,
+            min_hole_clearance: minTraceToHoleClearance,
             min_via_diameter: minViaDiameter,
             min_track_width: minTrackWidth,
             min_through_hole_diameter: minViaDrill, // Minimum Drill Size in kicad ui constraints
+            ...(pcbBoard?.min_board_edge_clearance !== undefined
+              ? { min_copper_edge_clearance: pcbBoard.min_board_edge_clearance }
+              : {}),
           },
         },
         last_opened_board: pcbFilename,

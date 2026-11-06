@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
@@ -55,6 +55,8 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(output).toContain("(fields_autoplaced no)")
   expect(output).not.toContain("(fields_autoplaced yes)")
   expect(inlineNetLabels).toHaveLength(2)
+  expect(parsedSchematic.globalLabels).toHaveLength(0)
+  expect(parsedSchematic.labels).toHaveLength(2)
 
   const componentSymbol = parsedSchematic.symbols.find((symbol) =>
     symbol.properties.some(
@@ -68,20 +70,17 @@ test("repro18: component fields and inline labels preserve placement", async () 
   expect(manufacturerPartNumber?.effects?.justify?.horizontal).toBe("left")
 
   for (const inlineNetLabel of inlineNetLabels) {
-    const convertedText = parsedSchematic.texts.find(
+    const convertedText = parsedSchematic.labels.find(
       (text) => text.value === inlineNetLabel.text,
     )
+    // Core places these labels at their inner edge, with text extending left
+    // along the wire. Preserve that supplied attachment and alignment.
     const expectedPosition = applyToPoint(
       converter.ctx.c2kMatSch!,
       inlineNetLabel.position,
     )
-    const expectedHorizontalJustification =
-      inlineNetLabel.anchor === "left" || inlineNetLabel.anchor === "right"
-        ? inlineNetLabel.anchor
-        : undefined
-    expect(convertedText?.effects?.justify?.horizontal).toBe(
-      expectedHorizontalJustification,
-    )
+    expect(inlineNetLabel.anchor).toBe("bottom_right")
+    expect(convertedText?.effects?.justify?.horizontal).toBe("right")
     expect(convertedText?.at?.x).toBeCloseTo(expectedPosition.x)
     expect(convertedText?.at?.y).toBeCloseTo(expectedPosition.y)
   }

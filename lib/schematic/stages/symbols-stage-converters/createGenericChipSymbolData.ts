@@ -1,8 +1,10 @@
+import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { SchematicComponent, SchematicPort } from "circuit-json"
+import { buildSymbolDataFromSchematicPrimitives } from "./buildSymbolDataFromSchematicPrimitives"
 
 export function createGenericChipSymbolData(
   schematicComp: SchematicComponent,
-  db: any,
+  db: CircuitJsonUtilObjects,
 ) {
   // Get all ports for this component
   const schematicPorts: SchematicPort[] = db.schematic_port
@@ -19,36 +21,45 @@ export function createGenericChipSymbolData(
   // Create box primitives based on component size
   const width = schematicComp.size?.width || 1.5
   const height = schematicComp.size?.height || 1
+  const { x: cx, y: cy } = schematicComp.center
 
   const boxPath = {
     type: "path",
     fill: true,
     points: [
-      { x: -width / 2, y: -height / 2 },
-      { x: width / 2, y: -height / 2 },
-      { x: width / 2, y: height / 2 },
-      { x: -width / 2, y: height / 2 },
-      { x: -width / 2, y: -height / 2 },
+      { x: cx - width / 2, y: cy - height / 2 },
+      { x: cx + width / 2, y: cy - height / 2 },
+      { x: cx + width / 2, y: cy + height / 2 },
+      { x: cx - width / 2, y: cy + height / 2 },
+      { x: cx - width / 2, y: cy - height / 2 },
     ],
   }
 
   // Create ports from schematic ports
   const ports = schematicPorts.map((port) => {
-    // Get port position relative to component center
-    const portX = port.center.x - schematicComp.center.x
-    const portY = port.center.y - schematicComp.center.y
-
     return {
-      x: portX,
-      y: portY,
+      x: port.center.x,
+      y: port.center.y,
       labels: [port.display_pin_label || `${port.pin_number || 1}`],
       pinNumber: port.pin_number || 1,
     }
   })
 
+  // Box components can carry artwork directly, without a schematic_symbol.
+  // Keep it in the same coordinate space as the box; the drawing converter
+  // translates all primitives relative to the component center.
+  const { primitives } = buildSymbolDataFromSchematicPrimitives({
+    circuitJson: db.toArray(),
+    schematicComponentId: schematicComp.schematic_component_id,
+    schematicSymbol: {
+      center: schematicComp.center,
+      size: { width, height },
+    },
+  })
+
   return {
-    center: { x: 0, y: 0 },
-    primitives: [boxPath],
+    center: schematicComp.center,
+    primitives: [boxPath, ...primitives],
     ports: ports,
     size: { width, height },
   }

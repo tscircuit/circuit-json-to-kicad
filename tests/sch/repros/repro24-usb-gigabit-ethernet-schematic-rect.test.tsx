@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import sharp from "sharp"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 import { X322525MRB4SI } from "../../../imports/X322525MRB4SI"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"

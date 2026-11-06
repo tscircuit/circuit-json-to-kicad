@@ -1,4 +1,5 @@
-import type { KicadSymbolMetadata } from "@tscircuit/props"
+import { applySymbolProperty } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
+import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
 import type {
   CircuitJson,
   SchematicComponent,
@@ -24,17 +25,20 @@ import {
 } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
-import {
-  getKicadCompatibleCustomSymbolName,
-  getReferenceDesignator,
-} from "../../utils/getKicadCompatibleComponentName"
-import { getComponentLevelLibraryId, getLibraryId } from "../getLibraryId"
+import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
+import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
   getTextJustificationFromAnchor,
   type TextJustification,
 } from "./utils/getTextJustificationFromAnchor"
-import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
+
+const DEFAULT_PROPERTY_FONT_SIZE = 1.27
+
+type SourceComponent = Extract<
+  CircuitJson[number],
+  { type: "source_component" }
+>
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -64,6 +68,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       if (!sourceComponent) continue
 
+      const symbolContext = resolveSchematicComponentSymbol({
+        circuitJson: this.ctx.circuitJson,
+        schematicComponent,
+        sourceComponent,
+        cadComponents: db.cad_component?.list?.() ?? [],
+      })
+      const {
+        schematicSymbol,
+        schematicSymbolId,
+        hasLinkedSymbolPrimitives,
+        usesComponentLevelSymbolPrimitives,
+        libraryId,
+      } = symbolContext
+
       // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
       if (!this.ctx.c2kMatSch) continue
       const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
@@ -87,78 +105,18 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         fieldsAutoplaced: false,
       })
 
-      // Get the cad_component for footprinter_string (if available)
-      const cadComponent = db.cad_component
-        ?.list()
-        ?.find(
-          (cad: any) =>
-            cad.source_component_id === sourceComponent.source_component_id,
-        )
-
-      // Check for custom symbol via schematic_symbol_id
-      let schematicSymbolName: string | undefined
-      let schematicSymbolId = (schematicComponent as any).schematic_symbol_id
-
-      // If not on the component, check if there are primitives linked to this component
-      // that have a schematic_symbol_id (tscircuit links primitives to components this way)
-      if (!schematicSymbolId) {
-        const linkedPrimitive = this.ctx.circuitJson.find(
-          (el: any) =>
-            (el.type === "schematic_line" ||
-              el.type === "schematic_circle" ||
-              el.type === "schematic_arc" ||
-              el.type === "schematic_path" ||
-              el.type === "schematic_rect") &&
-            el.schematic_component_id ===
-              schematicComponent.schematic_component_id &&
-            el.schematic_symbol_id,
-        ) as any
-        if (linkedPrimitive) {
-          schematicSymbolId = linkedPrimitive.schematic_symbol_id
-        }
-      }
-
-      if (schematicSymbolId) {
-        const schematicSymbol = this.ctx.circuitJson.find(
-          (el: any) =>
-            el.type === "schematic_symbol" &&
-            el.schematic_symbol_id === schematicSymbolId,
-        ) as any
-        if (schematicSymbol?.name) {
-          schematicSymbolName = schematicSymbol.name
-        } else {
-          schematicSymbolName = getKicadCompatibleCustomSymbolName(
-            sourceComponent,
-            cadComponent,
-            schematicSymbolId,
-          )
-        }
-      }
-
-      // Get the appropriate library ID based on component type
-      const usesComponentLevelSymbolPrimitives =
-        hasComponentLevelSymbolPrimitives(
-          this.ctx.circuitJson,
-          schematicComponent,
-        )
-      const libId = usesComponentLevelSymbolPrimitives
-        ? getComponentLevelLibraryId(
-            sourceComponent,
-            schematicComponent,
-            cadComponent,
-          )
-        : getLibraryId(
-            sourceComponent,
-            schematicComponent,
-            cadComponent,
-            schematicSymbolName,
-          )
-      const symLibId = new SymbolLibId(libId)
+      const symLibId = new SymbolLibId(
+        this.ctx.schematicComponentLibraryIds?.get(
+          schematicComponent.schematic_component_id,
+        ) ?? libraryId,
+      )
       ;(symbol as any)._sxLibId = symLibId
 
       // Get component metadata
-      const { reference, value, description } =
-        this.getComponentMetadata(sourceComponent)
+      const { reference, value, description } = this.getComponentMetadata(
+        sourceComponent,
+        schematicComponent,
+      )
       const hasManufacturerValueForValuePlacement =
         (sourceComponent.ftype === "simple_chip" ||
           sourceComponent.ftype === "simple_connector") &&
@@ -169,21 +127,33 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         this.getTextPositions({
           schematicComponent,
           placeValueAtNamePosition: hasManufacturerValueForValuePlacement,
+          isCustomSymbol: hasLinkedSymbolPrimitives,
           reference,
           value,
         })
 
-      // Check for kicadSymbolMetadata from circuit-json element
-      let symbolMetadata: KicadSymbolMetadata | undefined
-      if (schematicSymbolId) {
-        const schSymEl = this.ctx.circuitJson.find(
-          (el) =>
-            el.type === "schematic_symbol" &&
-            el.schematic_symbol_id === schematicSymbolId,
-        )
-        if (schSymEl && schSymEl.type === "schematic_symbol") {
-          symbolMetadata = schSymEl.metadata?.kicad_symbol
-        }
+      const symbolMetadata = schematicSymbol
+        ? schematicSymbol.metadata?.kicad_symbol
+        : schematicComponent.metadata?.kicad_symbol
+
+      // Match the resolved {REF} label within this custom symbol instance.
+      // AddLibrarySymbolsStage omits the same label from the shared drawing.
+      let customReferenceText: SchematicText | undefined
+      if (schematicSymbolId && sourceComponent.name) {
+        customReferenceText = db.schematic_text
+          .list()
+          .find(
+            (text) =>
+              text.schematic_symbol_id === schematicSymbolId &&
+              text.text === sourceComponent.name,
+          )
+      }
+      const customReferencePosition = this.getTextPosition(customReferenceText)
+      const referencePosition = customReferencePosition?.position ?? refTextPos
+      let referenceFontSize = DEFAULT_PROPERTY_FONT_SIZE
+      if (customReferenceText) {
+        referenceFontSize =
+          customReferenceText.font_size * this.ctx.kicadSchematicScaleFactor!
       }
 
       // Add properties for this instance, applying metadata if available
@@ -194,12 +164,18 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         key: "Reference",
         value: refMeta?.value ?? reference,
         id: 0,
-        at: [refTextPos.x, refTextPos.y, 0],
+        at: [
+          referencePosition.x,
+          referencePosition.y,
+          customReferenceText?.rotation ?? 0,
+        ],
         effects: this.createTextEffects(
-          Number(refMeta?.effects?.font?.size?.x ?? 1.27),
+          Number(refMeta?.effects?.font?.size?.x ?? referenceFontSize),
           {
-            hide: refMeta?.effects?.hide ?? hideGeneratedCustomReference,
-            justify: refJustify,
+            hide:
+              refMeta?.effects?.hide ??
+              (hideGeneratedCustomReference && !customReferenceText),
+            justify: customReferencePosition?.justify ?? refJustify,
           },
         ),
       })
@@ -220,7 +196,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         id: 1,
         at: [valTextPos.x, valTextPos.y, 0],
         effects: this.createTextEffects(
-          Number(valMeta?.effects?.font?.size?.x ?? 1.27),
+          Number(valMeta?.effects?.font?.size?.x ?? DEFAULT_PROPERTY_FONT_SIZE),
           { hide: valMeta?.effects?.hide ?? hideValue, justify: valJustify },
         ),
       })
@@ -231,7 +207,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: fpMeta?.value ?? "",
         id: 2,
         at: [x - 1.778, y, 90],
-        effects: this.createTextEffects(1.27, {
+        effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
           hide: fpMeta?.effects?.hide ?? true,
         }),
       })
@@ -242,7 +218,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: dsMeta?.value ?? "~",
         id: 3,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, {
+        effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
           hide: dsMeta?.effects?.hide ?? true,
         }),
       })
@@ -253,7 +229,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         value: descMeta?.value ?? description,
         id: 4,
         at: [x, y, 0],
-        effects: this.createTextEffects(1.27, {
+        effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
           hide: descMeta?.effects?.hide ?? true,
         }),
       })
@@ -274,7 +250,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value: kwMeta.value,
           id: 5,
           at: [x, y, 0],
-          effects: this.createTextEffects(1.27, {
+          effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
             hide: kwMeta.effects?.hide ?? true,
           }),
         })
@@ -289,11 +265,45 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value: fpFilterMeta.value,
           id: 6,
           at: [x, y, 0],
-          effects: this.createTextEffects(1.27, {
+          effects: this.createTextEffects(DEFAULT_PROPERTY_FONT_SIZE, {
             hide: fpFilterMeta.effects?.hide ?? true,
           }),
         })
         symbol.properties.push(fpFiltersProperty)
+      }
+
+      const builtInPropertyNames = new Set([
+        "Reference",
+        "Value",
+        "Footprint",
+        "Datasheet",
+        "Description",
+        "ki_keywords",
+        "ki_fp_filters",
+      ])
+      let nextPropertyId = 7
+      for (const propertyMeta of Object.values(
+        symbolMetadata?.properties ?? {},
+      )) {
+        const propertyId = Number(propertyMeta?.id)
+        if (Number.isFinite(propertyId)) {
+          nextPropertyId = Math.max(nextPropertyId, propertyId + 1)
+        }
+      }
+      for (const [key, propertyMeta] of Object.entries(
+        symbolMetadata?.properties ?? {},
+      )) {
+        if (!propertyMeta || builtInPropertyNames.has(key)) continue
+        applySymbolProperty({
+          symbol,
+          key,
+          propertyMeta: {
+            ...propertyMeta,
+            id: propertyMeta.id ?? nextPropertyId++,
+            at: propertyMeta.at ?? { x, y, rotation: 0 },
+            effects: { hide: true, ...propertyMeta.effects },
+          },
+        })
       }
 
       // Apply additional symbol metadata fields
@@ -374,7 +384,12 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         if (!port) continue
         const pin = new SymbolPin()
         // Use pin_number if available, otherwise use 1-based index
-        pin.numberString = `${port.pin_number || i + 1}`
+        pin.numberString =
+          getPhysicalPinName(
+            port.source_port_id
+              ? db.source_port.get(port.source_port_id)
+              : undefined,
+          ) ?? `${port.pin_number || i + 1}`
         pin.uuid = crypto.randomUUID()
         symbol.pins.push(pin)
       }
@@ -407,11 +422,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   private getTextPositions({
     schematicComponent,
     placeValueAtNamePosition,
+    isCustomSymbol,
     reference,
     value,
   }: {
     schematicComponent: SchematicComponent
     placeValueAtNamePosition: boolean
+    isCustomSymbol: boolean
     reference: string
     value: string
   }): {
@@ -435,7 +452,6 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     const referenceAboveBodyY = symbolKicadPos.y - componentHeightMm / 2 - 3
     const valueBelowBodyY = symbolKicadPos.y + componentHeightMm / 2 + 3
 
-    const isCustomSymbol = this.isCustomSymbolComponent(schematicComponent)
     if (isCustomSymbol) {
       const customHeightMm =
         (schematicComponent.size?.height || 1) *
@@ -584,27 +600,13 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }
   }
 
-  private isCustomSymbolComponent(
-    schematicComponent: SchematicComponent,
-  ): boolean {
-    const componentId = schematicComponent.schematic_component_id
-    if (!componentId) return false
-    return this.ctx.circuitJson.some(
-      (el: any) =>
-        (el.type === "schematic_line" ||
-          el.type === "schematic_circle" ||
-          el.type === "schematic_arc" ||
-          el.type === "schematic_path" ||
-          el.type === "schematic_rect") &&
-        el.schematic_component_id === componentId &&
-        el.schematic_symbol_id,
-    )
-  }
-
   /**
    * Get component metadata (reference, value, description)
    */
-  private getComponentMetadata(sourceComp: any): {
+  private getComponentMetadata(
+    sourceComp: SourceComponent,
+    schematicComp: SchematicComponent,
+  ): {
     reference: string
     value: string
     description: string
@@ -696,7 +698,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Default
     return {
       reference,
-      value: name,
+      value: schematicComp.symbol_display_value ?? name,
       description: "Component",
     }
   }

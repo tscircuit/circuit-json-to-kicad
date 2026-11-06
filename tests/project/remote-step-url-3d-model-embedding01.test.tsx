@@ -46,7 +46,7 @@ test("pcb converter embeds KIPRJMOD path for remote stepUrl user model", async (
 
   // Builtin footprints (0402 capacitor, res0402 resistor) → tscircuit_builtin.3dshapes
   expect(pcbContent).toContain(
-    "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/0402.step",
+    "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/cap0402.step",
   )
   expect(pcbContent).toContain(
     "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/res0402.step",
@@ -61,7 +61,7 @@ test("pcb converter embeds KIPRJMOD path for remote stepUrl user model", async (
   const sourcePaths = converter.getModel3dSourcePaths()
   expect(sourcePaths.sort()).toMatchInlineSnapshot(`
     [
-      "https://modelcdn.tscircuit.com/jscad_models/0402.step",
+      "https://modelcdn.tscircuit.com/jscad_models/cap0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/soic8.step",
     ]

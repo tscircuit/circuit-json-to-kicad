@@ -60,7 +60,7 @@ test("repro19: convert the Consumer Wireless Module generated system", async () 
     parsedInputPowerSchematic.libSymbols?.symbols.some(
       ({ libraryId }) =>
         libraryId ===
-        "Custom:n_channel_e_mosfet_transistor_gate_left_drain_top",
+        "Device:n_channel_e_mosfet_transistor_gate_left_drain_top",
     ),
   ).toBeTrue()
 

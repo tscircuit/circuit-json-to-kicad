@@ -88,14 +88,24 @@ test("pcb repro28 fiducial without pcb_solder_paste omits F.Paste", async () => 
   )
 
   expect(resistorFootprint).toBeDefined()
+  const resistorCopperPads = resistorFootprint!.fpPads.filter((pad) =>
+    pad.layers?.layers.includes("F.Cu"),
+  )
+  const resistorPastePads = resistorFootprint!.fpPads.filter((pad) =>
+    pad.layers?.layers.includes("F.Paste"),
+  )
+  expect(resistorCopperPads).toHaveLength(2)
   expect(
-    resistorFootprint!.fpPads.every((pad) =>
-      pad.layers?.layers.includes("F.Paste"),
+    resistorCopperPads.every((pad) => !pad.layers?.layers.includes("F.Paste")),
+  ).toBe(true)
+  expect(resistorPastePads).toHaveLength(2)
+  expect(
+    resistorPastePads.every(
+      (pad) => pad.layers?.layers.join(",") === "F.Paste",
     ),
   ).toBe(true)
   expect(fiducialFootprint).toBeDefined()
-  expect(fiducialFootprint!.fpPads[0]!.layers?.layers).toEqual([
-    "F.Cu",
-    "F.Mask",
-  ])
+  // Core marks this fiducial pad as covered, which the exporter must preserve.
+  expect(fiducialPad!.is_covered_with_solder_mask).toBe(true)
+  expect(fiducialFootprint!.fpPads[0]!.layers?.layers).toEqual(["F.Cu"])
 })

@@ -1,3 +1,4 @@
+import { applyCustomFootprintProperties } from "../../pcb/stages/utils/applyCustomFootprintProperties"
 import type {
   CircuitJson,
   CadComponent,
@@ -11,7 +12,6 @@ import {
   FootprintModel,
   At,
   EmbeddedFonts,
-  FootprintAttr,
   Property,
   TextEffects,
   TextEffectsFont,
@@ -22,8 +22,12 @@ import {
   type KicadLibraryOutput,
   type FootprintEntry,
 } from "../../types"
-import { getKicadCompatibleComponentName } from "../../utils/getKicadCompatibleComponentName"
+import {
+  getKicadCompatibleComponentName,
+  getReferenceDesignator,
+} from "../../utils/getKicadCompatibleComponentName"
 import { generateDeterministicUuid } from "../../pcb/stages/utils/generateDeterministicUuid"
+import { applyInferredFootprintType } from "../../pcb/stages/utils/applyInferredFootprintType"
 
 export const MODEL_CDN_BASE_URL = "https://modelcdn.tscircuit.com/jscad_models"
 
@@ -93,8 +97,9 @@ export class ExtractFootprintsStage extends ConverterStage<
           pcbComp.type === "pcb_component" &&
           pcbComp.metadata?.kicad_footprint?.footprintName
         ) {
+          // Match the bare name used by sanitizeFootprint for library links.
           customFootprintNames.add(
-            pcbComp.metadata.kicad_footprint.footprintName,
+            pcbComp.metadata.kicad_footprint.footprintName.split(":").pop()!,
           )
         }
       }
@@ -190,16 +195,7 @@ export class ExtractFootprintsStage extends ConverterStage<
     if (!footprint.embeddedFonts) {
       footprint.embeddedFonts = new EmbeddedFonts(false)
     }
-    if (!footprint.attr) {
-      const attr = new FootprintAttr()
-      const padTypes = (footprint.fpPads ?? []).map((pad) => pad.padType)
-      if (padTypes.some((padType) => padType.includes("thru_hole"))) {
-        attr.type = "through_hole"
-      } else if (padTypes.some((padType) => padType.includes("smd"))) {
-        attr.type = "smd"
-      }
-      footprint.attr = attr
-    }
+    applyInferredFootprintType(footprint)
     footprint.uuid = undefined
     footprint.path = undefined
     footprint.sheetfile = undefined
@@ -230,6 +226,25 @@ export class ExtractFootprintsStage extends ConverterStage<
     // Position value below pads with 0.5mm margin
     const valY = maxY + 0.5
 
+    // The generated Reference UUID identifies the source even when metadata
+    // overrides its displayed reference text.
+    const referenceUuid = footprint.properties.find(
+      (property) => property.key === "Reference",
+    )?.uuid?.value
+    const pcbComponent = this.ctx.db.pcb_component
+      .list()
+      .find((pcbComponent) => {
+        const sourceComponent = this.ctx.db.source_component.get(
+          pcbComponent.source_component_id,
+        )
+        return (
+          sourceComponent &&
+          referenceUuid ===
+            generateDeterministicUuid(
+              `${getReferenceDesignator(sourceComponent)}-property-Reference`,
+            )
+        )
+      })
     footprint.properties = [
       new Property({
         key: "Reference",
@@ -269,6 +284,14 @@ export class ExtractFootprintsStage extends ConverterStage<
       }),
     ]
 
+    const properties = footprint.properties
+    applyCustomFootprintProperties({
+      properties,
+      metadata: pcbComponent?.metadata?.kicad_footprint,
+      footprintName,
+    })
+    footprint.properties = properties
+
     // Clean up texts
     const texts = footprint.fpTexts ?? []
     for (const text of texts) {
@@ -286,8 +309,10 @@ export class ExtractFootprintsStage extends ConverterStage<
     for (let i = 0; i < pads.length; i++) {
       const pad = pads[i]
       if (pad) {
+        const padIdentity =
+          pad.number === "" ? `unnumbered-${i}` : (pad.number ?? i)
         pad.uuid = generateDeterministicUuid(
-          `${footprintName}-pad-${pad.number ?? i}`,
+          `${footprintName}-pad-${padIdentity}`,
         )
         pad.net = undefined
       }

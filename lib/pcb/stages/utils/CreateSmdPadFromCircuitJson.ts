@@ -1,22 +1,16 @@
 import type { PcbSmtPad } from "circuit-json"
-import {
-  FootprintPad,
-  PadPrimitives,
-  PadPrimitiveGrPoly,
-  Pts,
-  Xy,
-  PadOptions,
-  PadNet,
-} from "kicadts"
+import { FootprintPad, PadNet, PadOptions, type PadPrimitives } from "kicadts"
 import {
   applyToPoint,
   compose,
-  translate,
-  scale,
   rotate,
+  scale,
+  translate,
 } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
+import { createFilledPolygonPrimitives } from "./custom-pad-geometry"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
+import { getKicadNativePadGeometry } from "./getKicadNativePadGeometry"
 
 /**
  * Creates a KiCad footprint pad from a circuit JSON SMT pad
@@ -73,42 +67,19 @@ export function createSmdPadFromCircuitJson({
   const padLayer = layerMap[pcbPad.layer] || "F.Cu"
 
   // Handle different pad shapes (circle pads have radius, rect pads have width/height, polygon pads use custom shape)
-  let padShape: string | undefined
-  let padSize: [number, number] | undefined
+  let padShape: string
+  let padSize: [number, number]
   let padOptions: PadOptions | undefined
   let padPrimitives: PadPrimitives | undefined
   let roundrect_rratio: number | undefined
   let rotation = 0
 
-  if (pcbPad.shape === "circle") {
-    padShape = "circle"
-    padSize = [
-      "radius" in pcbPad ? pcbPad.radius * 2 : 0.5,
-      "radius" in pcbPad ? pcbPad.radius * 2 : 0.5,
-    ]
-  } else if (pcbPad.shape === "polygon" && "points" in pcbPad) {
+  if (pcbPad.shape === "polygon") {
     // For polygon pads, use custom shape with primitives
-    const points = pcbPad.points as Array<{ x: number; y: number }>
-
-    const pointTransformMatrix = compose(
-      scale(1, -1), // Flip Y-axis
-      translate(-padX, -padY),
-    )
-
-    const relativePoints = points.map((p) => {
-      const transformed = applyToPoint(pointTransformMatrix, { x: p.x, y: p.y })
-      return new Xy(transformed.x, transformed.y)
+    padPrimitives = createFilledPolygonPrimitives({
+      contours: [pcbPad.points],
+      center: { x: padX, y: padY },
     })
-
-    // Create the polygon primitive
-    const grPoly = new PadPrimitiveGrPoly()
-    grPoly.contours = [new Pts(relativePoints)]
-    grPoly.width = 0
-    grPoly.filled = true
-
-    // Set up the primitives container
-    padPrimitives = new PadPrimitives()
-    padPrimitives.addGraphic(grPoly)
 
     // Use custom shape with a circle anchor
     padShape = "custom"
@@ -117,34 +88,12 @@ export function createSmdPadFromCircuitJson({
 
     // Set a small anchor size (the anchor is just for the pad number)
     padSize = [0.2, 0.2]
-  } else if (pcbPad.shape === "rotated_rect") {
-    const cornerRadius = pcbPad.corner_radius ?? pcbPad.rect_border_radius
-    if (cornerRadius) {
-      padShape = "roundrect"
-      roundrect_rratio = cornerRadius / Math.min(pcbPad.width, pcbPad.height)
-    } else {
-      padShape = "rect"
-    }
-    padSize = [pcbPad.width, pcbPad.height]
-    rotation = pcbPad.ccw_rotation
-  } else if (pcbPad.shape === "pill") {
-    padShape = "roundrect"
-    padSize = [pcbPad.width, pcbPad.height]
-    roundrect_rratio = pcbPad.radius / Math.min(pcbPad.width, pcbPad.height)
-  } else if (pcbPad.shape === "rotated_pill") {
-    padShape = "roundrect"
-    padSize = [pcbPad.width, pcbPad.height]
-    roundrect_rratio = pcbPad.radius / Math.min(pcbPad.width, pcbPad.height)
-    rotation = pcbPad.ccw_rotation
-  } else if (pcbPad.shape === "rect") {
-    const cornerRadius = pcbPad.corner_radius ?? pcbPad.rect_border_radius
-    if (cornerRadius) {
-      padShape = "roundrect"
-      roundrect_rratio = cornerRadius / Math.min(pcbPad.width, pcbPad.height)
-    } else {
-      padShape = "rect"
-    }
-    padSize = [pcbPad.width, pcbPad.height]
+  } else {
+    const geometry = getKicadNativePadGeometry(pcbPad)
+    padShape = geometry.shape
+    padSize = geometry.size
+    rotation = geometry.rotation
+    roundrect_rratio = geometry.roundrectRatio
   }
 
   // Generate deterministic UUID for pad
@@ -159,8 +108,7 @@ export function createSmdPadFromCircuitJson({
       `${padLayer}`,
       ...(pcbPad.is_covered_with_solder_mask
         ? []
-        : [`${padLayer === "F.Cu" ? "F" : "B"}.Paste`]),
-      `${padLayer === "F.Cu" ? "F" : "B"}.Mask`,
+        : [`${padLayer === "F.Cu" ? "F" : "B"}.Mask`]),
     ],
     solderMaskMargin: pcbPad.soldermask_margin,
     roundrectRatio: roundrect_rratio,

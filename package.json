@@ -1,7 +1,7 @@
 {
   "name": "circuit-json-to-kicad",
   "main": "dist/index.js",
-  "version": "0.0.206",
+  "version": "0.0.269",
   "repository": {
     "type": "git",
     "url": "https://github.com/tscircuit/circuit-json-to-kicad"
@@ -28,22 +28,26 @@
     "compare-kicad": "bun run scripts/compare-kicad-files.ts"
   },
   "devDependencies": {
-    "@biomejs/biome": "^2.2.4",
+    "@biomejs/biome": "2.5.15",
     "@tscircuit/common": "^0.0.5",
+    "@tscircuit/core": "^0.0.2203",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "^0.0.480",
+    "circuit-json": "^0.0.547",
+    "circuit-json-to-gltf": "0.0.118",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
     "jszip": "^3.10.1",
-    "kicad-to-circuit-json": "github:tscircuit/kicad-to-circuit-json#83aa46c25951ccecb2d72fe2317ce09ed095fea2",
+    "kicad-to-circuit-json": "^0.0.137",
     "kicadts": "github:tscircuit/kicadts#f3ea106bdc65ca901e9b23255ad3be0bd2a624ab",
     "polygon-clipping": "^0.15.7",
+    "poppygl": "0.0.27",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.2046",
+    "tscircuit": "^0.0.3014",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
-    "tsup": "^8.5.0"
+    "tsup": "^8.5.0",
+    "@tscircuit/circuit-json-util": "^0.0.131"
   },
   "peerDependencies": {
     "typescript": "^5"

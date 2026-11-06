@@ -1,8 +1,9 @@
 import { readFile } from "node:fs/promises"
 import { resolve } from "node:path"
 import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
-import { parseKicadPcb, type KicadPcb } from "kicadts"
+import { type KicadPcb, parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "../../lib"
+import { createSideBySideSvg } from "./create-side-by-side-svg"
 import { stackPngsHorizontally } from "./stackPngsHorizontally"
 import { takeKicadSnapshot } from "./take-kicad-snapshot"
 
@@ -17,6 +18,17 @@ type SupportedBoardCounts = {
   pads: number
   segments: number
   vias: number
+}
+
+type AssemblyExclusionCounts = {
+  excludedFromBom: number
+  excludedFromPositionFiles: number
+}
+
+type FootprintTransform = {
+  layer: "top" | "bottom"
+  reference: string
+  rotation: number
 }
 
 function getNativeCounts(
@@ -35,6 +47,64 @@ function getNativeCounts(
   }
 }
 
+function getAssemblyExclusionCounts(pcb: KicadPcb): AssemblyExclusionCounts {
+  return {
+    excludedFromBom: pcb.footprints.filter(
+      (footprint) => footprint.attr?.excludeFromBom,
+    ).length,
+    excludedFromPositionFiles: pcb.footprints.filter(
+      (footprint) => footprint.attr?.excludeFromPosFiles,
+    ).length,
+  }
+}
+
+function getFootprintTransforms(pcb: KicadPcb): FootprintTransform[] {
+  return pcb.footprints
+    .flatMap((footprint) => {
+      const reference =
+        footprint.properties.find((property) => property.key === "Reference")
+          ?.value ??
+        footprint.fpTexts.find((text) => text.type === "reference")?.text
+      if (!reference) return []
+
+      return [
+        {
+          layer: footprint.layer?.getString().includes("B.Cu")
+            ? ("bottom" as const)
+            : ("top" as const),
+          reference,
+          rotation:
+            footprint.position && "angle" in footprint.position
+              ? (footprint.position.angle ?? 0)
+              : 0,
+        },
+      ]
+    })
+    .sort((left, right) => left.reference.localeCompare(right.reference))
+}
+
+type EdgeGraphic = {
+  getString(): string
+  stroke?: { width?: number }
+  width?: number
+}
+
+function getEdgeCutsWidth(pcb: KicadPcb): number | undefined {
+  const graphics: EdgeGraphic[] = [
+    ...pcb.graphicArcs,
+    ...pcb.graphicCircles,
+    ...pcb.graphicCurves,
+    ...pcb.graphicLines,
+    ...pcb.graphicRects,
+  ]
+  for (const graphic of graphics) {
+    if (!graphic.getString().includes("(layer Edge.Cuts)")) continue
+    const width = graphic.stroke?.width ?? graphic.width
+    if (width !== undefined && Number.isFinite(width)) return width
+  }
+  return undefined
+}
+
 export async function createOpenSourceBoardRoundTrip({
   boardName,
   filename,
@@ -48,6 +118,7 @@ export async function createOpenSourceBoardRoundTrip({
   )
   const sourceText = await readFile(sourcePath, "utf8")
   const sourcePcb = parseKicadPcb(sourceText)
+  const sourceEdgeCutsWidth = getEdgeCutsWidth(sourcePcb)
 
   const sourceConverter = new KicadToCircuitJsonConverter()
   sourceConverter.addFile(filename, sourceText)
@@ -56,11 +127,15 @@ export async function createOpenSourceBoardRoundTrip({
 
   const converter = new CircuitJsonToKicadPcbConverter(
     sourceCircuitJson as any,
-    { projectName: boardName },
+    {
+      edgeCutsWidth: sourceEdgeCutsWidth,
+      projectName: boardName,
+    },
   )
   converter.runUntilFinished()
   const roundTripText = converter.getOutputString()
   const roundTripPcb = parseKicadPcb(roundTripText)
+  const roundTripEdgeCutsWidth = getEdgeCutsWidth(roundTripPcb)
 
   const roundTripConverter = new KicadToCircuitJsonConverter()
   roundTripConverter.addFile(filename, roundTripText)
@@ -72,6 +147,11 @@ export async function createOpenSourceBoardRoundTrip({
     roundTripPcb,
     roundTripPcb.zones.length,
   )
+  const sourceAssemblyExclusionCounts = getAssemblyExclusionCounts(sourcePcb)
+  const roundTripAssemblyExclusionCounts =
+    getAssemblyExclusionCounts(roundTripPcb)
+  const sourceFootprintTransforms = getFootprintTransforms(sourcePcb)
+  const roundTripFootprintTransforms = getFootprintTransforms(roundTripPcb)
   const sourceNetNames = [
     "",
     ...sourceCircuitJson
@@ -96,32 +176,47 @@ export async function createOpenSourceBoardRoundTrip({
 
   const [sourceSnapshot, roundTripSnapshot] = await Promise.all([
     takeKicadSnapshot({
+      includeSvg: true,
       kicadFilePath: sourcePath,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
       pcbCopperPourOpacity: 0.35,
     }),
     takeKicadSnapshot({
+      includeSvg: true,
       kicadFileContent: roundTripText,
       kicadFileType: "pcb",
       pcbDrillHoleColor: "white",
       pcbCopperPourOpacity: 0.35,
     }),
   ])
+  const sourceSvg =
+    sourceSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8")
+  const roundTripSvg =
+    roundTripSnapshot.generatedFileContent["temp_file.svg"]!.toString("utf8")
 
   return {
     comparisonPng: await stackPngsHorizontally([
       sourceSnapshot.generatedFileContent["temp_file.png"]!,
       roundTripSnapshot.generatedFileContent["temp_file.png"]!,
     ]),
+    comparisonSvg: createSideBySideSvg(sourceSvg, roundTripSvg),
+    roundTripAssemblyExclusionCounts,
     roundTripCounts,
+    roundTripEdgeCutsWidth,
     roundTripFabricationLineCount,
+    roundTripFootprintTransforms,
     roundTripNetNames,
     roundTripWarnings: roundTripConverter.getWarnings(),
+    roundTripSvg,
     sourceCounts,
+    sourceAssemblyExclusionCounts,
+    sourceEdgeCutsWidth,
     sourceFabricationPathSegmentCount,
+    sourceFootprintTransforms,
     sourceNetNames,
     sourcePrimitiveTotal,
+    sourceSvg,
     sourceWarnings: sourceConverter.getWarnings(),
   }
 }

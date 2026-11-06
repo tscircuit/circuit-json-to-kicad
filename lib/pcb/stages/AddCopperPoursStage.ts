@@ -6,7 +6,6 @@ import type {
   PcbCopperPourRect,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import earcut from "earcut"
 import {
   Layer,
   Pts,
@@ -31,6 +30,7 @@ import {
   type PcbNetInfo,
 } from "../../types"
 import { getKicadLayer } from "../utils/layerMapping"
+import { triangulatePolygonWithHoles } from "./utils/custom-pad-geometry"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 
 const isPcbCopperPour = (
@@ -218,9 +218,6 @@ const createZonePolygons = (
   return polygons
 }
 
-const getTriangleArea = (a: Xy, b: Xy, c: Xy): number =>
-  Math.abs((a.x * (b.y - c.y) + b.x * (c.y - a.y) + c.x * (a.y - b.y)) / 2)
-
 const createZoneFilledPolygons = (
   outerRing: Xy[],
   innerRings: Xy[][],
@@ -241,58 +238,13 @@ const createZoneFilledPolygons = (
     ]
   }
 
-  const flattenedPoints: number[] = []
-  const holeIndices: number[] = []
-  let pointIndex = 0
-
-  const addRing = (ring: Xy[]) => {
-    for (const point of ring) {
-      flattenedPoints.push(point.x, point.y)
-    }
-    pointIndex += ring.length
-  }
-
-  addRing(outerRing)
-
-  for (const innerRing of innerRings) {
-    holeIndices.push(pointIndex)
-    addRing(innerRing)
-  }
-
-  const triangleIndices = earcut(flattenedPoints, holeIndices, 2)
-  const filledPolygons: ZoneFilledPolygon[] = []
-
-  for (let i = 0; i < triangleIndices.length; i += 3) {
-    const trianglePoints: Xy[] = []
-
-    for (let offset = 0; offset < 3; offset++) {
-      const pointOffset = triangleIndices[i + offset]! * 2
-      const x = flattenedPoints[pointOffset]
-      const y = flattenedPoints[pointOffset + 1]
-      if (x === undefined || y === undefined) continue
-      trianglePoints.push(new Xy(x, y))
-    }
-
-    if (
-      trianglePoints.length !== 3 ||
-      getTriangleArea(
-        trianglePoints[0]!,
-        trianglePoints[1]!,
-        trianglePoints[2]!,
-      ) === 0
-    ) {
-      continue
-    }
-
-    filledPolygons.push(
+  return triangulatePolygonWithHoles(outerRing, innerRings).map(
+    (triangle) =>
       new ZoneFilledPolygon({
         layer,
-        pts: new Pts(trianglePoints),
+        pts: new Pts(triangle.map((point) => new Xy(point.x, point.y))),
       }),
-    )
-  }
-
-  return filledPolygons
+  )
 }
 
 export class AddCopperPoursStage extends ConverterStage<CircuitJson, KicadPcb> {

@@ -78,14 +78,22 @@ export interface ConverterContext {
    */
   symbolInstancePathPrefix?: string
 
+  /**
+   * Lib id for each schematic component whose pin numbering differs from an
+   * earlier instance of the same library symbol, keyed by
+   * schematic_component_id. Set by AddLibrarySymbolsStage.
+   */
+  schematicComponentLibraryIds?: Map<string, string>
+
   // Optional data that can be shared between stages
   pinPositions?: Map<SchematicPortId, { x: number; y: number }>
   wireConnections?: Map<SchematicTraceId, SchematicPortId[]>
 
   // PCB-specific data
   pcbPadPositions?: Map<PcbPortId, { x: number; y: number }>
-  pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key to KiCad net metadata
+  pcbNetMap?: Map<string, PcbNetInfo> // Connectivity key or Circuit JSON element ID to KiCad net metadata
   numLayers?: number // Number of copper layers (2, 4, 6, 8)
+  edgeCutsWidth?: number // Generated Edge.Cuts stroke width in millimetres
 
   // PCB 3D model options
   /** Project name used as the .3dshapes folder for user-provided 3D models */

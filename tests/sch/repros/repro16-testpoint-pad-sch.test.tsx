@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit-latest"
+import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { parseKicadSch } from "kicadts"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"

@@ -1,26 +1,27 @@
 import { cju } from "@tscircuit/circuit-json-util"
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, Point } from "circuit-json"
 import { KicadSch, type Sheet } from "kicadts"
 import { compose, scale, translate } from "transformation-matrix"
 import type { ConverterContext, ConverterStage } from "../types"
 import { buildChildSheetNodes } from "./buildChildSheetNodes"
-import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
-import { getSchematicPageLayout } from "./getSchematicPageLayout"
-import { partitionCircuitJsonBySheet } from "./partitionCircuitJsonBySheet"
-import {
-  createKicadSchematicTitleBlock,
-  type KicadSchematicTitleBlockMetadata,
-} from "./createKicadSchematicTitleBlock"
 import {
   buildSchematicSheetPlan,
   type SchematicSheetPlan,
   type SchematicSheetPlanEntry,
 } from "./buildSchematicSheetPlan"
-import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
+import {
+  createKicadSchematicTitleBlock,
+  type KicadSchematicTitleBlockMetadata,
+} from "./createKicadSchematicTitleBlock"
+import { getSchematicBoundsAndCenter } from "./getSchematicBoundsAndCenter"
+import { getSchematicPageLayout } from "./getSchematicPageLayout"
+import { partitionCircuitJsonBySheet } from "./partitionCircuitJsonBySheet"
 import type { PaperDimensions } from "./selectSchematicPaperSize"
+import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
 import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
+import { AddSchematicNoConnectsStage } from "./stages/AddSchematicNoConnectsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
@@ -80,7 +81,20 @@ export interface KicadSchFileOutputOptions {
 
 export interface CircuitJsonToKicadSchConverterOptions {
   paperSize?: PaperDimensions
+  schematicSheets?: KicadSchematicSheetOptions[]
   titleBlock?: KicadSchematicTitleBlockMetadata
+}
+
+export interface KicadSchematicSheetOptions {
+  /** Position of Circuit JSON (0, 0) on the KiCad page, in millimeters. */
+  circuitOrigin: Point
+  /** Geometry of this child sheet's hierarchy node on the root page. */
+  hierarchyNode?: {
+    position: Point
+    size: { height: number; width: number }
+  }
+  /** Omit for a standalone schematic or the root sheet. */
+  schematicSheetId?: string
 }
 
 interface BuiltSheetFile {
@@ -91,6 +105,7 @@ interface BuiltSheetFile {
 
 interface BuildSheetFileOptions {
   circuitJson: CircuitJson
+  schematicSheetId: string | null
   fileUuid: string
   /** Prefix for every symbol instance path in this file (e.g. `/<rootUuid>`) */
   symbolInstancePathPrefix: string
@@ -101,6 +116,40 @@ interface BuildSheetFileOptions {
   /** Extra paper extent (mm) that must fit, e.g. the sheet-node grid */
   extraPaperExtentMm?: { width: number; height: number }
 }
+
+const getSchematicSheetOptions = ({
+  options,
+  schematicSheetId,
+}: {
+  options: CircuitJsonToKicadSchConverterOptions
+  schematicSheetId: string | null
+}): KicadSchematicSheetOptions | undefined =>
+  options.schematicSheets?.find(
+    (sheetOptions) =>
+      (sheetOptions.schematicSheetId ?? null) === schematicSheetId,
+  )
+
+const createSchematicTransform = ({
+  center,
+  circuitOrigin,
+  contentCenter,
+  scaleFactor,
+}: {
+  center: Point
+  circuitOrigin?: Point
+  contentCenter: Point
+  scaleFactor: number
+}) =>
+  circuitOrigin
+    ? compose(
+        translate(circuitOrigin.x, circuitOrigin.y),
+        scale(scaleFactor, -scaleFactor),
+      )
+    : compose(
+        translate(contentCenter.x, contentCenter.y),
+        scale(scaleFactor, -scaleFactor),
+        translate(-center.x, -center.y),
+      )
 
 export class CircuitJsonToKicadSchConverter {
   ctx: ConverterContext
@@ -135,9 +184,17 @@ export class CircuitJsonToKicadSchConverter {
     const { center, paperSize: fittedPaperSize } =
       getSingleSheetSchematicLayout(db)
     const paperSize = options.paperSize ?? fittedPaperSize
+    const sheetOptions = getSchematicSheetOptions({
+      options,
+      schematicSheetId: null,
+    })
     const titleBlockContentOffsetMm = options.titleBlock
       ? TITLE_BLOCK_CONTENT_OFFSET_MM
       : 0
+    const contentCenter = {
+      x: paperSize.width / 2,
+      y: paperSize.height / 2 - titleBlockContentOffsetMm,
+    }
 
     this.ctx = {
       db,
@@ -149,20 +206,19 @@ export class CircuitJsonToKicadSchConverter {
       }),
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
-      c2kMatSch: compose(
-        translate(
-          paperSize.width / 2,
-          paperSize.height / 2 - titleBlockContentOffsetMm,
-        ),
-        scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
-        translate(-center.x, -center.y),
-      ),
+      c2kMatSch: createSchematicTransform({
+        center,
+        circuitOrigin: sheetOptions?.circuitOrigin,
+        contentCenter,
+        scaleFactor: kicadSchematicScaleFactor,
+      }),
     }
     this.pipeline = [
       new InitializeSchematicStage(circuitJson, this.ctx),
       new AddLibrarySymbolsStage(circuitJson, this.ctx),
       new AddSchematicSymbolsStage(circuitJson, this.ctx),
       new AddSchematicNetLabelsStage(circuitJson, this.ctx),
+      new AddSchematicNoConnectsStage(circuitJson, this.ctx),
       new AddSchematicTracesStage(circuitJson, this.ctx),
       new AddSchematicGraphicsStage(circuitJson, this.ctx),
       new AddSheetInstancesStage(circuitJson, this.ctx),
@@ -231,6 +287,23 @@ export class CircuitJsonToKicadSchConverter {
       ]
     }
 
+    const filenameSafePlan = buildSchematicSheetPlan(this.circuitJson, {
+      reservedRootFilename: options.schematicFilename,
+    })
+    let childFilenameChanged = false
+    for (const [index, child] of this.schematicSheetPlan.children.entries()) {
+      const filenameSafeChild = filenameSafePlan.children[index]!
+      if (child.filename !== filenameSafeChild.filename) {
+        child.fileBaseName = filenameSafeChild.fileBaseName
+        child.filename = filenameSafeChild.filename
+        childFilenameChanged = true
+      }
+    }
+    if (childFilenameChanged) {
+      this.files = []
+      this.built = false
+    }
+
     this.buildAll()
     return this.files.map((file, index) => ({
       filename: index === 0 ? options.schematicFilename : file.entry.filename,
@@ -249,9 +322,11 @@ export class CircuitJsonToKicadSchConverter {
     const { nodes: childSheetNodes, extentMm } = buildChildSheetNodes(
       children,
       rootUuid,
+      this.options.schematicSheets,
     )
     const rootSch = this.buildSheetFile({
       circuitJson: partitionCircuitJsonBySheet(this.circuitJson, null),
+      schematicSheetId: null,
       fileUuid: rootUuid,
       symbolInstancePathPrefix: `/${rootUuid}`,
       emitSheetInstances: true,
@@ -271,6 +346,7 @@ export class CircuitJsonToKicadSchConverter {
           this.circuitJson,
           child.schematicSheetId,
         ),
+        schematicSheetId: child.schematicSheetId,
         fileUuid: child.fileUuid,
         symbolInstancePathPrefix: `/${rootUuid}/${child.sheetNodeUuid}`,
         emitSheetInstances: false,
@@ -287,6 +363,7 @@ export class CircuitJsonToKicadSchConverter {
   private buildSheetFile(options: BuildSheetFileOptions): KicadSch {
     const {
       circuitJson,
+      schematicSheetId,
       fileUuid,
       symbolInstancePathPrefix,
       emitSheetInstances,
@@ -309,6 +386,10 @@ export class CircuitJsonToKicadSchConverter {
         extraPaperExtentMm,
       })
     const paperSize = this.options.paperSize ?? fittedPaperSize
+    const sheetOptions = getSchematicSheetOptions({
+      options: this.options,
+      schematicSheetId,
+    })
     const contentCenter = this.options.paperSize
       ? { x: paperSize.width / 2, y: paperSize.height / 2 }
       : fittedContentCenter
@@ -326,11 +407,12 @@ export class CircuitJsonToKicadSchConverter {
       }),
       kicadSchematicScaleFactor,
       schematicPaperSize: paperSize,
-      c2kMatSch: compose(
-        translate(contentCenter.x, contentCenter.y),
-        scale(kicadSchematicScaleFactor, -kicadSchematicScaleFactor),
-        translate(-center.x, -center.y),
-      ),
+      c2kMatSch: createSchematicTransform({
+        center,
+        circuitOrigin: sheetOptions?.circuitOrigin,
+        contentCenter,
+        scaleFactor: kicadSchematicScaleFactor,
+      }),
       schematicFileUuid: fileUuid,
       symbolInstancePathPrefix,
     }
@@ -342,6 +424,7 @@ export class CircuitJsonToKicadSchConverter {
       new AddLibrarySymbolsStage(circuitJson, ctx),
       new AddSchematicSymbolsStage(circuitJson, ctx),
       new AddSchematicNetLabelsStage(circuitJson, ctx),
+      new AddSchematicNoConnectsStage(circuitJson, ctx),
       new AddSchematicTracesStage(circuitJson, ctx),
       new AddSchematicGraphicsStage(circuitJson, ctx),
     ]

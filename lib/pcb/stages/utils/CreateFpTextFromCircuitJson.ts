@@ -47,6 +47,9 @@ export function createFpTextFromCircuitJson({
   }
   const kicadLayer =
     layerMap[textElement.layer] || textElement.layer || "F.SilkS"
+  const kicadLayerNames = textElement.is_knockout
+    ? [kicadLayer, "knockout"]
+    : kicadLayer
 
   const font = new TextEffectsFont()
   font.size = {
@@ -76,7 +79,7 @@ export function createFpTextFromCircuitJson({
       y: relativePosition.y,
       angle: rotation,
     },
-    layer: kicadLayer,
+    layer: kicadLayerNames,
     effects: textEffects,
   })
 }
