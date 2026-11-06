@@ -34,14 +34,34 @@ export function createSmdPadFromCircuitJson({
   let padX: number
   let padY: number
 
-  if ("x" in pcbPad && "y" in pcbPad) {
+  if (
+    "x" in pcbPad &&
+    "y" in pcbPad &&
+    typeof pcbPad.x === "number" &&
+    typeof pcbPad.y === "number" &&
+    Number.isFinite(pcbPad.x) &&
+    Number.isFinite(pcbPad.y)
+  ) {
     padX = pcbPad.x
     padY = pcbPad.y
   } else if ("points" in pcbPad && Array.isArray(pcbPad.points)) {
-    // Calculate centroid of polygon
-    const points = pcbPad.points as Array<{ x: number; y: number }>
-    padX = points.reduce((sum, p) => sum + p.x, 0) / points.length
-    padY = points.reduce((sum, p) => sum + p.y, 0) / points.length
+    const validPoints = (
+      pcbPad.points as Array<{ x: number; y: number }>
+    ).filter(
+      (p) =>
+        p != null &&
+        typeof p.x === "number" &&
+        typeof p.y === "number" &&
+        Number.isFinite(p.x) &&
+        Number.isFinite(p.y),
+    )
+    if (validPoints.length === 0) {
+      throw new Error(
+        "Pad must have either finite x/y coordinates or valid points array",
+      )
+    }
+    padX = validPoints.reduce((sum, p) => sum + p.x, 0) / validPoints.length
+    padY = validPoints.reduce((sum, p) => sum + p.y, 0) / validPoints.length
   } else {
     throw new Error("Pad must have either x/y coordinates or points array")
   }

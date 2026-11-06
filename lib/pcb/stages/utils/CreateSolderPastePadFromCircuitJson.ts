@@ -11,18 +11,40 @@ import { generateDeterministicUuid } from "./generateDeterministicUuid"
 import { getKicadNativePadGeometry } from "./getKicadNativePadGeometry"
 
 export const getSolderPasteCenter = (solderPaste: PcbSolderPaste): Point => {
-  if ("x" in solderPaste && "y" in solderPaste) {
+  if (
+    "x" in solderPaste &&
+    "y" in solderPaste &&
+    typeof solderPaste.x === "number" &&
+    typeof solderPaste.y === "number" &&
+    Number.isFinite(solderPaste.x) &&
+    Number.isFinite(solderPaste.y)
+  ) {
     return { x: solderPaste.x, y: solderPaste.y }
   }
 
-  return {
-    x:
-      solderPaste.points.reduce((sum, point) => sum + point.x, 0) /
-      solderPaste.points.length,
-    y:
-      solderPaste.points.reduce((sum, point) => sum + point.y, 0) /
-      solderPaste.points.length,
+  if ("points" in solderPaste && Array.isArray(solderPaste.points)) {
+    const validPoints = solderPaste.points.filter(
+      (point: Point) =>
+        point != null &&
+        typeof point.x === "number" &&
+        typeof point.y === "number" &&
+        Number.isFinite(point.x) &&
+        Number.isFinite(point.y),
+    )
+
+    return {
+      x:
+        validPoints.reduce((sum: number, point: Point) => sum + point.x, 0) /
+        validPoints.length,
+      y:
+        validPoints.reduce((sum: number, point: Point) => sum + point.y, 0) /
+        validPoints.length,
+    }
   }
+
+  throw new Error(
+    "Solder paste must have either finite x/y coordinates or points array",
+  )
 }
 
 /** Creates an unnumbered, paste-only KiCad pad from an explicit aperture. */
