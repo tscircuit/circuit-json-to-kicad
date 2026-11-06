@@ -7,6 +7,7 @@ import {
   scale,
   translate,
 } from "transformation-matrix"
+import { parseColor } from "../../../schematic/stages/utils/parseColor"
 import { generateDeterministicUuid } from "../utils/generateDeterministicUuid"
 
 export function convertCourtyardOutlines(params: {
@@ -32,7 +33,7 @@ export function convertCourtyardOutlines(params: {
       top: "F.CrtYd",
       bottom: "B.CrtYd",
     }
-    const kicadLayer = layerMap[outline.layer] || "F.CrtYd"
+    const kicadLayer = layerMap[outline.layer] || outline.layer || "F.CrtYd"
 
     const xyPoints = outline.outline.map((point) => {
       const transformedPoint = applyToPoint(cj2kicadMatrix, point)
@@ -48,6 +49,9 @@ export function convertCourtyardOutlines(params: {
     const stroke = new Stroke()
     stroke.width = 0.05
     stroke.type = "default"
+    const color = (outline as PcbCourtyardOutline & { color?: string }).color
+    const parsedColor = color ? parseColor(color) : undefined
+    if (parsedColor) stroke.color = parsedColor
     fpPoly.stroke = stroke
 
     fpPolys.push(fpPoly)
