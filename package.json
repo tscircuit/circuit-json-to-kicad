@@ -45,7 +45,7 @@
     "poppygl": "0.0.27",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.3014",
+    "tscircuit": "^0.0.3107",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
     "tsup": "^8.5.0",
     "@tscircuit/circuit-json-util": "^0.0.131"
