@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "@tscircuit/core"
+import { Circuit } from "tscircuit"
 import { any_circuit_element } from "circuit-json"
 import { parseKicadPcb, parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
@@ -11,30 +11,41 @@ test("default chip metadata reaches schematic, PCB, and standalone libraries", a
   const circuit = new Circuit()
   circuit.add(
     <board width={10} height={10}>
-      <chip
-        name="U1"
-        footprint="soic8"
-        kicadFootprintMetadata={{
-          footprintName: "MyPart",
-          properties: {
-            Value: { value: "MyPart" },
-            Max_Current_A: { value: "6.4", hide: true },
-          },
-        }}
-        kicadSymbolMetadata={{
-          properties: {
-            Max_Current_A: { value: "6.4", effects: { hide: true } },
-          },
-        }}
-      />
+      <chip name="U1" footprint="soic8" />
     </board>,
   )
   await circuit.renderUntilSettled()
-  const circuitJson = circuit
-    .getCircuitJson()
-    .map((element) => any_circuit_element.parse(element))
+  const controlCircuitJson = circuit.getCircuitJson()
+  const circuitJson = structuredClone(controlCircuitJson)
+  const schematicComponent = circuitJson.find(
+    (element) => element.type === "schematic_component",
+  )
+  const pcbComponent = circuitJson.find(
+    (element) => element.type === "pcb_component",
+  )
+  if (!schematicComponent || !pcbComponent) {
+    throw new Error("Missing test component")
+  }
+  // Supply the metadata emitted by core at the exporter's Circuit JSON boundary.
+  schematicComponent.metadata = {
+    kicad_symbol: {
+      properties: { Max_Current_A: { value: "6.4", effects: { hide: true } } },
+    },
+  }
+  pcbComponent.metadata = {
+    kicad_footprint: {
+      footprintName: "MyPart",
+      properties: {
+        Value: { value: "MyPart" },
+        Max_Current_A: { value: "6.4", hide: true },
+      },
+    },
+  }
+  const parsedCircuitJson = circuitJson.map((element) =>
+    any_circuit_element.parse(element),
+  )
 
-  const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
+  const schConverter = new CircuitJsonToKicadSchConverter(parsedCircuitJson)
   schConverter.runUntilFinished()
   const schematic = parseKicadSch(schConverter.getOutputString())
   const symbol = schematic.symbols[0]!
@@ -50,15 +61,8 @@ test("default chip metadata reaches schematic, PCB, and standalone libraries", a
     symbol.properties.find((property) => property.key === "Reference")?.value,
   ).toBe("U1")
 
-  const controlCircuit = new Circuit()
-  controlCircuit.add(
-    <board width={10} height={10}>
-      <chip name="U1" footprint="soic8" />
-    </board>,
-  )
-  await controlCircuit.renderUntilSettled()
   const controlConverter = new CircuitJsonToKicadSchConverter(
-    controlCircuit.getCircuitJson(),
+    controlCircuitJson,
   )
   controlConverter.runUntilFinished()
   const controlSchematic = parseKicadSch(controlConverter.getOutputString())
@@ -72,14 +76,14 @@ test("default chip metadata reaches schematic, PCB, and standalone libraries", a
     ),
   )
 
-  const pcbConverter = new CircuitJsonToKicadPcbConverter(circuitJson)
+  const pcbConverter = new CircuitJsonToKicadPcbConverter(parsedCircuitJson)
   pcbConverter.runUntilFinished()
   const footprint = parseKicadPcb(pcbConverter.getOutputString()).footprints[0]!
   expect(
     footprint.properties.find((property) => property.key === "Max_Current_A"),
   ).toMatchObject({ value: "6.4", hidden: true })
 
-  const modConverter = new CircuitJsonToKicadModConverter(circuitJson)
+  const modConverter = new CircuitJsonToKicadModConverter(parsedCircuitJson)
   modConverter.runUntilFinished()
   expect(modConverter.getOutputString()).toContain(
     '(property "Max_Current_A" "6.4"',
@@ -89,7 +93,7 @@ test("default chip metadata reaches schematic, PCB, and standalone libraries", a
     kicadLibraryName: "default-chip",
     entrypoint: "component.tsx",
     getExportsFromTsxFile: async () => ["MyPart"],
-    buildFileToCircuitJson: async () => circuitJson,
+    buildFileToCircuitJson: async () => parsedCircuitJson,
   })
   await libraryConverter.run()
   const libraryFiles = libraryConverter.getOutput().kicadProjectFsMap
