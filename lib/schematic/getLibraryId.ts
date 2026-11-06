@@ -26,6 +26,10 @@ function sanitizeLibraryIdentifierPart(value: string): string {
   )
 }
 
+function getConnectorGenericLibraryId(pinCount: number): string {
+  return `Connector_Generic:Conn_01x${String(pinCount).padStart(2, "0")}`
+}
+
 /**
  * Get the library ID for a component's symbol.
  *
@@ -33,6 +37,7 @@ function sanitizeLibraryIdentifierPart(value: string): string {
  * @param schematicComp - The schematic component
  * @param cadComponent - Optional CAD component for footprinter_string
  * @param schematicSymbolName - Optional name from schematic_symbol element (highest priority)
+ * @param connectorPinCount - Optional rendered schematic pin count for simple connectors
  * @returns Library ID string like "Device:resistor" or "Custom:my_symbol"
  */
 export function getLibraryId(
@@ -40,6 +45,7 @@ export function getLibraryId(
   schematicComp: SchematicComponent,
   cadComponent?: CadComponent | null,
   schematicSymbolName?: string,
+  connectorPinCount?: number,
 ): string {
   // Highest priority: schematic_symbol.name (for custom symbols)
   if (schematicSymbolName) {
@@ -72,6 +78,15 @@ export function getLibraryId(
       sourceComp.name ?? schematicComp.schematic_component_id,
     )
     return `Connector_Generic:Conn_01x${pinCount}_${instanceName}`
+  }
+
+  if (
+    sourceComp.ftype === "simple_connector" &&
+    !sourceComp.manufacturer_part_number &&
+    connectorPinCount &&
+    connectorPinCount > 0
+  ) {
+    return getConnectorGenericLibraryId(connectorPinCount)
   }
 
   // Generate ergonomic name using manufacturer part number or footprint string
