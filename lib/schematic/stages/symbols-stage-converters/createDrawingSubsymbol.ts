@@ -4,22 +4,21 @@ import {
   scale as createScaleMatrix,
   translate,
 } from "transformation-matrix"
+import { parseColor } from "../utils/parseColor"
 import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
 import { createPolylineFromPoints } from "./createPolylineFromPoints"
 import { createRectangleFromPrimitive } from "./createRectangleFromPrimitive"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
-import { parseColor } from "../utils/parseColor"
 
 export function createDrawingSubsymbol({
   libId,
   symbolData,
-  isChip,
   c2kMatSchScale,
 }: {
   libId: string
   symbolData: any
-  isChip: boolean
+  isChip?: boolean
   c2kMatSchScale: number
 }): SchematicSymbol {
   const drawingSymbol = new SchematicSymbol({
@@ -76,6 +75,26 @@ export function createDrawingSubsymbol({
         scale: symbolScale,
       })
       drawingSymbol.circles.push(circle)
+    } else if (
+      primitive.type === "text" &&
+      typeof primitive.text === "string" &&
+      primitive.text.length > 0 &&
+      primitive.text !== "{REF}" &&
+      primitive.text !== "{VAL}"
+    ) {
+      drawingSymbol.texts.push(
+        createTextFromPrimitive({
+          schText: {
+            text: primitive.text,
+            x: primitive.x ?? 0,
+            y: primitive.y ?? 0,
+            fontSize: primitive.fontSize ?? 0.2,
+            anchor: primitive.anchor,
+          },
+          transform,
+          scale: symbolScale,
+        }),
+      )
     }
   }
 
