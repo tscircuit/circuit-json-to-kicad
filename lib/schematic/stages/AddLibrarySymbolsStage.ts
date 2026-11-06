@@ -58,12 +58,6 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       .list()
       .flatMap((component) => {
         const symbol = this.createLibrarySymbolForComponent(component)
-        if (symbol && component.metadata?.kicad_symbol) {
-          applyKicadSymbolMetadataToSymbol(
-            symbol,
-            component.metadata.kicad_symbol,
-          )
-        }
         return symbol ? [{ component, symbol }] : []
       })
     const netLabelSymbols: SchematicSymbol[] = []
@@ -239,10 +233,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       referencePrefix: getReferencePrefixForComponent(sourceComp),
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
     }
-    return this.createLibrarySymbol({
+    const symbol = this.createLibrarySymbol({
       libId: libraryId,
       ...librarySymbolOptions,
     })
+    if (schematicComponent.metadata?.kicad_symbol) {
+      applyKicadSymbolMetadataToSymbol(
+        symbol,
+        schematicComponent.metadata.kicad_symbol,
+      )
+    }
+    return symbol
   }
 
   /**

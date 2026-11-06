@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit"
+import { Circuit } from "@tscircuit/core"
 import { any_circuit_element } from "circuit-json"
 import { parseKicadPcb, parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
@@ -11,47 +11,28 @@ test("default chip metadata reaches schematic, PCB, and standalone libraries", a
   const circuit = new Circuit()
   circuit.add(
     <board width={10} height={10}>
-      <chip name="U1" footprint="soic8" />
+      <chip
+        name="U1"
+        footprint="soic8"
+        kicadFootprintMetadata={{
+          footprintName: "MyPart",
+          properties: {
+            Value: { value: "MyPart" },
+            Max_Current_A: { value: "6.4", hide: true },
+          },
+        }}
+        kicadSymbolMetadata={{
+          properties: {
+            Max_Current_A: { value: "6.4", effects: { hide: true } },
+          },
+        }}
+      />
     </board>,
   )
   await circuit.renderUntilSettled()
-  const generatedCircuitJson = circuit.getCircuitJson()
-  expect(
-    generatedCircuitJson.filter(
-      (element) => element.type === "schematic_symbol",
-    ),
-  ).toHaveLength(0)
-
-  // Test the exporter boundary independently of the core/props release cycle.
-  // This is the default-box output of the example in props#986.
-  const circuitJson = generatedCircuitJson.map((element) =>
-    any_circuit_element.parse({
-      ...element,
-      ...(element.type === "schematic_component"
-        ? {
-            metadata: {
-              kicad_symbol: {
-                properties: {
-                  Max_Current_A: { value: "6.4", effects: { hide: true } },
-                },
-              },
-            },
-          }
-        : element.type === "pcb_component"
-          ? {
-              metadata: {
-                kicad_footprint: {
-                  footprintName: "MyPart",
-                  properties: {
-                    Value: { value: "MyPart" },
-                    Max_Current_A: { value: "6.4", hide: true },
-                  },
-                },
-              },
-            }
-          : {}),
-    }),
-  )
+  const circuitJson = circuit
+    .getCircuitJson()
+    .map((element) => any_circuit_element.parse(element))
 
   const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
   schConverter.runUntilFinished()
@@ -69,8 +50,15 @@ test("default chip metadata reaches schematic, PCB, and standalone libraries", a
     symbol.properties.find((property) => property.key === "Reference")?.value,
   ).toBe("U1")
 
+  const controlCircuit = new Circuit()
+  controlCircuit.add(
+    <board width={10} height={10}>
+      <chip name="U1" footprint="soic8" />
+    </board>,
+  )
+  await controlCircuit.renderUntilSettled()
   const controlConverter = new CircuitJsonToKicadSchConverter(
-    generatedCircuitJson,
+    controlCircuit.getCircuitJson(),
   )
   controlConverter.runUntilFinished()
   const controlSchematic = parseKicadSch(controlConverter.getOutputString())

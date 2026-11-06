@@ -30,11 +30,11 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@tscircuit/common": "^0.0.5",
-    "@tscircuit/core": "^0.0.2203",
+    "@tscircuit/core": "^0.0.2289",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "https://pkg.pr.new/circuit-json@5c7734c",
-    "circuit-json-to-gltf": "0.0.118",
+    "circuit-json": "^0.0.547",
+    "circuit-json-to-gltf": "0.0.164",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
     "jszip": "^3.10.1",
@@ -53,6 +53,6 @@
     "typescript": "^5"
   },
   "overrides": {
-    "circuit-json": "https://pkg.pr.new/circuit-json@5c7734c"
+    "circuit-json": "^0.0.547"
   }
 }

@@ -132,9 +132,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value,
         })
 
-      const symbolMetadata =
-        schematicComponent.metadata?.kicad_symbol ??
-        schematicSymbol?.metadata?.kicad_symbol
+      const symbolMetadata = schematicSymbol
+        ? schematicSymbol.metadata?.kicad_symbol
+        : schematicComponent.metadata?.kicad_symbol
 
       // Match the resolved {REF} label within this custom symbol instance.
       // AddLibrarySymbolsStage omits the same label from the shared drawing.
