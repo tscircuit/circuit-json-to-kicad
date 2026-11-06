@@ -33,8 +33,9 @@ export function convertNoteRectToFootprintGraphic({
     { x: -halfWidth, y: halfHeight },
   ].map((point) => applyToPoint(rectToFootprintTransform, point))
   const stroke = new Stroke()
-  stroke.width = rect.stroke_width || 0.1
-  stroke.type = "default"
+  stroke.width = rect.has_stroke === false ? 0 : rect.stroke_width || 0.1
+  stroke.type = rect.is_stroke_dashed ? "dash" : "default"
+  const fill = Boolean(rect.is_filled)
 
   // KiCad fp_rect is axis-aligned in footprint-local coordinates. At other
   // angles, preserve the four actual corners with an fp_poly.
@@ -50,14 +51,14 @@ export function convertNoteRectToFootprintGraphic({
       },
       layer,
       stroke,
-      fill: false,
+      fill,
     })
   }
   return new FpPoly({
     points: corners,
     layer,
     stroke,
-    fill: false,
+    fill,
     uuid: generateDeterministicUuid(
       rect.type === "pcb_note_rect"
         ? rect.pcb_note_rect_id
