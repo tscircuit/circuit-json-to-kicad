@@ -97,6 +97,12 @@ export function resolveSchematicComponentSymbol({
     circuitJson,
     schematicComponent,
   )
+  const connectorPinCount = circuitJson.filter(
+    (element) =>
+      element.type === "schematic_port" &&
+      element.schematic_component_id ===
+        schematicComponent.schematic_component_id,
+  ).length
   const libraryId = usesComponentLevelSymbolPrimitives
     ? getComponentLevelLibraryId(
         sourceComponent,
@@ -108,7 +114,9 @@ export function resolveSchematicComponentSymbol({
         schematicComponent,
         cadComponent,
         schematicSymbolName,
+        connectorPinCount,
       )
+
   const isChip =
     sourceComponent.ftype === "simple_chip" ||
     sourceComponent.ftype === "simple_pin_header" ||
