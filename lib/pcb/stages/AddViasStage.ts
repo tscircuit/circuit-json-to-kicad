@@ -19,6 +19,14 @@ const DEFAULT_VIA_OUTER_DIAMETER = 0.8
 const DEFAULT_VIA_HOLE_DIAMETER = 0.4
 const VIA_POSITION_TOLERANCE = 1e-6 // mm
 
+const getFinitePositiveDimension = (
+  value: unknown,
+  fallback: number,
+): number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback
+
 const getViaPositionCell = (via: { x: number; y: number }) => ({
   x: Math.floor(via.x / VIA_POSITION_TOLERANCE),
   y: Math.floor(via.y / VIA_POSITION_TOLERANCE),
@@ -164,8 +172,11 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       via.y,
       span,
       connection,
-      via.outer_diameter ?? DEFAULT_VIA_OUTER_DIAMETER,
-      via.hole_diameter ?? DEFAULT_VIA_HOLE_DIAMETER,
+      getFinitePositiveDimension(
+        via.outer_diameter,
+        DEFAULT_VIA_OUTER_DIAMETER,
+      ),
+      getFinitePositiveDimension(via.hole_diameter, DEFAULT_VIA_HOLE_DIAMETER),
     ])
   }
 
@@ -233,9 +244,15 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     // For through-hole vias, span all copper layers
     const viaLayers = this.getKicadViaLayers(via)
 
-    // Preserve explicit Circuit JSON via dimensions; only fall back when absent.
-    const viaSize = via.outer_diameter ?? DEFAULT_VIA_OUTER_DIAMETER
-    const viaDrill = via.hole_diameter ?? DEFAULT_VIA_HOLE_DIAMETER
+    // Preserve explicit Circuit JSON via dimensions; only fall back when absent or non-finite.
+    const viaSize = getFinitePositiveDimension(
+      via.outer_diameter,
+      DEFAULT_VIA_OUTER_DIAMETER,
+    )
+    const viaDrill = getFinitePositiveDimension(
+      via.hole_diameter,
+      DEFAULT_VIA_HOLE_DIAMETER,
+    )
 
     // Create a via with deterministic UUID
     const viaData = `via:${transformedPos.x},${transformedPos.y}:${viaSize}:${viaDrill}:${via.net?.id ?? 0}`

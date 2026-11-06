@@ -4,6 +4,20 @@ import { applyToPoint, rotate, identity } from "transformation-matrix"
 import type { PcbNetInfo } from "../../../types"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 
+const DEFAULT_PLATED_HOLE_DIAMETER = 0.8
+const DEFAULT_PLATED_OUTER_DIAMETER = 1.6
+
+const getFinitePositiveDimension = (
+  value: unknown,
+  fallback: number,
+): number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback
+
+const getFiniteNumber = (value: unknown, fallback = 0): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback
+
 export function createThruHolePadFromCircuitJson({
   platedHole,
   componentCenter,
@@ -50,8 +64,8 @@ export function createThruHolePadFromCircuitJson({
 
   if (hasHoleOffset) {
     const rawOffset = {
-      x: platedHole.hole_offset_x ?? 0,
-      y: platedHole.hole_offset_y ?? 0,
+      x: getFiniteNumber(platedHole.hole_offset_x, 0),
+      y: getFiniteNumber(platedHole.hole_offset_y, 0),
     }
 
     if (rawOffset.x !== 0 || rawOffset.y !== 0) {
@@ -69,57 +83,128 @@ export function createThruHolePadFromCircuitJson({
   if (platedHole.shape === "circle") {
     // Circular plated hole
     padShape = "circle"
-    padSize = [platedHole.outer_diameter, platedHole.outer_diameter]
+    const holeDiameter = getFinitePositiveDimension(
+      platedHole.hole_diameter,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const outerDiameter = getFinitePositiveDimension(
+      platedHole.outer_diameter,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeDiameter),
+    )
+    padSize = [outerDiameter, outerDiameter]
     drill = new PadDrill({
-      diameter: platedHole.hole_diameter,
+      diameter: holeDiameter,
       offset: drillOffset,
     })
   } else if (platedHole.shape === "pill" || platedHole.shape === "oval") {
     // Pill-shaped plated hole (oval)
     padShape = "oval"
-    rotation = platedHole.ccw_rotation || 0
-    padSize = [platedHole.outer_width, platedHole.outer_height]
+    rotation = getFiniteNumber(platedHole.ccw_rotation, 0)
+    const holeWidth = getFinitePositiveDimension(
+      platedHole.hole_width,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const holeHeight = getFinitePositiveDimension(
+      platedHole.hole_height,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const outerWidth = getFinitePositiveDimension(
+      platedHole.outer_width,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeWidth),
+    )
+    const outerHeight = getFinitePositiveDimension(
+      platedHole.outer_height,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeHeight),
+    )
+    padSize = [outerWidth, outerHeight]
     drill = new PadDrill({
       oval: true,
-      diameter: platedHole.hole_width,
-      width: platedHole.hole_height,
+      diameter: holeWidth,
+      width: holeHeight,
       offset: drillOffset,
     })
   } else if (platedHole.shape === "pill_hole_with_rect_pad") {
     // Pill hole with rectangular pad
     padShape = "rect"
-    padSize = [platedHole.rect_pad_width, platedHole.rect_pad_height]
+    const holeWidth = getFinitePositiveDimension(
+      platedHole.hole_width,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const holeHeight = getFinitePositiveDimension(
+      platedHole.hole_height,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const rectPadWidth = getFinitePositiveDimension(
+      platedHole.rect_pad_width,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeWidth),
+    )
+    const rectPadHeight = getFinitePositiveDimension(
+      platedHole.rect_pad_height,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeHeight),
+    )
+    padSize = [rectPadWidth, rectPadHeight]
     drill = new PadDrill({
       oval: true,
-      diameter: platedHole.hole_width,
-      width: platedHole.hole_height,
+      diameter: holeWidth,
+      width: holeHeight,
       offset: drillOffset,
     })
   } else if (platedHole.shape === "circular_hole_with_rect_pad") {
     // Circular hole with rectangular pad
     padShape = "rect"
-    padSize = [platedHole.rect_pad_width, platedHole.rect_pad_height]
+    const holeDiameter = getFinitePositiveDimension(
+      platedHole.hole_diameter,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const rectPadWidth = getFinitePositiveDimension(
+      platedHole.rect_pad_width,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeDiameter),
+    )
+    const rectPadHeight = getFinitePositiveDimension(
+      platedHole.rect_pad_height,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeDiameter),
+    )
+    padSize = [rectPadWidth, rectPadHeight]
     drill = new PadDrill({
-      diameter: platedHole.hole_diameter,
+      diameter: holeDiameter,
       offset: drillOffset,
     })
-    rotation = platedHole.rect_ccw_rotation || 0
+    rotation = getFiniteNumber(platedHole.rect_ccw_rotation, 0)
   } else if (platedHole.shape === "rotated_pill_hole_with_rect_pad") {
     // Rotated pill hole with rectangular pad
     padShape = "rect"
-    padSize = [platedHole.rect_pad_width, platedHole.rect_pad_height]
+    const holeWidth = getFinitePositiveDimension(
+      platedHole.hole_width,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const holeHeight = getFinitePositiveDimension(
+      platedHole.hole_height,
+      DEFAULT_PLATED_HOLE_DIAMETER,
+    )
+    const rectPadWidth = getFinitePositiveDimension(
+      platedHole.rect_pad_width,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeWidth),
+    )
+    const rectPadHeight = getFinitePositiveDimension(
+      platedHole.rect_pad_height,
+      Math.max(DEFAULT_PLATED_OUTER_DIAMETER, holeHeight),
+    )
+    padSize = [rectPadWidth, rectPadHeight]
     drill = new PadDrill({
       oval: true,
-      diameter: platedHole.hole_width,
-      width: platedHole.hole_height,
+      diameter: holeWidth,
+      width: holeHeight,
       offset: drillOffset,
     })
-    rotation = platedHole.rect_ccw_rotation || 0
+    rotation = getFiniteNumber(platedHole.rect_ccw_rotation, 0)
   } else {
     // Default fallback
     padShape = "circle"
-    padSize = [1.6, 1.6]
-    drill = new PadDrill({ diameter: 0.8, offset: drillOffset })
+    padSize = [DEFAULT_PLATED_OUTER_DIAMETER, DEFAULT_PLATED_OUTER_DIAMETER]
+    drill = new PadDrill({
+      diameter: DEFAULT_PLATED_HOLE_DIAMETER,
+      offset: drillOffset,
+    })
   }
 
   // Generate deterministic UUID for pad

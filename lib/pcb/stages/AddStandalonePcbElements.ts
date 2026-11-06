@@ -24,6 +24,17 @@ import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromC
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { getSolderPasteLibraryLink } from "./utils/getSolderPasteLibraryLink"
 
+const getFinitePositiveDimension = (
+  value: unknown,
+  fallback: number,
+): number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback
+
+const getFiniteNumber = (value: unknown, fallback = 0): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback
+
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
@@ -183,14 +194,20 @@ export class AddStandalonePcbElements extends ConverterStage<
   private getHoleLibraryLink(hole: PcbHole): string {
     const { hole_shape: shape } = hole
     if (shape === "circle") {
-      return `tscircuit:hole_${shape}_holeDiameter${hole.hole_diameter}mm`
+      const holeDiameter = getFinitePositiveDimension(hole.hole_diameter, 1.0)
+      return `tscircuit:hole_${shape}_holeDiameter${holeDiameter}mm`
     }
     if (shape === "pill" || shape === "oval") {
       const h = hole
-      return `tscircuit:hole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm`
+      const holeWidth = getFinitePositiveDimension(h.hole_width, 1.0)
+      const holeHeight = getFinitePositiveDimension(h.hole_height, 1.0)
+      return `tscircuit:hole_${shape}_holeWidth${holeWidth}mm_holeHeight${holeHeight}mm`
     }
     if (shape === "rotated_pill") {
-      return `tscircuit:hole_${shape}_holeWidth${hole.hole_width}mm_holeHeight${hole.hole_height}mm_ccwRotation${hole.ccw_rotation}deg`
+      const holeWidth = getFinitePositiveDimension(hole.hole_width, 1.0)
+      const holeHeight = getFinitePositiveDimension(hole.hole_height, 1.0)
+      const ccwRotation = getFiniteNumber(hole.ccw_rotation, 0)
+      return `tscircuit:hole_${shape}_holeWidth${holeWidth}mm_holeHeight${holeHeight}mm_ccwRotation${ccwRotation}deg`
     }
     return "tscircuit:hole"
   }
@@ -198,31 +215,77 @@ export class AddStandalonePcbElements extends ConverterStage<
   private getPlatedHoleLibraryLink(hole: PcbPlatedHole): string {
     const shape = hole.shape
     if (shape === "circle") {
-      return `tscircuit:platedhole_${shape}_holeDiameter${hole.hole_diameter}mm_outerDiameter${hole.outer_diameter}mm`
+      const holeDiameter = getFinitePositiveDimension(hole.hole_diameter, 0.8)
+      const outerDiameter = getFinitePositiveDimension(
+        hole.outer_diameter,
+        Math.max(1.6, holeDiameter),
+      )
+      return `tscircuit:platedhole_${shape}_holeDiameter${holeDiameter}mm_outerDiameter${outerDiameter}mm`
     }
     if (shape === "pill" || shape === "oval") {
       const h = hole as PcbPlatedHoleOval
-      return `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_outerWidth${h.outer_width}mm_outerHeight${h.outer_height}mm`
+      const holeWidth = getFinitePositiveDimension(h.hole_width, 0.8)
+      const holeHeight = getFinitePositiveDimension(h.hole_height, 0.8)
+      const outerWidth = getFinitePositiveDimension(
+        h.outer_width,
+        Math.max(1.6, holeWidth),
+      )
+      const outerHeight = getFinitePositiveDimension(
+        h.outer_height,
+        Math.max(1.6, holeHeight),
+      )
+      return `tscircuit:platedhole_${shape}_holeWidth${holeWidth}mm_holeHeight${holeHeight}mm_outerWidth${outerWidth}mm_outerHeight${outerHeight}mm`
     }
     if (shape === "pill_hole_with_rect_pad") {
       const h = hole as PcbHolePillWithRectPad
-      return `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
+      const holeWidth = getFinitePositiveDimension(h.hole_width, 0.8)
+      const holeHeight = getFinitePositiveDimension(h.hole_height, 0.8)
+      const rectPadWidth = getFinitePositiveDimension(
+        h.rect_pad_width,
+        Math.max(1.6, holeWidth),
+      )
+      const rectPadHeight = getFinitePositiveDimension(
+        h.rect_pad_height,
+        Math.max(1.6, holeHeight),
+      )
+      return `tscircuit:platedhole_${shape}_holeWidth${holeWidth}mm_holeHeight${holeHeight}mm_rectPadWidth${rectPadWidth}mm_rectPadHeight${rectPadHeight}mm`
     }
     if (shape === "circular_hole_with_rect_pad") {
       const h = hole as PcbHoleCircularWithRectPad & {
         rect_ccw_rotation?: number
       }
-      let link = `tscircuit:platedhole_${shape}_holeDiameter${h.hole_diameter}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
-      if (h.rect_ccw_rotation) {
-        link += `_ccwRotation${h.rect_ccw_rotation}deg`
+      const holeDiameter = getFinitePositiveDimension(h.hole_diameter, 0.8)
+      const rectPadWidth = getFinitePositiveDimension(
+        h.rect_pad_width,
+        Math.max(1.6, holeDiameter),
+      )
+      const rectPadHeight = getFinitePositiveDimension(
+        h.rect_pad_height,
+        Math.max(1.6, holeDiameter),
+      )
+      let link = `tscircuit:platedhole_${shape}_holeDiameter${holeDiameter}mm_rectPadWidth${rectPadWidth}mm_rectPadHeight${rectPadHeight}mm`
+      const ccwRotation = getFiniteNumber(h.rect_ccw_rotation, 0)
+      if (ccwRotation) {
+        link += `_ccwRotation${ccwRotation}deg`
       }
       return link
     }
     if (shape === "rotated_pill_hole_with_rect_pad") {
       const h = hole as PcbHoleRotatedPillWithRectPad
-      let link = `tscircuit:platedhole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_rectPadWidth${h.rect_pad_width}mm_rectPadHeight${h.rect_pad_height}mm`
-      if (h.rect_ccw_rotation) {
-        link += `_ccwRotation${h.rect_ccw_rotation}deg`
+      const holeWidth = getFinitePositiveDimension(h.hole_width, 0.8)
+      const holeHeight = getFinitePositiveDimension(h.hole_height, 0.8)
+      const rectPadWidth = getFinitePositiveDimension(
+        h.rect_pad_width,
+        Math.max(1.6, holeWidth),
+      )
+      const rectPadHeight = getFinitePositiveDimension(
+        h.rect_pad_height,
+        Math.max(1.6, holeHeight),
+      )
+      let link = `tscircuit:platedhole_${shape}_holeWidth${holeWidth}mm_holeHeight${holeHeight}mm_rectPadWidth${rectPadWidth}mm_rectPadHeight${rectPadHeight}mm`
+      const ccwRotation = getFiniteNumber(h.rect_ccw_rotation, 0)
+      if (ccwRotation) {
+        link += `_ccwRotation${ccwRotation}deg`
       }
       return link
     }
@@ -243,14 +306,17 @@ export class AddStandalonePcbElements extends ConverterStage<
 
   private getSmtPadLibraryLink(pcbPad: PcbSmtPad): string {
     if (pcbPad.shape === "circle" && "radius" in pcbPad) {
-      return `tscircuit:smtpad_circle_diameter${pcbPad.radius * 2}mm`
+      const radius = getFinitePositiveDimension(pcbPad.radius, 0.5)
+      return `tscircuit:smtpad_circle_diameter${radius * 2}mm`
     }
     if (
       (pcbPad.shape === "rect" || pcbPad.shape === "rotated_rect") &&
       "width" in pcbPad &&
       "height" in pcbPad
     ) {
-      return `tscircuit:smtpad_${pcbPad.shape}_width${pcbPad.width}mm_height${pcbPad.height}mm`
+      const width = getFinitePositiveDimension(pcbPad.width, 1.0)
+      const height = getFinitePositiveDimension(pcbPad.height, 1.0)
+      return `tscircuit:smtpad_${pcbPad.shape}_width${width}mm_height${height}mm`
     }
     return "tscircuit:smtpad"
   }
