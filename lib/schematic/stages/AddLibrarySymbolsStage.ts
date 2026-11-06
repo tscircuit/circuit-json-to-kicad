@@ -29,6 +29,7 @@ import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converte
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
+import { applyKicadSymbolMetadataToSymbol } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 
 /**
@@ -57,6 +58,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       .list()
       .flatMap((component) => {
         const symbol = this.createLibrarySymbolForComponent(component)
+        if (symbol && component.metadata?.kicad_symbol) {
+          applyKicadSymbolMetadataToSymbol(
+            symbol,
+            component.metadata.kicad_symbol,
+          )
+        }
         return symbol ? [{ component, symbol }] : []
       })
     const netLabelSymbols: SchematicSymbol[] = []

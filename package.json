@@ -33,7 +33,7 @@
     "@tscircuit/core": "^0.0.2203",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "^0.0.534",
+    "circuit-json": "https://pkg.pr.new/circuit-json@5c7734c",
     "circuit-json-to-gltf": "0.0.118",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
