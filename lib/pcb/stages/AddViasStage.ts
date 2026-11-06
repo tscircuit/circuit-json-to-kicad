@@ -56,11 +56,12 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const { pcbNetMap } = this.ctx
     const standaloneVias: ViaLike[] = this.ctx.db.pcb_via.list().map((via) => ({
       ...via,
-      net: pcbNetMap?.get(
-        via.subcircuit_connectivity_map_key ||
-          via.source_net_id ||
-          via.pcb_via_id,
-      ),
+      net:
+        pcbNetMap?.get(
+          via.subcircuit_connectivity_map_key ||
+            via.source_net_id ||
+            via.pcb_via_id,
+        ) ?? (via.pcb_trace_id ? pcbNetMap?.get(via.pcb_trace_id) : undefined),
     }))
     const seenRouteViaKeys = new Set<string>()
     const standaloneViasByPosition = new Map<string, ViaLike[]>()
@@ -80,6 +81,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             (point: any): ViaLike => ({
               net:
                 pcbNetMap?.get(trace.pcb_trace_id) ??
+                pcbNetMap?.get(trace.source_trace_id) ??
                 pcbNetMap?.get(trace.connection_name),
               x: point.x,
               y: point.y,

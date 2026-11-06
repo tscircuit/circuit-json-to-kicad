@@ -173,6 +173,9 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
                 }
               }
             }
+            if (!connectivityKey) {
+              connectivityKey = sourceTrace.source_trace_id
+            }
           }
         }
 
@@ -187,6 +190,12 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
 
         if (connectivityKey) {
           netInfo = pcbNetMap.get(connectivityKey)
+        }
+        if (!netInfo && trace.pcb_trace_id) {
+          netInfo = pcbNetMap.get(trace.pcb_trace_id)
+        }
+        if (!netInfo && trace.source_trace_id) {
+          netInfo = pcbNetMap.get(trace.source_trace_id)
         }
       }
 

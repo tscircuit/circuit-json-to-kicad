@@ -116,6 +116,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     for (const trace of ctx.db.source_trace.list()) {
       const keys = [
         trace.subcircuit_connectivity_map_key,
+        trace.source_trace_id,
         ...(trace.connected_source_net_ids ?? []).map((id) => {
           const net = ctx.db.source_net.get(id)
           return net?.subcircuit_connectivity_map_key || net?.source_net_id

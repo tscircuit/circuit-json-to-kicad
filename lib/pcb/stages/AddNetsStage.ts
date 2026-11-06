@@ -20,6 +20,8 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     // Initialize the net map in context if it doesn't exist
     this.ctx.pcbNetMap = new Map()
 
+    const connectivityMap = getFullConnectivityMapFromCircuitJson(this.input)
+    const connectivityKeyByConnection = new Map<string, string>()
     const netNameByKey = new Map<string, string>()
     const boardOwnerMap =
       this.ctx.db.pcb_board.list().length > 1
@@ -40,6 +42,12 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       })
 
       netNameByKey.set(connectivityKey, netName)
+      const connection = connectivityMap.getNetConnectedToId(
+        sourceNet.source_net_id,
+      )
+      if (connection && !connectivityKeyByConnection.has(connection)) {
+        connectivityKeyByConnection.set(connection, connectivityKey)
+      }
     }
 
     const sourceTraces = this.ctx.db.source_trace?.list() ?? []
@@ -49,17 +57,35 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       if (!connectivityKey && sourceTrace.connected_source_net_ids?.length) {
         for (const sourceNetId of sourceTrace.connected_source_net_ids) {
           const connectedNet = this.ctx.db.source_net?.get(sourceNetId)
-          if (
-            connectedNet?.subcircuit_connectivity_map_key &&
-            connectedNet.subcircuit_connectivity_map_key.length > 0
-          ) {
-            connectivityKey = connectedNet.subcircuit_connectivity_map_key
-            break
+          if (connectedNet) {
+            connectivityKey =
+              connectedNet.subcircuit_connectivity_map_key ||
+              connectedNet.source_net_id
+            if (connectivityKey) break
           }
         }
       }
 
+      const traceConnection = sourceTrace.source_trace_id
+        ? connectivityMap.getNetConnectedToId(sourceTrace.source_trace_id)
+        : undefined
+
+      if (!connectivityKey && traceConnection) {
+        connectivityKey = connectivityKeyByConnection.get(traceConnection)
+      }
+
+      if (!connectivityKey && sourceTrace.source_trace_id) {
+        connectivityKey = sourceTrace.source_trace_id
+      }
+
       if (!connectivityKey) continue
+
+      if (
+        traceConnection &&
+        !connectivityKeyByConnection.has(traceConnection)
+      ) {
+        connectivityKeyByConnection.set(traceConnection, connectivityKey)
+      }
 
       if (!netNameByKey.has(connectivityKey)) {
         const netName = resolveKicadPcbNetName({
@@ -93,18 +119,31 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     // Index the existing KiCad nets by Circuit JSON element ID as well.
-    const connectivityMap = getFullConnectivityMapFromCircuitJson(this.input)
     const netByConnection = new Map<string, PcbNetInfo>()
+    for (const [connection, connectivityKey] of connectivityKeyByConnection) {
+      const netInfo = this.ctx.pcbNetMap.get(connectivityKey)
+      if (netInfo) {
+        netByConnection.set(connection, netInfo)
+      }
+    }
     for (const element of this.input) {
+      const elementId = getElementId(element)
       const connectivityKey =
         ("subcircuit_connectivity_map_key" in element &&
           element.subcircuit_connectivity_map_key) ||
-        (element.type === "source_net" ? element.source_net_id : undefined)
+        (element.type === "source_net" ? element.source_net_id : undefined) ||
+        (element.type === "source_trace"
+          ? (element.source_trace_id &&
+              connectivityKeyByConnection.get(
+                connectivityMap.getNetConnectedToId(element.source_trace_id) ??
+                  "",
+              )) ||
+            element.source_trace_id
+          : undefined)
       if (!connectivityKey) continue
       const netInfo = this.ctx.pcbNetMap.get(connectivityKey)
       if (!netInfo) continue
 
-      const elementId = getElementId(element)
       this.ctx.pcbNetMap.set(elementId, netInfo)
       const connection = connectivityMap.getNetConnectedToId(elementId)
       if (connection && !netByConnection.has(connection)) {
