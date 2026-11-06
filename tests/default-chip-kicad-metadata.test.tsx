@@ -16,7 +16,9 @@ test("default chip metadata reaches schematic, PCB, and standalone libraries", a
   )
   await circuit.renderUntilSettled()
   const controlCircuitJson = circuit.getCircuitJson()
-  const circuitJson = structuredClone(controlCircuitJson)
+  const circuitJson = controlCircuitJson.map((element) =>
+    any_circuit_element.parse(element),
+  )
   const schematicComponent = circuitJson.find(
     (element) => element.type === "schematic_component",
   )
