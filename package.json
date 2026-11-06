@@ -51,5 +51,8 @@
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "overrides": {
+    "circuit-json": "https://pkg.pr.new/circuit-json@5c7734c"
   }
 }
