@@ -45,6 +45,12 @@ export class CircuitJsonToKicadModConverter {
   getOutput(): FootprintEntry {
     const footprints = this.libraryConverter.getFootprints()
 
+    if (footprints.length === 0) {
+      throw new Error(
+        'No footprints were generated. CircuitJsonToKicadModConverter needs circuit JSON containing at least one component with a footprint (for example <resistor footprint="0402" />).',
+      )
+    }
+
     if (this.footprintName) {
       const matchingFootprint = footprints.find(
         (footprint) => footprint.footprintName === this.footprintName,
