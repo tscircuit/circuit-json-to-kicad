@@ -119,7 +119,11 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ?.list()
         .filter((path: PcbSilkscreenPath) => !path.pcb_component_id) || []
 
-    for (const path of pcbSilkscreenPaths) {
+    const standaloneFabricationPaths = this.ctx.db.pcb_fabrication_note_path
+      .list()
+      .filter((path) => !path.pcb_component_id && path.has_stroke !== false)
+
+    for (const path of [...pcbSilkscreenPaths, ...standaloneFabricationPaths]) {
       if (!path.route || path.route.length < 2) continue
 
       // Create line segments for each pair of points
@@ -144,7 +148,12 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           top: "F.SilkS",
           bottom: "B.SilkS",
         }
-        const kicadLayer = layerMap[path.layer] || path.layer || "F.SilkS"
+        const kicadLayer =
+          path.type === "pcb_fabrication_note_path"
+            ? path.layer === "bottom"
+              ? "B.Fab"
+              : "F.Fab"
+            : layerMap[path.layer] || path.layer || "F.SilkS"
 
         // Create a graphics line
         const grLine = new GrLine({
