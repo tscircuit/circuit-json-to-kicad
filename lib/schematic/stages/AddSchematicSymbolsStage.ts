@@ -84,10 +84,12 @@ export class AddSchematicSymbolsStage extends ConverterStage<
 
       // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
       if (!this.ctx.c2kMatSch) continue
-      const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
+      const rawCenter = applyToPoint(this.ctx.c2kMatSch, {
         x: schematicComponent.center.x,
         y: schematicComponent.center.y,
       })
+      const x = Math.round(rawCenter.x * 10000) / 10000
+      const y = Math.round(rawCenter.y * 10000) / 10000
 
       const uuid = crypto.randomUUID()
 
