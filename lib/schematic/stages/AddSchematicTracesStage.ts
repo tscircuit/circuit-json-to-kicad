@@ -75,10 +75,10 @@ export class AddSchematicTracesStage extends ConverterStage<
       y: edge.to.y,
     })
 
-    const x1 = from.x
-    const y1 = from.y
-    const x2 = to.x
-    const y2 = to.y
+    const x1 = Math.round(from.x * 10000) / 10000
+    const y1 = Math.round(from.y * 10000) / 10000
+    const x2 = Math.round(to.x * 10000) / 10000
+    const y2 = Math.round(to.y * 10000) / 10000
 
     // Create points for the wire
     const pts = new Pts([new Xy(x1, y1), new Xy(x2, y2)])
@@ -113,7 +113,10 @@ export class AddSchematicTracesStage extends ConverterStage<
     })
 
     const kicadJunction = new Junction({
-      at: [x, y],
+      at: [
+        Math.round(x * 10000) / 10000,
+        Math.round(y * 10000) / 10000,
+      ],
       diameter: 0, // 0 means use default diameter
     })
 
