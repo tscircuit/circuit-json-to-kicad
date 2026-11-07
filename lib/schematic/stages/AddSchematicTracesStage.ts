@@ -113,10 +113,7 @@ export class AddSchematicTracesStage extends ConverterStage<
     })
 
     const kicadJunction = new Junction({
-      at: [
-        Math.round(x * 10000) / 10000,
-        Math.round(y * 10000) / 10000,
-      ],
+      at: [Math.round(x * 10000) / 10000, Math.round(y * 10000) / 10000],
       diameter: 0, // 0 means use default diameter
     })
 
