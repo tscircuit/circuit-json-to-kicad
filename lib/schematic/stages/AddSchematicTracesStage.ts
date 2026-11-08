@@ -1,23 +1,8 @@
 import type { CircuitJson } from "circuit-json"
 import type { KicadSch } from "kicadts"
-import {
-  Wire,
-  Pts,
-  Xy,
-  Stroke,
-  Junction,
-  Uuid,
-  Label,
-  TextEffects,
-  TextEffectsFont,
-  TextEffectsJustify,
-} from "kicadts"
+import { Wire, Pts, Xy, Stroke, Junction, Uuid } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { ConverterStage, type ConverterContext } from "../../types"
-import {
-  getSourceTraceConnectivityKey,
-  resolveUnnamedTraceNets,
-} from "../../utils/getUnnamedNetName"
 
 const DEFAULT_LINE_WIDTH_MM = 0.254
 
@@ -45,10 +30,6 @@ export class AddSchematicTracesStage extends ConverterStage<
 
     const wires: Wire[] = []
     const junctions: Junction[] = []
-    const labels: Label[] = []
-
-    const unnamedNetMap = resolveUnnamedTraceNets(this.input, db)
-    const labeledNetKeys = new Set<string>()
 
     // Process each trace
     for (const schematicTrace of schematicTraces) {
@@ -63,82 +44,13 @@ export class AddSchematicTracesStage extends ConverterStage<
         const kicadJunction = this.createJunction(junction)
         junctions.push(kicadJunction)
       }
-
-      // Add a hidden local net label on the first wire endpoint for unnamed nets
-      // so KiCad's schematic-parity check resolves the same net name as .kicad_pcb
-      let connectivityKey = schematicTrace.subcircuit_connectivity_map_key
-      if (!connectivityKey && schematicTrace.source_trace_id) {
-        const sourceTrace = db.source_trace?.get(schematicTrace.source_trace_id)
-        if (sourceTrace) {
-          connectivityKey = getSourceTraceConnectivityKey(db, sourceTrace)
-        }
-      }
-
-      if (
-        connectivityKey &&
-        unnamedNetMap.has(connectivityKey) &&
-        !labeledNetKeys.has(connectivityKey)
-      ) {
-        const resolvedNet = unnamedNetMap.get(connectivityKey)!
-        if (!resolvedNet.hasInlineLabel && schematicTrace.edges.length > 0) {
-          const firstEdge = schematicTrace.edges[0]!
-          const label = this.createNetNameLabel(
-            resolvedNet.labelName,
-            firstEdge.from,
-          )
-          if (label) {
-            labels.push(label)
-            labeledNetKeys.add(connectivityKey)
-          }
-        }
-      }
     }
 
     // Add wires and junctions to the schematic
     kicadSch.wires = wires
     kicadSch.junctions = junctions
 
-    // Add net name labels for unnamed traces
-    if (labels.length > 0) {
-      kicadSch.labels = [...(kicadSch.labels || []), ...labels]
-    }
-
     this.finished = true
-  }
-
-  /**
-   * Create a hidden KiCad local net label anchored at a wire endpoint so KiCad
-   * assigns a deterministic net name matching the PCB net without cluttering the SVG
-   */
-  private createNetNameLabel(
-    netName: string,
-    anchor: { x: number; y: number },
-  ): Label | null {
-    if (!this.ctx.c2kMatSch) return null
-
-    const { x, y } = applyToPoint(this.ctx.c2kMatSch, {
-      x: anchor.x,
-      y: anchor.y,
-    })
-
-    const font = new TextEffectsFont()
-    font.size = { height: 1.27, width: 1.27 }
-    const effects = new TextEffects({
-      font,
-      hiddenText: true,
-      justify: new TextEffectsJustify({
-        horizontal: "left",
-        vertical: "bottom",
-      }),
-    })
-
-    return new Label({
-      value: netName,
-      at: [x, y, 0],
-      effects,
-      uuid: crypto.randomUUID(),
-      fieldsAutoplaced: true,
-    })
   }
 
   /**
