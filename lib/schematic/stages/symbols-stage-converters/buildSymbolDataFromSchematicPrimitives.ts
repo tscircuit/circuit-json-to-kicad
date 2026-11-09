@@ -134,14 +134,28 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     }
   }
 
+  const symbolCenter = schematicSymbol.center ||
+    schematicComponentCenter || { x: 0, y: 0 }
+  const relX = (x: number) =>
+    hasSchematicSymbolId ? Number((x - symbolCenter.x).toPrecision(12)) : x
+  const relY = (y: number) =>
+    hasSchematicSymbolId ? Number((y - symbolCenter.y).toPrecision(12)) : y
+  const relPoint = (pt: { x: number; y: number }) => ({
+    x: relX(pt.x),
+    y: relY(pt.y),
+  })
+
   // Convert to internal primitive format
   const primitives: any[] = []
 
   // Convert schematic_arc to KiCad's start/mid/end representation.
   for (const arc of arcs) {
+    const arcPoints = getSchematicArcPoints(arc)
     primitives.push({
       type: "arc",
-      ...getSchematicArcPoints(arc),
+      start: relPoint(arcPoints.start),
+      mid: relPoint(arcPoints.mid),
+      end: relPoint(arcPoints.end),
       isDashed: arc.is_dashed,
       strokeWidth: arc.stroke_width,
     })
@@ -151,8 +165,8 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   for (const circle of circles) {
     primitives.push({
       type: "circle",
-      x: circle.center?.x ?? 0,
-      y: circle.center?.y ?? 0,
+      x: relX(circle.center?.x ?? 0),
+      y: relY(circle.center?.y ?? 0),
       radius: circle.radius ?? 0.5,
       fill: circle.is_filled ?? false,
       fillColor: circle.fill_color,
@@ -165,8 +179,8 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     primitives.push({
       type: "path",
       points: [
-        { x: line.x1 ?? 0, y: line.y1 ?? 0 },
-        { x: line.x2 ?? 0, y: line.y2 ?? 0 },
+        { x: relX(line.x1 ?? 0), y: relY(line.y1 ?? 0) },
+        { x: relX(line.x2 ?? 0), y: relY(line.y2 ?? 0) },
       ],
       strokeWidth: line.stroke_width,
     })
@@ -177,7 +191,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     if (path.points && path.points.length > 0) {
       primitives.push({
         type: "path",
-        points: path.points,
+        points: path.points.map(relPoint),
         fill: path.is_filled ?? false,
         fillColor: path.fill_color,
         strokeWidth: path.stroke_width,
@@ -189,11 +203,13 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   for (const rect of rectangles) {
     const halfWidth = rect.width / 2
     const halfHeight = rect.height / 2
+    const rectCenterX = relX(rect.center.x)
+    const rectCenterY = relY(rect.center.y)
     if ((rect.rotation ?? 0) % 360 === 0) {
       primitives.push({
         type: "rectangle",
-        start: { x: rect.center.x - halfWidth, y: rect.center.y - halfHeight },
-        end: { x: rect.center.x + halfWidth, y: rect.center.y + halfHeight },
+        start: { x: rectCenterX - halfWidth, y: rectCenterY - halfHeight },
+        end: { x: rectCenterX + halfWidth, y: rectCenterY + halfHeight },
         fill: rect.is_filled,
         fillColor: rect.fill_color,
         strokeWidth: rect.stroke_width,
@@ -210,8 +226,8 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
       { x: halfWidth, y: halfHeight },
       { x: -halfWidth, y: halfHeight },
     ].map((corner) => ({
-      x: rect.center.x + corner.x * cos - corner.y * sin,
-      y: rect.center.y + corner.x * sin + corner.y * cos,
+      x: rectCenterX + corner.x * cos - corner.y * sin,
+      y: rectCenterY + corner.x * sin + corner.y * cos,
     }))
 
     primitives.push({
@@ -227,8 +243,8 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   // Convert schematic_text to text primitives
   const symbolTexts = texts.map((text) => ({
     text: text.text ?? "",
-    x: text.position?.x ?? 0,
-    y: text.position?.y ?? 0,
+    x: relX(text.position?.x ?? 0),
+    y: relY(text.position?.y ?? 0),
     fontSize: text.font_size ?? 0.2,
     anchor: text.anchor ?? "center",
   }))
@@ -245,11 +261,9 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   // Sort ports by pin_number
   symbolPorts.sort((a, b) => a.pinNumber - b.pinNumber)
 
-  const symbolCenter = schematicSymbol.center ||
-    schematicComponentCenter || { x: 0, y: 0 }
-
   return {
     center: symbolCenter,
+    primitivesCenter: hasSchematicSymbolId ? { x: 0, y: 0 } : symbolCenter,
     size: schematicSymbol.size ||
       schematicComponentSize || { width: 1, height: 1 },
     primitives,

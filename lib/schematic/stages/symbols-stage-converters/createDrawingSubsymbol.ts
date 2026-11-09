@@ -27,8 +27,9 @@ export function createDrawingSubsymbol({
   })
 
   const symbolScale = c2kMatSchScale
-  const cx = symbolData.center?.x ?? 0
-  const cy = symbolData.center?.y ?? 0
+  const drawingCenter = symbolData.primitivesCenter ?? symbolData.center
+  const cx = drawingCenter?.x ?? 0
+  const cy = drawingCenter?.y ?? 0
   const transform = compose(
     createScaleMatrix(symbolScale, symbolScale),
     translate(-cx, -cy),
