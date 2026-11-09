@@ -53,7 +53,12 @@ test("repro877: identical custom symbols at a coordinate rounding boundary", asy
   const output = converter.getOutputString()
   const schematic = parseKicadSch(output)
 
-  // Capture the duplicate IDs and the one-unit drawing difference from #877.
+  // Identical artwork must share one definition regardless of placement.
+  expect(schematic.libSymbols!.symbols).toHaveLength(1)
+  expect(schematic.symbols.map((symbol) => symbol.libraryId)).toEqual([
+    "Custom:MyPart",
+    "Custom:MyPart",
+  ])
   expect({
     instanceLibraryIds: schematic.symbols.map((symbol) => symbol.libraryId),
     libraryDrawings: schematic.libSymbols!.symbols.map((symbol) => ({

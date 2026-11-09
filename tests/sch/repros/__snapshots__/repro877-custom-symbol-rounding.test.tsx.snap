@@ -4,7 +4,7 @@ exports[`repro877: identical custom symbols at a coordinate rounding boundary 1`
 {
   "instanceLibraryIds": [
     "Custom:MyPart",
-    "Custom:MyPart_2",
+    "Custom:MyPart",
   ],
   "libraryDrawings": [
     {
@@ -18,29 +18,6 @@ exports[`repro877: identical custom symbols at a coordinate rounding boundary 1`
     (xy 5.6142 1.0829)
     (xy -5.6142 1.0829)
     (xy -5.6142 -1.0829)
-  )
-  (stroke
-    (width 0.75)
-    (type default)
-  )
-  (fill
-    (type none)
-  )
-)"
-,
-      ],
-    },
-    {
-      "libraryId": "Custom:MyPart_2",
-      "polylines": [
-        
-"(polyline
-  (pts
-    (xy -5.6142 -1.0828)
-    (xy 5.6142 -1.0828)
-    (xy 5.6142 1.0829)
-    (xy -5.6142 1.0829)
-    (xy -5.6142 -1.0828)
   )
   (stroke
     (width 0.75)
