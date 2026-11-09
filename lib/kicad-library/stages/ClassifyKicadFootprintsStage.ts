@@ -9,7 +9,7 @@ import { renameKicadFootprint } from "../kicad-library-converter-utils/renameKic
 import { applyKicadFootprintMetadata } from "../kicad-library-converter-utils/applyKicadFootprintMetadata"
 import { parseKicadMod } from "kicadts"
 
-const KICAD_3RD_PARTY_PLACEHOLDER = "${KICAD_3RD_PARTY}"
+const KICAD_3RD_PARTY_PLACEHOLDER = "${KICAD9_3RD_PARTY}"
 
 /**
  * Classifies footprints from extracted KiCad components into user and builtin libraries.

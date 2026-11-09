@@ -53,7 +53,7 @@ export interface KicadLibraryConverterOptions {
    * Whether to generate files for KiCad PCM (Plugin and Content Manager).
    * When true:
    * - Footprint references in symbols will be prefixed with "PCM_"
-   * - 3D model paths will use ${KICAD_3RD_PARTY} variable instead of relative paths
+   * - 3D model paths will use ${KICAD9_3RD_PARTY} variable instead of relative paths
    * Default: false
    */
   isPcm?: boolean

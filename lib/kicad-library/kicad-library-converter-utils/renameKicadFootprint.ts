@@ -1,7 +1,7 @@
 import type { FootprintEntry } from "../../types"
 import { parseKicadMod } from "kicadts"
 
-const KICAD_3RD_PARTY_PLACEHOLDER = "${KICAD_3RD_PARTY}"
+const KICAD_3RD_PARTY_PLACEHOLDER = "${KICAD9_3RD_PARTY}"
 
 /**
  * Rename a KiCad footprint entry to use a new name.
