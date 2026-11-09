@@ -9,7 +9,10 @@ export function toSchematicInternalUnits(mm: number): number {
 }
 
 export function roundSchematicCoordinate(mm: number): number {
-  return toSchematicInternalUnits(mm) / 10_000
+  const internalUnits = Number((mm * 10_000).toFixed(8))
+  return (
+    (Math.sign(internalUnits) * Math.round(Math.abs(internalUnits))) / 10_000
+  )
 }
 
 export function transformSchematicPoint(
