@@ -8,12 +8,13 @@ import type {
   SourcePort,
 } from "circuit-json"
 import { Circuit } from "tscircuit"
+import { parseKicadSch } from "kicadts"
 import { scale } from "transformation-matrix"
 
 function getPinMappingEntries(kicadSchematic: string) {
   return Array.from(
     kicadSchematic.matchAll(
-      /\(pin passive line[\s\S]*?\(name "([^"]+)"[\s\S]*?\(number "([^"]+)"/g,
+      /\(pin \S+ line[\s\S]*?\(name "([^"]+)"[\s\S]*?\(number "([^"]+)"/g,
     ),
     ([, name, number]) => [name, number] as const,
   )
@@ -119,16 +120,23 @@ test("repro579: missing schematic pin numbers resolve through source ports", asy
   )
   if (!schematicPort) throw new Error("Expected crystal schematic pin 3")
   delete schematicPort.pin_number
+  sourcePort.is_input = true
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
+  const output = converter.getOutputString()
 
-  expect(getPinMappings(converter.getOutputString())).toEqual({
+  expect(getPinMappings(output)).toEqual({
     "1": "1",
     "2": "2",
     "3": "3",
     "4": "4",
   })
+  const inferredPin = parseKicadSch(output)
+    .libSymbols?.symbols.flatMap((symbol) => symbol.subSymbols)
+    .flatMap((symbol) => symbol.pins)
+    .find((pin) => pin.numberString === "3")
+  expect(inferredPin?.pinElectricalType).toBe("input")
 })
 
 test("repro579: incomplete inferred mappings do not create duplicate pin numbers", async () => {

@@ -1,3 +1,4 @@
+import { applySymbolProperty } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
 import type {
   CircuitJson,
@@ -33,6 +34,11 @@ import {
 } from "./utils/getTextJustificationFromAnchor"
 
 const DEFAULT_PROPERTY_FONT_SIZE = 1.27
+
+type SourceComponent = Extract<
+  CircuitJson[number],
+  { type: "source_component" }
+>
 
 /**
  * Adds schematic symbol instances (placed components) to the schematic
@@ -107,8 +113,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       ;(symbol as any)._sxLibId = symLibId
 
       // Get component metadata
-      const { reference, value, description } =
-        this.getComponentMetadata(sourceComponent)
+      const { reference, value, description } = this.getComponentMetadata(
+        sourceComponent,
+        schematicComponent,
+      )
       const hasManufacturerValueForValuePlacement =
         (sourceComponent.ftype === "simple_chip" ||
           sourceComponent.ftype === "simple_connector") &&
@@ -124,7 +132,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value,
         })
 
-      const symbolMetadata = schematicSymbol?.metadata?.kicad_symbol
+      const symbolMetadata = schematicSymbol
+        ? schematicSymbol.metadata?.kicad_symbol
+        : schematicComponent.metadata?.kicad_symbol
 
       // Match the resolved {REF} label within this custom symbol instance.
       // AddLibrarySymbolsStage omits the same label from the shared drawing.
@@ -260,6 +270,40 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           }),
         })
         symbol.properties.push(fpFiltersProperty)
+      }
+
+      const builtInPropertyNames = new Set([
+        "Reference",
+        "Value",
+        "Footprint",
+        "Datasheet",
+        "Description",
+        "ki_keywords",
+        "ki_fp_filters",
+      ])
+      let nextPropertyId = 7
+      for (const propertyMeta of Object.values(
+        symbolMetadata?.properties ?? {},
+      )) {
+        const propertyId = Number(propertyMeta?.id)
+        if (Number.isFinite(propertyId)) {
+          nextPropertyId = Math.max(nextPropertyId, propertyId + 1)
+        }
+      }
+      for (const [key, propertyMeta] of Object.entries(
+        symbolMetadata?.properties ?? {},
+      )) {
+        if (!propertyMeta || builtInPropertyNames.has(key)) continue
+        applySymbolProperty({
+          symbol,
+          key,
+          propertyMeta: {
+            ...propertyMeta,
+            id: propertyMeta.id ?? nextPropertyId++,
+            at: propertyMeta.at ?? { x, y, rotation: 0 },
+            effects: { hide: true, ...propertyMeta.effects },
+          },
+        })
       }
 
       // Apply additional symbol metadata fields
@@ -559,7 +603,10 @@ export class AddSchematicSymbolsStage extends ConverterStage<
   /**
    * Get component metadata (reference, value, description)
    */
-  private getComponentMetadata(sourceComp: any): {
+  private getComponentMetadata(
+    sourceComp: SourceComponent,
+    schematicComp: SchematicComponent,
+  ): {
     reference: string
     value: string
     description: string
@@ -651,7 +698,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     // Default
     return {
       reference,
-      value: name,
+      value: schematicComp.symbol_display_value ?? name,
       description: "Component",
     }
   }

@@ -1,5 +1,8 @@
+import {
+  createBoardOwnerMap,
+  isRouteViaCoveredByPhysicalVia,
+} from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
-import { isRouteViaCoveredByPhysicalVia } from "@tscircuit/circuit-json-util"
 import type { KicadPcb } from "kicadts"
 import { Via, ViaNet } from "kicadts"
 import { ConverterStage, type PcbNetInfo } from "../../types"
@@ -14,8 +17,15 @@ import {
 
 const DEFAULT_VIA_OUTER_DIAMETER = 0.8
 const DEFAULT_VIA_HOLE_DIAMETER = 0.4
+const VIA_POSITION_TOLERANCE = 1e-6 // mm
+
+const getViaPositionCell = (via: { x: number; y: number }) => ({
+  x: Math.floor(via.x / VIA_POSITION_TOLERANCE),
+  y: Math.floor(via.y / VIA_POSITION_TOLERANCE),
+})
 
 type ViaLike = {
+  pcb_via_id?: string
   // Resolved KiCad net shared by duplicate matching and export.
   net?: PcbNetInfo
   x: number
@@ -38,6 +48,7 @@ type ViaLike = {
  * Adds vias to the PCB from circuit JSON
  */
 export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
+  private boardOwnerMap?: ReturnType<typeof createBoardOwnerMap>
   private viasProcessed = 0
   private pcbVias?: ViaLike[]
 
@@ -54,7 +65,8 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
     const seenRouteViaKeys = new Set<string>()
     const standaloneViasByPosition = new Map<string, ViaLike[]>()
     for (const via of standaloneVias) {
-      const positionKey = `${via.x}:${via.y}`
+      const { x, y } = getViaPositionCell(via)
+      const positionKey = `${x}:${y}`
       const viasAtPosition = standaloneViasByPosition.get(positionKey) ?? []
       viasAtPosition.push(via)
       standaloneViasByPosition.set(positionKey, viasAtPosition)
@@ -84,11 +96,19 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
             }),
           )
           .filter((via: ViaLike) => {
-            const physicalVias = standaloneViasByPosition.get(
-              `${via.x}:${via.y}`,
-            )
+            const { x, y } = getViaPositionCell(via)
+            const physicalVias: ViaLike[] = []
+            // Nearby positions can straddle a cell boundary, including zero.
+            for (let dx = -1; dx <= 1; dx++) {
+              for (let dy = -1; dy <= 1; dy++) {
+                physicalVias.push(
+                  ...(standaloneViasByPosition.get(`${x + dx}:${y + dy}`) ??
+                    []),
+                )
+              }
+            }
             if (
-              physicalVias?.some((physicalVia) => {
+              physicalVias.some((physicalVia) => {
                 const sameTrace =
                   physicalVia.pcb_trace_id !== undefined &&
                   physicalVia.pcb_trace_id === via.pcb_trace_id
@@ -106,7 +126,11 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
                   return false
                 }
 
-                return isRouteViaCoveredByPhysicalVia(physicalVia, via)
+                return isRouteViaCoveredByPhysicalVia({
+                  viaWithLayers: physicalVia,
+                  routeVia: via,
+                  positionTolerance: VIA_POSITION_TOLERANCE,
+                })
               })
             ) {
               return false
@@ -193,6 +217,12 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       return
     }
 
+    this.boardOwnerMap ??= createBoardOwnerMap(this.input)
+    const boardOwnerId = via.pcb_via_id ?? via.pcb_trace_id
+    const board = boardOwnerId
+      ? this.boardOwnerMap.get(boardOwnerId)
+      : undefined
+
     // Transform the via position to KiCad coordinates
     const transformedPos = applyToPoint(c2kMatPcb, {
       x: via.x,
@@ -216,7 +246,7 @@ export class AddViasStage extends ConverterStage<CircuitJson, KicadPcb> {
       layers: viaLayers,
       net: new ViaNet(via.net?.id ?? 0),
       uuid: generateDeterministicUuid(viaData),
-      tenting: createViaTenting(via),
+      tenting: createViaTenting(via, board),
     })
 
     // Add the via to the PCB

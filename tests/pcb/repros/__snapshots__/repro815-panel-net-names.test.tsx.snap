@@ -1,0 +1,29 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`repro815: board independence before and after KiCad export 1`] = `
+"Issue #815: separate boards must not need connections to each other.
+KiCad merges nets with the same name, even if their numeric IDs differ.
+
+CIRCUIT JSON INPUT
+Boards: 9
+Independent R1.pin2 -> C1.pin1 connections: 9
+Each connection is already routed within its own board.
+
+EXPORTED KICAD NETS
+Numeric ID | Net name
+1 | pcb_board_0{slash}Net-(R1-Pad2)
+2 | pcb_board_1{slash}Net-(R1-Pad2)__1
+3 | pcb_board_2{slash}Net-(R1-Pad2)__2
+4 | pcb_board_3{slash}Net-(R1-Pad2)__3
+5 | pcb_board_4{slash}Net-(R1-Pad2)__4
+6 | pcb_board_5{slash}Net-(R1-Pad2)__5
+7 | pcb_board_6{slash}Net-(R1-Pad2)__6
+8 | pcb_board_7{slash}Net-(R1-Pad2)__7
+9 | pcb_board_8{slash}Net-(R1-Pad2)__8
+
+EXPECTED VS ACTUAL
+Unique net names: expected 9, actual 9
+Native KiCad DRC missing connections: expected 0, actual 0
+
+PASS: KiCad does not request connections between the independent boards."
+`;

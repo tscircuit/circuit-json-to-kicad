@@ -1,19 +1,18 @@
+import { createBoardOwnerMap, getElementId } from "@tscircuit/circuit-json-util"
 import type { CircuitJson } from "circuit-json"
-import { getElementId } from "@tscircuit/circuit-json-util"
 import { getFullConnectivityMapFromCircuitJson } from "circuit-json-to-connectivity-map"
 import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
 import {
   getKicadNetNames,
+  getNamedNetKeys,
+  getInlineTraceNetNames,
   getSourcePortNetKey,
   getSourceTraceNetKey,
   getUnconnectedPortNetKey,
 } from "../../utils/getKicadNetNames"
-import {
-  ConverterStage,
-  type ConverterContext,
-  type PcbNetInfo,
-} from "../../types"
+import { ConverterStage, type PcbNetInfo } from "../../types"
+import { resolveKicadPcbNetName } from "../utils/resolveKicadPcbNetName"
 
 /**
  * Adds nets to the PCB from circuit JSON connections
@@ -30,9 +29,55 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
     this.ctx.pcbNetMap = new Map()
 
     const netNameByKey = getKicadNetNames(this.ctx.db)
-
+    const boardOwnerMap =
+      this.ctx.db.pcb_board.list().length > 1
+        ? createBoardOwnerMap(this.input)
+        : undefined
+    if (boardOwnerMap) {
+      const boardByKey = new Map<string, string>()
+      const assignBoard = (
+        key: string | undefined,
+        subcircuitId: string | undefined,
+      ) => {
+        if (!key || boardByKey.has(key)) return
+        const boardId = boardOwnerMap.get(subcircuitId ?? "")?.pcb_board_id
+        if (boardId) boardByKey.set(key, boardId)
+      }
+      for (const net of this.ctx.db.source_net.list()) {
+        assignBoard(
+          net.subcircuit_connectivity_map_key || net.source_net_id,
+          net.subcircuit_id,
+        )
+      }
+      for (const trace of this.ctx.db.source_trace.list()) {
+        assignBoard(
+          getSourceTraceNetKey(trace, this.ctx.db),
+          trace.subcircuit_id,
+        )
+      }
+      const namedKeys = getNamedNetKeys(this.ctx.db)
+      const inlineKeys = getInlineTraceNetNames(this.ctx.db).keys
+      const hasSchematic = this.ctx.db.schematic_component.list().length > 0
+      for (const [key, name] of netNameByKey) {
+        const boardId = boardByKey.get(key)
+        // KiCad escapes slashes in global-label text in the schematic netlist.
+        // Match that canonical spelling for generated labels; preserve upstream
+        // board/name formatting for explicitly named or PCB-only connections.
+        const generatedLabel =
+          hasSchematic && !namedKeys.has(key) && !inlineKeys.has(key)
+        netNameByKey.set(
+          key,
+          boardId && generatedLabel
+            ? `${boardId}{slash}${name}`
+            : resolveKicadPcbNetName({
+                candidateName: name,
+                connectivityKey: key,
+                boardId,
+              }),
+        )
+      }
+    }
     const sortedEntries = Array.from(netNameByKey.entries()).sort((a, b) => {
-      // Preserve existing connected-net numbers when adding isolated pins.
       const isolatedOrder =
         Number(a[0].startsWith("unconnected:")) -
         Number(b[0].startsWith("unconnected:"))

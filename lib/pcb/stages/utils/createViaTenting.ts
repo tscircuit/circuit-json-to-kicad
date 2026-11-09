@@ -1,3 +1,4 @@
+import type { PcbBoard } from "circuit-json"
 import { ViaTenting } from "kicadts"
 
 type ViaTentingInput = {
@@ -39,14 +40,18 @@ export class KicadViaTenting extends ViaTenting {
  * - `tented_on_top` -> front, `tented_on_bottom` -> back
  * - deprecated `is_tented` fills any side not set explicitly (the same
  *   precedence circuit-json's own pcb_via transform uses)
+ * - the owning PCB’s defaults fill any side still unset
  * - no tenting information at all -> undefined, so no token is emitted and
  *   KiCad keeps using the board default
  */
 export const createViaTenting = (
   via: ViaTentingInput,
+  board?: PcbBoard,
 ): KicadViaTenting | undefined => {
-  const top = via.tented_on_top ?? via.is_tented
-  const bottom = via.tented_on_bottom ?? via.is_tented
+  const top =
+    via.tented_on_top ?? via.is_tented ?? board?.default_via_tented_on_top
+  const bottom =
+    via.tented_on_bottom ?? via.is_tented ?? board?.default_via_tented_on_bottom
 
   if (top === undefined && bottom === undefined) return undefined
 

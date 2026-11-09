@@ -1,5 +1,8 @@
-import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
-import type { SourceTrace } from "circuit-json"
+import {
+  createBoardOwnerMap,
+  type CircuitJsonUtilObjects,
+} from "@tscircuit/circuit-json-util"
+import type { CircuitJson, SourceTrace } from "circuit-json"
 import { getSourcePortConnectivityMapFromCircuitJson } from "circuit-json-to-connectivity-map"
 import { buildSchematicSheetPlan } from "../schematic/buildSchematicSheetPlan"
 import { getPhysicalPinName } from "./getPhysicalPinName"
@@ -315,6 +318,36 @@ export function getKicadNetNames(
       getUnconnectedPortNetKey(port.source_port_id),
       `unconnected-(${reference}-Pad${pin})`,
     )
+  }
+  return names
+}
+
+/** Board-qualified automatic labels must match the PCB exporter on panels. */
+export function getBoardQualifiedSchematicNetNames(
+  db: CircuitJsonUtilObjects,
+  circuitJson: CircuitJson,
+  inlineNames = getInlineTraceNetNames(db),
+) {
+  const names = getKicadNetNames(db, inlineNames)
+  if (db.pcb_board.list().length <= 1) return names
+  const boardOwners = createBoardOwnerMap(circuitJson)
+  const explicitlyNamed = getNamedNetKeys(db)
+  const scoped = new Set<string>()
+  for (const trace of db.source_trace.list()) {
+    const key = getSourceTraceNetKey(trace, db)
+    if (
+      !key ||
+      scoped.has(key) ||
+      explicitlyNamed.has(key) ||
+      inlineNames.keys.has(key)
+    )
+      continue
+    const boardId = boardOwners.get(trace.subcircuit_id ?? "")?.pcb_board_id
+    const name = names.get(key)
+    if (boardId && name) {
+      names.set(key, `${boardId}/${name}`)
+      scoped.add(key)
+    }
   }
   return names
 }

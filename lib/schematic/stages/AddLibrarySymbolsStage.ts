@@ -29,6 +29,7 @@ import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converte
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
+import { applyKicadSymbolMetadataToSymbol } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 
 /**
@@ -232,10 +233,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       referencePrefix: getReferencePrefixForComponent(sourceComp),
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
     }
-    return this.createLibrarySymbol({
+    const symbol = this.createLibrarySymbol({
       libId: libraryId,
       ...librarySymbolOptions,
     })
+    if (schematicComponent.metadata?.kicad_symbol) {
+      applyKicadSymbolMetadataToSymbol(
+        symbol,
+        schematicComponent.metadata.kicad_symbol,
+      )
+    }
+    return symbol
   }
 
   /**

@@ -46,9 +46,12 @@ test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C"
   })
   converter.runUntilFinished()
   const pcb = converter.getOutput()
-  expect(pcb.footprints).toHaveLength(1)
-  expect(pcb.footprints[0]!.fpPads).toHaveLength(22)
-  expect(pcb.footprints[0]!.models).toHaveLength(1)
+  expect(pcb.footprints).toHaveLength(9)
+  const connectorFootprint = pcb.footprints.find(
+    (footprint) => footprint.models.length === 1,
+  )!
+  expect(connectorFootprint.fpPads).toHaveLength(38)
+  expect(connectorFootprint.models).toHaveLength(1)
   const stepUrl =
     "https://modelcdn.tscircuit.com/easyeda_models/assets/C165948.step"
   expect(converter.getModel3dSourcePaths()).toEqual([stepUrl])
@@ -60,9 +63,9 @@ test("pcb repro31 derives and embeds an EasyEDA STEP sibling for OBJ-only USB-C"
     inputHasStep: Boolean(cad.model_step_url),
     inputHasWrl: Boolean(cad.model_wrl_url),
     exportedFootprints: pcb.footprints.length,
-    exportedPads: pcb.footprints[0]!.fpPads.length,
-    exportedModels: pcb.footprints[0]!.models.length,
-    exportedModelPath: pcb.footprints[0]!.models[0]!.path,
+    exportedPads: connectorFootprint.fpPads.length,
+    exportedModels: connectorFootprint.models.length,
+    exportedModelPath: connectorFootprint.models[0]!.path,
     modelDownloads: converter.getModel3dSourcePaths(),
   }).toMatchSnapshot()
 

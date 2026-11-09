@@ -128,11 +128,13 @@ test("repro4948: HSP USB LED preserves pad, trace and via nets on export", async
       (id) => id !== cc1Port.source_port_id,
     )
   }
-  const unassigned = new CircuitJsonToKicadPcbConverter(circuitJson)
-  unassigned.runUntilFinished()
-  expect(getPadNets(parseKicadPcb(unassigned.getOutputString()))).toEqual(
-    expectedPads.map(([pad, net]) => [pad, pad === "J1.A5" ? null : net]),
+  const resolvedFromConnectivityMap = new CircuitJsonToKicadPcbConverter(
+    circuitJson,
   )
+  resolvedFromConnectivityMap.runUntilFinished()
+  expect(
+    getPadNets(parseKicadPcb(resolvedFromConnectivityMap.getOutputString())),
+  ).toEqual(expectedPads)
 
   const [sourceSvg, outputSvg] = await Promise.all(
     [source, output].map(async (kicadFileContent) => {

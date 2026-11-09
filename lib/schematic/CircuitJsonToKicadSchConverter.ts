@@ -5,7 +5,7 @@ import { compose, scale, translate } from "transformation-matrix"
 import type { ConverterContext, ConverterStage } from "../types"
 import {
   getInlineTraceNetNames,
-  getKicadNetNames,
+  getBoardQualifiedSchematicNetNames,
 } from "../utils/getKicadNetNames"
 import { buildChildSheetNodes } from "./buildChildSheetNodes"
 import {
@@ -25,6 +25,7 @@ import { selectSchematicPaperSize } from "./selectSchematicPaperSize"
 import { AddLibrarySymbolsStage } from "./stages/AddLibrarySymbolsStage"
 import { AddSchematicGraphicsStage } from "./stages/AddSchematicGraphicsStage"
 import { AddSchematicNetLabelsStage } from "./stages/AddSchematicNetLabelsStage"
+import { AddSchematicNoConnectsStage } from "./stages/AddSchematicNoConnectsStage"
 import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
@@ -203,7 +204,11 @@ export class CircuitJsonToKicadSchConverter {
     this.ctx = {
       db,
       circuitJson,
-      kicadNetNames: getKicadNetNames(db, inlineNetNames),
+      kicadNetNames: getBoardQualifiedSchematicNetNames(
+        db,
+        circuitJson,
+        inlineNetNames,
+      ),
       inlineTraceNetKeys: inlineNetNames.keys,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
@@ -224,6 +229,7 @@ export class CircuitJsonToKicadSchConverter {
       new AddLibrarySymbolsStage(circuitJson, this.ctx),
       new AddSchematicSymbolsStage(circuitJson, this.ctx),
       new AddSchematicNetLabelsStage(circuitJson, this.ctx),
+      new AddSchematicNoConnectsStage(circuitJson, this.ctx),
       new AddSchematicTracesStage(circuitJson, this.ctx),
       new AddSchematicGraphicsStage(circuitJson, this.ctx),
       new AddSheetInstancesStage(circuitJson, this.ctx),
@@ -431,6 +437,7 @@ export class CircuitJsonToKicadSchConverter {
       new AddLibrarySymbolsStage(circuitJson, ctx),
       new AddSchematicSymbolsStage(circuitJson, ctx),
       new AddSchematicNetLabelsStage(circuitJson, ctx),
+      new AddSchematicNoConnectsStage(circuitJson, ctx),
       new AddSchematicTracesStage(circuitJson, ctx),
       new AddSchematicGraphicsStage(circuitJson, ctx),
     ]
