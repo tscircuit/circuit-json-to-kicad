@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
+import { getNativeNetParity } from "../../fixtures/get-native-net-conflicts"
 
 test("text without a source trace stays graphical even when it matches a net name", async () => {
   const circuit = new Circuit()
@@ -25,8 +26,21 @@ test("text without a source trace stays graphical even when it matches a net nam
   const schematic = converter.getOutput()
 
   expect(schematic.labels.map((label) => label.value)).toEqual(["SIGNAL"])
-  expect(schematic.globalLabels).toHaveLength(0)
+  // Isolated pins retain their parity labels; ordinary text must not become
+  // another electrical SIGNAL label.
+  expect(schematic.globalLabels.map((label) => label.value).sort()).toEqual([
+    "unconnected-(R1-Pad1)",
+    "unconnected-(R2-Pad2)",
+  ])
   expect(
     schematic.texts.filter((text) => text.value === "SIGNAL"),
   ).toHaveLength(1)
+  const { conflicts, nets } = await getNativeNetParity(circuitJson)
+  expect(conflicts).toEqual([])
+  expect(nets.find((net) => net.pins.includes("R1.2"))?.pins).toEqual([
+    "R1.2",
+    "R2.1",
+  ])
+  expect(nets.find((net) => net.pins.includes("R1.1"))?.pins).toEqual(["R1.1"])
+  expect(nets.find((net) => net.pins.includes("R2.2"))?.pins).toEqual(["R2.2"])
 })

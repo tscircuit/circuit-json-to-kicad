@@ -86,7 +86,22 @@ test("panel net names preserve board ownership and project rules", async () => {
         boardCount > 1 ? `${board.pcb_board_id}/${name}` : name,
       ),
     )
-    expect(exportedNetNames.sort()).toEqual(expectedNetNames.sort())
+    const isolatedNetNames = exportedNetNames.filter((name) =>
+      name.startsWith("unconnected-("),
+    )
+    const connectedNetNames = exportedNetNames.filter(
+      (name) => !name.startsWith("unconnected-("),
+    )
+    expect(connectedNetNames.sort()).toEqual(expectedNetNames.sort())
+    expect(isolatedNetNames).toHaveLength(boardCount * 2)
+    expect(new Set(isolatedNetNames).size).toBe(isolatedNetNames.length)
+    const allPads = pcb.footprints.flatMap((footprint) => footprint.fpPads)
+    for (const name of isolatedNetNames) {
+      const isolated = pcb.nets.find((net) => net.name === name)!
+      expect(allPads.filter((pad) => pad.net?.id === isolated.id)).toHaveLength(
+        1,
+      )
+    }
 
     const project = new CircuitJsonToKicadProConverter(circuitJson).getOutput()
     expect(project.net_settings.netclass_patterns).toEqual(

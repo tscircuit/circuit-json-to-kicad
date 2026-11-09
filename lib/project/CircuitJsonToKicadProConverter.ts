@@ -1,6 +1,7 @@
 import { cju, createBoardOwnerMap } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
 import { resolveKicadPcbNetName } from "../pcb/utils/resolveKicadPcbNetName"
+import { getKicadNetNames } from "../utils/getKicadNetNames"
 import {
   buildSchematicSheetPlan,
   type SchematicSheetPlan,
@@ -229,6 +230,9 @@ export class CircuitJsonToKicadProConverter {
     }
 
     const netClassByNetName = new Map<string, string>()
+    // KiCad project patterns must refer to the exact canonical PCB name,
+    // including local-label sheet prefixes produced by the shared resolver.
+    const pcbNetNames = getKicadNetNames(this.ctx.db)
     const boardOwnerMap =
       this.ctx.db.pcb_board.list().length > 1
         ? createBoardOwnerMap(this.ctx.circuitJson)
@@ -241,7 +245,10 @@ export class CircuitJsonToKicadProConverter {
         return {
           sourceNet,
           netName: resolveKicadPcbNetName({
-            candidateName: sourceNet.name || sourceNet.source_net_id,
+            candidateName:
+              pcbNetNames.get(connectivityKey) ??
+              sourceNet.name ??
+              sourceNet.source_net_id,
             connectivityKey,
             boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")
               ?.pcb_board_id,

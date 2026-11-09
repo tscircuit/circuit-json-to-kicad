@@ -3,8 +3,8 @@
 exports[`source net trace widths are preserved as KiCad netclass patterns 1`] = `
 {
   "exportedPcbNetNames": [
+    "/MOTOR_PHASE",
     "LOGIC_3V3",
-    "MOTOR_PHASE",
   ],
   "generatedNetSettings": {
     "classes": [
@@ -36,12 +36,12 @@ exports[`source net trace widths are preserved as KiCad netclass patterns 1`] = 
     },
     "netclass_patterns": [
       {
-        "netclass": "Trace Width 0.3 mm",
-        "pattern": "LOGIC_3V3",
+        "netclass": "Trace Width 2 mm",
+        "pattern": "/MOTOR_PHASE",
       },
       {
-        "netclass": "Trace Width 2 mm",
-        "pattern": "MOTOR_PHASE",
+        "netclass": "Trace Width 0.3 mm",
+        "pattern": "LOGIC_3V3",
       },
     ],
   },

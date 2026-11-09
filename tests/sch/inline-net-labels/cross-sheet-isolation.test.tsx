@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
+import { getNativeNetParity } from "../../fixtures/get-native-net-conflicts"
 
 test("KiCad keeps same-named SIGNAL connections on different sheets separate", async () => {
   const circuit = new Circuit()
@@ -41,4 +42,7 @@ test("KiCad keeps same-named SIGNAL connections on different sheets separate", a
     { name: "/First/SIGNAL", pins: ["R1.2", "R2.1"] },
     { name: "/Second/SIGNAL", pins: ["R3.2", "R4.1"] },
   ])
+  expect(
+    (await getNativeNetParity(circuit.getCircuitJson())).conflicts,
+  ).toEqual([])
 }, 30_000)

@@ -44,10 +44,20 @@ test("repro815: board independence before and after KiCad export", async () => {
 
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
-  expect(converter.getOutput().nets.filter((net) => net.id !== 0)).toHaveLength(
-    9,
+  const pcb = converter.getOutput()
+  const allNets = pcb.nets.filter((net) => net.id !== 0)
+  const nets = allNets.filter((net) => !net.name.startsWith("unconnected-("))
+  const isolatedNets = allNets.filter((net) =>
+    net.name.startsWith("unconnected-("),
   )
-  const nets = converter.getOutput().nets.filter((net) => net.id !== 0)
+  expect(nets).toHaveLength(9)
+  expect(isolatedNets).toHaveLength(18)
+  expect(new Set(isolatedNets.map((net) => net.name)).size).toBe(18)
+  const pads = pcb.footprints.flatMap((footprint) => footprint.fpPads)
+  for (const net of nets)
+    expect(pads.filter((pad) => pad.net?.id === net.id)).toHaveLength(2)
+  for (const net of isolatedNets)
+    expect(pads.filter((pad) => pad.net?.id === net.id)).toHaveLength(1)
   const uniqueNames = new Set(nets.map((net) => net.name)).size
   const tempDir = await mkdtemp(join(tmpdir(), "kicad-pcb-drc-"))
   try {

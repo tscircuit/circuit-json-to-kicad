@@ -81,12 +81,12 @@ test("source net trace widths are preserved as KiCad netclass patterns", async (
   ])
   expect(generatedNetSettings.netclass_patterns).toEqual([
     {
-      netclass: "Trace Width 0.3 mm",
-      pattern: "LOGIC_3V3",
+      netclass: "Trace Width 2 mm",
+      pattern: "/MOTOR_PHASE",
     },
     {
-      netclass: "Trace Width 2 mm",
-      pattern: "MOTOR_PHASE",
+      netclass: "Trace Width 0.3 mm",
+      pattern: "LOGIC_3V3",
     },
   ])
   expect(
@@ -132,6 +132,6 @@ test("conflicting widths for the same exported KiCad net name are rejected", asy
         projectName: "conflicting-net-trace-widths",
       }),
   ).toThrow(
-    'Cannot preserve conflicting trace widths for KiCad net "SENSE": Trace Width 0.2 mm and Trace Width 0.5 mm',
+    'Cannot preserve conflicting trace widths for KiCad net "/SENSE": Trace Width 0.2 mm and Trace Width 0.5 mm',
   )
 })

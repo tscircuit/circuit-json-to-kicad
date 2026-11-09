@@ -15,6 +15,7 @@ import {
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { getKicadLayer } from "../utils/layerMapping"
+import { getSourceTraceNetKey } from "../../utils/getKicadNetNames"
 
 type PcbTraceRoutePointThroughPad = {
   route_type: "through_pad"
@@ -158,21 +159,7 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
             trace.source_trace_id,
           )
           if (sourceTrace) {
-            connectivityKey = sourceTrace.subcircuit_connectivity_map_key
-            if (
-              !connectivityKey &&
-              sourceTrace.connected_source_net_ids?.length
-            ) {
-              for (const sourceNetId of sourceTrace.connected_source_net_ids) {
-                const sourceNet = this.ctx.db.source_net?.get(sourceNetId)
-                if (sourceNet) {
-                  connectivityKey =
-                    sourceNet.subcircuit_connectivity_map_key ||
-                    sourceNet.source_net_id
-                  break
-                }
-              }
-            }
+            connectivityKey = getSourceTraceNetKey(sourceTrace, this.ctx.db)
           }
         }
 
@@ -188,6 +175,7 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
         if (connectivityKey) {
           netInfo = pcbNetMap.get(connectivityKey)
         }
+        netInfo ??= pcbNetMap.get(trace.pcb_trace_id)
       }
 
       const segmentLayerSource =
