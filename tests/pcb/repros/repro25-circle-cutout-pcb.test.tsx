@@ -32,6 +32,14 @@ test("pcb repro25 circle cutouts match snapshot", async () => {
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
 
+  const pcb = converter.getOutput()
+  const edgeCircles = pcb.graphicCircles.filter((circle) =>
+    circle.layer?.names.includes("Edge.Cuts"),
+  )
+  expect(edgeCircles).toHaveLength(0)
+  expect(
+    pcb.graphicLines.filter((line) => line.layer?.names.includes("Edge.Cuts")),
+  ).toHaveLength(164)
   const outputString = converter.getOutputString()
 
   const kicadSnapshot = await takeKicadSnapshot({
