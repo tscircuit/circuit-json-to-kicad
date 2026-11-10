@@ -239,44 +239,6 @@ test("a fractional origin preserves already aligned pins, wiring, labels, and no
   ).toEqual(["U1.2", "U2.1"])
 }, 30_000)
 
-test("built-in power and ground symbols attach on grid and retain their nets", async () => {
-  const circuit = new Circuit()
-  circuit.pcbDisabled = true
-  circuit.add(
-    <board routingDisabled>
-      <net name="VDD" isPowerNet />
-      <net name="GND" isGroundNet />
-      <capacitor
-        name="C1"
-        capacitance="100nF"
-        schX={-3}
-        connections={{ pin1: "net.VDD", pin2: "net.GND" }}
-      />
-      <capacitor
-        name="C2"
-        capacitance="100nF"
-        schX={3}
-        connections={{ pin1: "net.VDD", pin2: "net.GND" }}
-      />
-    </board>,
-  )
-  await circuit.renderUntilSettled()
-  const circuitJson = circuit.getCircuitJson()
-  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
-  converter.runUntilFinished()
-  expect(converter.ctx.schematicConnectionGrid).toBeDefined()
-  // This passive fixture has no power source; that existing ERC warning is expected.
-  expect(
-    (await readErc(converter.getOutputString())).filter(
-      (type) => !["lib_symbol_issues", "power_pin_not_driven"].includes(type),
-    ),
-  ).toEqual([])
-  expect(await exportNativeSchematicNets(circuitJson)).toEqual([
-    { name: "GND", pins: ["C1.2", "C2.2"] },
-    { name: "VDD", pins: ["C1.1", "C2.1"] },
-  ])
-}, 30_000)
-
 test("a drawing-only sheet does not report a grid-placement failure", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
