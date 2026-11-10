@@ -68,7 +68,7 @@ export class ExtractSymbolsStage extends ConverterStage<
           // Snap pin positions to 1.27mm grid for proper KiCad wire connections
           // Only for non-custom symbols (chips) - custom symbols have intentionally designed coordinates
           // This is done post-extraction so schematic trace alignment isn't affected
-          if (!isCustom) {
+          if (!isCustom || this.shouldSnapCustomSymbol(symbol)) {
             this.snapPinPositionsToGrid(symbol)
           }
 
@@ -123,16 +123,48 @@ export class ExtractSymbolsStage extends ConverterStage<
    * This is necessary for library symbols so users can connect wires in KiCad.
    * Done post-extraction so schematic trace alignment in the snapshots isn't affected.
    */
+  private shouldSnapCustomSymbol(symbol: SchematicSymbol): boolean {
+    const symbolName = this.sanitizeSymbolName(symbol.libraryId)
+    const schematicSymbol = this.ctx.circuitJson?.find(
+      (el: any) =>
+        el.type === "schematic_symbol" &&
+        (el.name === symbolName || el.schematic_symbol_id === symbolName),
+    ) as any
+    if (schematicSymbol?.metadata?.kicad_symbol?.snapToGrid) {
+      return true
+    }
+    const schematicComponent = this.ctx.circuitJson?.find(
+      (el: any) =>
+        el.type === "schematic_component" &&
+        el.metadata?.kicad_symbol?.snapToGrid,
+    ) as any
+    if (schematicComponent) {
+      return true
+    }
+    return false
+  }
+
+  /**
+   * Snap pin positions to KiCad's 1.27mm grid.
+   * This is necessary for library symbols so users can connect wires in KiCad.
+   * Done post-extraction so schematic trace alignment in the snapshots isn't affected.
+   */
   private snapPinPositionsToGrid(symbol: SchematicSymbol): void {
     const KICAD_GRID = 1.27
 
     // Process all subsymbols (pins are typically in _1_1 subsymbol)
     for (const subSymbol of symbol.subSymbols ?? []) {
       for (const pin of subSymbol.pins ?? []) {
-        // pin.at is an At object with x, y, angle properties
-        if (pin.at) {
-          pin.at.x = Math.round(pin.at.x / KICAD_GRID) * KICAD_GRID
-          pin.at.y = Math.round(pin.at.y / KICAD_GRID) * KICAD_GRID
+        if (Array.isArray(pin.at)) {
+          pin.at[0] = Math.round(pin.at[0] / KICAD_GRID) * KICAD_GRID
+          pin.at[1] = Math.round(pin.at[1] / KICAD_GRID) * KICAD_GRID
+        } else if (pin.at && typeof pin.at === "object") {
+          if ("x" in pin.at) {
+            pin.at.x = Math.round(pin.at.x / KICAD_GRID) * KICAD_GRID
+          }
+          if ("y" in pin.at) {
+            pin.at.y = Math.round(pin.at.y / KICAD_GRID) * KICAD_GRID
+          }
         }
       }
 

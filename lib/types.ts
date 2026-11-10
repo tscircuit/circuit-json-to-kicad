@@ -106,6 +106,8 @@ export interface ConverterContext {
   // PCB 3D model options
   /** Project name used as the .3dshapes folder for user-provided 3D models */
   projectName?: string
+  /** Options passed to the converter */
+  converterOptions?: any
   /** CDN URLs of 3D models needed for this PCB (collected during footprint stage) */
   pcbModel3dSourcePaths?: string[]
 

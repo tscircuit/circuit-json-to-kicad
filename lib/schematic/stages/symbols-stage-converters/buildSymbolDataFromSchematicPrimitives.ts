@@ -17,6 +17,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
   schematicComponentId?: string
   schematicComponentCenter?: { x: number; y: number }
   schematicComponentSize?: { width: number; height: number }
+  useStemLengthAsPinLength?: boolean
 }) {
   const {
     circuitJson,
@@ -25,6 +26,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     schematicComponentId,
     schematicComponentCenter,
     schematicComponentSize,
+    useStemLengthAsPinLength,
   } = params
   const hasSchematicSymbolId = Boolean(schematicSymbolId)
   const isElementInTargetSymbolScope = (el: {
@@ -64,7 +66,6 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
         !el.schematic_symbol_id,
     )
   }
-  const lines: SchematicLine[] = [...symbolLines, ...schLines]
   const paths = circuitJson.filter(
     (el): el is SchematicPath =>
       el.type === "schematic_path" && isElementInTargetSymbolScope(el),
@@ -133,6 +134,57 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
       })
     }
   }
+
+  // Detect matching stem lines and stem lengths for ports
+  const matchingStemLineIds = new Set<string>()
+  const symbolPorts = ports.map((port, index) => {
+    const px = port.center?.x ?? 0
+    const py = port.center?.y ?? 0
+
+    let stemLength: number | undefined =
+      (port as any).stemLength ??
+      (port as any).schStemLength ??
+      (port as any).distance_from_component_edge
+
+    let matchingStemLine: SchematicLine | undefined
+    for (const line of schLines) {
+      const dist1 = Math.hypot((line.x1 ?? 0) - px, (line.y1 ?? 0) - py)
+      const dist2 = Math.hypot((line.x2 ?? 0) - px, (line.y2 ?? 0) - py)
+      if (dist1 < 1e-4 || dist2 < 1e-4) {
+        matchingStemLine = line
+        if (line.schematic_line_id) {
+          matchingStemLineIds.add(line.schematic_line_id)
+        }
+        if (stemLength === undefined) {
+          stemLength = Math.hypot(
+            (line.x2 ?? 0) - (line.x1 ?? 0),
+            (line.y2 ?? 0) - (line.y1 ?? 0),
+          )
+        }
+        break
+      }
+    }
+
+    return {
+      x: px,
+      y: py,
+      labels: [port.display_pin_label || `${port.pin_number || index + 1}`],
+      pinNumber: port.pin_number || index + 1,
+      facingDirection: port.facing_direction,
+      stemLength,
+      matchingStemLineId: matchingStemLine?.schematic_line_id,
+      schematicPort: port,
+    }
+  })
+  symbolPorts.sort((a, b) => a.pinNumber - b.pinNumber)
+
+  const effectiveSchLines = useStemLengthAsPinLength
+    ? schLines.filter(
+        (l) =>
+          !l.schematic_line_id || !matchingStemLineIds.has(l.schematic_line_id),
+      )
+    : schLines
+  const lines: SchematicLine[] = [...symbolLines, ...effectiveSchLines]
 
   // Convert to internal primitive format
   const primitives: any[] = []
@@ -233,17 +285,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
     anchor: text.anchor ?? "center",
   }))
 
-  // Convert schematic_port to ports
-  const symbolPorts = ports.map((port, index) => ({
-    x: port.center?.x ?? 0,
-    y: port.center?.y ?? 0,
-    labels: [port.display_pin_label || `${port.pin_number || index + 1}`],
-    pinNumber: port.pin_number || index + 1,
-    facingDirection: port.facing_direction,
-  }))
-
-  // Sort ports by pin_number
-  symbolPorts.sort((a, b) => a.pinNumber - b.pinNumber)
+  // symbolPorts processed above
 
   const symbolCenter = schematicSymbol.center ||
     schematicComponentCenter || { x: 0, y: 0 }

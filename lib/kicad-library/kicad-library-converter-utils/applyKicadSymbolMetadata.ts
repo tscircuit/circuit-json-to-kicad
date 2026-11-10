@@ -208,4 +208,67 @@ export function applyKicadSymbolMetadataToSymbol(
       applySymbolProperty({ symbol, key, propertyMeta })
     }
   }
+
+  const extMeta = metadata as any
+  if (
+    extMeta.pinLength !== undefined ||
+    extMeta.defaultPinLength !== undefined
+  ) {
+    const defaultLength = Number(extMeta.pinLength ?? extMeta.defaultPinLength)
+    for (const unit of symbol.subSymbols ?? []) {
+      for (const pin of unit.pins ?? []) {
+        pin.length = defaultLength
+      }
+    }
+  }
+
+  if (extMeta.pins) {
+    for (const [pinKey, pinMeta] of Object.entries(extMeta.pins) as [
+      string,
+      any,
+    ][]) {
+      if (!pinMeta) continue
+      for (const unit of symbol.subSymbols ?? []) {
+        for (const pin of unit.pins ?? []) {
+          const pinNumber =
+            (pin as any)._sxNumber?.value ?? (pin as any).pinNumber?.value
+          const pinName =
+            (pin as any)._sxName?.value ?? (pin as any).pinName?.value
+          if (pinNumber === pinKey || pinName === pinKey) {
+            if (pinMeta.pinLength !== undefined) {
+              pin.length = Number(pinMeta.pinLength)
+            }
+            if (pinMeta.electricalType !== undefined) {
+              pin.pinElectricalType = pinMeta.electricalType
+            }
+            if (pinMeta.graphicStyle !== undefined) {
+              pin.pinGraphicStyle = pinMeta.graphicStyle
+            }
+          }
+        }
+      }
+    }
+  }
+
+  if (extMeta.snapToGrid) {
+    const gridSize =
+      typeof extMeta.snapToGrid === "number" && extMeta.snapToGrid > 0
+        ? extMeta.snapToGrid
+        : 1.27
+    for (const unit of symbol.subSymbols ?? []) {
+      for (const pin of unit.pins ?? []) {
+        if (Array.isArray(pin.at)) {
+          pin.at[0] = Math.round(pin.at[0] / gridSize) * gridSize
+          pin.at[1] = Math.round(pin.at[1] / gridSize) * gridSize
+        } else if (pin.at && typeof pin.at === "object") {
+          if ("x" in pin.at) {
+            pin.at.x = Math.round(pin.at.x / gridSize) * gridSize
+          }
+          if ("y" in pin.at) {
+            pin.at.y = Math.round(pin.at.y / gridSize) * gridSize
+          }
+        }
+      }
+    }
+  }
 }
