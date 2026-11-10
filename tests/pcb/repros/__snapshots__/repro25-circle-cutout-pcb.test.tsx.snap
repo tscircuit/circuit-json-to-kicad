@@ -1,8 +1,0 @@
-// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
-
-exports[`pcb repro25 circle cutouts match snapshot 1`] = `
-{
-  "circles": [],
-  "lineCount": 164,
-}
-`;

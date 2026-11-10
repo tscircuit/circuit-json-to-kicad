@@ -36,15 +36,10 @@ test("pcb repro25 circle cutouts match snapshot", async () => {
   const edgeCircles = pcb.graphicCircles.filter((circle) =>
     circle.layer?.names.includes("Edge.Cuts"),
   )
-  expect({
-    circles: edgeCircles.map((circle) => ({
-      center: [circle.center?.x, circle.center?.y],
-      end: [circle.end?.x, circle.end?.y],
-    })),
-    lineCount: pcb.graphicLines.filter((line) =>
-      line.layer?.names.includes("Edge.Cuts"),
-    ).length,
-  }).toMatchSnapshot()
+  expect(edgeCircles).toHaveLength(0)
+  expect(
+    pcb.graphicLines.filter((line) => line.layer?.names.includes("Edge.Cuts")),
+  ).toHaveLength(164)
   const outputString = converter.getOutputString()
 
   const kicadSnapshot = await takeKicadSnapshot({
