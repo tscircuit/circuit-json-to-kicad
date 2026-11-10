@@ -171,7 +171,6 @@ class GridPlacementError extends Error {}
 
 type PinPlacement = {
   pin: SymbolPin
-  origin: Point
   position: Point
   direction: Point
   componentId: string
@@ -216,7 +215,9 @@ function placeSheetAxis(
     if (originIndex === undefined) {
       originIndex = positions.length
       origins.set(pin.componentId, originIndex)
-      positions.push(Math.round(pin.origin[axis] / GRID))
+      // Derive the origin from its pins. An independently rounded origin would
+      // impose an extra lower bound and can push already-aligned pins forward.
+      positions.push(Number.NEGATIVE_INFINITY)
     }
     const pointIndex = indices.get(pin.position[axis])!
     const offset = (pin.local[axis] / GRID) * (axis === "y" ? -1 : 1)
@@ -326,7 +327,6 @@ function planGridPlacement(
         }
         symbolPins.push({
           pin,
-          origin,
           position,
           direction,
           attachment,
