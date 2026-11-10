@@ -1,9 +1,9 @@
-import type { PcbSilkscreenText } from "circuit-json"
+import type { PcbCopperText, PcbSilkscreenText } from "circuit-json"
 import { FpText } from "kicadts"
 import { createFpTextFromCircuitJson } from "../utils/CreateFpTextFromCircuitJson"
 
 export function convertSilkscreenTexts(params: {
-  silkscreenTexts: PcbSilkscreenText[]
+  silkscreenTexts: Array<PcbSilkscreenText | PcbCopperText>
   componentCenter: { x: number; y: number }
   componentRotation: number
   sourceComponentName?: string

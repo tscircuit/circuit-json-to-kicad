@@ -1,18 +1,19 @@
-import type { PcbSilkscreenText } from "circuit-json"
+import type { PcbCopperText, PcbSilkscreenText } from "circuit-json"
 import { GrText, TextEffects, TextEffectsFont, At } from "kicadts"
 import { applyToPoint, type Matrix } from "transformation-matrix"
+import { getKicadLayer } from "../../utils/layerMapping"
 import { generateDeterministicUuid } from "./generateDeterministicUuid"
 import { createPcbTextJustify } from "./CreatePcbTextJustify"
 
 /**
- * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_silkscreen_text
+ * Creates a KiCad gr_text (graphics text) element from a circuit JSON pcb_silkscreen_text or pcb_copper_text
  * This is used for standalone text elements that are not associated with components
  */
 export function createGrTextFromCircuitJson({
   textElement,
   c2kMatPcb,
 }: {
-  textElement: PcbSilkscreenText
+  textElement: PcbSilkscreenText | PcbCopperText
   c2kMatPcb: Matrix
 }): GrText | null {
   if (!textElement.text || !textElement.anchor_position) {
@@ -31,7 +32,9 @@ export function createGrTextFromCircuitJson({
     bottom: "B.SilkS",
   }
   const kicadLayer =
-    layerMap[textElement.layer] || textElement.layer || "F.SilkS"
+    textElement.type === "pcb_copper_text"
+      ? getKicadLayer(textElement.layer)
+      : layerMap[textElement.layer] || textElement.layer || "F.SilkS"
   const kicadLayerNames = textElement.is_knockout
     ? [kicadLayer, "knockout"]
     : kicadLayer
@@ -61,14 +64,17 @@ export function createGrTextFromCircuitJson({
   // Create position object (At constructor expects an array: [x, y, angle])
   const position = new At([transformedPos.x, transformedPos.y, rotation])
 
+  const textId =
+    textElement.type === "pcb_copper_text"
+      ? textElement.pcb_copper_text_id
+      : textElement.pcb_silkscreen_text_id
+
   // Create a graphics text element
   const grText = new GrText({
     text: textElement.text,
     layer: kicadLayerNames,
     effects: textEffects,
-    uuid: generateDeterministicUuid(
-      textElement.pcb_silkscreen_text_id ?? textElement.text,
-    ),
+    uuid: generateDeterministicUuid(textId ?? textElement.text),
   })
   grText.position = position
 

@@ -1,17 +1,18 @@
-import type { PcbSilkscreenText } from "circuit-json"
+import type { PcbCopperText, PcbSilkscreenText } from "circuit-json"
 import { FpText, TextEffects, TextEffectsFont } from "kicadts"
 import { applyToPoint, rotate, identity } from "transformation-matrix"
+import { getKicadLayer } from "../../utils/layerMapping"
 import { createPcbTextJustify } from "./CreatePcbTextJustify"
 
 /**
- * Creates a KiCad fp_text (footprint text) element from a circuit JSON pcb_silkscreen_text
+ * Creates a KiCad fp_text (footprint text) element from a circuit JSON pcb_silkscreen_text or pcb_copper_text
  */
 export function createFpTextFromCircuitJson({
   textElement,
   componentCenter,
   componentRotation = 0,
 }: {
-  textElement: PcbSilkscreenText
+  textElement: PcbSilkscreenText | PcbCopperText
   componentCenter: { x: number; y: number }
   componentRotation?: number
 }): FpText | null {
@@ -46,7 +47,9 @@ export function createFpTextFromCircuitJson({
     bottom: "B.SilkS",
   }
   const kicadLayer =
-    layerMap[textElement.layer] || textElement.layer || "F.SilkS"
+    textElement.type === "pcb_copper_text"
+      ? getKicadLayer(textElement.layer)
+      : layerMap[textElement.layer] || textElement.layer || "F.SilkS"
   const kicadLayerNames = textElement.is_knockout
     ? [kicadLayer, "knockout"]
     : kicadLayer
