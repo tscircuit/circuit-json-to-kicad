@@ -21,8 +21,8 @@ test("KiCad PCB outline of a 1 mm circular cutout", async () => {
   )
   converter.runUntilFinished()
   const pcb = converter.getOutput()
-  expect(pcb.graphicLines).toHaveLength(20)
-  expect(pcb.graphicCircles).toHaveLength(0)
+  expect(pcb.graphicLines).toHaveLength(4)
+  expect(pcb.graphicCircles).toHaveLength(1)
 
   const plot = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),

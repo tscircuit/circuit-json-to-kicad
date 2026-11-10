@@ -6,6 +6,7 @@ import type { MultiPolygon } from "polygon-clipping"
 // Round results too, before checking for zero-length Edge.Cuts segments.
 // https://dev-docs.kicad.org/en/file-formats/sexpr-intro/#_board_coordinates
 const KICAD_PCB_UNITS_PER_MM = 1_000_000
+export const KICAD_PCB_GRID_MM = 1 / KICAD_PCB_UNITS_PER_MM
 
 export const roundBoardCoordinate = (coordinateMm: number) =>
   Math.round(coordinateMm * KICAD_PCB_UNITS_PER_MM) / KICAD_PCB_UNITS_PER_MM

@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { convertCircuitJsonToPcbSvg } from "circuit-to-svg"
-import type { GrLine } from "kicadts"
+import type { GrCircle, GrLine } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import sharp from "sharp"
 import { applyToPoint, type Matrix } from "transformation-matrix"
@@ -12,7 +12,7 @@ import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const inside = (
   point: { x: number; y: number },
-  { edges, c2kMatPcb }: { edges: GrLine[]; c2kMatPcb: Matrix },
+  { edges, c2kMatPcb }: { edges: (GrLine | GrCircle)[]; c2kMatPcb: Matrix },
 ) => isPointInsideEdgeCuts(edges, applyToPoint(c2kMatPcb, point))
 
 test("exports disjoint boards with a custom outline and a cutout", async () => {
@@ -39,9 +39,10 @@ test("exports disjoint boards with a custom outline and a cutout", async () => {
   const circuitJson = circuit.getCircuitJson()
   const converter = new CircuitJsonToKicadPcbConverter(circuitJson)
   converter.runUntilFinished()
-  const edges = converter
-    .getOutput()
-    .graphicLines.filter((line) => line.layer?.names[0] === "Edge.Cuts")
+  const pcb = converter.getOutput()
+  const edges = [...pcb.graphicLines, ...pcb.graphicCircles].filter(
+    (edge) => edge.layer?.names[0] === "Edge.Cuts",
+  )
   const boards = circuitJson.filter((element) => element.type === "pcb_board")
   expect(boards).toHaveLength(2)
   const c2kMatPcb = converter.ctx.c2kMatPcb!
