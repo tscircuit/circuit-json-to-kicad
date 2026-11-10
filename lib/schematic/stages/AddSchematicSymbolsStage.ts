@@ -23,7 +23,7 @@ import {
   TextEffectsJustify,
   Uuid,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPoint, compose, translate } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
@@ -357,11 +357,16 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         schematicComponent.schematic_component_id,
       )
       if (placed) {
+        const placementTransform = compose(
+          translate(placed.x, placed.y),
+          translate(-x, -y),
+        )
         symbol.at = [placed.x, placed.y, 0]
         for (const property of symbol.properties) {
           if (!property.at) continue
-          property.at.x += placed.x - x
-          property.at.y += placed.y - y
+          const position = applyToPoint(placementTransform, property.at)
+          property.at.x = position.x
+          property.at.y = position.y
         }
       }
 

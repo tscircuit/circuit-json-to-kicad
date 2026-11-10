@@ -105,11 +105,11 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
     }
 
-    const anchorInKicad = transformSchematicConnectionPoint(
-      this.ctx.c2kMatSch,
-      anchorPoint,
-      this.ctx.schematicConnectionGrid,
-    )
+    const anchorInKicad = transformSchematicConnectionPoint({
+      transform: this.ctx.c2kMatSch,
+      point: anchorPoint,
+      grid: this.ctx.schematicConnectionGrid,
+    })
     let { x, y } = anchorInKicad
 
     const symbolData = symbols[symbolName as keyof typeof symbols]
@@ -233,14 +233,14 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
 
     // Transform circuit-json coordinates to KiCad coordinates
     // Use anchor_position as primary source, fallback to center if not available
-    const { x, y } = transformSchematicConnectionPoint(
-      this.ctx.c2kMatSch,
-      {
+    const { x, y } = transformSchematicConnectionPoint({
+      transform: this.ctx.c2kMatSch,
+      point: {
         x: netLabel.anchor_position?.x ?? netLabel.center?.x ?? 0,
         y: netLabel.anchor_position?.y ?? netLabel.center?.y ?? 0,
       },
-      this.ctx.schematicConnectionGrid,
-    )
+      grid: this.ctx.schematicConnectionGrid,
+    })
 
     // circuit-json anchor_side is "which edge of the label is attached to net".
     // KiCad justify is applied in text-local coordinates (after rotation), so

@@ -1,5 +1,5 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, SchematicComponent } from "circuit-json"
 import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
@@ -60,7 +60,10 @@ export interface ConverterContext {
 
   /** Shared grid placement for pins and every attached schematic connection. */
   schematicConnectionGrid?: SchematicConnectionGrid
-  schematicComponentPositions?: Map<string, { x: number; y: number }>
+  schematicComponentPositions?: Map<
+    SchematicComponent["schematic_component_id"],
+    { x: number; y: number }
+  >
 
   /** Circuit JSON to KiCad PCB transformation matrix */
   c2kMatPcb?: Matrix

@@ -67,8 +67,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       this.ctx,
       componentSymbols,
     )
-    this.ctx.schematicConnectionGrid = placement?.grid
-    this.ctx.schematicComponentPositions = placement?.origins
+    this.ctx.schematicConnectionGrid = placement.grid
+    this.ctx.schematicComponentPositions = placement.origins
 
     // Rail artwork is shared, while each instance's Value names its global net.
     const netLabels = db.schematic_net_label?.list?.() || []

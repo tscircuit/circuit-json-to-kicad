@@ -39,11 +39,11 @@ export class AddSchematicNoConnectsStage extends ConverterStage<
       )
       .map((schematicPort) => {
         const position = this.ctx.schematicConnectionGrid
-          ? transformSchematicConnectionPoint(
-              c2kMatSch,
-              schematicPort.center,
-              this.ctx.schematicConnectionGrid,
-            )
+          ? transformSchematicConnectionPoint({
+              transform: c2kMatSch,
+              point: schematicPort.center,
+              grid: this.ctx.schematicConnectionGrid,
+            })
           : transformSchematicPoint(c2kMatSch, schematicPort.center)
         return new NoConnect({
           at: [position.x, position.y],

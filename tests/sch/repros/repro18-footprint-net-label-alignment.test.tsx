@@ -75,11 +75,11 @@ test("repro18: component fields and inline labels preserve placement", async () 
     )
     // Core places these labels at their inner edge, with text extending left
     // along the wire. Preserve that supplied attachment and alignment.
-    const expectedPosition = transformSchematicConnectionPoint(
-      converter.ctx.c2kMatSch!,
-      inlineNetLabel.position,
-      converter.ctx.schematicConnectionGrid,
-    )
+    const expectedPosition = transformSchematicConnectionPoint({
+      transform: converter.ctx.c2kMatSch!,
+      point: inlineNetLabel.position,
+      grid: converter.ctx.schematicConnectionGrid,
+    })
     expect(inlineNetLabel.anchor).toBe("bottom_right")
     expect(convertedText?.effects?.justify?.horizontal).toBe("right")
     expect(convertedText?.at?.x).toBeCloseTo(expectedPosition.x)

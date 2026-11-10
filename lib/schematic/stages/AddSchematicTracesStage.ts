@@ -66,22 +66,22 @@ export class AddSchematicTracesStage extends ConverterStage<
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
-    const from = transformSchematicConnectionPoint(
-      this.ctx.c2kMatSch,
-      {
+    const from = transformSchematicConnectionPoint({
+      transform: this.ctx.c2kMatSch,
+      point: {
         x: edge.from.x,
         y: edge.from.y,
       },
-      this.ctx.schematicConnectionGrid,
-    )
-    const to = transformSchematicConnectionPoint(
-      this.ctx.c2kMatSch,
-      {
+      grid: this.ctx.schematicConnectionGrid,
+    })
+    const to = transformSchematicConnectionPoint({
+      transform: this.ctx.c2kMatSch,
+      point: {
         x: edge.to.x,
         y: edge.to.y,
       },
-      this.ctx.schematicConnectionGrid,
-    )
+      grid: this.ctx.schematicConnectionGrid,
+    })
 
     const x1 = from.x
     const y1 = from.y
@@ -115,14 +115,14 @@ export class AddSchematicTracesStage extends ConverterStage<
     }
 
     // Transform circuit-json coordinates to KiCad coordinates using c2kMatSch
-    const { x, y } = transformSchematicConnectionPoint(
-      this.ctx.c2kMatSch,
-      {
+    const { x, y } = transformSchematicConnectionPoint({
+      transform: this.ctx.c2kMatSch,
+      point: {
         x: junction.x,
         y: junction.y,
       },
-      this.ctx.schematicConnectionGrid,
-    )
+      grid: this.ctx.schematicConnectionGrid,
+    })
 
     const kicadJunction = new Junction({
       at: [x, y],

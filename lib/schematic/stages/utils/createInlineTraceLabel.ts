@@ -27,11 +27,11 @@ export function createInlineTraceLabel({
     return undefined
   }
 
-  const { x, y } = transformSchematicConnectionPoint(
-    transform,
-    text.position,
-    connectionGrid,
-  )
+  const { x, y } = transformSchematicConnectionPoint({
+    transform: transform,
+    point: text.position,
+    grid: connectionGrid,
+  })
   const effects = createTextEffects(fontSize, false)
   // KiCad local labels sit above horizontal wires (left of vertical wires).
   // Keep its native placement even when core chose the opposite text side.

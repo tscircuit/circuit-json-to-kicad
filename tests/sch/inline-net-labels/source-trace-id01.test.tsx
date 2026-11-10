@@ -48,11 +48,11 @@ test("source-trace-backed inline labels connect without a source_net record", as
   converter.runUntilFinished()
   expect(converter.getOutput().labels).toHaveLength(labels.length)
   for (const [index, text] of labels.entries()) {
-    const expectedPosition = transformSchematicConnectionPoint(
-      converter.ctx.c2kMatSch!,
-      text.position,
-      converter.ctx.schematicConnectionGrid,
-    )
+    const expectedPosition = transformSchematicConnectionPoint({
+      transform: converter.ctx.c2kMatSch!,
+      point: text.position,
+      grid: converter.ctx.schematicConnectionGrid,
+    })
     const label = converter.getOutput().labels[index]!
     expect(label.at?.x).toBeCloseTo(expectedPosition.x)
     expect(label.at?.y).toBeCloseTo(expectedPosition.y)

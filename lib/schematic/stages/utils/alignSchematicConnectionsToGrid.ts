@@ -6,8 +6,16 @@ import {
   SymbolCircleCenter,
   SymbolCircleRadius,
 } from "kicadts"
+import {
+  applyToPoint,
+  compose,
+  scale,
+  translate,
+  type Matrix,
+} from "transformation-matrix"
 import type { ConverterContext } from "../../../types"
 import {
+  fromSchematicInternalUnits,
   toSchematicInternalUnits,
   transformSchematicPoint,
   type SchematicConnectionGrid,
@@ -15,12 +23,14 @@ import {
 
 // KiCad's default connection grid is 50 mil. Work in its integer schematic
 // units so equality, ordering, and grid membership do not need tolerances.
-const GRID = 12_700
-const units = (point: Point): Point => ({
+const KICAD_CONNECTION_GRID_INTERNAL_UNITS = toSchematicInternalUnits(1.27)
+const toSchematicPointInternalUnits = (point: Point): Point => ({
   x: toSchematicInternalUnits(point.x),
   y: toSchematicInternalUnits(point.y),
 })
 const samePoint = (a: Point, b: Point) => a.x === b.x && a.y === b.y
+
+type SchematicComponentId = SchematicComponent["schematic_component_id"]
 
 type AxisPoint = { lower: number; upper: number }
 type Attachment =
@@ -28,30 +38,54 @@ type Attachment =
   | { type: "edge"; from: Point; to: Point }
   | { type: "circle"; center: Point; radius: number }
 
-function findAttachment(
-  symbol: SchematicSymbol,
-  point: Point,
-  direction: Point,
-): Attachment | undefined {
+function isPointOnSegment({
+  point,
+  from,
+  to,
+}: {
+  point: Point
+  from: Point
+  to: Point
+}): boolean {
+  const cross =
+    BigInt(point.x - from.x) * BigInt(to.y - from.y) -
+    BigInt(point.y - from.y) * BigInt(to.x - from.x)
+  return (
+    cross === 0n &&
+    point.x >= Math.min(from.x, to.x) &&
+    point.x <= Math.max(from.x, to.x) &&
+    point.y >= Math.min(from.y, to.y) &&
+    point.y <= Math.max(from.y, to.y)
+  )
+}
+
+function findEdgeAttachment({
+  point,
+  direction,
+  from,
+  to,
+}: {
+  point: Point
+  direction: Point
+  from: Point
+  to: Point
+}): Attachment | undefined {
+  if (!isPointOnSegment({ point, from, to })) return undefined
+  // The pin must enter the edge rather than run along it.
+  if (direction.x !== 0 ? from.y === to.y : from.x === to.x) return undefined
+  return { type: "edge", from, to }
+}
+
+function findAttachment({
+  symbol,
+  point,
+  direction,
+}: {
+  symbol: SchematicSymbol
+  point: Point
+  direction: Point
+}): Attachment | undefined {
   const leads: Extract<Attachment, { type: "lead" }>[] = []
-  const onSegment = (from: Point, to: Point) => {
-    const cross =
-      BigInt(point.x - from.x) * BigInt(to.y - from.y) -
-      BigInt(point.y - from.y) * BigInt(to.x - from.x)
-    return (
-      cross === 0n &&
-      point.x >= Math.min(from.x, to.x) &&
-      point.x <= Math.max(from.x, to.x) &&
-      point.y >= Math.min(from.y, to.y) &&
-      point.y <= Math.max(from.y, to.y)
-    )
-  }
-  const edge = (from: Point, to: Point): Attachment | undefined => {
-    if (!onSegment(from, to)) return undefined
-    // The pin must enter the edge rather than run along it.
-    if (direction.x !== 0 ? from.y === to.y : from.x === to.x) return undefined
-    return { type: "edge", from, to }
-  }
   for (const unit of symbol.subSymbols) {
     for (const polyline of unit.polylines) {
       const vertices = polyline.points?.points ?? []
@@ -60,29 +94,39 @@ function findAttachment(
           "x" in vertex && "y" in vertex,
       )
       if (points.length !== vertices.length || points.length < 2) continue
-      const first = units(points[0]!)
-      const last = units(points.at(-1)!)
+      const first = toSchematicPointInternalUnits(points[0]!)
+      const last = toSchematicPointInternalUnits(points.at(-1)!)
       const filled = polyline.fill?.type && polyline.fill.type !== "none"
       if (!samePoint(first, last) && !filled) {
         if (samePoint(first, point))
           leads.push({
             type: "lead",
             endpoint: points[0]!,
-            inner: units(points[1]!),
+            inner: toSchematicPointInternalUnits(points[1]!),
           })
         if (samePoint(last, point))
           leads.push({
             type: "lead",
             endpoint: points.at(-1)!,
-            inner: units(points.at(-2)!),
+            inner: toSchematicPointInternalUnits(points.at(-2)!),
           })
       }
       for (let index = 1; index < points.length; index++) {
-        const found = edge(units(points[index - 1]!), units(points[index]!))
+        const found = findEdgeAttachment({
+          point,
+          direction,
+          from: toSchematicPointInternalUnits(points[index - 1]!),
+          to: toSchematicPointInternalUnits(points[index]!),
+        })
         if (found) return found
       }
       if (filled) {
-        const found = edge(last, first)
+        const found = findEdgeAttachment({
+          point,
+          direction,
+          from: last,
+          to: first,
+        })
         if (found) return found
       }
     }
@@ -94,8 +138,8 @@ function findAttachment(
         .getChildren()
         .find((child) => child instanceof SymbolRectangleEnd)
       if (!start || !end) continue
-      const from = units(start)
-      const to = units(end)
+      const from = toSchematicPointInternalUnits(start)
+      const to = toSchematicPointInternalUnits(end)
       const corners = [
         from,
         { x: to.x, y: from.y },
@@ -104,7 +148,12 @@ function findAttachment(
         from,
       ]
       for (let index = 1; index < corners.length; index++) {
-        const found = edge(corners[index - 1]!, corners[index]!)
+        const found = findEdgeAttachment({
+          point,
+          direction,
+          from: corners[index - 1]!,
+          to: corners[index]!,
+        })
         if (found) return found
       }
     }
@@ -112,12 +161,12 @@ function findAttachment(
       const centerPoint = circle
         .getChildren()
         .find((child) => child instanceof SymbolCircleCenter)
-      const radiusValue = circle
+      const circleRadius = circle
         .getChildren()
         .find((child) => child instanceof SymbolCircleRadius)
-      if (!centerPoint || !radiusValue) continue
-      const center = units(centerPoint)
-      const radius = toSchematicInternalUnits(radiusValue.value)
+      if (!centerPoint || !circleRadius) continue
+      const center = toSchematicPointInternalUnits(centerPoint)
+      const radius = toSchematicInternalUnits(circleRadius.value)
       // Compare the radial distance at KiCad's native coordinate resolution.
       if (
         Math.round(Math.hypot(point.x - center.x, point.y - center.y)) ===
@@ -145,13 +194,19 @@ function placeAxis(points: Map<number, AxisPoint>): Map<number, number> {
   let upper = Number.POSITIVE_INFINITY
   for (let index = sorted.length - 1; index >= 0; index--) {
     const constraint = sorted[index]![1]
-    upper = Math.min(upper - 1, Math.floor(constraint.upper / GRID))
+    upper = Math.min(
+      upper - 1,
+      Math.floor(constraint.upper / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
+    )
     constraint.upper = upper
   }
   const placed = new Map<number, number>()
   let previous = Number.NEGATIVE_INFINITY
-  for (const [value, constraint] of sorted) {
-    const lower = Math.max(previous + 1, Math.ceil(constraint.lower / GRID))
+  for (const [coordinate, constraint] of sorted) {
+    const lower = Math.max(
+      previous + 1,
+      Math.ceil(constraint.lower / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
+    )
     if (lower > constraint.upper) {
       throw new GridPlacementError(
         "Cannot fit schematic connections on KiCad's 1.27 mm grid without changing symbol bodies. Increase pin spacing or adjust the schematic layout.",
@@ -159,9 +214,12 @@ function placeAxis(points: Map<number, AxisPoint>): Map<number, number> {
     }
     const position = Math.max(
       lower,
-      Math.min(Math.round(value / GRID), constraint.upper),
+      Math.min(
+        Math.round(coordinate / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
+        constraint.upper,
+      ),
     )
-    placed.set(value, position * GRID)
+    placed.set(coordinate, position * KICAD_CONNECTION_GRID_INTERNAL_UNITS)
     previous = position
   }
   return placed
@@ -173,7 +231,7 @@ type PinPlacement = {
   pin: SymbolPin
   position: Point
   direction: Point
-  componentId: string
+  componentId: SchematicComponentId
   attachment?: Attachment
   local: Point
 }
@@ -183,22 +241,31 @@ type PinPlacement = {
  * separate wires separate. A positive constraint cycle means the existing
  * layout cannot fit with these local pin offsets without rerouting.
  */
-function placeSheetAxis(
-  coordinates: Set<number>,
-  pins: PinPlacement[],
-  axis: "x" | "y",
-  labelSpans: [number, number][],
-) {
+function placeSheetAxis({
+  coordinates,
+  pins,
+  axis,
+  labelSpans,
+}: {
+  coordinates: Set<number>
+  pins: PinPlacement[]
+  axis: "x" | "y"
+  labelSpans: [number, number][]
+}) {
   const sorted = [...coordinates].sort((a, b) => a - b)
   if (sorted.length === 0) {
     return {
       coordinates: new Map<number, number>(),
-      origins: new Map<string, number>(),
+      origins: new Map<SchematicComponentId, number>(),
     }
   }
-  const indices = new Map(sorted.map((value, index) => [value, index]))
-  const positions = sorted.map((value) => Math.round(value / GRID))
-  const origins = new Map<string, number>()
+  const indices = new Map(
+    sorted.map((coordinate, index) => [coordinate, index]),
+  )
+  const positions = sorted.map((coordinate) =>
+    Math.round(coordinate / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
+  )
+  const origins = new Map<SchematicComponentId, number>()
   const constraints: { from: number; to: number; distance: number }[] = []
   for (let index = 1; index < sorted.length; index++) {
     constraints.push({ from: index - 1, to: index, distance: 1 })
@@ -207,7 +274,7 @@ function placeSheetAxis(
     constraints.push({
       from: indices.get(from)!,
       to: indices.get(to)!,
-      distance: Math.ceil((to - from) / GRID),
+      distance: Math.ceil((to - from) / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
     })
   }
   for (const pin of pins) {
@@ -220,7 +287,9 @@ function placeSheetAxis(
       positions.push(Number.NEGATIVE_INFINITY)
     }
     const pointIndex = indices.get(pin.position[axis])!
-    const offset = (pin.local[axis] / GRID) * (axis === "y" ? -1 : 1)
+    const offset =
+      (pin.local[axis] / KICAD_CONNECTION_GRID_INTERNAL_UNITS) *
+      (axis === "y" ? -1 : 1)
     constraints.push({ from: originIndex, to: pointIndex, distance: offset })
     constraints.push({ from: pointIndex, to: originIndex, distance: -offset })
   }
@@ -236,10 +305,16 @@ function placeSheetAxis(
     if (!changed)
       return {
         coordinates: new Map(
-          sorted.map((value, index) => [value, positions[index]! * GRID]),
+          sorted.map((coordinate, index) => [
+            coordinate,
+            positions[index]! * KICAD_CONNECTION_GRID_INTERNAL_UNITS,
+          ]),
         ),
         origins: new Map(
-          [...origins].map(([id, index]) => [id, positions[index]! * GRID]),
+          [...origins].map(([id, index]) => [
+            id,
+            positions[index]! * KICAD_CONNECTION_GRID_INTERNAL_UNITS,
+          ]),
         ),
       }
   }
@@ -248,40 +323,45 @@ function placeSheetAxis(
   )
 }
 
+function transformSourcePointToInternalUnits({
+  transform,
+  point,
+}: {
+  transform: Matrix
+  point: Point
+}): Point {
+  return toSchematicPointInternalUnits(
+    transformSchematicPoint(transform, point),
+  )
+}
+
+function addConnectionCoordinates({
+  coordinates,
+  point,
+}: {
+  coordinates: Record<"x" | "y", Set<number>>
+  point: Point
+}): void {
+  coordinates.x.add(point.x)
+  coordinates.y.add(point.y)
+}
+
 export function alignSchematicConnectionsToGrid(
   ctx: ConverterContext,
   components: { component: SchematicComponent; symbol: SchematicSymbol }[],
-): { grid: SchematicConnectionGrid; origins: Map<string, Point> } | undefined {
-  // Connection-grid requirements apply to every sheet, independently of where
-  // its symbol artwork came from.
-  try {
-    return planGridPlacement(ctx, components)
-  } catch (error) {
-    if (!(error instanceof GridPlacementError)) throw error
-    // Retain the authored schematic when adapting it would require a redesign.
-    // Do not emit a partially moved circuit or suppress KiCad's ERC warning.
-    console.warn(
-      `KiCad connection grid: ${error.message} Exporting the original coordinates.`,
-    )
-    return undefined
-  }
-}
-
-function planGridPlacement(
-  ctx: ConverterContext,
-  components: { component: SchematicComponent; symbol: SchematicSymbol }[],
-): { grid: SchematicConnectionGrid; origins: Map<string, Point> } {
-  const sourcePoint = (point: Point) =>
-    units(transformSchematicPoint(ctx.c2kMatSch!, point))
+): {
+  grid: SchematicConnectionGrid
+  origins: Map<SchematicComponentId, Point>
+} {
   const coordinates = { x: new Set<number>(), y: new Set<number>() }
   const labelSpans: Record<"x" | "y", [number, number][]> = { x: [], y: [] }
-  const add = (point: Point) => {
-    coordinates.x.add(point.x)
-    coordinates.y.add(point.y)
-  }
   const pinPlacements: PinPlacement[] = []
   for (const { component, symbol } of components) {
-    const origin = sourcePoint(component.center)
+    const origin = transformSourcePointToInternalUnits({
+      transform: ctx.c2kMatSch!,
+      point: component.center,
+    })
+    const symbolToSheet = compose(translate(origin.x, origin.y), scale(1, -1))
     const axes = {
       x: new Map<number, AxisPoint>(),
       y: new Map<number, AxisPoint>(),
@@ -290,7 +370,7 @@ function planGridPlacement(
     for (const unit of symbol.subSymbols) {
       for (const pin of unit.pins) {
         if (!pin.at) continue
-        const local = units(pin.at)
+        const local = toSchematicPointInternalUnits(pin.at)
         for (const axis of ["x", "y"] as const) {
           if (!axes[axis].has(local[axis]))
             axes[axis].set(local[axis], {
@@ -311,15 +391,20 @@ function planGridPlacement(
           throw new GridPlacementError(
             "Grid placement requires orthogonal schematic pins.",
           )
-        const position = { x: origin.x + local.x, y: origin.y - local.y }
-        add(position)
-        const body = {
-          x: local.x - direction.x * toSchematicInternalUnits(pin.length ?? 0),
-          y: local.y - direction.y * toSchematicInternalUnits(pin.length ?? 0),
-        }
-        const tipAttachment = findAttachment(symbol, local, direction)
+        const position = applyToPoint(symbolToSheet, local)
+        addConnectionCoordinates({ coordinates, point: position })
+        const pinLength = toSchematicInternalUnits(pin.length ?? 0)
+        const body = applyToPoint(
+          translate(-direction.x * pinLength, -direction.y * pinLength),
+          local,
+        )
+        const tipAttachment = findAttachment({
+          symbol,
+          point: local,
+          direction,
+        })
         const attachment =
-          tipAttachment ?? findAttachment(symbol, body, direction)
+          tipAttachment ?? findAttachment({ symbol, point: body, direction })
         if (!attachment && symbol.subSymbols.some((unit) => unit.arcs.length)) {
           throw new GridPlacementError(
             "Cannot determine a pin's attachment to curved symbol artwork. Adjust the pin or provide a straight stem before grid placement.",
@@ -342,10 +427,11 @@ function planGridPlacement(
             : tipAttachment
               ? local
               : body
-        const limit = axes[normal].get(local[normal])!
+        const normalBounds = axes[normal].get(local[normal])!
         if (direction[normal] > 0)
-          limit.lower = Math.max(limit.lower, reference[normal])
-        else limit.upper = Math.min(limit.upper, reference[normal])
+          normalBounds.lower = Math.max(normalBounds.lower, reference[normal])
+        else
+          normalBounds.upper = Math.min(normalBounds.upper, reference[normal])
         if (attachment.type !== "lead") {
           const ends =
             attachment.type === "edge"
@@ -354,9 +440,9 @@ function planGridPlacement(
                   attachment.center[tangent] - attachment.radius,
                   attachment.center[tangent] + attachment.radius,
                 ]
-          const tangentLimit = axes[tangent].get(local[tangent])!
-          tangentLimit.lower = Math.max(tangentLimit.lower, Math.min(...ends))
-          tangentLimit.upper = Math.min(tangentLimit.upper, Math.max(...ends))
+          const tangentBounds = axes[tangent].get(local[tangent])!
+          tangentBounds.lower = Math.max(tangentBounds.lower, Math.min(...ends))
+          tangentBounds.upper = Math.min(tangentBounds.upper, Math.max(...ends))
         }
       }
     }
@@ -371,32 +457,60 @@ function planGridPlacement(
   }
   for (const trace of ctx.db.schematic_trace.list()) {
     for (const edge of trace.edges) {
-      const from = sourcePoint(edge.from)
-      const to = sourcePoint(edge.to)
+      const from = transformSourcePointToInternalUnits({
+        transform: ctx.c2kMatSch!,
+        point: edge.from,
+      })
+      const to = transformSourcePointToInternalUnits({
+        transform: ctx.c2kMatSch!,
+        point: edge.to,
+      })
       if (from.x !== to.x && from.y !== to.y) {
         throw new GridPlacementError(
           "Cannot align diagonal schematic wires without rerouting them.",
         )
       }
-      add(from)
-      add(to)
+      addConnectionCoordinates({ coordinates, point: from })
+      addConnectionCoordinates({ coordinates, point: to })
     }
-    for (const point of trace.junctions) add(sourcePoint(point))
+    for (const point of trace.junctions)
+      addConnectionCoordinates({
+        coordinates,
+        point: transformSourcePointToInternalUnits({
+          transform: ctx.c2kMatSch!,
+          point,
+        }),
+      })
   }
   for (const label of ctx.db.schematic_net_label.list())
-    add(sourcePoint(label.anchor_position ?? label.center))
+    addConnectionCoordinates({
+      coordinates,
+      point: transformSourcePointToInternalUnits({
+        transform: ctx.c2kMatSch!,
+        point: label.anchor_position ?? label.center,
+      }),
+    })
   for (const text of ctx.db.schematic_text.list()) {
     if (!text.source_trace_id || !ctx.db.source_trace.get(text.source_trace_id))
       continue
-    const anchor = sourcePoint(text.position)
-    add(anchor)
+    const anchor = transformSourcePointToInternalUnits({
+      transform: ctx.c2kMatSch!,
+      point: text.position,
+    })
+    addConnectionCoordinates({ coordinates, point: anchor })
     // Text keeps its physical size. Preserve the wire's available space on
     // both sides of an inline label so grid rounding cannot shorten its stub.
     for (const trace of ctx.db.schematic_trace.list()) {
       if (trace.source_trace_id !== text.source_trace_id) continue
       for (const edge of trace.edges) {
-        const from = sourcePoint(edge.from)
-        const to = sourcePoint(edge.to)
+        const from = transformSourcePointToInternalUnits({
+          transform: ctx.c2kMatSch!,
+          point: edge.from,
+        })
+        const to = transformSourcePointToInternalUnits({
+          transform: ctx.c2kMatSch!,
+          point: edge.to,
+        })
         const axis = from.x === to.x ? "y" : "x"
         const other = axis === "x" ? "y" : "x"
         const lower = Math.min(from[axis], to[axis])
@@ -414,15 +528,34 @@ function planGridPlacement(
   }
   for (const port of ctx.db.schematic_port.list()) {
     if (ctx.db.source_port.get(port.source_port_id)?.do_not_connect)
-      add(sourcePoint(port.center))
+      addConnectionCoordinates({
+        coordinates,
+        point: transformSourcePointToInternalUnits({
+          transform: ctx.c2kMatSch!,
+          point: port.center,
+        }),
+      })
   }
-  const x = placeSheetAxis(coordinates.x, pinPlacements, "x", labelSpans.x)
-  const y = placeSheetAxis(coordinates.y, pinPlacements, "y", labelSpans.y)
+  const x = placeSheetAxis({
+    coordinates: coordinates.x,
+    pins: pinPlacements,
+    axis: "x",
+    labelSpans: labelSpans.x,
+  })
+  const y = placeSheetAxis({
+    coordinates: coordinates.y,
+    pins: pinPlacements,
+    axis: "y",
+    labelSpans: labelSpans.y,
+  })
   const grid = { x: x.coordinates, y: y.coordinates }
   const origins = new Map(
-    [...x.origins].map(([id, value]) => [
+    [...x.origins].map(([id, xCoordinate]) => [
       id,
-      { x: value / 10_000, y: y.origins.get(id)! / 10_000 },
+      {
+        x: fromSchematicInternalUnits(xCoordinate),
+        y: fromSchematicInternalUnits(y.origins.get(id)!),
+      },
     ]),
   )
   const lengths = new Map<SymbolPin, number>()
@@ -452,16 +585,20 @@ function planGridPlacement(
       throw new GridPlacementError(
         "Grid placement would move a pin inside its symbol body.",
       )
-    lengths.set(pin, length / 10_000)
+    lengths.set(pin, fromSchematicInternalUnits(length))
   }
   // Commit the placement only after all connection and attachment checks pass.
   for (const { pin, local: point, attachment } of pinPlacements) {
     if (attachment?.type === "lead") {
-      attachment.endpoint.x = point.x / 10_000
-      attachment.endpoint.y = point.y / 10_000
+      attachment.endpoint.x = fromSchematicInternalUnits(point.x)
+      attachment.endpoint.y = fromSchematicInternalUnits(point.y)
     }
     if (lengths.has(pin)) pin.length = lengths.get(pin)!
-    pin.at = [point.x / 10_000, point.y / 10_000, pin.at!.angle ?? 0]
+    pin.at = [
+      fromSchematicInternalUnits(point.x),
+      fromSchematicInternalUnits(point.y),
+      pin.at!.angle ?? 0,
+    ]
   }
   return { grid, origins }
 }
