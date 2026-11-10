@@ -29,8 +29,8 @@ import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converte
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
-import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 import { alignSchematicConnectionsToGrid } from "./utils/alignSchematicConnectionsToGrid"
+import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
