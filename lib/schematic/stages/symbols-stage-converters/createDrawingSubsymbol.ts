@@ -1,12 +1,11 @@
 import { SchematicSymbol } from "kicadts"
-import type { Point } from "circuit-json"
+import { scale as createScaleMatrix, translate } from "transformation-matrix"
 import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
 import { createPolylineFromPoints } from "./createPolylineFromPoints"
 import { createRectangleFromPrimitive } from "./createRectangleFromPrimitive"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
 import { parseColor } from "../utils/parseColor"
-import { roundSchematicSymbolCoordinate } from "../utils/schematicCoordinates"
 
 export function createDrawingSubsymbol({
   libId,
@@ -26,10 +25,11 @@ export function createDrawingSubsymbol({
   const symbolScale = c2kMatSchScale
   const cx = symbolData.center?.x ?? 0
   const cy = symbolData.center?.y ?? 0
-  const transform = ({ x, y }: Point): Point => ({
-    x: roundSchematicSymbolCoordinate(x, cx, symbolScale),
-    y: roundSchematicSymbolCoordinate(y, cy, symbolScale),
-  })
+  // Keep the operations separate so translation is not rounded before scaling.
+  const transform = [
+    createScaleMatrix(symbolScale, symbolScale),
+    translate(-cx, -cy),
+  ]
 
   for (const primitive of symbolData.primitives || []) {
     const strokeColor = primitive.color

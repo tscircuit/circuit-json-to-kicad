@@ -1,6 +1,9 @@
 import { SymbolArc } from "kicadts"
-import type { Point } from "circuit-json"
-import { roundSchematicCoordinate } from "../utils/schematicCoordinates"
+import type { Matrix } from "transformation-matrix"
+import {
+  roundSchematicCoordinate,
+  transformSchematicPoint,
+} from "../utils/schematicCoordinates"
 
 export function createArcFromPrimitive({
   primitive,
@@ -14,12 +17,12 @@ export function createArcFromPrimitive({
     isDashed?: boolean
     strokeWidth?: number | null
   }
-  transform: (point: Point) => Point
+  transform: Matrix | Matrix[]
   scale: number
 }): SymbolArc {
-  const start = transform(primitive.start)
-  const mid = transform(primitive.mid)
-  const end = transform(primitive.end)
+  const start = transformSchematicPoint(transform, primitive.start)
+  const mid = transformSchematicPoint(transform, primitive.mid)
+  const end = transformSchematicPoint(transform, primitive.end)
 
   return SymbolArc.fromSexprPrimitives([
     ["start", start.x, start.y],

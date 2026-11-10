@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test"
 import type { Point } from "circuit-json"
 import { createDrawingSubsymbol } from "lib/schematic/stages/symbols-stage-converters/createDrawingSubsymbol"
-import { roundSchematicSymbolCoordinate } from "lib/schematic/stages/utils/schematicCoordinates"
+import { transformSchematicPoint } from "lib/schematic/stages/utils/schematicCoordinates"
+import { compose, rotateDEG, scale, translate } from "transformation-matrix"
 
 const drawingAt = (center: Point, point: Point, scale = 15) =>
   createDrawingSubsymbol({
@@ -86,10 +87,29 @@ test("decimal midpoint coordinates agree with an integer oracle", () => {
 })
 
 test("integer artwork rounding handles scientific notation and whole units", () => {
-  expect(roundSchematicSymbolCoordinate(1.5e-7, 0, 1000)).toBe(0.0002)
-  expect(roundSchematicSymbolCoordinate(-1.5e-7, 0, 1000)).toBe(-0.0002)
-  expect(roundSchematicSymbolCoordinate(2e-7, 1.5e-7, 1000)).toBe(0.0001)
-  expect(roundSchematicSymbolCoordinate(1e21, 0, 1e-21)).toBe(1)
-  expect(roundSchematicSymbolCoordinate(12, 2, 3)).toBe(30)
-  expect(roundSchematicSymbolCoordinate(2, 2, 15)).toBe(0)
+  for (const [coordinate, origin, factor, expected] of [
+    [1.5e-7, 0, 1000, 0.0002],
+    [-1.5e-7, 0, 1000, -0.0002],
+    [2e-7, 1.5e-7, 1000, 0.0001],
+    [1e21, 0, 1e-21, 1],
+    [12, 2, 3, 30],
+    [2, 2, 15, 0],
+  ] as const) {
+    expect(
+      transformSchematicPoint([scale(factor), translate(-origin, -origin)], {
+        x: coordinate,
+        y: coordinate,
+      }),
+    ).toEqual({ x: expected, y: expected })
+  }
+})
+
+test("matrix sequences retain compose order and single-matrix support", () => {
+  const matrices = [translate(5, -7), rotateDEG(90), scale(2, 3)]
+  const point = { x: 2, y: 3 }
+  expect(transformSchematicPoint(matrices, point)).toEqual({ x: -4, y: -3 })
+  expect(transformSchematicPoint(compose(matrices), point)).toEqual({
+    x: -4,
+    y: -3,
+  })
 })

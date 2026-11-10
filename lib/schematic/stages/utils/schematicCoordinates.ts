@@ -13,22 +13,22 @@ export function roundSchematicCoordinate(mm: number): number {
 }
 
 export function transformSchematicPoint(
-  transform: Matrix,
+  transform: Matrix | Matrix[],
   point: Point,
 ): Point {
-  const { x, y } = applyToPoint(transform, point)
-  return { x: roundSchematicCoordinate(x), y: roundSchematicCoordinate(y) }
-}
+  if (!Array.isArray(transform)) {
+    const { x, y } = applyToPoint(transform, point)
+    return { x: roundSchematicCoordinate(x), y: roundSchematicCoordinate(y) }
+  }
 
-/** Transform decimal artwork coordinates, rounding only the final KiCad IU. */
-export function roundSchematicSymbolCoordinate(
-  coordinate: number,
-  origin: number,
-  scale: number,
-): number {
-  // Represent each supplied decimal as coefficient * 10^exponent. Integer
-  // subtraction and multiplication preserve digits at rounding boundaries.
-  const decimals = [coordinate, origin, scale].map((value) => {
+  // Evaluate uncomposed matrices using exact decimal integers. Composing them
+  // first can round their translation before the point reaches the KiCad grid.
+  const values = [
+    point.x,
+    point.y,
+    ...transform.flatMap(({ a, b, c, d, e, f }) => [a, b, c, d, e, f]),
+  ]
+  const decimals = values.map((value) => {
     const [mantissa, exponent = "0"] = value.toString().split("e")
     const [whole, fraction = ""] = mantissa!.split(".")
     return {
@@ -36,20 +36,27 @@ export function roundSchematicSymbolCoordinate(
       exponent: Number(exponent) - fraction.length,
     }
   })
-  const exponent = Math.min(...decimals.map((decimal) => decimal.exponent))
-  const [point, center, factor] = decimals.map(
+  const exponent = Math.min(0, ...decimals.map((decimal) => decimal.exponent))
+  const integers = decimals.map(
     (decimal) =>
       decimal.coefficient * 10n ** BigInt(decimal.exponent - exponent),
   )
-  const scaled = (point! - center!) * factor!
-  // The product carries two powers of the common decimal exponent; shifting
-  // by four converts mm to KiCad IU before rounding halves away from zero.
-  const unitExponent = 2 * exponent + 4
-  if (unitExponent >= 0) {
-    return Number(scaled * 10n ** BigInt(unitExponent)) / 10_000
+  const divisor = 10n ** BigInt(-exponent)
+  let denominator = divisor
+  let x = integers[0]!
+  let y = integers[1]!
+  // Like compose(), the rightmost matrix acts on the point first.
+  for (let i = transform.length - 1; i >= 0; i--) {
+    const [a, b, c, d, e, f] = integers.slice(2 + i * 6, 8 + i * 6)
+    const nextX = a! * x + c! * y + e! * denominator
+    y = b! * x + d! * y + f! * denominator
+    x = nextX
+    denominator *= divisor
   }
-  const divisor = 10n ** BigInt(-unitExponent)
-  const magnitude = scaled < 0n ? -scaled : scaled
-  const units = (magnitude + divisor / 2n) / divisor
-  return Number(scaled < 0n ? -units : units) / 10_000
+  const round = (coordinate: bigint): number => {
+    const magnitude = coordinate < 0n ? -coordinate : coordinate
+    const units = (magnitude * 10_000n + denominator / 2n) / denominator
+    return Number(coordinate < 0n ? -units : units) / 10_000
+  }
+  return { x: round(x), y: round(y) }
 }

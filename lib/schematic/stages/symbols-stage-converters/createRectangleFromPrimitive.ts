@@ -1,6 +1,9 @@
 import { SymbolRectangle } from "kicadts"
-import type { Point } from "circuit-json"
-import { roundSchematicCoordinate } from "../utils/schematicCoordinates"
+import type { Matrix } from "transformation-matrix"
+import {
+  roundSchematicCoordinate,
+  transformSchematicPoint,
+} from "../utils/schematicCoordinates"
 import { createSymbolFillSexprPrimitives } from "./createSymbolFillSexprPrimitives"
 
 export function createRectangleFromPrimitive({
@@ -16,11 +19,11 @@ export function createRectangleFromPrimitive({
     strokeWidth?: number | null
     isDashed?: boolean
   }
-  transform: (point: Point) => Point
+  transform: Matrix | Matrix[]
   scale: number
 }): SymbolRectangle {
-  const start = transform(primitive.start)
-  const end = transform(primitive.end)
+  const start = transformSchematicPoint(transform, primitive.start)
+  const end = transformSchematicPoint(transform, primitive.end)
   return SymbolRectangle.fromSexprPrimitives([
     ["start", start.x, start.y],
     ["end", end.x, end.y],
