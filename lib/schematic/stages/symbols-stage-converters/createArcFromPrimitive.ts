@@ -2,7 +2,7 @@ import { SymbolArc } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import {
   roundSchematicCoordinate,
-  transformSchematicPoint,
+  transformSymbolPoint,
 } from "../utils/schematicCoordinates"
 
 export function createArcFromPrimitive({
@@ -20,9 +20,9 @@ export function createArcFromPrimitive({
   transform: Matrix
   scale: number
 }): SymbolArc {
-  const start = transformSchematicPoint(transform, primitive.start)
-  const mid = transformSchematicPoint(transform, primitive.mid)
-  const end = transformSchematicPoint(transform, primitive.end)
+  const start = transformSymbolPoint(transform, primitive.start)
+  const mid = transformSymbolPoint(transform, primitive.mid)
+  const end = transformSymbolPoint(transform, primitive.end)
 
   return SymbolArc.fromSexprPrimitives([
     ["start", start.x, start.y],

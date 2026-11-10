@@ -1,7 +1,10 @@
 import { expect, test } from "bun:test"
 import type { Point } from "circuit-json"
 import { createDrawingSubsymbol } from "lib/schematic/stages/symbols-stage-converters/createDrawingSubsymbol"
-import { transformSchematicPoint } from "lib/schematic/stages/utils/schematicCoordinates"
+import {
+  transformSchematicPoint,
+  transformSymbolPoint,
+} from "lib/schematic/stages/utils/schematicCoordinates"
 import { compose, rotateDEG, scale, translate } from "transformation-matrix"
 
 const drawingAt = (center: Point, point: Point, scale = 15) =>
@@ -98,7 +101,7 @@ test("artwork rounding handles small scales and whole units", () => {
     [2, 2, 15, 0],
   ] as const) {
     expect(
-      transformSchematicPoint(
+      transformSymbolPoint(
         compose(scale(factor), translate(-origin, -origin)),
         { x: coordinate, y: coordinate },
       ),
@@ -109,19 +112,17 @@ test("artwork rounding handles small scales and whole units", () => {
 test("composed transforms retain their geometry", () => {
   const matrices = [translate(5, -7), rotateDEG(90), scale(2, 3)]
   const point = { x: 2, y: 3 }
-  expect(transformSchematicPoint(compose(matrices), point)).toEqual({
+  expect(transformSymbolPoint(compose(matrices), point)).toEqual({
     x: -4,
     y: -3,
   })
 })
 
-test("electrical coordinates can retain exact parser rounding", () => {
+test("schematic coordinates retain exact parser rounding", () => {
   const matrix = compose(scale(15), translate(0, 2.55))
   const point = { x: 0, y: -2.62219 }
-  expect(transformSchematicPoint(matrix, point)).toEqual({ x: 0, y: -1.0829 })
-  expect(
-    transformSchematicPoint(matrix, point, { tolerateRoundoff: false }),
-  ).toEqual({ x: 0, y: -1.0828 })
+  expect(transformSymbolPoint(matrix, point)).toEqual({ x: 0, y: -1.0829 })
+  expect(transformSchematicPoint(matrix, point)).toEqual({ x: 0, y: -1.0828 })
 })
 
 test("roundoff does not merge artwork separated by a native KiCad unit", () => {
@@ -140,7 +141,7 @@ test("roundoff does not merge artwork separated by a native KiCad unit", () => {
 test("roundoff does not choose a tie when the error budget is too large", () => {
   const matrix = compose(scale(15), translate(-1e14, 0))
   const point = { x: 1e14 + 0.07219, y: 0 }
-  expect(transformSchematicPoint(matrix, point)).toEqual(
-    transformSchematicPoint(matrix, point, { tolerateRoundoff: false }),
+  expect(transformSymbolPoint(matrix, point)).toEqual(
+    transformSchematicPoint(matrix, point),
   )
 })

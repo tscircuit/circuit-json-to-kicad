@@ -15,12 +15,14 @@ export function roundSchematicCoordinate(mm: number): number {
 export function transformSchematicPoint(
   transform: Matrix,
   point: Point,
-  { tolerateRoundoff = true }: { tolerateRoundoff?: boolean } = {},
 ): Point {
   const { x, y } = applyToPoint(transform, point)
-  if (!tolerateRoundoff) {
-    return { x: roundSchematicCoordinate(x), y: roundSchematicCoordinate(y) }
-  }
+  return { x: roundSchematicCoordinate(x), y: roundSchematicCoordinate(y) }
+}
+
+/** Transform library artwork with tolerance for placement roundoff at ties. */
+export function transformSymbolPoint(transform: Matrix, point: Point): Point {
+  const { x, y } = applyToPoint(transform, point)
 
   // Allow six roundings: source conversion, placement, scaling the point and
   // origin, subtraction, and conversion to KiCad IU. gamma_n = n*u/(1-n*u)

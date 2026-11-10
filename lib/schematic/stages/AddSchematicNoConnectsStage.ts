@@ -38,8 +38,6 @@ export class AddSchematicNoConnectsStage extends ConverterStage<
         const position = transformSchematicPoint(
           c2kMatSch,
           schematicPort.center,
-          // Markers must match the parser-rounded sheet pin exactly.
-          { tolerateRoundoff: false },
         )
         return new NoConnect({
           at: [position.x, position.y],
