@@ -1,5 +1,9 @@
 import { SchematicSymbol } from "kicadts"
-import { scale as createScaleMatrix, translate } from "transformation-matrix"
+import {
+  compose,
+  scale as createScaleMatrix,
+  translate,
+} from "transformation-matrix"
 import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
 import { createPolylineFromPoints } from "./createPolylineFromPoints"
@@ -25,11 +29,10 @@ export function createDrawingSubsymbol({
   const symbolScale = c2kMatSchScale
   const cx = symbolData.center?.x ?? 0
   const cy = symbolData.center?.y ?? 0
-  // Keep the operations separate so translation is not rounded before scaling.
-  const transform = [
+  const transform = compose(
     createScaleMatrix(symbolScale, symbolScale),
     translate(-cx, -cy),
-  ]
+  )
 
   for (const primitive of symbolData.primitives || []) {
     const strokeColor = primitive.color

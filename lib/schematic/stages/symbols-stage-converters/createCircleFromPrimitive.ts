@@ -22,7 +22,7 @@ export function createCircleFromPrimitive({
   scale,
 }: {
   primitive: CirclePrimitive
-  transform: Matrix | Matrix[]
+  transform: Matrix
   scale: number
 }): SymbolCircle {
   const scaledPos = transformSchematicPoint(transform, {

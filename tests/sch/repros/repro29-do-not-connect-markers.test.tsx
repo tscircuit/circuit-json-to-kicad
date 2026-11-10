@@ -117,3 +117,27 @@ test("repro29: connected pins do not emit KiCad no-connect markers", async () =>
   converter.runUntilFinished()
   expect(parseKicadSch(converter.getOutputString()).noConnects).toHaveLength(0)
 })
+
+test("repro29: no-connect markers preserve parser rounding near a midpoint", async () => {
+  const circuit = new Circuit()
+  circuit.pcbDisabled = true
+  circuit.add(
+    <board routingDisabled>
+      <chip name="U1" pinLabels={{ pin1: "NC" }} noConnect={["NC"]} />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const circuitJson = circuit.getCircuitJson()
+  const port = circuitJson.find(
+    (element): element is SchematicPort => element.type === "schematic_port",
+  )!
+  port.center = { x: 0, y: 0.00007 }
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson, {
+    schematicSheets: [{ circuitOrigin: { x: 100, y: 100 } }],
+  })
+  converter.runUntilFinished()
+  const schematic = parseKicadSch(converter.getOutputString())
+  expect(
+    schematic.noConnects.map((marker) => [marker.at?.x, marker.at?.y]),
+  ).toEqual([[100, 99.9989]])
+})

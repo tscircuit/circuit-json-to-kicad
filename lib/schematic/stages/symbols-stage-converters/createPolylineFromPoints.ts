@@ -17,7 +17,7 @@ export function createPolylineFromPoints({
   scale,
 }: {
   points: Array<{ x: number; y: number }>
-  transform: Matrix | Matrix[]
+  transform: Matrix
   isFilled: boolean
   fillColor?: string
   fallbackFillType?: "background" | "outline"

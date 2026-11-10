@@ -17,7 +17,7 @@ export function createTextFromPrimitive({
     fontSize: number
     anchor?: string
   }
-  transform: Matrix | Matrix[]
+  transform: Matrix
   scale: number
 }): SymbolText {
   const symbolText = new SymbolText()

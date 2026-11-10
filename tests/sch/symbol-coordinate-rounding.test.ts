@@ -21,7 +21,7 @@ const drawingAt = (center: Point, point: Point, scale = 15) =>
     },
   })
 
-test("library artwork subtracts and scales decimal coordinates before rounding", () => {
+test("library artwork rounds consistently across placements", () => {
   const atOrigin = drawingAt({ x: 0, y: 0 }, { x: 0.07219, y: -0.07219 })
   const translated = drawingAt(
     { x: 2.205, y: -2.55 },
@@ -39,12 +39,14 @@ test("library artwork subtracts and scales decimal coordinates before rounding",
   expect(translated.texts[0]!.getString()).toContain("(at 1.0829 -1.0829")
 })
 
-test("coordinates immediately below a midpoint are not snapped to it", () => {
+test("only coordinates within roundoff of a midpoint are treated as ties", () => {
   const center = { x: 2.205, y: -2.55 }
   for (const [point, expected] of [
-    [{ x: 2.2771899999999996, y: -2.622189999999999 }, "(xy 1.0828 -1.0828)"],
+    [{ x: 2.2771899999999996, y: -2.622189999999999 }, "(xy 1.0829 -1.0829)"],
     [{ x: 2.27719, y: -2.62219 }, "(xy 1.0829 -1.0829)"],
     [{ x: 2.2771900000000005, y: -2.6221900000000005 }, "(xy 1.0829 -1.0829)"],
+    [{ x: 2.27718999999, y: -2.62218999999 }, "(xy 1.0828 -1.0828)"],
+    [{ x: 2.27719000001, y: -2.62219000001 }, "(xy 1.0829 -1.0829)"],
   ] as const) {
     expect(drawingAt(center, point).polylines[0]!.getString()).toContain(
       expected,
@@ -86,7 +88,7 @@ test("decimal midpoint coordinates agree with an integer oracle", () => {
   }
 })
 
-test("integer artwork rounding handles scientific notation and whole units", () => {
+test("artwork rounding handles small scales and whole units", () => {
   for (const [coordinate, origin, factor, expected] of [
     [1.5e-7, 0, 1000, 0.0002],
     [-1.5e-7, 0, 1000, -0.0002],
@@ -96,20 +98,49 @@ test("integer artwork rounding handles scientific notation and whole units", () 
     [2, 2, 15, 0],
   ] as const) {
     expect(
-      transformSchematicPoint([scale(factor), translate(-origin, -origin)], {
-        x: coordinate,
-        y: coordinate,
-      }),
+      transformSchematicPoint(
+        compose(scale(factor), translate(-origin, -origin)),
+        { x: coordinate, y: coordinate },
+      ),
     ).toEqual({ x: expected, y: expected })
   }
 })
 
-test("matrix sequences retain compose order and single-matrix support", () => {
+test("composed transforms retain their geometry", () => {
   const matrices = [translate(5, -7), rotateDEG(90), scale(2, 3)]
   const point = { x: 2, y: 3 }
-  expect(transformSchematicPoint(matrices, point)).toEqual({ x: -4, y: -3 })
   expect(transformSchematicPoint(compose(matrices), point)).toEqual({
     x: -4,
     y: -3,
   })
+})
+
+test("electrical coordinates can retain exact parser rounding", () => {
+  const matrix = compose(scale(15), translate(0, 2.55))
+  const point = { x: 0, y: -2.62219 }
+  expect(transformSchematicPoint(matrix, point)).toEqual({ x: 0, y: -1.0829 })
+  expect(
+    transformSchematicPoint(matrix, point, { tolerateRoundoff: false }),
+  ).toEqual({ x: 0, y: -1.0828 })
+})
+
+test("roundoff does not merge artwork separated by a native KiCad unit", () => {
+  const origin = { x: 0, y: 0 }
+  expect(
+    drawingAt(origin, { x: 0.07219, y: 0 }).polylines[0]!.getString(),
+  ).toContain("(xy 1.0829 0)")
+  expect(
+    drawingAt(origin, {
+      x: 0.07219 + 0.0001 / 15,
+      y: 0,
+    }).polylines[0]!.getString(),
+  ).toContain("(xy 1.083 0)")
+})
+
+test("roundoff does not choose a tie when the error budget is too large", () => {
+  const matrix = compose(scale(15), translate(-1e14, 0))
+  const point = { x: 1e14 + 0.07219, y: 0 }
+  expect(transformSchematicPoint(matrix, point)).toEqual(
+    transformSchematicPoint(matrix, point, { tolerateRoundoff: false }),
+  )
 })

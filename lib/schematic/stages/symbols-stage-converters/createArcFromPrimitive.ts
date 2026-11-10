@@ -17,7 +17,7 @@ export function createArcFromPrimitive({
     isDashed?: boolean
     strokeWidth?: number | null
   }
-  transform: Matrix | Matrix[]
+  transform: Matrix
   scale: number
 }): SymbolArc {
   const start = transformSchematicPoint(transform, primitive.start)

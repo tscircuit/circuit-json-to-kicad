@@ -19,7 +19,7 @@ export function createRectangleFromPrimitive({
     strokeWidth?: number | null
     isDashed?: boolean
   }
-  transform: Matrix | Matrix[]
+  transform: Matrix
   scale: number
 }): SymbolRectangle {
   const start = transformSchematicPoint(transform, primitive.start)
