@@ -109,7 +109,20 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     options?: { includeBuiltin3dModels?: boolean },
   ) {
     super(input, ctx)
-    this.pcbComponents = this.ctx.db.pcb_component.list()
+    const manuallyPlacedViaIds = new Set(
+      input.flatMap((el) =>
+        el.type === "source_manually_placed_via"
+          ? [el.source_manually_placed_via_id]
+          : [],
+      ),
+    )
+    this.pcbComponents = this.ctx.db.pcb_component
+      .list()
+      .filter(
+        (component) =>
+          !component.source_component_id ||
+          !manuallyPlacedViaIds.has(component.source_component_id),
+      )
     this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
 
     // Imported ports may have trace membership without connectivity keys.
