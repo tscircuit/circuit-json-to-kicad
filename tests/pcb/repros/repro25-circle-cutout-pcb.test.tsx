@@ -36,6 +36,7 @@ test("pcb repro25 circle cutouts match snapshot", async () => {
   const edgeCircles = pcb.graphicCircles.filter((circle) =>
     circle.layer?.names.includes("Edge.Cuts"),
   )
+  expect(edgeCircles).toHaveLength(1)
   expect({
     circles: edgeCircles.map((circle) => ({
       center: [circle.center?.x, circle.center?.y],

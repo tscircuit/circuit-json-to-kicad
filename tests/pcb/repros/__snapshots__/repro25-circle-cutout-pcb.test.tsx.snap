@@ -2,7 +2,18 @@
 
 exports[`pcb repro25 circle cutouts match snapshot 1`] = `
 {
-  "circles": [],
-  "lineCount": 164,
+  "circles": [
+    {
+      "center": [
+        100,
+        100,
+      ],
+      "end": [
+        101.651,
+        100,
+      ],
+    },
+  ],
+  "lineCount": 112,
 }
 `;

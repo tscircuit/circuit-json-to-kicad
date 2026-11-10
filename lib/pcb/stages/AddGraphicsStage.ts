@@ -241,6 +241,10 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
       const cutoutPolys: MultiPolygon[] = []
+      const circularCutouts = new Map<
+        MultiPolygon,
+        { graphic: GrCircle; envelope: MultiPolygon }
+      >()
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
@@ -248,15 +252,42 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
             [cutoutCorners.map((point) => toKicadPoint(point, c2kMatPcb))],
           ])
         } else if (cutout.shape === "circle") {
-          // Approximate the circle as a polygon so polygon-clipping can process it.
-          // Scaling the number of steps based on the radius to maintain smooth curves
-          cutoutPolys.push([
+          const geometry: MultiPolygon = [
             [
               circleToPolygon(cutout.center, cutout.radius).map(([x, y]) =>
                 toKicadPoint({ x, y }, c2kMatPcb),
               ),
             ],
-          ])
+          ]
+          cutoutPolys.push(geometry)
+          const [cx, cy] = toKicadPoint(cutout.center, c2kMatPcb)
+          const [ex, ey] = toKicadPoint(
+            { x: cutout.center.x + cutout.radius, y: cutout.center.y },
+            c2kMatPcb,
+          )
+          // Include one KiCad coordinate unit so touching contours still go through clipping.
+          const radius = Math.hypot(ex - cx, ey - cy)
+          if (radius === 0) continue
+          const r = radius + 0.000001
+          circularCutouts.set(geometry, {
+            graphic: new GrCircle({
+              center: { x: cx, y: cy },
+              end: { x: ex, y: ey },
+              layer: "Edge.Cuts",
+              width: edgeCutsWidth,
+              fill: "none",
+            }),
+            envelope: [
+              [
+                [
+                  [cx - r, cy - r],
+                  [cx + r, cy - r],
+                  [cx + r, cy + r],
+                  [cx - r, cy + r],
+                ],
+              ],
+            ],
+          })
         } else if (cutout.shape === "polygon") {
           cutoutPolys.push([
             [cutout.points.map((point) => toKicadPoint(point, c2kMatPcb))],
@@ -271,10 +302,29 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         otherOutlines.length > 0
           ? polygonClipping.union(firstOutline, ...otherOutlines)
           : firstOutline
-      if (cutoutPolys.length > 0) {
+      // A complete, isolated circle is an exact KiCad primitive. Keep polygon
+      // clipping for notches, intersecting cutouts and ambiguous near contacts.
+      const clippedCutouts = cutoutPolys.filter((geometry) => {
+        const circle = circularCutouts.get(geometry)
+        if (!circle) return true
+        if (polygonClipping.difference(circle.envelope, boardGeom).length)
+          return true
+        const intersectsAnotherCutout = cutoutPolys.some(
+          (other) =>
+            other !== geometry &&
+            polygonClipping.intersection(
+              circle.envelope,
+              circularCutouts.get(other)?.envelope ?? other,
+            ).length > 0,
+        )
+        if (intersectsAnotherCutout) return true
+        appendGraphicCircle(kicadPcb, circle.graphic)
+        return false
+      })
+      if (clippedCutouts.length > 0) {
         boardGeom = polygonClipping.difference(
           roundPolygonToKicadPrecision(boardGeom),
-          ...cutoutPolys,
+          ...clippedCutouts,
         )
       }
 
