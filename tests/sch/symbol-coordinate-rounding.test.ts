@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import type { Point } from "circuit-json"
 import { createDrawingSubsymbol } from "lib/schematic/stages/symbols-stage-converters/createDrawingSubsymbol"
+import { roundSchematicSymbolCoordinate } from "lib/schematic/stages/utils/schematicCoordinates"
 
 const drawingAt = (center: Point, point: Point, scale = 15) =>
   createDrawingSubsymbol({
@@ -82,4 +83,13 @@ test("decimal midpoint coordinates agree with an integer oracle", () => {
       ).toContain(`(xy ${expected} ${-expected})`)
     }
   }
+})
+
+test("integer artwork rounding handles scientific notation and whole units", () => {
+  expect(roundSchematicSymbolCoordinate(1.5e-7, 0, 1000)).toBe(0.0002)
+  expect(roundSchematicSymbolCoordinate(-1.5e-7, 0, 1000)).toBe(-0.0002)
+  expect(roundSchematicSymbolCoordinate(2e-7, 1.5e-7, 1000)).toBe(0.0001)
+  expect(roundSchematicSymbolCoordinate(1e21, 0, 1e-21)).toBe(1)
+  expect(roundSchematicSymbolCoordinate(12, 2, 3)).toBe(30)
+  expect(roundSchematicSymbolCoordinate(2, 2, 15)).toBe(0)
 })

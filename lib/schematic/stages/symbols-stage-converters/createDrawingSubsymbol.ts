@@ -1,5 +1,4 @@
 import { SchematicSymbol } from "kicadts"
-import Big from "big.js"
 import type { Point } from "circuit-json"
 import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
@@ -7,6 +6,7 @@ import { createPolylineFromPoints } from "./createPolylineFromPoints"
 import { createRectangleFromPrimitive } from "./createRectangleFromPrimitive"
 import { createTextFromPrimitive } from "./createTextFromPrimitive"
 import { parseColor } from "../utils/parseColor"
+import { roundSchematicSymbolCoordinate } from "../utils/schematicCoordinates"
 
 export function createDrawingSubsymbol({
   libId,
@@ -26,20 +26,9 @@ export function createDrawingSubsymbol({
   const symbolScale = c2kMatSchScale
   const cx = symbolData.center?.x ?? 0
   const cy = symbolData.center?.y ?? 0
-  // Operate on the decimal values represented in Circuit JSON. Subtract and
-  // scale exactly, then round once to KiCad's 0.0001 mm grid (ties away from
-  // zero). A precomposed binary64 matrix loses precision before this rounding.
   const transform = ({ x, y }: Point): Point => ({
-    x: new Big(x.toString())
-      .minus(cx.toString())
-      .times(symbolScale.toString())
-      .round(4, Big.roundHalfUp)
-      .toNumber(),
-    y: new Big(y.toString())
-      .minus(cy.toString())
-      .times(symbolScale.toString())
-      .round(4, Big.roundHalfUp)
-      .toNumber(),
+    x: roundSchematicSymbolCoordinate(x, cx, symbolScale),
+    y: roundSchematicSymbolCoordinate(y, cy, symbolScale),
   })
 
   for (const primitive of symbolData.primitives || []) {
