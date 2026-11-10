@@ -1,17 +1,19 @@
-import type { CircuitJson } from "circuit-json"
-import { ConverterStage, type ConverterContext } from "../types"
-import { KicadPcb } from "kicadts"
 import { cju } from "@tscircuit/circuit-json-util"
-import { compose, translate, scale } from "transformation-matrix"
+import type { CircuitJson } from "circuit-json"
+import { KicadPcb } from "kicadts"
+import { compose, scale, translate } from "transformation-matrix"
+import { CircuitJsonToKicadDruConverter } from "../dru/CircuitJsonToKicadDruConverter"
+import type { RuleAreaExportDiagnostic } from "../dru/types"
+import type { ConverterContext, ConverterStage } from "../types"
 import { AddCopperPoursStage } from "./stages/AddCopperPoursStage"
-import { AddKeepoutsStage } from "./stages/AddKeepoutsStage"
-import { InitializePcbStage } from "./stages/InitializePcbStage"
-import { AddNetsStage } from "./stages/AddNetsStage"
 import { AddFootprintsStage } from "./stages/AddFootprintsStage"
+import { AddGraphicsStage } from "./stages/AddGraphicsStage"
+import { AddKeepoutsStage } from "./stages/AddKeepoutsStage"
+import { AddNetsStage } from "./stages/AddNetsStage"
+import { AddStandalonePcbElements } from "./stages/AddStandalonePcbElements"
 import { AddTracesStage } from "./stages/AddTracesStage"
 import { AddViasStage } from "./stages/AddViasStage"
-import { AddStandalonePcbElements } from "./stages/AddStandalonePcbElements"
-import { AddGraphicsStage } from "./stages/AddGraphicsStage"
+import { InitializePcbStage } from "./stages/InitializePcbStage"
 
 export interface CircuitJsonToKicadPcbOptions {
   /**
@@ -119,5 +121,23 @@ export class CircuitJsonToKicadPcbConverter {
    */
   getModel3dSourcePaths(): string[] {
     return this.ctx.pcbModel3dSourcePaths ?? []
+  }
+
+  getKicadDruString(): string {
+    const druConverter = new CircuitJsonToKicadDruConverter(
+      this.ctx.circuitJson,
+    )
+    return druConverter.getOutputDru()
+  }
+
+  getOutputDru(): string {
+    return this.getKicadDruString()
+  }
+
+  getRuleAreaExportDiagnostics(): RuleAreaExportDiagnostic[] {
+    const druConverter = new CircuitJsonToKicadDruConverter(
+      this.ctx.circuitJson,
+    )
+    return druConverter.getDiagnostics()
   }
 }
