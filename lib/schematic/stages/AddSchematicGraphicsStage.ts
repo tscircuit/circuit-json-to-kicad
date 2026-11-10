@@ -22,13 +22,16 @@ import {
   Uuid,
   Xy,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
 import { ConverterStage } from "../../types"
 import { getSchematicArcPoints } from "../getSchematicArcPoints"
 import { createInlineTraceLabel } from "./utils/createInlineTraceLabel"
 import { getTextJustificationFromAnchor } from "./utils/getTextJustificationFromAnchor"
 import { hasComponentLevelSymbolPrimitives } from "./utils/hasComponentLevelSymbolPrimitives"
 import { parseColor } from "./utils/parseColor"
+import {
+  roundSchematicCoordinate,
+  transformSchematicPoint,
+} from "./utils/schematicCoordinates"
 
 const DEFAULT_SECTION_TEXT_SIZE_MM = 1.27
 const DEFAULT_SECTION_LINE_COLOR = { r: 0, g: 0, b: 0, a: 1 } as const
@@ -99,13 +102,14 @@ export class AddSchematicGraphicsStage extends ConverterStage<
       const arcs = kicadSch.arcs || []
       for (const arc of schematicArcs) {
         const points = getSchematicArcPoints(arc)
-        const start = applyToPoint(this.ctx.c2kMatSch, points.start)
-        const mid = applyToPoint(this.ctx.c2kMatSch, points.mid)
-        const end = applyToPoint(this.ctx.c2kMatSch, points.end)
+        const start = transformSchematicPoint(this.ctx.c2kMatSch, points.start)
+        const mid = transformSchematicPoint(this.ctx.c2kMatSch, points.mid)
+        const end = transformSchematicPoint(this.ctx.c2kMatSch, points.end)
 
         const stroke = new Stroke()
-        stroke.width =
-          (arc.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
+        stroke.width = roundSchematicCoordinate(
+          (arc.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1),
+        )
         stroke.type = arc.is_dashed ? "dash" : "default"
         stroke.color = preserveStandaloneGraphics
           ? (parseColor(arc.color) ?? DEFAULT_SECTION_LINE_COLOR)
@@ -131,11 +135,11 @@ export class AddSchematicGraphicsStage extends ConverterStage<
     if (schematicLines.length > 0) {
       const polylines = kicadSch.polylines || []
       for (const line of schematicLines) {
-        const start = applyToPoint(this.ctx.c2kMatSch, {
+        const start = transformSchematicPoint(this.ctx.c2kMatSch, {
           x: line.x1,
           y: line.y1,
         })
-        const end = applyToPoint(this.ctx.c2kMatSch, {
+        const end = transformSchematicPoint(this.ctx.c2kMatSch, {
           x: line.x2,
           y: line.y2,
         })
@@ -147,8 +151,9 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         ])
 
         const stroke = new Stroke()
-        stroke.width =
-          (line.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
+        stroke.width = roundSchematicCoordinate(
+          (line.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1),
+        )
         stroke.type = line.is_dashed ? "dash" : "default"
         stroke.color = preserveStandaloneGraphics
           ? (parseColor(line.color) ?? DEFAULT_SECTION_LINE_COLOR)
@@ -167,8 +172,9 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         if (path.points.length < 2) continue
 
         const stroke = new Stroke()
-        stroke.width =
-          (path.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
+        stroke.width = roundSchematicCoordinate(
+          (path.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1),
+        )
         stroke.type = path.is_dashed ? "dash" : "default"
         stroke.color = preserveStandaloneGraphics
           ? (parseColor(path.stroke_color ?? "") ?? DEFAULT_SECTION_LINE_COLOR)
@@ -178,7 +184,10 @@ export class AddSchematicGraphicsStage extends ConverterStage<
           new Polyline({
             points: new Pts(
               path.points.map((point) => {
-                const transformed = applyToPoint(this.ctx.c2kMatSch!, point)
+                const transformed = transformSchematicPoint(
+                  this.ctx.c2kMatSch!,
+                  point,
+                )
                 return new Xy(transformed.x, transformed.y)
               }),
             ),
@@ -195,18 +204,19 @@ export class AddSchematicGraphicsStage extends ConverterStage<
       for (const rect of schematicRects) {
         const halfWidth = rect.width / 2
         const halfHeight = rect.height / 2
-        const firstCorner = applyToPoint(this.ctx.c2kMatSch, {
+        const firstCorner = transformSchematicPoint(this.ctx.c2kMatSch, {
           x: rect.center.x - halfWidth,
           y: rect.center.y - halfHeight,
         })
-        const secondCorner = applyToPoint(this.ctx.c2kMatSch, {
+        const secondCorner = transformSchematicPoint(this.ctx.c2kMatSch, {
           x: rect.center.x + halfWidth,
           y: rect.center.y + halfHeight,
         })
 
         const stroke = new Stroke()
-        stroke.width =
-          (rect.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1)
+        stroke.width = roundSchematicCoordinate(
+          (rect.stroke_width ?? 0) * (this.ctx.kicadSchematicScaleFactor ?? 1),
+        )
         stroke.type = rect.is_dashed ? "dash" : "default"
         stroke.color = preserveStandaloneGraphics
           ? (parseColor(rect.color) ?? DEFAULT_SECTION_LINE_COLOR)
@@ -267,7 +277,7 @@ export class AddSchematicGraphicsStage extends ConverterStage<
         ) {
           sourceY = text.position.y - DEFAULT_SECTION_TEXT_PADDING_Y_MM
         }
-        const position = applyToPoint(this.ctx.c2kMatSch, {
+        const position = transformSchematicPoint(this.ctx.c2kMatSch, {
           x:
             (text.position?.x ?? 0) +
             (isInlineTraceText || preserveText
@@ -278,9 +288,11 @@ export class AddSchematicGraphicsStage extends ConverterStage<
 
         const font = new TextEffectsFont()
         const fontSize = preserveText
-          ? Math.max(
-              0.01,
-              text.font_size * (this.ctx.kicadSchematicScaleFactor ?? 1),
+          ? roundSchematicCoordinate(
+              Math.max(
+                0.01,
+                text.font_size * (this.ctx.kicadSchematicScaleFactor ?? 1),
+              ),
             )
           : DEFAULT_SECTION_TEXT_SIZE_MM
         font.size = { height: fontSize, width: fontSize }
