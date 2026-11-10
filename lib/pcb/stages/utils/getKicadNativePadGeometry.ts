@@ -36,43 +36,70 @@ export const getResolvedPillRadius = ({
   height: number
   radius?: number
 }): number =>
-  typeof radius === "number" && Number.isFinite(radius)
+  typeof radius === "number" && Number.isFinite(radius) && radius > 0
     ? radius
     : Math.min(width, height) / 2
+
+const getFinitePositiveDimension = (
+  value: unknown,
+  fallback: number,
+): number =>
+  typeof value === "number" && Number.isFinite(value) && value > 0
+    ? value
+    : fallback
+
+const getFiniteNumber = (value: unknown, fallback = 0): number =>
+  typeof value === "number" && Number.isFinite(value) ? value : fallback
 
 /** Maps Circuit JSON shapes that have native KiCad pad equivalents. */
 export const getKicadNativePadGeometry = (
   pad: NativePadGeometryInput,
 ): KicadNativePadGeometry => {
   switch (pad.shape) {
-    case "circle":
+    case "circle": {
+      const radius = getFinitePositiveDimension(pad.radius, 0.5)
       return {
         shape: "circle",
-        size: [pad.radius * 2, pad.radius * 2],
+        size: [radius * 2, radius * 2],
         rotation: 0,
       }
+    }
 
     case "rect":
     case "rotated_rect": {
-      const cornerRadius = pad.corner_radius ?? pad.rect_border_radius
+      const width = getFinitePositiveDimension(pad.width, 1.0)
+      const height = getFinitePositiveDimension(pad.height, 1.0)
+      const rawCornerRadius = pad.corner_radius ?? pad.rect_border_radius
+      const cornerRadius =
+        typeof rawCornerRadius === "number" &&
+        Number.isFinite(rawCornerRadius) &&
+        rawCornerRadius > 0
+          ? rawCornerRadius
+          : 0
       return {
         shape: cornerRadius ? "roundrect" : "rect",
-        size: [pad.width, pad.height],
-        rotation: pad.shape === "rotated_rect" ? (pad.ccw_rotation ?? 0) : 0,
+        size: [width, height],
+        rotation:
+          pad.shape === "rotated_rect" ? getFiniteNumber(pad.ccw_rotation) : 0,
         roundrectRatio: cornerRadius
-          ? cornerRadius / Math.min(pad.width, pad.height)
+          ? cornerRadius / Math.min(width, height)
           : undefined,
       }
     }
 
     case "pill":
-    case "rotated_pill":
+    case "rotated_pill": {
+      const width = getFinitePositiveDimension(pad.width, 1.0)
+      const height = getFinitePositiveDimension(pad.height, 1.0)
       return {
         shape: "roundrect",
-        size: [pad.width, pad.height],
-        rotation: pad.shape === "rotated_pill" ? (pad.ccw_rotation ?? 0) : 0,
+        size: [width, height],
+        rotation:
+          pad.shape === "rotated_pill" ? getFiniteNumber(pad.ccw_rotation) : 0,
         roundrectRatio:
-          getResolvedPillRadius(pad) / Math.min(pad.width, pad.height),
+          getResolvedPillRadius({ width, height, radius: pad.radius }) /
+          Math.min(width, height),
       }
+    }
   }
 }
