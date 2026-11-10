@@ -30,13 +30,35 @@ export class AddSchematicTracesStage extends ConverterStage<
 
     const wires: Wire[] = []
     const junctions: Junction[] = []
+    const netLabels = db.schematic_net_label?.list?.() || []
+    const netLabelSymbolAnchorPoints = netLabels
+      .filter(
+        (netLabel: any) =>
+          Boolean(netLabel.symbol_name) && !netLabel.schematic_sheet_id,
+      )
+      .map((netLabel: any) => ({
+        x: netLabel.anchor_position?.x ?? netLabel.center?.x,
+        y: netLabel.anchor_position?.y ?? netLabel.center?.y,
+      }))
+      .filter(
+        (pt): pt is { x: number; y: number } =>
+          typeof pt.x === "number" &&
+          Number.isFinite(pt.x) &&
+          typeof pt.y === "number" &&
+          Number.isFinite(pt.y),
+      )
 
     // Process each trace
     for (const schematicTrace of schematicTraces) {
-      // Add wires for each edge in the trace
+      // Add wires for each edge in the trace, splitting at interior power/rail symbol pins
       for (const edge of schematicTrace.edges) {
-        const wire = this.createWireFromEdge(edge)
-        wires.push(wire)
+        const subEdges = edge.is_crossing
+          ? [edge]
+          : this.splitEdgeAtInteriorPoints(edge, netLabelSymbolAnchorPoints)
+        for (const subEdge of subEdges) {
+          const wire = this.createWireFromEdge(subEdge)
+          wires.push(wire)
+        }
       }
 
       // Add junctions at junction points
@@ -94,6 +116,73 @@ export class AddSchematicTracesStage extends ConverterStage<
     wire.uuid = crypto.randomUUID()
 
     return wire
+  }
+
+  private splitEdgeAtInteriorPoints(
+    edge: { from: { x: number; y: number }; to: { x: number; y: number } },
+    candidatePoints: Array<{ x: number; y: number }>,
+  ): Array<{ from: { x: number; y: number }; to: { x: number; y: number } }> {
+    const { from, to } = edge
+    const dx = to.x - from.x
+    const dy = to.y - from.y
+    const lengthSq = dx * dx + dy * dy
+    const length = Math.sqrt(lengthSq)
+    const tolerance = 1e-4
+
+    if (length <= tolerance) {
+      return [edge]
+    }
+
+    const interiorStops: Array<{
+      t: number
+      point: { x: number; y: number }
+    }> = []
+
+    for (const pt of candidatePoints) {
+      const distFromStart = Math.hypot(pt.x - from.x, pt.y - from.y)
+      const distFromEnd = Math.hypot(pt.x - to.x, pt.y - to.y)
+      if (distFromStart <= tolerance || distFromEnd <= tolerance) {
+        continue
+      }
+
+      const t = ((pt.x - from.x) * dx + (pt.y - from.y) * dy) / lengthSq
+      if (t <= 0 || t >= 1) continue
+
+      const perpDistance =
+        Math.abs((pt.x - from.x) * dy - (pt.y - from.y) * dx) / length
+      if (perpDistance > tolerance) continue
+
+      if (
+        interiorStops.some(
+          (existing) =>
+            Math.hypot(existing.point.x - pt.x, existing.point.y - pt.y) <=
+            tolerance,
+        )
+      ) {
+        continue
+      }
+
+      interiorStops.push({ t, point: { x: pt.x, y: pt.y } })
+    }
+
+    if (interiorStops.length === 0) {
+      return [edge]
+    }
+
+    interiorStops.sort((a, b) => a.t - b.t)
+
+    const orderedPoints = [from, ...interiorStops.map((stop) => stop.point), to]
+    const segments: Array<{
+      from: { x: number; y: number }
+      to: { x: number; y: number }
+    }> = []
+    for (let i = 0; i < orderedPoints.length - 1; i++) {
+      segments.push({
+        from: orderedPoints[i]!,
+        to: orderedPoints[i + 1]!,
+      })
+    }
+    return segments
   }
 
   /**
