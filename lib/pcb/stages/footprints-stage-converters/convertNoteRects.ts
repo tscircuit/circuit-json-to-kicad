@@ -11,9 +11,15 @@ export function convertNoteRects(
   const fpPolys: FpPoly[] = []
 
   for (const rect of noteRects) {
+    const layerMap: Record<string, string> = {
+      top: "F.Fab",
+      bottom: "B.Fab",
+    }
+    const kicadLayer = layerMap[rect.layer] || rect.layer || "F.Fab"
+
     const graphic = convertNoteRectToFootprintGraphic({
       rect,
-      layer: "F.Fab",
+      layer: kicadLayer,
       ...placement,
     })
     if (graphic instanceof FpRect) fpRects.push(graphic)
