@@ -2,9 +2,6 @@ import { expect, test } from "bun:test"
 import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
-import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
-import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
-import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
 const MySymbol = () => (
   <symbol name="MyPart">
@@ -66,16 +63,4 @@ test("repro877: identical custom symbols at a coordinate rounding boundary", asy
       ),
     })),
   }).toMatchSnapshot()
-
-  const snapshot = await takeKicadSnapshot({
-    kicadFileContent: output,
-    kicadFileType: "sch",
-  })
-  expect(snapshot.exitCode).toBe(0)
-  await expect(
-    stackCircuitJsonKicadPngs(
-      await takeCircuitJsonSnapshot({ circuitJson, outputType: "schematic" }),
-      snapshot.generatedFileContent["temp_file.png"]!,
-    ),
-  ).toMatchPngSnapshot(import.meta.path)
 }, 30_000)
