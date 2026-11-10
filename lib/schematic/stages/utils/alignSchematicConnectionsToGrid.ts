@@ -34,7 +34,7 @@ type SchematicComponentId = SchematicComponent["schematic_component_id"]
 
 type AxisPoint = { lower: number; upper: number }
 type Attachment =
-  | { type: "lead"; endpoint: Point; inner: Point }
+  | { type: "lead"; endpoints: Point[]; inner: Point }
   | { type: "edge"; from: Point; to: Point }
   | { type: "circle"; center: Point; radius: number }
 
@@ -97,21 +97,30 @@ function findAttachment({
       const first = toSchematicPointInternalUnits(points[0]!)
       const last = toSchematicPointInternalUnits(points.at(-1)!)
       const filled = polyline.fill?.type && polyline.fill.type !== "none"
-      if (!samePoint(first, last) && !filled) {
+      const open = !samePoint(first, last) && !filled
+      if (open) {
         if (samePoint(first, point))
           leads.push({
             type: "lead",
-            endpoint: points[0]!,
+            endpoints: [points[0]!],
             inner: toSchematicPointInternalUnits(points[1]!),
           })
         if (samePoint(last, point))
           leads.push({
             type: "lead",
-            endpoint: points.at(-1)!,
+            endpoints: [points.at(-1)!],
             inner: toSchematicPointInternalUnits(points.at(-2)!),
           })
       }
       for (let index = 1; index < points.length; index++) {
+        // A slanted lead is still a lead; do not mistake its free endpoint
+        // for an edge of the body merely because the stroke is not horizontal.
+        if (
+          open &&
+          ((index === 1 && samePoint(first, point)) ||
+            (index === points.length - 1 && samePoint(last, point)))
+        )
+          continue
         const found = findEdgeAttachment({
           point,
           direction,
@@ -176,53 +185,15 @@ function findAttachment({
       }
     }
   }
-  // Only a free end of one stroke can be adjusted as a stem. A shared vertex
-  // may be part of the body, so retain it unless an unchanged edge was found.
-  if (leads.length > 1)
+  // Explicit schematic lines and generated stems can describe the same lead.
+  // Move every copy together, but reject a vertex shared by different strokes.
+  const lead = leads[0]
+  if (leads.some((candidate) => !samePoint(candidate.inner, lead!.inner)))
     throw new GridPlacementError(
       "A pin meets multiple drawing strokes; its stem cannot move without changing the symbol body.",
     )
-  return leads[0]
-}
-
-/** Embed the electrical coordinates on the grid without merging coordinates.
- * For orthogonal wires, preserving X/Y equality and strict ordering preserves
- * intersections and point-on-segment relationships, including T junctions.
- */
-function placeAxis(points: Map<number, AxisPoint>): Map<number, number> {
-  const sorted = [...points].sort(([a], [b]) => a - b)
-  let upper = Number.POSITIVE_INFINITY
-  for (let index = sorted.length - 1; index >= 0; index--) {
-    const constraint = sorted[index]![1]
-    upper = Math.min(
-      upper - 1,
-      Math.floor(constraint.upper / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
-    )
-    constraint.upper = upper
-  }
-  const placed = new Map<number, number>()
-  let previous = Number.NEGATIVE_INFINITY
-  for (const [coordinate, constraint] of sorted) {
-    const lower = Math.max(
-      previous + 1,
-      Math.ceil(constraint.lower / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
-    )
-    if (lower > constraint.upper) {
-      throw new GridPlacementError(
-        "Cannot fit schematic connections on KiCad's 1.27 mm grid without changing symbol bodies. Increase pin spacing or adjust the schematic layout.",
-      )
-    }
-    const position = Math.max(
-      lower,
-      Math.min(
-        Math.round(coordinate / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
-        constraint.upper,
-      ),
-    )
-    placed.set(coordinate, position * KICAD_CONNECTION_GRID_INTERNAL_UNITS)
-    previous = position
-  }
-  return placed
+  if (lead) lead.endpoints = leads.flatMap((candidate) => candidate.endpoints)
+  return lead
 }
 
 class GridPlacementError extends Error {}
@@ -234,23 +205,27 @@ type PinPlacement = {
   componentId: SchematicComponentId
   attachment?: Attachment
   local: Point
+  origin: Point
+  bounds: Record<"x" | "y", AxisPoint>
 }
 
-/** Place shared symbols and orthogonal wiring together. Fixed local pin offsets
- * tie each connection to its instance origin. Strict coordinate ordering keeps
- * separate wires separate. A positive constraint cycle means the existing
- * layout cannot fit with these local pin offsets without rerouting.
+/** Solve pin positions and instance origins together. Attachment bounds keep
+ * pins outside the unchanged bodies and on their edges. Separation constraints
+ * keep distinct contacts apart without requiring a different row for every
+ * unrelated coordinate in the sheet. A positive cycle is an impossible layout.
  */
 function placeSheetAxis({
   coordinates,
   pins,
   axis,
   labelSpans,
+  separations,
 }: {
   coordinates: Set<number>
   pins: PinPlacement[]
   axis: "x" | "y"
   labelSpans: [number, number][]
+  separations: [number, number][]
 }) {
   const sorted = [...coordinates].sort((a, b) => a - b)
   if (sorted.length === 0) {
@@ -265,10 +240,34 @@ function placeSheetAxis({
   const positions = sorted.map((coordinate) =>
     Math.round(coordinate / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
   )
+  // Prefer the same local layout for identical symbols, while retaining
+  // connections that are already on the sheet grid, even at fractional origins.
+  const preferred = new Map<number, number>()
+  for (const pin of pins) {
+    if (pin.position[axis] % KICAD_CONNECTION_GRID_INTERNAL_UNITS === 0)
+      continue
+    const pointIndex = indices.get(pin.position[axis])!
+    const position =
+      Math.round(pin.origin[axis] / KICAD_CONNECTION_GRID_INTERNAL_UNITS) +
+      Math.round(pin.local[axis] / KICAD_CONNECTION_GRID_INTERNAL_UNITS) *
+        (axis === "y" ? -1 : 1)
+    preferred.set(
+      pointIndex,
+      Math.max(position, preferred.get(pointIndex) ?? -Infinity),
+    )
+  }
+  for (const [index, position] of preferred) positions[index] = position
   const origins = new Map<SchematicComponentId, number>()
   const constraints: { from: number; to: number; distance: number }[] = []
   for (let index = 1; index < sorted.length; index++) {
-    constraints.push({ from: index - 1, to: index, distance: 1 })
+    constraints.push({ from: index - 1, to: index, distance: 0 })
+  }
+  for (const [from, to] of separations) {
+    constraints.push({
+      from: indices.get(from)!,
+      to: indices.get(to)!,
+      distance: 1,
+    })
   }
   for (const [from, to] of labelSpans) {
     constraints.push({
@@ -282,16 +281,24 @@ function placeSheetAxis({
     if (originIndex === undefined) {
       originIndex = positions.length
       origins.set(pin.componentId, originIndex)
-      // Derive the origin from its pins. An independently rounded origin would
-      // impose an extra lower bound and can push already-aligned pins forward.
-      positions.push(Number.NEGATIVE_INFINITY)
+      positions.push(
+        Math.round(pin.origin[axis] / KICAD_CONNECTION_GRID_INTERNAL_UNITS),
+      )
     }
     const pointIndex = indices.get(pin.position[axis])!
-    const offset =
-      (pin.local[axis] / KICAD_CONNECTION_GRID_INTERNAL_UNITS) *
-      (axis === "y" ? -1 : 1)
-    constraints.push({ from: originIndex, to: pointIndex, distance: offset })
-    constraints.push({ from: pointIndex, to: originIndex, distance: -offset })
+    const bounds = pin.bounds[axis]
+    const lower = Math.ceil(
+      (axis === "x" ? bounds.lower : -bounds.upper) /
+        KICAD_CONNECTION_GRID_INTERNAL_UNITS,
+    )
+    const upper = Math.floor(
+      (axis === "x" ? bounds.upper : -bounds.lower) /
+        KICAD_CONNECTION_GRID_INTERNAL_UNITS,
+    )
+    if (Number.isFinite(lower))
+      constraints.push({ from: originIndex, to: pointIndex, distance: lower })
+    if (Number.isFinite(upper))
+      constraints.push({ from: pointIndex, to: originIndex, distance: -upper })
   }
   for (let iteration = 0; iteration < positions.length; iteration++) {
     let changed = false
@@ -319,7 +326,7 @@ function placeSheetAxis({
       }
   }
   throw new GridPlacementError(
-    "Grid placement requires a different shared pin layout or rerouted wires. Adjust the placement or routing.",
+    "Cannot fit schematic connections on KiCad's 1.27 mm grid without changing symbol bodies or rerouting wires.",
   )
 }
 
@@ -335,15 +342,130 @@ function transformSourcePointToInternalUnits({
   )
 }
 
+type ConnectionCoordinates = {
+  x: Set<number>
+  y: Set<number>
+  points: Map<number, Map<number, Point>>
+  segments: { from: Point; to: Point }[]
+}
+
+/** Keep distinct points and point/wire pairs apart on a separating axis.
+ * Distant wiring can share a row or column; electrical contacts cannot merge.
+ */
+function getConnectionSeparations(coordinates: ConnectionCoordinates) {
+  const separations = {
+    x: new Map<number, number>(),
+    y: new Map<number, number>(),
+  }
+  const points = [...coordinates.points.values()].flatMap((column) => [
+    ...column.values(),
+  ])
+  for (let index = 0; index < points.length; index++) {
+    const point = points[index]!
+    for (const other of points.slice(index + 1)) {
+      addConnectionSeparation({ point, from: other, to: other, separations })
+    }
+    for (const segment of coordinates.segments) {
+      addConnectionSeparation({ point, ...segment, separations })
+    }
+  }
+  // Monotone coordinates make intervals containing another separation redundant.
+  const spans: Record<"x" | "y", [number, number][]> = { x: [], y: [] }
+  for (const axis of ["x", "y"] as const) {
+    let next = Number.POSITIVE_INFINITY
+    for (const [from, to] of [...separations[axis]].sort(([a], [b]) => b - a)) {
+      if (to >= next) continue
+      spans[axis].push([from, to])
+      next = to
+    }
+  }
+  return spans
+}
+
+function addConnectionSeparation({
+  point,
+  from,
+  to,
+  separations,
+}: {
+  point: Point
+  from: Point
+  to: Point
+  separations: Record<"x" | "y", Map<number, number>>
+}): void {
+  const nearest = {
+    x: Math.max(
+      Math.min(from.x, to.x),
+      Math.min(point.x, Math.max(from.x, to.x)),
+    ),
+    y: Math.max(
+      Math.min(from.y, to.y),
+      Math.min(point.y, Math.max(from.y, to.y)),
+    ),
+  }
+  if (samePoint(point, nearest)) return
+  const axis =
+    Math.abs(point.x - nearest.x) >= Math.abs(point.y - nearest.y) ? "x" : "y"
+  const lower = Math.min(point[axis], nearest[axis])
+  const upper = Math.max(point[axis], nearest[axis])
+  separations[axis].set(
+    lower,
+    Math.min(upper, separations[axis].get(lower) ?? Infinity),
+  )
+}
+
+function placeConnectionPoint({
+  point,
+  grid,
+}: {
+  point: Point
+  grid: SchematicConnectionGrid
+}): Point {
+  return { x: grid.x.get(point.x)!, y: grid.y.get(point.y)! }
+}
+
+/** Diagonal wires are allowed when their contacts survive grid placement.
+ * Check all wires as well, so a changed separation rule cannot silently join
+ * separate nets or disconnect a pin, label, endpoint, or junction.
+ */
+function validateConnectionPlacement({
+  coordinates,
+  grid,
+}: {
+  coordinates: ConnectionCoordinates
+  grid: SchematicConnectionGrid
+}): void {
+  for (const column of coordinates.points.values()) {
+    for (const point of column.values()) {
+      const placedPoint = placeConnectionPoint({ point, grid })
+      for (const { from, to } of coordinates.segments) {
+        const connected = isPointOnSegment({ point, from, to })
+        const remainsConnected = isPointOnSegment({
+          point: placedPoint,
+          from: placeConnectionPoint({ point: from, grid }),
+          to: placeConnectionPoint({ point: to, grid }),
+        })
+        if (connected !== remainsConnected)
+          throw new GridPlacementError(
+            "Grid placement would change a wire connection. Reroute the wire before exporting.",
+          )
+      }
+    }
+  }
+}
+
 function addConnectionCoordinates({
   coordinates,
   point,
 }: {
-  coordinates: Record<"x" | "y", Set<number>>
+  coordinates: ConnectionCoordinates
   point: Point
 }): void {
   coordinates.x.add(point.x)
   coordinates.y.add(point.y)
+  let column = coordinates.points.get(point.x)
+  if (!column) coordinates.points.set(point.x, (column = new Map()))
+  column.set(point.y, point)
 }
 
 export function alignSchematicConnectionsToGrid(
@@ -353,7 +475,12 @@ export function alignSchematicConnectionsToGrid(
   grid: SchematicConnectionGrid
   origins: Map<SchematicComponentId, Point>
 } {
-  const coordinates = { x: new Set<number>(), y: new Set<number>() }
+  const coordinates: ConnectionCoordinates = {
+    x: new Set(),
+    y: new Set(),
+    points: new Map(),
+    segments: [],
+  }
   const labelSpans: Record<"x" | "y", [number, number][]> = { x: [], y: [] }
   const pinPlacements: PinPlacement[] = []
   for (const { component, symbol } of components) {
@@ -416,6 +543,8 @@ export function alignSchematicConnectionsToGrid(
           direction,
           attachment,
           local,
+          origin,
+          bounds: { x: axes.x.get(local.x)!, y: axes.y.get(local.y)! },
           componentId: component.schematic_component_id,
         })
         if (!attachment) continue
@@ -446,14 +575,7 @@ export function alignSchematicConnectionsToGrid(
         }
       }
     }
-    const localGrid = { x: placeAxis(axes.x), y: placeAxis(axes.y) }
-    for (const pin of symbolPins) {
-      pin.local = {
-        x: localGrid.x.get(pin.local.x)!,
-        y: localGrid.y.get(pin.local.y)!,
-      }
-      pinPlacements.push(pin)
-    }
+    pinPlacements.push(...symbolPins)
   }
   for (const trace of ctx.db.schematic_trace.list()) {
     for (const edge of trace.edges) {
@@ -465,11 +587,7 @@ export function alignSchematicConnectionsToGrid(
         transform: ctx.c2kMatSch!,
         point: edge.to,
       })
-      if (from.x !== to.x && from.y !== to.y) {
-        throw new GridPlacementError(
-          "Cannot align diagonal schematic wires without rerouting them.",
-        )
-      }
+      coordinates.segments.push({ from, to })
       addConnectionCoordinates({ coordinates, point: from })
       addConnectionCoordinates({ coordinates, point: to })
     }
@@ -536,19 +654,23 @@ export function alignSchematicConnectionsToGrid(
         }),
       })
   }
+  const separations = getConnectionSeparations(coordinates)
   const x = placeSheetAxis({
     coordinates: coordinates.x,
     pins: pinPlacements,
     axis: "x",
     labelSpans: labelSpans.x,
+    separations: separations.x,
   })
   const y = placeSheetAxis({
     coordinates: coordinates.y,
     pins: pinPlacements,
     axis: "y",
     labelSpans: labelSpans.y,
+    separations: separations.y,
   })
   const grid = { x: x.coordinates, y: y.coordinates }
+  validateConnectionPlacement({ coordinates, grid })
   const origins = new Map(
     [...x.origins].map(([id, xCoordinate]) => [
       id,
@@ -558,6 +680,19 @@ export function alignSchematicConnectionsToGrid(
       },
     ]),
   )
+  for (const pin of pinPlacements) {
+    const origin = origins.get(pin.componentId)!
+    pin.local = applyToPoint(
+      compose(
+        scale(1, -1),
+        translate(
+          -toSchematicInternalUnits(origin.x),
+          -toSchematicInternalUnits(origin.y),
+        ),
+      ),
+      { x: grid.x.get(pin.position.x)!, y: grid.y.get(pin.position.y)! },
+    )
+  }
   const lengths = new Map<SymbolPin, number>()
   for (const { pin, local: point, direction, attachment } of pinPlacements) {
     if (!attachment || attachment.type === "lead") continue
@@ -590,8 +725,10 @@ export function alignSchematicConnectionsToGrid(
   // Commit the placement only after all connection and attachment checks pass.
   for (const { pin, local: point, attachment } of pinPlacements) {
     if (attachment?.type === "lead") {
-      attachment.endpoint.x = fromSchematicInternalUnits(point.x)
-      attachment.endpoint.y = fromSchematicInternalUnits(point.y)
+      for (const endpoint of attachment.endpoints) {
+        endpoint.x = fromSchematicInternalUnits(point.x)
+        endpoint.y = fromSchematicInternalUnits(point.y)
+      }
     }
     if (lengths.has(pin)) pin.length = lengths.get(pin)!
     pin.at = [
