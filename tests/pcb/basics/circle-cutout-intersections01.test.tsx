@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 
-test("intersecting cutouts stay clipped and only the isolated circle is emitted whole", async () => {
+test("intersecting cutouts stay clipped while diagonally separated circles stay native", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width={20} height={10}>
@@ -11,6 +11,7 @@ test("intersecting cutouts stay clipped and only the isolated circle is emitted 
       <cutout shape="circle" radius={1} pcbX={0} />
       <cutout shape="rect" width={1} height={2} pcbX={0.5} />
       <cutout shape="circle" radius={1} pcbX={5} />
+      <cutout shape="circle" radius={1} pcbX={6.8} pcbY={1.8} />
       <cutout shape="circle" radius={1} pcbX={12} />
     </board>,
   )
@@ -20,6 +21,7 @@ test("intersecting cutouts stay clipped and only the isolated circle is emitted 
   const pcb = converter.getOutput()
   expect(pcb.graphicCircles.map((circle) => circle.centerPoint)).toEqual([
     { x: 105, y: 100 },
+    { x: 106.8, y: 98.2 },
   ])
   expect(pcb.graphicLines.length).toBeGreaterThan(4)
 })

@@ -243,7 +243,13 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       const cutoutPolys: MultiPolygon[] = []
       const circularCutouts = new Map<
         MultiPolygon,
-        { graphic: GrCircle; envelope: MultiPolygon }
+        {
+          graphic: GrCircle
+          envelope: MultiPolygon
+          cx: number
+          cy: number
+          radius: number
+        }
       >()
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
@@ -270,6 +276,9 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           if (radius === 0) continue
           const r = radius + 0.000001
           circularCutouts.set(geometry, {
+            cx,
+            cy,
+            radius,
             graphic: new GrCircle({
               center: { x: cx, y: cy },
               end: { x: ex, y: ey },
@@ -304,18 +313,52 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
           : firstOutline
       // A complete, isolated circle is an exact KiCad primitive. Keep polygon
       // clipping for notches, intersecting cutouts and ambiguous near contacts.
-      const clippedCutouts = cutoutPolys.filter((geometry) => {
+      const bounds = cutoutPolys.map((geometry) => {
+        const ring = (circularCutouts.get(geometry)?.envelope ??
+          geometry)[0]![0]!
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity
+        for (const [x, y] of ring) {
+          minX = Math.min(minX, x)
+          maxX = Math.max(maxX, x)
+          minY = Math.min(minY, y)
+          maxY = Math.max(maxY, y)
+        }
+        return { minX, maxX, minY, maxY }
+      })
+      const clippedCutouts = cutoutPolys.filter((geometry, index) => {
         const circle = circularCutouts.get(geometry)
         if (!circle) return true
         if (polygonClipping.difference(circle.envelope, boardGeom).length)
           return true
+        const box = bounds[index]!
         const intersectsAnotherCutout = cutoutPolys.some(
-          (other) =>
-            other !== geometry &&
-            polygonClipping.intersection(
-              circle.envelope,
-              circularCutouts.get(other)?.envelope ?? other,
-            ).length > 0,
+          (other, otherIndex) => {
+            if (index === otherIndex) return false
+            const otherBox = bounds[otherIndex]!
+            if (
+              box.minX > otherBox.maxX ||
+              box.maxX < otherBox.minX ||
+              box.minY > otherBox.maxY ||
+              box.maxY < otherBox.minY
+            )
+              return false
+            const otherCircle = circularCutouts.get(other)
+            if (otherCircle) {
+              return (
+                Math.hypot(
+                  circle.cx - otherCircle.cx,
+                  circle.cy - otherCircle.cy,
+                ) <=
+                circle.radius + otherCircle.radius + 0.000001
+              )
+            }
+            return (
+              polygonClipping.intersection(circle.envelope, other).length > 0
+            )
+          },
         )
         if (intersectsAnotherCutout) return true
         appendGraphicCircle(kicadPcb, circle.graphic)
