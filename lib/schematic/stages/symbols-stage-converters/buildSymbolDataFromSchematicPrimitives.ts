@@ -144,6 +144,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
       ...getSchematicArcPoints(arc),
       isDashed: arc.is_dashed,
       strokeWidth: arc.stroke_width,
+      color: arc.color,
     })
   }
 
@@ -157,6 +158,8 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
       fill: circle.is_filled ?? false,
       fillColor: circle.fill_color,
       strokeWidth: circle.stroke_width,
+      isDashed: circle.is_dashed,
+      color: circle.color,
     })
   }
 
@@ -169,6 +172,8 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
         { x: line.x2 ?? 0, y: line.y2 ?? 0 },
       ],
       strokeWidth: line.stroke_width,
+      isDashed: line.is_dashed,
+      color: line.color,
     })
   }
 
@@ -181,6 +186,8 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
         fill: path.is_filled ?? false,
         fillColor: path.fill_color,
         strokeWidth: path.stroke_width,
+        isDashed: path.is_dashed,
+        color: path.stroke_color,
       })
     }
   }
@@ -198,6 +205,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
         fillColor: rect.fill_color,
         strokeWidth: rect.stroke_width,
         isDashed: rect.is_dashed,
+        color: rect.color,
       })
       continue
     }
@@ -221,6 +229,7 @@ export function buildSymbolDataFromSchematicPrimitives(params: {
       fillColor: rect.fill_color,
       strokeWidth: rect.stroke_width,
       isDashed: rect.is_dashed,
+      color: rect.color,
     })
   }
 
