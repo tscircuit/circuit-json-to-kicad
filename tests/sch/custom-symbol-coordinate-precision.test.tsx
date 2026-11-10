@@ -96,8 +96,10 @@ test("fractional pins connect on every side and at a half-unit rounding boundary
   const ids = schematic.symbols
     .filter((symbol) => symbol.libraryId?.startsWith("Custom:Shared"))
     .map((symbol) => symbol.libraryId)
-  // U1 and U2 differ by just one native coordinate unit; neither may be merged.
-  expect(new Set(ids.slice(0, 5)).size).toBe(5)
+  // The first two pins acquire the same grid position and can share artwork.
+  // Their instances and electrical connections must remain separate.
+  expect(ids[0]).toBe(ids[1])
+  expect(new Set(ids.slice(0, 5)).size).toBe(4)
 
   const connections = (
     await exportNativeSchematicNets(circuitJson, options)

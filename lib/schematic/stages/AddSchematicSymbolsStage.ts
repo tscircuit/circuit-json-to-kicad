@@ -352,7 +352,20 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         }
       }
 
-      // Add pin instances with UUIDs based on schematic ports
+      // Keep fields at their existing offsets from the placed symbol.
+      const placed = this.ctx.schematicComponentPositions?.get(
+        schematicComponent.schematic_component_id,
+      )
+      if (placed) {
+        symbol.at = [placed.x, placed.y, 0]
+        for (const property of symbol.properties) {
+          if (!property.at) continue
+          property.at.x += placed.x - x
+          property.at.y += placed.y - y
+        }
+      }
+
+      // Add pin instances with UUIDs based on schematic ports.
       // For custom symbols, use only ports with display_pin_label
       // For regular components, use all ports
       let schematicPorts = db.schematic_port

@@ -1,23 +1,15 @@
 // Bun Snapshot v1, https://bun.sh/docs/test/snapshots
 
-exports[`repro878: custom-symbol pin is off the KiCad connection grid 1`] = `
+exports[`repro878: custom-symbol pins lie on the KiCad connection grid 1`] = `
 {
-  "offGridWarnings": [
-    {
-      "items": [
-        "Symbol U1 Pin 1 [1, Passive, Line]",
-      ],
-      "severity": "warning",
-      "type": "endpoint_off_grid",
-    },
-  ],
+  "offGridWarnings": [],
   "pins": [
     {
-      "at": "(at 7.5 0 180)",
-      "length": 0.01,
+      "at": "(at 7.62 0 180)",
+      "length": 0.12,
     },
     {
-      "at": "(at 9 0 180)",
+      "at": "(at 8.89 0 180)",
       "length": 0.01,
     },
   ],
