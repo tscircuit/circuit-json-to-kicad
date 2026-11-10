@@ -1,8 +1,7 @@
 import type { CircuitJson } from "circuit-json"
-import { parseKicadSexpr, KicadSch, SchematicSymbol } from "kicadts"
+import { KicadSch, parseKicadSexpr, type SchematicSymbol } from "kicadts"
 import {
   ConverterStage,
-  type ConverterContext,
   type KicadLibraryOutput,
   type SymbolEntry,
 } from "../../types"
@@ -115,7 +114,7 @@ export class ExtractSymbolsStage extends ConverterStage<
     // Remove library prefix if present (e.g., "Device:R" -> "R")
     const parts = libraryId.split(":")
     const name = parts.length > 1 ? parts[1] : parts[0]
-    return name?.replace(/[\\\/]/g, "-").trim() || "symbol"
+    return name?.replace(/[\\/]/g, "-").trim() || "symbol"
   }
 
   /**

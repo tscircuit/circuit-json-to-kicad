@@ -1,4 +1,3 @@
-import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import type {
   SchematicComponent,
   SchematicPort,
@@ -13,13 +12,14 @@ import {
   TextEffectsFont,
 } from "kicadts"
 import type { SchSymbol } from "schematic-symbols"
-import { calculatePinPosition } from "./calculatePinPosition"
 import { applyToPoint, type Matrix } from "transformation-matrix"
+import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
+import { calculatePinPosition } from "./calculatePinPosition"
+import { getKicadPinElectricalType } from "./getKicadPinElectricalType"
 import {
   roundSchematicCoordinate,
   toSchematicInternalUnits,
 } from "./schematicCoordinates"
-import { getKicadPinElectricalType } from "./getKicadPinElectricalType"
 
 type PortSide = "left" | "right" | "up" | "down"
 type SymbolPort = SchSymbol["ports"][number] & {
@@ -215,6 +215,7 @@ export function createPinSubsymbol({
 
   const snapToGridOption =
     kicadSymbolMetadata?.snapToGrid ??
+    schematicSymbol?.metadata?.kicad_symbol?.snapToGrid ??
     converterOptions?.snapCustomSymbolPinsToGrid ??
     converterOptions?.snapToGrid
   const shouldSnap = Boolean(snapToGridOption)
@@ -239,37 +240,28 @@ export function createPinSubsymbol({
       c2kMatSchScale: effectiveScale,
     })
 
-    const localX = (port.x ?? 0) - (symbolData.center?.x ?? 0)
-    const localY = (port.y ?? 0) - (symbolData.center?.y ?? 0)
-
-    let pinX: number
-    let pinY: number
-
-    if (
+    const sheetPosition =
       !isChip &&
       schematicComponent &&
       Math.abs(effectiveScale - c2kMatSch.a) < 1e-6
-    ) {
-      const sheetPosition = applyToPoint(c2kMatSch, {
-        x:
-          (port.x ?? 0) +
-          (schematicComponent.center.x - (symbolData.center?.x ?? 0)),
-        y:
-          (port.y ?? 0) +
-          (schematicComponent.center.y - (symbolData.center?.y ?? 0)),
-      })
-      pinX =
-        (toSchematicInternalUnits(sheetPosition.x) -
-          toSchematicInternalUnits(origin.x)) /
-        10_000
-      pinY =
-        (toSchematicInternalUnits(origin.y) -
-          toSchematicInternalUnits(sheetPosition.y)) /
-        10_000
-    } else {
-      pinX = roundSchematicCoordinate(localX * effectiveScale)
-      pinY = roundSchematicCoordinate(localY * effectiveScale)
-    }
+        ? applyToPoint(c2kMatSch, {
+            x:
+              (port.x ?? 0) +
+              (schematicComponent.center.x - (symbolData.center?.x ?? 0)),
+            y:
+              (port.y ?? 0) +
+              (schematicComponent.center.y - (symbolData.center?.y ?? 0)),
+          })
+        : { x: origin.x + x, y: origin.y - y }
+
+    let pinX =
+      (toSchematicInternalUnits(sheetPosition.x) -
+        toSchematicInternalUnits(origin.x)) /
+      10_000
+    let pinY =
+      (toSchematicInternalUnits(origin.y) -
+        toSchematicInternalUnits(sheetPosition.y)) /
+      10_000
 
     if (shouldSnap) {
       pinX = roundSchematicCoordinate(Math.round(pinX / gridSize) * gridSize)

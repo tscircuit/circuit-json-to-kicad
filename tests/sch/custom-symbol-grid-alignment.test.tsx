@@ -1,8 +1,8 @@
 import { expect, test } from "bun:test"
-import { Circuit } from "tscircuit"
 import { parseKicadSch } from "kicadts"
-import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
 import { KicadLibraryConverter } from "lib/kicad-library/KicadLibraryConverter"
+import { CircuitJsonToKicadSchConverter } from "lib/schematic/CircuitJsonToKicadSchConverter"
+import { Circuit } from "tscircuit"
 
 const isMultipleOfGrid = (val: number, grid = 1.27): boolean => {
   const quotient = Math.round(val / grid)
@@ -25,7 +25,13 @@ test("issue #878: custom symbol pin ends snap to 1.27mm grid and accept custom p
                 { x: 0.5, y: 0 },
               ]}
             />
-            <port name="1" pinNumber={1} direction="right" schX={0.5} schY={0} />
+            <port
+              name="1"
+              pinNumber={1}
+              direction="right"
+              schX={0.5}
+              schY={0}
+            />
           </symbol>
         }
       />
@@ -51,7 +57,9 @@ test("issue #878: custom symbol pin ends snap to 1.27mm grid and accept custom p
   const libSymbol = sch.libSymbols?.symbols[0]
   expect(libSymbol).toBeDefined()
 
-  const pinSubsymbol = libSymbol?.subSymbols.find((s) => s.libraryId?.endsWith("_1_1"))
+  const pinSubsymbol = libSymbol?.subSymbols.find((s) =>
+    s.libraryId?.endsWith("_1_1"),
+  )
   expect(pinSubsymbol).toBeDefined()
   const pin = pinSubsymbol?.pins[0]
   expect(pin).toBeDefined()
@@ -85,7 +93,13 @@ test("issue #878: custom symbol with converter snapToGrid and customSymbolPinLen
                 { x: 0.5, y: 0 },
               ]}
             />
-            <port name="1" pinNumber={1} direction="right" schX={0.5} schY={0} />
+            <port
+              name="1"
+              pinNumber={1}
+              direction="right"
+              schX={0.5}
+              schY={0}
+            />
           </symbol>
         }
       />
@@ -103,7 +117,9 @@ test("issue #878: custom symbol with converter snapToGrid and customSymbolPinLen
 
   const sch = parseKicadSch(output)
   const libSymbol = sch.libSymbols?.symbols[0]
-  const pinSubsymbol = libSymbol?.subSymbols.find((s) => s.libraryId?.endsWith("_1_1"))
+  const pinSubsymbol = libSymbol?.subSymbols.find((s) =>
+    s.libraryId?.endsWith("_1_1"),
+  )
   const pin = pinSubsymbol?.pins[0]
 
   expect(pin?.length).toBe(2.54)
@@ -129,7 +145,13 @@ test("issue #878: custom symbol with schematicScaleFactor exports at KiCad stand
                 { x: 0.5, y: 0 },
               ]}
             />
-            <port name="1" pinNumber={1} direction="right" schX={0.5} schY={0} />
+            <port
+              name="1"
+              pinNumber={1}
+              direction="right"
+              schX={0.5}
+              schY={0}
+            />
           </symbol>
         }
       />
@@ -149,7 +171,9 @@ test("issue #878: custom symbol with schematicScaleFactor exports at KiCad stand
 
   const sch = parseKicadSch(output)
   const libSymbol = sch.libSymbols?.symbols[0]
-  const pinSubsymbol = libSymbol?.subSymbols.find((s) => s.libraryId?.endsWith("_1_1"))
+  const pinSubsymbol = libSymbol?.subSymbols.find((s) =>
+    s.libraryId?.endsWith("_1_1"),
+  )
   const pin = pinSubsymbol?.pins[0]
 
   expect(pin?.length).toBe(1.27)
@@ -175,8 +199,20 @@ test("issue #878: custom symbol with per-pin kicadSymbolMetadata individual pin 
                 { x: 0.5, y: 0 },
               ]}
             />
-            <port name="1" pinNumber={1} direction="right" schX={0.5} schY={0} />
-            <port name="2" pinNumber={2} direction="left" schX={-0.5} schY={0} />
+            <port
+              name="1"
+              pinNumber={1}
+              direction="right"
+              schX={0.5}
+              schY={0}
+            />
+            <port
+              name="2"
+              pinNumber={2}
+              direction="left"
+              schX={-0.5}
+              schY={0}
+            />
           </symbol>
         }
       />
@@ -200,10 +236,16 @@ test("issue #878: custom symbol with per-pin kicadSymbolMetadata individual pin 
   converter.runUntilFinished()
   const sch = parseKicadSch(converter.getOutputString())
   const libSymbol = sch.libSymbols?.symbols[0]
-  const pinSubsymbol = libSymbol?.subSymbols.find((s) => s.libraryId?.endsWith("_1_1"))
+  const pinSubsymbol = libSymbol?.subSymbols.find((s) =>
+    s.libraryId?.endsWith("_1_1"),
+  )
 
-  const pin1 = pinSubsymbol?.pins.find((p: any) => (p._sxNumber?.value ?? p.number?.value) === "1")
-  const pin2 = pinSubsymbol?.pins.find((p: any) => (p._sxNumber?.value ?? p.number?.value) === "2")
+  const pin1 = pinSubsymbol?.pins.find(
+    (p: any) => (p._sxNumber?.value ?? p.number?.value) === "1",
+  )
+  const pin2 = pinSubsymbol?.pins.find(
+    (p: any) => (p._sxNumber?.value ?? p.number?.value) === "2",
+  )
 
   expect(pin1).toBeDefined()
   expect(pin2).toBeDefined()
@@ -226,7 +268,14 @@ test("issue #878: custom symbol with port stem length and useStemLengthAsPinLeng
         symbol={
           <symbol name="MyPart">
             <schematicrect width={1} height={1} />
-            <port name="1" pinNumber={1} direction="right" schX={0.5} schY={0} schStemLength={0.5} />
+            <port
+              name="1"
+              pinNumber={1}
+              direction="right"
+              schX={0.5}
+              schY={0}
+              schStemLength={0.5}
+            />
           </symbol>
         }
       />
@@ -247,7 +296,9 @@ test("issue #878: custom symbol with port stem length and useStemLengthAsPinLeng
   converter.runUntilFinished()
   const sch = parseKicadSch(converter.getOutputString())
   const libSymbol = sch.libSymbols?.symbols[0]
-  const pinSubsymbol = libSymbol?.subSymbols.find((s) => s.libraryId?.endsWith("_1_1"))
+  const pinSubsymbol = libSymbol?.subSymbols.find((s) =>
+    s.libraryId?.endsWith("_1_1"),
+  )
   const pin = pinSubsymbol?.pins[0]
 
   // Stem length 0.5 * 15 = 7.5mm, snapped to 1.27mm grid is 7.62mm
@@ -265,7 +316,13 @@ test("issue #878: standalone library export aligns custom symbol pins to 1.27mm 
         symbol={
           <symbol name="MyGridPart">
             <schematicrect width={1} height={1} />
-            <port name="1" pinNumber={1} direction="right" schX={0.5} schY={0} />
+            <port
+              name="1"
+              pinNumber={1}
+              direction="right"
+              schX={0.5}
+              schY={0}
+            />
           </symbol>
         }
       />

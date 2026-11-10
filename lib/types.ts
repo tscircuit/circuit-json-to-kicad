@@ -1,6 +1,6 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, SchematicComponent } from "circuit-json"
-import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
+import type { KicadPcb, KicadSch, SchematicSymbol } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
 import type { SchematicConnectionGrid } from "./schematic/stages/utils/schematicCoordinates"

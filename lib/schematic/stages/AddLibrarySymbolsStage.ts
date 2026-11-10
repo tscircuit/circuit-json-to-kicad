@@ -2,7 +2,6 @@ import type {
   CircuitJson,
   SchematicComponent,
   SchematicNetLabel,
-  SchematicPort,
   SourceComponentBase,
 } from "circuit-json"
 import type { KicadSch } from "kicadts"
@@ -15,6 +14,7 @@ import {
   SymbolPower,
 } from "kicadts"
 import { symbols } from "schematic-symbols"
+import { applyKicadSymbolMetadataToSymbol } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { ConverterStage } from "../../types"
 import {
   getKicadCompatibleComponentName,
@@ -29,7 +29,6 @@ import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converte
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
-import { applyKicadSymbolMetadataToSymbol } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 import { alignSchematicConnectionsToGrid } from "./utils/alignSchematicConnectionsToGrid"
 

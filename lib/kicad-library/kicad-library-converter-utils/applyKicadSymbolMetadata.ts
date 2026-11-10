@@ -1,18 +1,18 @@
+import type {
+  KicadSymbolEffects,
+  KicadSymbolMetadata,
+  KicadSymbolProperty,
+} from "@tscircuit/props"
 import {
   EmbeddedFonts,
+  type SchematicSymbol,
   SymbolPinNames,
   SymbolPinNumbers,
   SymbolProperty,
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
-  type SchematicSymbol,
 } from "kicadts"
-import type {
-  KicadSymbolEffects,
-  KicadSymbolMetadata,
-  KicadSymbolProperty,
-} from "@tscircuit/props"
 import type { SymbolEntry } from "../../types"
 
 const DEFAULT_TEXT_SIZE = 1.27
