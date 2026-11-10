@@ -13,7 +13,9 @@ import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson
 import { circleToPolygon } from "./utils/circleToPolygon"
 import { getRectanglePoints } from "./utils/getRectanglePoints"
 import polygonClipping, { type MultiPolygon } from "polygon-clipping"
+import { signedDistanceToPolygon } from "./utils/signedDistanceToPolygon"
 import {
+  KICAD_PCB_GRID_MM,
   roundBoardCoordinate,
   roundPolygonToKicadPrecision,
 } from "./utils/roundPolygonToKicadPrecision"
@@ -245,7 +247,6 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         MultiPolygon,
         {
           graphic: GrCircle
-          envelope: MultiPolygon
           cx: number
           cy: number
           radius: number
@@ -271,10 +272,8 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
             { x: cutout.center.x + cutout.radius, y: cutout.center.y },
             c2kMatPcb,
           )
-          // Include one KiCad coordinate unit so touching contours still go through clipping.
           const radius = Math.hypot(ex - cx, ey - cy)
           if (radius === 0) continue
-          const r = radius + 0.000001
           circularCutouts.set(geometry, {
             cx,
             cy,
@@ -286,16 +285,6 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
               width: edgeCutsWidth,
               fill: "none",
             }),
-            envelope: [
-              [
-                [
-                  [cx - r, cy - r],
-                  [cx + r, cy - r],
-                  [cx + r, cy + r],
-                  [cx - r, cy + r],
-                ],
-              ],
-            ],
           })
         } else if (cutout.shape === "polygon") {
           cutoutPolys.push([
@@ -314,8 +303,17 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       // A complete, isolated circle is an exact KiCad primitive. Keep polygon
       // clipping for notches, intersecting cutouts and ambiguous near contacts.
       const bounds = cutoutPolys.map((geometry) => {
-        const ring = (circularCutouts.get(geometry)?.envelope ??
-          geometry)[0]![0]!
+        const circle = circularCutouts.get(geometry)
+        if (circle) {
+          const r = circle.radius + KICAD_PCB_GRID_MM
+          return {
+            minX: circle.cx - r,
+            maxX: circle.cx + r,
+            minY: circle.cy - r,
+            maxY: circle.cy + r,
+          }
+        }
+        const ring = geometry[0]![0]!
         let minX = Infinity,
           minY = Infinity,
           maxX = -Infinity,
@@ -331,7 +329,11 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       const clippedCutouts = cutoutPolys.filter((geometry, index) => {
         const circle = circularCutouts.get(geometry)
         if (!circle) return true
-        if (polygonClipping.difference(circle.envelope, boardGeom).length)
+        const requiredClearance = circle.radius + KICAD_PCB_GRID_MM
+        if (
+          signedDistanceToPolygon(circle.cx, circle.cy, boardGeom) <=
+          requiredClearance
+        )
           return true
         const box = bounds[index]!
         const intersectsAnotherCutout = cutoutPolys.some(
@@ -352,11 +354,12 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
                   circle.cx - otherCircle.cx,
                   circle.cy - otherCircle.cy,
                 ) <=
-                circle.radius + otherCircle.radius + 0.000001
+                requiredClearance + otherCircle.radius
               )
             }
             return (
-              polygonClipping.intersection(circle.envelope, other).length > 0
+              signedDistanceToPolygon(circle.cx, circle.cy, other) >=
+              -requiredClearance
             )
           },
         )
