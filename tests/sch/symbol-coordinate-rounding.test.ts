@@ -1,97 +1,85 @@
 import { expect, test } from "bun:test"
-import {
-  toSchematicInternalUnits,
-  transformSymbolPoint,
-} from "lib/schematic/stages/utils/schematicCoordinates"
-import { compose, scale, translate } from "transformation-matrix"
+import type { Point } from "circuit-json"
+import { createDrawingSubsymbol } from "lib/schematic/stages/symbols-stage-converters/createDrawingSubsymbol"
 
-test.each([1, 7.5, 15, 30])(
-  "symbol rounding is independent of placement at scale %s",
-  (factor) => {
-    for (const x of [-1000, -2.55, 0, 2.205, 1000]) {
-      for (const y of [-1000, -2.55, 0, 2.205, 1000]) {
-        const transform = compose(scale(factor), translate(-x, -y))
-        // Both signs lie exactly halfway between native schematic units.
-        expect(
-          transformSymbolPoint(transform, {
-            x: x - 1.08285 / factor,
-            y: y + 1.08285 / factor,
-          }),
-        ).toEqual({ x: -1.0829, y: 1.0829 })
-      }
-    }
-  },
-)
+const drawingAt = (center: Point, point: Point, scale = 15) =>
+  createDrawingSubsymbol({
+    libId: "Custom:Precision",
+    isChip: false,
+    c2kMatSchScale: scale,
+    symbolData: {
+      center,
+      primitives: [
+        { type: "path", points: [point] },
+        { type: "rectangle", start: point, end: point },
+        { type: "circle", ...point, radius: 0.1 },
+        { type: "arc", start: point, mid: point, end: point },
+      ],
+      texts: [{ ...point, text: "Position", fontSize: 0.1 }],
+    },
+  })
 
-test("symbol rounding preserves real differences on either side of a tie", () => {
-  const factor = 15
+test("library artwork subtracts and scales decimal coordinates before rounding", () => {
+  const atOrigin = drawingAt({ x: 0, y: 0 }, { x: 0.07219, y: -0.07219 })
+  const translated = drawingAt(
+    { x: 2.205, y: -2.55 },
+    { x: 2.27719, y: -2.62219 },
+  )
+  expect(translated.getString()).toBe(atOrigin.getString())
+  expect(translated.polylines[0]!.getString()).toContain("(xy 1.0829 -1.0829)")
+  expect(translated.rectangles[0]!.getString()).toContain(
+    "(start 1.0829 -1.0829)",
+  )
+  expect(translated.circles[0]!.getString()).toContain(
+    "(center 1.0829 -1.0829)",
+  )
+  expect(translated.arcs[0]!.getString()).toContain("(mid 1.0829 -1.0829)")
+  expect(translated.texts[0]!.getString()).toContain("(at 1.0829 -1.0829")
+})
+
+test("coordinates immediately below a midpoint are not snapped to it", () => {
   const center = { x: 2.205, y: -2.55 }
-  const transform = compose(scale(factor), translate(-center.x, -center.y))
-  const transformOffset = (mm: number) =>
-    transformSymbolPoint(transform, {
-      x: center.x + mm / factor,
-      y: center.y - mm / factor,
-    })
-
-  // These offsets are much smaller than one native unit, but larger than
-  // floating-point roundoff. They must still round to different coordinates.
-  expect(transformOffset(1.08285 - 1e-10)).toEqual({ x: 1.0828, y: -1.0828 })
-  expect(transformOffset(1.08285 + 1e-10)).toEqual({ x: 1.0829, y: -1.0829 })
-  expect(transformOffset(1.08285 + 0.0001)).toEqual({ x: 1.083, y: -1.083 })
-})
-
-test("symbol rounding accounts for accumulated error across the conversion", () => {
-  // Each of these failed with only EPSILON * transformMagnitude as the budget.
-  for (const { local, center, expected } of [
-    { local: 1.05415, center: 0.3149, expected: 15.8123 },
-    { local: -0.09405, center: 0.064, expected: -1.4108 },
-  ]) {
-    expect(
-      transformSymbolPoint(compose(scale(15), translate(-center, center)), {
-        x: local + center,
-        y: -local - center,
-      }),
-    ).toEqual({ x: expected, y: -expected })
+  for (const [point, expected] of [
+    [{ x: 2.2771899999999996, y: -2.622189999999999 }, "(xy 1.0828 -1.0828)"],
+    [{ x: 2.27719, y: -2.62219 }, "(xy 1.0829 -1.0829)"],
+    [{ x: 2.2771900000000005, y: -2.6221900000000005 }, "(xy 1.0829 -1.0829)"],
+  ] as const) {
+    expect(drawingAt(center, point).polylines[0]!.getString()).toContain(
+      expected,
+    )
   }
 })
 
-test("translated decimal coordinates agree with an exact integer midpoint oracle", () => {
-  for (const center of [-10, -0.485, 0, 0.3149, 10]) {
-    const transform = compose(scale(15), translate(-center, center))
-    for (let numerator = -199_999; numerator <= 199_999; numerator += 202) {
-      // For odd integers, (numerator / 100000) * 15 * 10000 is exactly
-      // numerator * 1.5: an exactly representable half-integer oracle.
-      const local = numerator / 100_000
-      for (const offsetMm of [-1e-8, 0, 1e-8]) {
-        const exactUnits = numerator * 1.5 + offsetMm * 10_000
-        const expected =
-          (Math.sign(exactUnits) * Math.round(Math.abs(exactUnits))) / 10_000
-        const point = center + local + offsetMm / 15
-        expect(
-          transformSymbolPoint(transform, { x: point, y: -point }),
-        ).toEqual({
-          x: expected,
-          y: -expected,
-        })
-      }
+test.each([
+  [1, 100.00005, 0.0001],
+  [7.5, 100.00002, 0.0002],
+  [15, 100.00001, 0.0002],
+  [30, 100.000005, 0.0002],
+])("decimal artwork rounding at scale %s", (scale, coordinate, expected) => {
+  expect(
+    drawingAt(
+      { x: 100, y: -100 },
+      { x: coordinate, y: -coordinate },
+      scale,
+    ).polylines[0]!.getString(),
+  ).toContain(`(xy ${expected} ${-expected})`)
+})
+
+test("decimal midpoint coordinates agree with an integer oracle", () => {
+  for (const centerNumerator of [-1_000_000, -48_500, 0, 31_490, 1_000_000]) {
+    const center = centerNumerator / 100_000
+    for (let numerator = -999; numerator <= 999; numerator += 18) {
+      // Both inputs are five-place decimal coordinates; the exact local
+      // coordinate in KiCad units is numerator * 1.5, an exact half-integer.
+      const point = (centerNumerator + numerator) / 100_000
+      const units = numerator * 1.5
+      const expected = (Math.sign(units) * Math.round(Math.abs(units))) / 10_000
+      expect(
+        drawingAt(
+          { x: center, y: -center },
+          { x: point, y: -point },
+        ).polylines[0]!.getString(),
+      ).toContain(`(xy ${expected} ${-expected})`)
     }
   }
-})
-
-test("symbol rounding does not guess when precision spans multiple boundaries", () => {
-  // At this magnitude, placement has lost more than a native coordinate unit.
-  // The observed local result is +/-1.08203125; ordinary rounding is +/-1.082.
-  expect(
-    transformSymbolPoint(compose(scale(15), translate(-1e12, 1e12)), {
-      x: 1e12 + 0.07219,
-      y: -1e12 - 0.07219,
-    }),
-  ).toEqual({ x: 1.082, y: -1.082 })
-})
-
-test("native sheet rounding remains exact for pin and wire connectivity", () => {
-  expect(toSchematicInternalUnits(1.08285)).toBe(10829)
-  expect(toSchematicInternalUnits(1.08285 - Number.EPSILON)).toBe(10828)
-  expect(toSchematicInternalUnits(-1.08285)).toBe(-10829)
-  expect(toSchematicInternalUnits(-1.08285 + Number.EPSILON)).toBe(-10828)
 })

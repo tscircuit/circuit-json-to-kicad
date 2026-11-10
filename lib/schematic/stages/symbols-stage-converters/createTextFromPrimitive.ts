@@ -1,9 +1,6 @@
 import { SymbolText, TextEffects, TextEffectsFont } from "kicadts"
-import type { Matrix } from "transformation-matrix"
-import {
-  roundSchematicCoordinate,
-  transformSymbolPoint,
-} from "../utils/schematicCoordinates"
+import type { Point } from "circuit-json"
+import { roundSchematicCoordinate } from "../utils/schematicCoordinates"
 
 export function createTextFromPrimitive({
   schText,
@@ -17,12 +14,12 @@ export function createTextFromPrimitive({
     fontSize: number
     anchor?: string
   }
-  transform: Matrix
+  transform: (point: Point) => Point
   scale: number
 }): SymbolText {
   const symbolText = new SymbolText()
 
-  const scaledPos = transformSymbolPoint(transform, {
+  const scaledPos = transform({
     x: schText.x,
     y: schText.y,
   })

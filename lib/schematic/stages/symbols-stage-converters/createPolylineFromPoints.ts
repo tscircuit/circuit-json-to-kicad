@@ -1,9 +1,6 @@
 import { Pts, Stroke, SymbolPolyline, SymbolPolylineFill, Xy } from "kicadts"
-import type { Matrix } from "transformation-matrix"
-import {
-  roundSchematicCoordinate,
-  transformSymbolPoint,
-} from "../utils/schematicCoordinates"
+import type { Point } from "circuit-json"
+import { roundSchematicCoordinate } from "../utils/schematicCoordinates"
 import { createSymbolFillSexprPrimitives } from "./createSymbolFillSexprPrimitives"
 
 export function createPolylineFromPoints({
@@ -17,7 +14,7 @@ export function createPolylineFromPoints({
   scale,
 }: {
   points: Array<{ x: number; y: number }>
-  transform: Matrix
+  transform: (point: Point) => Point
   isFilled: boolean
   fillColor?: string
   fallbackFillType?: "background" | "outline"
@@ -28,7 +25,7 @@ export function createPolylineFromPoints({
   const polyline = new SymbolPolyline()
 
   const xyPoints = points.map((p) => {
-    const transformed = transformSymbolPoint(transform, p)
+    const transformed = transform(p)
     return new Xy(transformed.x, transformed.y)
   })
   const pts = new Pts(xyPoints)

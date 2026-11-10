@@ -1,9 +1,6 @@
 import { SchematicSymbol } from "kicadts"
-import {
-  compose,
-  scale as createScaleMatrix,
-  translate,
-} from "transformation-matrix"
+import Big from "big.js"
+import type { Point } from "circuit-json"
 import { createArcFromPrimitive } from "./createArcFromPrimitive"
 import { createCircleFromPrimitive } from "./createCircleFromPrimitive"
 import { createPolylineFromPoints } from "./createPolylineFromPoints"
@@ -29,10 +26,21 @@ export function createDrawingSubsymbol({
   const symbolScale = c2kMatSchScale
   const cx = symbolData.center?.x ?? 0
   const cy = symbolData.center?.y ?? 0
-  const transform = compose(
-    createScaleMatrix(symbolScale, symbolScale),
-    translate(-cx, -cy),
-  )
+  // Operate on the decimal values represented in Circuit JSON. Subtract and
+  // scale exactly, then round once to KiCad's 0.0001 mm grid (ties away from
+  // zero). A precomposed binary64 matrix loses precision before this rounding.
+  const transform = ({ x, y }: Point): Point => ({
+    x: new Big(x.toString())
+      .minus(cx.toString())
+      .times(symbolScale.toString())
+      .round(4, Big.roundHalfUp)
+      .toNumber(),
+    y: new Big(y.toString())
+      .minus(cy.toString())
+      .times(symbolScale.toString())
+      .round(4, Big.roundHalfUp)
+      .toNumber(),
+  })
 
   for (const primitive of symbolData.primitives || []) {
     const strokeColor = primitive.color
