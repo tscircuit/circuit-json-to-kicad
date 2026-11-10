@@ -3,13 +3,26 @@ import { applyToPoint, type Matrix } from "transformation-matrix"
 
 // KiCad's SCH_IU_PER_MM is 1e4 (100 nm per schematic internal unit).
 // https://docs.kicad.org/doxygen/base__units_8h.html
+const SCHEMATIC_INTERNAL_UNITS_PER_MM = 10_000
+const HALF_INTERNAL_UNIT = 0.5
+const UNIT_ROUNDOFF = Number.EPSILON / 2
+
+// Source conversion, placement, scaling the point and origin, subtraction,
+// and conversion to KiCad IU: gamma_n = n*u/(1-n*u).
+const SYMBOL_COORDINATE_ROUNDING_STEPS = 6
+const SYMBOL_COORDINATE_ROUNDOFF_FACTOR =
+  (SYMBOL_COORDINATE_ROUNDING_STEPS * UNIT_ROUNDOFF) /
+  (1 - SYMBOL_COORDINATE_ROUNDING_STEPS * UNIT_ROUNDOFF)
+
 // Round halves away from zero, as its schematic parser does with KiROUND.
 export function toSchematicInternalUnits(mm: number): number {
-  return Math.sign(mm) * Math.round(Math.abs(mm) * 10_000)
+  return (
+    Math.sign(mm) * Math.round(Math.abs(mm) * SCHEMATIC_INTERNAL_UNITS_PER_MM)
+  )
 }
 
 export function roundSchematicCoordinate(mm: number): number {
-  return toSchematicInternalUnits(mm) / 10_000
+  return toSchematicInternalUnits(mm) / SCHEMATIC_INTERNAL_UNITS_PER_MM
 }
 
 export function transformSchematicPoint(
@@ -20,35 +33,36 @@ export function transformSchematicPoint(
   return { x: roundSchematicCoordinate(x), y: roundSchematicCoordinate(y) }
 }
 
+function roundSymbolCoordinate(mm: number, magnitude: number): number {
+  const units = Math.abs(mm) * SCHEMATIC_INTERNAL_UNITS_PER_MM
+  const midpoint = Math.floor(units) + HALF_INTERNAL_UNIT
+  const tolerance =
+    SYMBOL_COORDINATE_ROUNDOFF_FACTOR *
+    magnitude *
+    SCHEMATIC_INTERNAL_UNITS_PER_MM
+  // Only resolve a nearby tie when the tolerance isolates one boundary.
+  const roundedUnits =
+    tolerance < HALF_INTERNAL_UNIT && Math.abs(units - midpoint) <= tolerance
+      ? Math.sign(mm) * Math.ceil(midpoint)
+      : toSchematicInternalUnits(mm)
+  return roundedUnits / SCHEMATIC_INTERNAL_UNITS_PER_MM
+}
+
 /** Transform library artwork with tolerance for placement roundoff at ties. */
 export function transformSymbolPoint(transform: Matrix, point: Point): Point {
   const { x, y } = applyToPoint(transform, point)
 
-  // Allow six roundings: source conversion, placement, scaling the point and
-  // origin, subtraction, and conversion to KiCad IU. gamma_n = n*u/(1-n*u)
-  // accounts for accumulated roundoff; it does not cover arbitrary upstream
-  // geometry calculations. Use the terms before cancellation to set its scale.
-  const u = Number.EPSILON / 2
-  const roundoffFactor = (6 * u) / (1 - 6 * u)
-  const round = (mm: number, magnitude: number): number => {
-    const units = Math.abs(mm) * 10_000
-    const midpoint = Math.floor(units) + 0.5
-    const tolerance = roundoffFactor * magnitude * 10_000
-    // Only resolve a nearby tie when the tolerance isolates one boundary.
-    const stableUnits =
-      tolerance < 0.5 && Math.abs(units - midpoint) <= tolerance
-        ? midpoint
-        : units
-    return (Math.sign(mm) * Math.round(stableUnits)) / 10_000
-  }
+  // Circuit JSON already contains placed artwork; subtracting its origin
+  // cannot recover the original local precision. Use the terms before
+  // cancellation to allow for placement roundoff, not arbitrary upstream math.
   return {
-    x: round(
+    x: roundSymbolCoordinate(
       x,
       Math.abs(transform.a * point.x) +
         Math.abs(transform.c * point.y) +
         Math.abs(transform.e),
     ),
-    y: round(
+    y: roundSymbolCoordinate(
       y,
       Math.abs(transform.b * point.x) +
         Math.abs(transform.d * point.y) +
