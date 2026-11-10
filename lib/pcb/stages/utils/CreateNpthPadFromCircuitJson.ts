@@ -43,6 +43,37 @@ export function createNpthPadFromCircuitJson({
     drill = new PadDrill({
       diameter: diameter,
     })
+  } else if (pcbHole.hole_shape === "square") {
+    // Square non-plated hole
+    padShape = "rect"
+    const diameter = pcbHole.hole_diameter
+    padSize = [diameter, diameter]
+    drill = new PadDrill({
+      diameter: diameter,
+    })
+  } else if (
+    pcbHole.hole_shape === "rect" ||
+    (pcbHole as any).hole_shape === "rotated_rect"
+  ) {
+    // Rectangular or rotated rectangular non-plated hole
+    padShape = "rect"
+    const rectHole = pcbHole as {
+      hole_width: number
+      hole_height: number
+      ccw_rotation?: number
+    }
+    const width = rectHole.hole_width
+    const height = rectHole.hole_height
+    padSize = [width, height]
+    drill =
+      width === height
+        ? new PadDrill({ diameter: width })
+        : new PadDrill({
+            oval: true,
+            diameter: width,
+            width: height,
+          })
+    rotation = rectHole.ccw_rotation || 0
   } else if (pcbHole.hole_shape === "oval" || pcbHole.hole_shape === "pill") {
     // Oval or Pill-shaped non-plated hole
     padShape = "oval"

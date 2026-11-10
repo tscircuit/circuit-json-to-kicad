@@ -182,15 +182,20 @@ export class AddStandalonePcbElements extends ConverterStage<
 
   private getHoleLibraryLink(hole: PcbHole): string {
     const { hole_shape: shape } = hole
-    if (shape === "circle") {
+    if (shape === "circle" || shape === "square") {
       return `tscircuit:hole_${shape}_holeDiameter${hole.hole_diameter}mm`
     }
-    if (shape === "pill" || shape === "oval") {
+    if (shape === "pill" || shape === "oval" || shape === "rect") {
       const h = hole
       return `tscircuit:hole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm`
     }
-    if (shape === "rotated_pill") {
-      return `tscircuit:hole_${shape}_holeWidth${hole.hole_width}mm_holeHeight${hole.hole_height}mm_ccwRotation${hole.ccw_rotation}deg`
+    if (shape === "rotated_pill" || (shape as string) === "rotated_rect") {
+      const h = hole as {
+        hole_width: number
+        hole_height: number
+        ccw_rotation: number
+      }
+      return `tscircuit:hole_${shape}_holeWidth${h.hole_width}mm_holeHeight${h.hole_height}mm_ccwRotation${h.ccw_rotation}deg`
     }
     return "tscircuit:hole"
   }
