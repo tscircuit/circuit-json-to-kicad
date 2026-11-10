@@ -188,14 +188,28 @@ function placeSheetAxis(
   coordinates: Set<number>,
   pins: PinPlacement[],
   axis: "x" | "y",
+  labelSpans: [number, number][],
 ) {
   const sorted = [...coordinates].sort((a, b) => a - b)
+  if (sorted.length === 0) {
+    return {
+      coordinates: new Map<number, number>(),
+      origins: new Map<string, number>(),
+    }
+  }
   const indices = new Map(sorted.map((value, index) => [value, index]))
   const positions = sorted.map((value) => Math.round(value / GRID))
   const origins = new Map<string, number>()
   const constraints: { from: number; to: number; distance: number }[] = []
   for (let index = 1; index < sorted.length; index++) {
     constraints.push({ from: index - 1, to: index, distance: 1 })
+  }
+  for (const [from, to] of labelSpans) {
+    constraints.push({
+      from: indices.get(from)!,
+      to: indices.get(to)!,
+      distance: Math.ceil((to - from) / GRID),
+    })
   }
   for (const pin of pins) {
     let originIndex = origins.get(pin.componentId)
@@ -237,10 +251,8 @@ export function alignSchematicConnectionsToGrid(
   ctx: ConverterContext,
   components: { component: SchematicComponent; symbol: SchematicSymbol }[],
 ): { grid: SchematicConnectionGrid; origins: Map<string, Point> } | undefined {
-  // Custom symbols bring user-authored pin spacing into the schematic. Adapt
-  // their complete connected layout, including any built-in parts on it.
-  if (!ctx.circuitJson.some((element) => element.type === "schematic_symbol"))
-    return undefined
+  // Connection-grid requirements apply to every sheet, independently of where
+  // its symbol artwork came from.
   try {
     return planGridPlacement(ctx, components)
   } catch (error) {
@@ -261,6 +273,7 @@ function planGridPlacement(
   const sourcePoint = (point: Point) =>
     units(transformSchematicPoint(ctx.c2kMatSch!, point))
   const coordinates = { x: new Set<number>(), y: new Set<number>() }
+  const labelSpans: Record<"x" | "y", [number, number][]> = { x: [], y: [] }
   const add = (point: Point) => {
     coordinates.x.add(point.x)
     coordinates.y.add(point.y)
@@ -373,15 +386,38 @@ function planGridPlacement(
   for (const label of ctx.db.schematic_net_label.list())
     add(sourcePoint(label.anchor_position ?? label.center))
   for (const text of ctx.db.schematic_text.list()) {
-    if (text.source_trace_id && ctx.db.source_trace.get(text.source_trace_id))
-      add(sourcePoint(text.position))
+    if (!text.source_trace_id || !ctx.db.source_trace.get(text.source_trace_id))
+      continue
+    const anchor = sourcePoint(text.position)
+    add(anchor)
+    // Text keeps its physical size. Preserve the wire's available space on
+    // both sides of an inline label so grid rounding cannot shorten its stub.
+    for (const trace of ctx.db.schematic_trace.list()) {
+      if (trace.source_trace_id !== text.source_trace_id) continue
+      for (const edge of trace.edges) {
+        const from = sourcePoint(edge.from)
+        const to = sourcePoint(edge.to)
+        const axis = from.x === to.x ? "y" : "x"
+        const other = axis === "x" ? "y" : "x"
+        const lower = Math.min(from[axis], to[axis])
+        const upper = Math.max(from[axis], to[axis])
+        if (
+          anchor[other] !== from[other] ||
+          anchor[axis] < lower ||
+          anchor[axis] > upper
+        )
+          continue
+        if (lower < anchor[axis]) labelSpans[axis].push([lower, anchor[axis]])
+        if (anchor[axis] < upper) labelSpans[axis].push([anchor[axis], upper])
+      }
+    }
   }
   for (const port of ctx.db.schematic_port.list()) {
     if (ctx.db.source_port.get(port.source_port_id)?.do_not_connect)
       add(sourcePoint(port.center))
   }
-  const x = placeSheetAxis(coordinates.x, pinPlacements, "x")
-  const y = placeSheetAxis(coordinates.y, pinPlacements, "y")
+  const x = placeSheetAxis(coordinates.x, pinPlacements, "x", labelSpans.x)
+  const y = placeSheetAxis(coordinates.y, pinPlacements, "y", labelSpans.y)
   const grid = { x: x.coordinates, y: y.coordinates }
   const origins = new Map(
     [...x.origins].map(([id, value]) => [

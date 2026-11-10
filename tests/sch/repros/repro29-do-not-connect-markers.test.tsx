@@ -55,12 +55,12 @@ test("repro29: do-not-connect source pins emit KiCad no-connect markers", async 
   ).toMatchInlineSnapshot(`
     [
       [
-        132,
-        106.5,
+        132.08,
+        106.68,
       ],
       [
-        165,
-        106.5,
+        165.1,
+        106.68,
       ],
     ]
   `)

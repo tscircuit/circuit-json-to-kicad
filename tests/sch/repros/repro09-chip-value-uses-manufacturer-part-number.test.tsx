@@ -59,8 +59,21 @@ test("repro09: simple chip schematic value uses manufacturer part number", async
       converter.ctx.c2kMatSch!,
       valueText.position,
     )
-    expect(valueProperty?.at?.x).toBeCloseTo(expectedPosition.x)
-    expect(valueProperty?.at?.y).toBeCloseTo(expectedPosition.y)
+    const component = circuitJson.find(
+      (element) => element.type === "schematic_component",
+    )!
+    if (component.type !== "schematic_component")
+      throw new Error("Missing chip")
+    const originalOrigin = applyToPoint(
+      converter.ctx.c2kMatSch!,
+      component.center,
+    )
+    expect(valueProperty!.at!.x - chipSymbol!.at!.x).toBeCloseTo(
+      expectedPosition.x - originalOrigin.x,
+    )
+    expect(valueProperty!.at!.y - chipSymbol!.at!.y).toBeCloseTo(
+      expectedPosition.y - originalOrigin.y,
+    )
   }
 
   Bun.write(

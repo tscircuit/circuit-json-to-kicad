@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
-import { applyToPoint } from "transformation-matrix"
+import { Xy } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
 
@@ -44,14 +44,16 @@ test("KiCad draws TEMP_SENSE alongside its wire instead of above the wire end", 
   const label = converter
     .getOutput()
     .labels.find((label) => label.value === "TEMP_SENSE")!
-  expect(label.at!.x).toBeCloseTo(
-    applyToPoint(converter.ctx.c2kMatSch!, text.position).x,
-  )
-  expect(label.at!.y).toBeCloseTo(
-    applyToPoint(converter.ctx.c2kMatSch!, text.position).y,
-  )
-  const from = applyToPoint(converter.ctx.c2kMatSch!, edge.from)
-  const to = applyToPoint(converter.ctx.c2kMatSch!, edge.to)
+  const traces = circuitJson.filter((row) => row.type === "schematic_trace")
+  const wireIndex = traces
+    .slice(0, traces.indexOf(trace))
+    .reduce((count, row) => count + row.edges.length, 0)
+  const [from, to] = converter.getOutput().wires[wireIndex]!.points!.points
+  if (!(from instanceof Xy) || !(to instanceof Xy))
+    throw new Error("Missing wire endpoints")
+  expect(label.at!.x).toBe(from.x)
+  expect(label.at!.y).toBeGreaterThanOrEqual(Math.min(from.y, to.y))
+  expect(label.at!.y).toBeLessThanOrEqual(Math.max(from.y, to.y))
 
   const output = await takeKicadSnapshot({
     kicadFileContent: converter.getOutputString(),

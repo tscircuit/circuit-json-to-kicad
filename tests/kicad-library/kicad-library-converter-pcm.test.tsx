@@ -213,7 +213,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
         (symbol "KeyHotSocket_1_1"
           (pin passive line
             (at -15.24 0 0)
-            (length 6)
+            (length 6.24)
             (name "1"
               (effects
                 (font
@@ -231,7 +231,7 @@ test("KicadLibraryConverter with forPcm=true generates PCM-compatible paths", as
           )
           (pin passive line
             (at 15.24 0 180)
-            (length 6)
+            (length 6.24)
             (name "2"
               (effects
                 (font
