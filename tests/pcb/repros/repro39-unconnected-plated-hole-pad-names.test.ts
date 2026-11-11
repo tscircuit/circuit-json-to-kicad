@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { createPadNameRoundTrip } from "../../fixtures/create-pad-name-round-trip"
 
-test.failing("plated-hole pads retain multi-letter package names with and without source ports", () => {
+test("plated-hole pads retain multi-letter package names with and without source ports", () => {
   for (const connected of [true, false]) {
     const { circuitJson, source, output } = createPadNameRoundTrip({
       padType: "thru_hole",
