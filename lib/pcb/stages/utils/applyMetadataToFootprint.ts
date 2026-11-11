@@ -51,6 +51,13 @@ export function applyMetadataToFootprint({
   let newProperties: Property[] = []
   // Reference property - use explicit metadata value if provided, otherwise fall back to componentLabels.reference
   const refMeta = metadata?.properties?.Reference
+  // The Reference property is only hidden when a visible reference fp_text
+  // already exists (e.g. converted from pcb_silkscreen_text). Otherwise (such
+  // as inline <footprint/> components, which have no silkscreen text) it would
+  // leave the footprint without any visible reference designator.
+  const hasReferenceFpText = footprint.fpTexts.some(
+    (fpText) => fpText.type === "reference",
+  )
   newProperties.push(
     new Property({
       key: "Reference",
@@ -67,7 +74,7 @@ export function applyMetadataToFootprint({
         `${componentProperty.reference}-property-Reference`,
       ),
       effects: createTextEffects(refMeta?.effects),
-      hidden: refMeta?.hide ?? true,
+      hidden: refMeta?.hide ?? hasReferenceFpText,
     }),
   )
   // Value property - use explicit Value.value first, then footprintName as fallback
