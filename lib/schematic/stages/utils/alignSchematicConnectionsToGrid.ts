@@ -477,6 +477,15 @@ function addConnectionCoordinates({
   column.set(point.y, point)
 }
 
+/** Align electrical contacts to KiCad's 1.27 mm connection grid while keeping
+ * symbol bodies and connectivity intact. Pin stems can change length; wires
+ * and labels move with their connection points.
+ *
+ * Placement errors propagate to the caller. There is no general wire rerouting
+ * or symbol-body resizing: two distinct pin contacts cannot fit along a body
+ * edge shorter than one grid interval. Such source geometry needs adjustment
+ * before export; returning the original off-grid coordinates would hide this.
+ */
 export function alignSchematicConnectionsToGrid(
   {
     components,
@@ -519,6 +528,7 @@ export function alignSchematicConnectionsToGrid(
             })
         }
         const angle = (((pin.at.angle ?? 0) % 360) + 360) % 360
+        // KiCad's symbol-pin format only supports the four cardinal orientations.
         const direction = (
           {
             0: { x: -1, y: 0 },

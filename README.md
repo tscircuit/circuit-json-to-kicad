@@ -32,21 +32,6 @@ const kicadSchContent = converter.getOutputString()
 Bun.write("output.kicad_sch", kicadSchContent)
 ```
 
-#### Connection-grid placement
-
-Schematic export aligns electrical connections to KiCad's 1.27 mm connection
-grid while preserving symbol bodies and electrical connectivity. Pin stems can
-change length, and wires and attached labels move with their connection points.
-Circular arcs retain their artwork; pins remain attached within the original arc
-span. Diagonal wires are supported when their contacts survive placement.
-
-Conversion throws if the placement constraints cannot be satisfied, rather than
-exporting the original off-grid coordinates. For example, two separate pin
-contacts cannot fit on a body edge shorter than one grid interval. Enlarge that
-symbol or adjust the routing before exporting. The converter does not perform
-general wire rerouting or resize symbol bodies. KiCad pin angles must be 0, 90,
-180, or 270 degrees.
-
 ### Converting to KiCad PCB
 
 ```typescript
