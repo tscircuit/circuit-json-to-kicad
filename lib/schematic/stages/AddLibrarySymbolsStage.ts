@@ -64,8 +64,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const netLabelSymbols: SchematicSymbol[] = []
 
     const placement = alignSchematicConnectionsToGrid(
+      { components: componentSymbols },
       this.ctx,
-      componentSymbols,
     )
     this.ctx.schematicConnectionGrid = placement.grid
     this.ctx.schematicComponentPositions = placement.origins

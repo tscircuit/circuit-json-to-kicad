@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 import { exportNativeSchematicNets } from "../fixtures/export-native-schematic-nets"
 import { readSchematicErc } from "../fixtures/read-schematic-erc"
 
@@ -58,4 +59,11 @@ test(`built-in resistor, capacitor, and chip pins are on grid at ${rotation} deg
       .flatMap((net) => net.pins)
       .sort(),
   ).toEqual(["C1.1", "C1.2", "R1.1", "R1.2", "U1.1", "U1.2", "U1.3", "U1.4"])
+  const snapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
+  await expect(
+    snapshot.generatedFileContent["temp_file.png"]!,
+  ).toMatchPngSnapshot(import.meta.path)
 }, 30_000)

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 import { readSchematicErc } from "../fixtures/read-schematic-erc"
 
 test("an already aligned chip keeps its origin, body, pins, and no-connect markers", async () => {
@@ -58,4 +59,11 @@ test("an already aligned chip keeps its origin, body, pins, and no-connect marke
       (type) => type !== "lib_symbol_issues",
     ),
   ).toEqual([])
+  const snapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
+  await expect(
+    snapshot.generatedFileContent["temp_file.png"]!,
+  ).toMatchPngSnapshot(import.meta.path)
 }, 30_000)

@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
+import { takeKicadSnapshot } from "../fixtures/take-kicad-snapshot"
 
 test("a drawing-only sheet does not report a grid-placement failure", async () => {
   const circuit = new Circuit()
@@ -15,4 +16,11 @@ test("a drawing-only sheet does not report a grid-placement failure", async () =
   converter.runUntilFinished()
   expect(converter.ctx.schematicConnectionGrid).toBeDefined()
   expect(converter.getOutput().polylines).toHaveLength(1)
-})
+  const snapshot = await takeKicadSnapshot({
+    kicadFileContent: converter.getOutputString(),
+    kicadFileType: "sch",
+  })
+  await expect(
+    snapshot.generatedFileContent["temp_file.png"]!,
+  ).toMatchPngSnapshot(import.meta.path)
+}, 30_000)

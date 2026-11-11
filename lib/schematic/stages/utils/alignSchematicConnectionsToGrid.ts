@@ -15,6 +15,10 @@ import {
 } from "transformation-matrix"
 import type { ConverterContext } from "../../../types"
 import {
+  getSymbolArcAttachment,
+  type SymbolArcAttachment,
+} from "./getSymbolArcAttachment"
+import {
   fromSchematicInternalUnits,
   toSchematicInternalUnits,
   transformSchematicPoint,
@@ -37,6 +41,7 @@ type Attachment =
   | { type: "lead"; endpoints: Point[]; inner: Point }
   | { type: "edge"; from: Point; to: Point }
   | { type: "circle"; center: Point; radius: number }
+  | SymbolArcAttachment
 
 function isPointOnSegment({
   point,
@@ -183,6 +188,10 @@ function findAttachment({
       ) {
         return { type: "circle", center, radius }
       }
+    }
+    for (const arc of unit.arcs) {
+      const attachment = getSymbolArcAttachment({ arc, point, direction })
+      if (attachment) return attachment
     }
   }
   // Explicit schematic lines and generated stems can describe the same lead.
@@ -469,8 +478,12 @@ function addConnectionCoordinates({
 }
 
 export function alignSchematicConnectionsToGrid(
+  {
+    components,
+  }: {
+    components: { component: SchematicComponent; symbol: SchematicSymbol }[]
+  },
   ctx: ConverterContext,
-  components: { component: SchematicComponent; symbol: SchematicSymbol }[],
 ): {
   grid: SchematicConnectionGrid
   origins: Map<SchematicComponentId, Point>
@@ -516,7 +529,7 @@ export function alignSchematicConnectionsToGrid(
         )[angle]
         if (!direction)
           throw new GridPlacementError(
-            "Grid placement requires orthogonal schematic pins.",
+            `KiCad only supports pin angles of 0, 90, 180, or 270 degrees; received ${angle}.`,
           )
         const position = applyToPoint(symbolToSheet, local)
         addConnectionCoordinates({ coordinates, point: position })
@@ -532,11 +545,6 @@ export function alignSchematicConnectionsToGrid(
         })
         const attachment =
           tipAttachment ?? findAttachment({ symbol, point: body, direction })
-        if (!attachment && symbol.subSymbols.some((unit) => unit.arcs.length)) {
-          throw new GridPlacementError(
-            "Cannot determine a pin's attachment to curved symbol artwork. Adjust the pin or provide a straight stem before grid placement.",
-          )
-        }
         symbolPins.push({
           pin,
           position,
@@ -565,10 +573,15 @@ export function alignSchematicConnectionsToGrid(
           const ends =
             attachment.type === "edge"
               ? [attachment.from[tangent], attachment.to[tangent]]
-              : [
-                  attachment.center[tangent] - attachment.radius,
-                  attachment.center[tangent] + attachment.radius,
-                ]
+              : attachment.type === "arc"
+                ? [
+                    attachment.tangentBounds.lower,
+                    attachment.tangentBounds.upper,
+                  ]
+                : [
+                    attachment.center[tangent] - attachment.radius,
+                    attachment.center[tangent] + attachment.radius,
+                  ]
           const tangentBounds = axes[tangent].get(local[tangent])!
           tangentBounds.lower = Math.max(tangentBounds.lower, Math.min(...ends))
           tangentBounds.upper = Math.min(tangentBounds.upper, Math.max(...ends))
@@ -709,14 +722,21 @@ export function alignSchematicConnectionsToGrid(
     } else {
       contact =
         attachment.center[normal] +
-        direction[normal] *
+        (attachment.type === "arc"
+          ? attachment.normalSign
+          : direction[normal]) *
+          // Tangent bounds keep this on the circle. At exact tangency,
+          // floating-point subtraction can leave a tiny negative radicand.
           Math.sqrt(
-            attachment.radius ** 2 -
-              (point[tangent] - attachment.center[tangent]) ** 2,
+            Math.max(
+              0,
+              attachment.radius ** 2 -
+                (point[tangent] - attachment.center[tangent]) ** 2,
+            ),
           )
     }
     const length = Math.round((point[normal] - contact) * direction[normal])
-    if (length < 0)
+    if (!Number.isFinite(length) || length < 0)
       throw new GridPlacementError(
         "Grid placement would move a pin inside its symbol body.",
       )
