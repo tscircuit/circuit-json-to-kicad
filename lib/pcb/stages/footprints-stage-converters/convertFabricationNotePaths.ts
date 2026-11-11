@@ -1,6 +1,7 @@
 import type { PcbFabricationNotePath } from "circuit-json"
 import { FpLine, Stroke } from "kicadts"
 import { applyToPoint, identity, rotate } from "transformation-matrix"
+import { parseColor } from "../../../schematic/stages/utils/parseColor"
 
 interface ConvertFabricationNotePathsOptions {
   componentCenter: { x: number; y: number }
@@ -23,6 +24,18 @@ export function convertFabricationNotePaths(
   for (const fabricationNotePath of fabricationNotePaths) {
     if (fabricationNotePath.route.length < 2) continue
 
+    const pathWithStyle = fabricationNotePath as PcbFabricationNotePath & {
+      stroke_type?: string
+      is_stroke_dashed?: boolean
+      color?: string
+    }
+    const isDashed =
+      pathWithStyle.stroke_type === "dashed" ||
+      Boolean(pathWithStyle.is_stroke_dashed)
+    const parsedColor = pathWithStyle.color
+      ? parseColor(pathWithStyle.color)
+      : undefined
+
     const kicadLayer =
       fabricationNotePath.layer === "bottom" ? "B.Fab" : "F.Fab"
 
@@ -41,7 +54,8 @@ export function convertFabricationNotePaths(
       })
       const stroke = new Stroke()
       stroke.width = fabricationNotePath.stroke_width || 0.1
-      stroke.type = "default"
+      stroke.type = isDashed ? "dash" : "default"
+      if (parsedColor) stroke.color = parsedColor
 
       fpLines.push(
         new FpLine({

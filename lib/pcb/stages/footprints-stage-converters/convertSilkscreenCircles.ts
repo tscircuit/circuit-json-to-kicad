@@ -1,6 +1,8 @@
 import type { PcbSilkscreenCircle } from "circuit-json"
 import { FpCircle, Stroke } from "kicadts"
 import { applyToPoint, identity, rotate } from "transformation-matrix"
+import { parseColor } from "../../../schematic/stages/utils/parseColor"
+import { generateDeterministicUuid } from "../utils/generateDeterministicUuid"
 
 interface ConvertSilkscreenCirclesOptions {
   componentCenter: { x: number; y: number }
@@ -18,6 +20,17 @@ export function convertSilkscreenCircles(
       : identity()
 
   for (const circle of silkscreenCircles) {
+    const circleWithStyle = circle as PcbSilkscreenCircle & {
+      is_filled?: boolean
+      has_stroke?: boolean
+      is_stroke_dashed?: boolean
+      color?: string
+    }
+    const isFilled = Boolean(circleWithStyle.is_filled)
+    const hasStroke =
+      circleWithStyle.has_stroke ??
+      (circle.stroke_width !== undefined ? circle.stroke_width > 0 : !isFilled)
+
     const relativeCenter = applyToPoint(rotationMatrix, {
       x: circle.center.x - componentCenter.x,
       y: -(circle.center.y - componentCenter.y),
@@ -34,12 +47,21 @@ export function convertSilkscreenCircles(
       end: { x: relativeCenter.x + circle.radius, y: relativeCenter.y },
       layer: kicadLayer,
       stroke: new Stroke(),
-      fill: false,
+      fill: isFilled,
+      uuid: circle.pcb_silkscreen_circle_id
+        ? generateDeterministicUuid(circle.pcb_silkscreen_circle_id)
+        : undefined,
     })
 
     if (fpCircle.stroke) {
-      fpCircle.stroke.width = circle.stroke_width || 0.05
-      fpCircle.stroke.type = "default"
+      fpCircle.stroke.width = hasStroke ? circle.stroke_width || 0.05 : 0
+      fpCircle.stroke.type = circleWithStyle.is_stroke_dashed
+        ? "dash"
+        : "default"
+      const parsedColor = circleWithStyle.color
+        ? parseColor(circleWithStyle.color)
+        : undefined
+      if (parsedColor) fpCircle.stroke.color = parsedColor
     }
 
     fpCircles.push(fpCircle)
