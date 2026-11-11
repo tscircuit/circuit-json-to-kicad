@@ -1,7 +1,10 @@
 import type { CircuitJson } from "circuit-json"
 import { NoConnect, type KicadSch } from "kicadts"
 import { ConverterStage } from "../../types"
-import { transformSchematicPoint } from "./utils/schematicCoordinates"
+import {
+  transformSchematicConnectionPoint,
+  transformSchematicPoint,
+} from "./utils/schematicCoordinates"
 
 /** Adds KiCad no-connect markers for source ports intentionally left open. */
 export class AddSchematicNoConnectsStage extends ConverterStage<
@@ -35,10 +38,13 @@ export class AddSchematicNoConnectsStage extends ConverterStage<
           !schematicPort.is_connected,
       )
       .map((schematicPort) => {
-        const position = transformSchematicPoint(
-          c2kMatSch,
-          schematicPort.center,
-        )
+        const position = this.ctx.schematicConnectionGrid
+          ? transformSchematicConnectionPoint({
+              transform: c2kMatSch,
+              point: schematicPort.center,
+              grid: this.ctx.schematicConnectionGrid,
+            })
+          : transformSchematicPoint(c2kMatSch, schematicPort.center)
         return new NoConnect({
           at: [position.x, position.y],
           uuid: crypto.randomUUID(),

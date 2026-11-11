@@ -34,7 +34,7 @@ const Example = () => (
 
 export default Example
 
-test("repro878: custom-symbol pin is off the KiCad connection grid", async () => {
+test("repro878: custom-symbol pins lie on the KiCad connection grid", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
   circuit.add(<Example />)
@@ -72,15 +72,8 @@ test("repro878: custom-symbol pin is off the KiCad connection grid", async () =>
         items: items.map((item) => item.description),
       }))
 
-    // Capture the current bug: the custom pin produces a native ERC warning.
     // Unconnected pins and the unavailable Custom library are separate checks.
-    expect(offGridWarnings).toEqual([
-      {
-        type: "endpoint_off_grid",
-        severity: "warning",
-        items: ["Symbol U1 Pin 1 [1, Passive, Line]"],
-      },
-    ])
+    expect(offGridWarnings).toEqual([])
     const schematic = parseKicadSch(output)
     const symbol = schematic.libSymbols!.symbols.find(
       (symbol) => symbol.libraryId === "Custom:MyPart",
