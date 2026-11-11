@@ -6,7 +6,7 @@ import { exportNativeSchematicNets } from "../fixtures/export-native-schematic-n
 import { readSchematicErc } from "../fixtures/read-schematic-erc"
 import { Xy } from "kicadts"
 
-test("a fractional origin preserves already aligned pins, wiring, labels, and no-connects", async () => {
+test("a fractional origin preserves aligned pins and their wires, labels, and no-connects", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
   circuit.add(
@@ -43,7 +43,7 @@ test("a fractional origin preserves already aligned pins, wiring, labels, and no
         connectsTo={["U1.B", "U2.A"]}
         schX={1.27 - 6.985 / 15}
         schY={0}
-        anchorSide="left"
+        anchorSide="bottom"
       />
     </board>,
   )
@@ -61,17 +61,36 @@ test("a fractional origin preserves already aligned pins, wiring, labels, and no
     (unit) => unit.pins,
   )
   expect(pins.map((pin) => origin.x + pin.at!.x)).toEqual([113.03, 127])
-  const wire = schematic.wires[0]!.points!.points
   expect(
-    wire.map((point) => {
-      if (!(point instanceof Xy)) throw new Error("Expected wire endpoint")
-      return [point.x, point.y]
-    }),
+    schematic.wires.map((wire) =>
+      wire.points!.points.map((point) => {
+        if (!(point instanceof Xy)) throw new Error("Expected wire endpoint")
+        return [point.x, point.y]
+      }),
+    ),
   ).toEqual([
-    [127, 101.6],
-    [132.08, 101.6],
+    [
+      [127, 101.6],
+      [128.27, 101.6],
+    ],
+    [
+      [128.27, 101.6],
+      [128.27, 102.87],
+    ],
+    [
+      [128.27, 102.87],
+      [132.08, 102.87],
+    ],
+    [
+      [132.08, 102.87],
+      [132.08, 101.6],
+    ],
   ])
-  expect(schematic.globalLabels[0]!.at).toMatchObject({ x: 132.08, y: 101.6 })
+  expect(schematic.globalLabels[0]!.at).toMatchObject({
+    x: 132.08,
+    y: 101.6,
+    angle: 90,
+  })
   expect(
     schematic.noConnects.map((marker) => [marker.at!.x, marker.at!.y]),
   ).toEqual([

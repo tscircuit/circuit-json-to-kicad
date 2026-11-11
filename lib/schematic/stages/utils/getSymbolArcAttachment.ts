@@ -19,6 +19,61 @@ export type SymbolArcAttachment = {
 const normalizeRadians = (radians: number) =>
   ((radians % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI)
 
+// Each coordinate is rounded by at most half an internal unit. Subtracting
+// two independently rounded coordinates therefore has an error of at most one.
+const RELATIVE_COORDINATE_ROUNDING_BOUND = 1
+
+function isPointOnCircleWithinRounding({
+  vertices,
+  point,
+}: {
+  vertices: [Point, Point, Point]
+  point: Point
+}): boolean {
+  const relativeToContact = translate(-point.x, -point.y)
+  const coordinateError = BigInt(RELATIVE_COORDINATE_ROUNDING_BOUND)
+  const quadraticError = 2n * coordinateError ** 2n
+  const rows = vertices.map((vertex) => {
+    const relative = applyToPoint(relativeToContact, vertex)
+    const x = BigInt(relative.x)
+    const y = BigInt(relative.y)
+    const coordinateMagnitude = (x < 0n ? -x : x) + (y < 0n ? -y : y)
+    return {
+      x,
+      y,
+      coordinateMagnitude,
+      squaredLength: x * x + y * y,
+      squaredLengthError:
+        2n * coordinateMagnitude * coordinateError + quadraticError,
+    }
+  })
+
+  // Four points are concyclic when det([x, y, x*x + y*y]) is zero,
+  // with each arc vertex expressed relative to the contact. Bound each
+  // determinant term using the coordinate rounding above. This avoids
+  // magnifying rounding error through a shallow arc's reconstructed center.
+  // Integer arithmetic keeps both the determinant and its error bound exact.
+  let determinant = 0n
+  let roundingBound = 0n
+  for (let index = 0; index < rows.length; index++) {
+    const row = rows[index]!
+    const first = rows[(index + 1) % rows.length]!
+    const second = rows[(index + 2) % rows.length]!
+    const cross = first.x * second.y - first.y * second.x
+    const crossMagnitude = cross < 0n ? -cross : cross
+    const crossError =
+      (first.coordinateMagnitude + second.coordinateMagnitude) *
+        coordinateError +
+      quadraticError
+    determinant += row.squaredLength * cross
+    // |delta(a*b)| <= |a|*error(b) + (|b| + error(b))*error(a).
+    roundingBound +=
+      row.squaredLength * crossError +
+      (crossMagnitude + crossError) * row.squaredLengthError
+  }
+  return determinant >= -roundingBound && determinant <= roundingBound
+}
+
 /** Find the circular branch containing the original pin contact. Its bounds
  * stop at the arc ends and tangent extrema, so placement cannot extend a pin
  * onto the missing part of the circle or switch to the opposite side.
@@ -57,10 +112,7 @@ export function getSymbolArcAttachment({
   }
   const center = applyToPoint(translate(start.x, start.y), offset)
   const radius = Math.hypot(offset.x, offset.y)
-  // Arc vertices and pin contacts are independently rounded to native units.
-  // One native unit (0.0001 mm) is the coordinate-resolution bound, not a grid
-  // tolerance: contacts outside that bound are not attached to this arc.
-  if (Math.abs(Math.hypot(point.x - center.x, point.y - center.y) - radius) > 1)
+  if (!isPointOnCircleWithinRounding({ vertices: [start, mid, end], point }))
     return undefined
 
   const angles = [start, mid, end].map((vertex) =>
@@ -76,9 +128,15 @@ export function getSymbolArcAttachment({
   const sweep = normalizeRadians(endAngle - startAngle)
   let contactAngle = Math.atan2(point.y - center.y, point.x - center.x)
   // Preserve membership of rounded endpoints at the 0/2pi boundary.
-  if (Math.hypot(point.x - start.x, point.y - start.y) <= 1)
+  if (
+    Math.max(Math.abs(point.x - start.x), Math.abs(point.y - start.y)) <=
+    RELATIVE_COORDINATE_ROUNDING_BOUND
+  )
     contactAngle = angles[0]!
-  if (Math.hypot(point.x - end.x, point.y - end.y) <= 1)
+  if (
+    Math.max(Math.abs(point.x - end.x), Math.abs(point.y - end.y)) <=
+    RELATIVE_COORDINATE_ROUNDING_BOUND
+  )
     contactAngle = angles[2]!
   const contactOffset = normalizeRadians(contactAngle - startAngle)
   if (contactOffset > sweep) return undefined
