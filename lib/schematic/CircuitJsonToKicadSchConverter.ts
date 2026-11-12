@@ -26,19 +26,21 @@ import { AddSchematicSymbolsStage } from "./stages/AddSchematicSymbolsStage"
 import { AddSchematicTracesStage } from "./stages/AddSchematicTracesStage"
 import { AddSheetInstancesStage } from "./stages/AddSheetInstancesStage"
 import { InitializeSchematicStage } from "./stages/InitializeSchematicStage"
+import { roundSchematicCoordinate } from "./stages/utils/schematicCoordinates"
 
 const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
 const COMPACT_LARGE_SHEET_MARGIN_MM = 15
 const TITLE_BLOCK_CONTENT_OFFSET_MM = 5
 
-const getSingleSheetSchematicLayout = (db: ReturnType<typeof cju>) => {
+const getSingleSheetSchematicLayout = (
+  db: ReturnType<typeof cju>,
+  scaleFactor: number = DEFAULT_SCHEMATIC_SCALE_FACTOR,
+) => {
   let measurement = getSchematicBoundsAndCenter(db)
   let contentWidthMm =
-    (measurement.bounds.maxX - measurement.bounds.minX) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxX - measurement.bounds.minX) * scaleFactor
   let contentHeightMm =
-    (measurement.bounds.maxY - measurement.bounds.minY) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxY - measurement.bounds.minY) * scaleFactor
   let paperSize = selectSchematicPaperSize(contentWidthMm, contentHeightMm)
 
   if (
@@ -57,11 +59,9 @@ const getSingleSheetSchematicLayout = (db: ReturnType<typeof cju>) => {
     useComponentLevelSourceGeometry: true,
   })
   contentWidthMm =
-    (measurement.bounds.maxX - measurement.bounds.minX) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxX - measurement.bounds.minX) * scaleFactor
   contentHeightMm =
-    (measurement.bounds.maxY - measurement.bounds.minY) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxY - measurement.bounds.minY) * scaleFactor
   paperSize = selectSchematicPaperSize(
     contentWidthMm,
     contentHeightMm,
@@ -83,6 +83,20 @@ export interface CircuitJsonToKicadSchConverterOptions {
   paperSize?: PaperDimensions
   schematicSheets?: KicadSchematicSheetOptions[]
   titleBlock?: KicadSchematicTitleBlockMetadata
+  /** Scale factor used to convert circuit-json schematic units into KiCad mm */
+  kicadSchematicScaleFactor?: number
+  /** Alias for kicadSchematicScaleFactor */
+  schematicScaleFactor?: number
+  /** Snap coordinates to grid (true for 1.27mm, or specify grid size in mm) */
+  snapToGrid?: boolean | number
+  /** Snap custom symbol pins to 1.27mm grid */
+  snapCustomSymbolPinsToGrid?: boolean | number
+  /** Grid size in mm (default: 1.27) */
+  gridSize?: number
+  /** Default pin length for custom symbols (in mm) */
+  customSymbolPinLength?: number
+  /** When true, derive pin length from port stem length */
+  useStemLengthAsPinLength?: boolean
 }
 
 export interface KicadSchematicSheetOptions {
@@ -177,12 +191,15 @@ export class CircuitJsonToKicadSchConverter {
     this.options = options
     this.schematicSheetPlan = buildSchematicSheetPlan(circuitJson)
 
-    const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
+    const kicadSchematicScaleFactor =
+      options.kicadSchematicScaleFactor ??
+      options.schematicScaleFactor ??
+      DEFAULT_SCHEMATIC_SCALE_FACTOR
 
     const db = cju(circuitJson)
 
     const { center, paperSize: fittedPaperSize } =
-      getSingleSheetSchematicLayout(db)
+      getSingleSheetSchematicLayout(db, kicadSchematicScaleFactor)
     const paperSize = options.paperSize ?? fittedPaperSize
     const sheetOptions = getSchematicSheetOptions({
       options,
@@ -191,14 +208,30 @@ export class CircuitJsonToKicadSchConverter {
     const titleBlockContentOffsetMm = options.titleBlock
       ? TITLE_BLOCK_CONTENT_OFFSET_MM
       : 0
-    const contentCenter = {
+    let contentCenter = {
       x: paperSize.width / 2,
       y: paperSize.height / 2 - titleBlockContentOffsetMm,
+    }
+    const snapToGrid = options.snapToGrid
+    if (snapToGrid) {
+      const gridSize =
+        typeof snapToGrid === "number" && snapToGrid > 0
+          ? snapToGrid
+          : (options.gridSize ?? 1.27)
+      contentCenter = {
+        x: roundSchematicCoordinate(
+          Math.round(contentCenter.x / gridSize) * gridSize,
+        ),
+        y: roundSchematicCoordinate(
+          Math.round(contentCenter.y / gridSize) * gridSize,
+        ),
+      }
     }
 
     this.ctx = {
       db,
       circuitJson,
+      converterOptions: options,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
@@ -371,7 +404,10 @@ export class CircuitJsonToKicadSchConverter {
       extraPaperExtentMm,
     } = options
 
-    const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
+    const kicadSchematicScaleFactor =
+      this.options.kicadSchematicScaleFactor ??
+      this.options.schematicScaleFactor ??
+      DEFAULT_SCHEMATIC_SCALE_FACTOR
     const db = cju(circuitJson)
     const { center, bounds } = getSchematicBoundsAndCenter(db)
 
@@ -396,10 +432,24 @@ export class CircuitJsonToKicadSchConverter {
     if (this.options.titleBlock) {
       contentCenter.y -= TITLE_BLOCK_CONTENT_OFFSET_MM
     }
+    const snapToGrid = this.options.snapToGrid
+    if (snapToGrid) {
+      const gridSize =
+        typeof snapToGrid === "number" && snapToGrid > 0
+          ? snapToGrid
+          : (this.options.gridSize ?? 1.27)
+      contentCenter.x = roundSchematicCoordinate(
+        Math.round(contentCenter.x / gridSize) * gridSize,
+      )
+      contentCenter.y = roundSchematicCoordinate(
+        Math.round(contentCenter.y / gridSize) * gridSize,
+      )
+    }
 
     const ctx: ConverterContext = {
       db,
       circuitJson,
+      converterOptions: this.options,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",

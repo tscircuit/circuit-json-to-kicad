@@ -1,4 +1,3 @@
-import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import type {
   SchematicComponent,
   SchematicPort,
@@ -13,10 +12,14 @@ import {
   TextEffectsFont,
 } from "kicadts"
 import type { SchSymbol } from "schematic-symbols"
-import { calculatePinPosition } from "./calculatePinPosition"
 import { applyToPoint, type Matrix } from "transformation-matrix"
-import { toSchematicInternalUnits } from "./schematicCoordinates"
+import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
+import { calculatePinPosition } from "./calculatePinPosition"
 import { getKicadPinElectricalType } from "./getKicadPinElectricalType"
+import {
+  roundSchematicCoordinate,
+  toSchematicInternalUnits,
+} from "./schematicCoordinates"
 
 type PortSide = "left" | "right" | "up" | "down"
 type SymbolPort = SchSymbol["ports"][number] & {
@@ -160,17 +163,25 @@ export function createPinSubsymbol({
   symbolData,
   isChip,
   schematicComponent,
+  schematicSymbol,
   schematicPorts,
   sourcePorts,
   c2kMatSch,
+  symbolScale,
+  kicadSymbolMetadata,
+  converterOptions,
 }: {
   libId: string
   symbolData: SymbolData
   isChip: boolean
   schematicComponent?: SchematicComponent
+  schematicSymbol?: any
   schematicPorts: SchematicPort[]
   sourcePorts: SourcePort[]
   c2kMatSch: Matrix
+  symbolScale?: number
+  kicadSymbolMetadata?: any
+  converterOptions?: any
 }): SchematicSymbol {
   const pinSymbol = new SchematicSymbol({
     libraryId: `${libId.split(":")[1]}_1_1`,
@@ -200,6 +211,19 @@ export function createPinSubsymbol({
     ? applyToPoint(c2kMatSch, schematicComponent.center)
     : { x: 0, y: 0 }
 
+  const effectiveScale = symbolScale ?? c2kMatSch.a
+
+  const snapToGridOption =
+    kicadSymbolMetadata?.snapToGrid ??
+    schematicSymbol?.metadata?.kicad_symbol?.snapToGrid ??
+    converterOptions?.snapCustomSymbolPinsToGrid ??
+    converterOptions?.snapToGrid
+  const shouldSnap = Boolean(snapToGridOption)
+  const gridSize =
+    typeof snapToGridOption === "number" && snapToGridOption > 0
+      ? snapToGridOption
+      : (converterOptions?.gridSize ?? 1.27)
+
   for (const [i, port] of symbolData.ports.entries()) {
     const pin = new SymbolPin()
     pin.pinGraphicStyle = "line"
@@ -213,13 +237,13 @@ export function createPinSubsymbol({
       schematicComponent,
       schematicPorts,
       // The sheet transform combines translation with scale(s, -s), so a is s.
-      c2kMatSchScale: c2kMatSch.a,
+      c2kMatSchScale: effectiveScale,
     })
-    // Custom/builtin artwork ports are positioned in symbolData's coordinate
-    // system. Translate that source point directly into the sheet; rebuilding
-    // it from the scaled local offset can change rounding at half-unit ties.
+
     const sheetPosition =
-      !isChip && schematicComponent
+      !isChip &&
+      schematicComponent &&
+      Math.abs(effectiveScale - c2kMatSch.a) < 1e-6
         ? applyToPoint(c2kMatSch, {
             x:
               (port.x ?? 0) +
@@ -230,31 +254,26 @@ export function createPinSubsymbol({
           })
         : { x: origin.x + x, y: origin.y - y }
 
-    // KiCad rounds the placed origin and each wire endpoint separately. Derive
-    // the local pin offset from those integer positions so their sum is exact.
-    // Library Y points up, whereas sheet Y points down.
-    pin.at = [
+    let pinX =
       (toSchematicInternalUnits(sheetPosition.x) -
         toSchematicInternalUnits(origin.x)) /
-        10_000,
+      10_000
+    let pinY =
       (toSchematicInternalUnits(origin.y) -
         toSchematicInternalUnits(sheetPosition.y)) /
-        10_000,
-      angle,
-    ]
-    pin.length = isChip ? CHIP_PIN_LENGTH : CUSTOM_SYMBOL_PIN_LENGTH
+      10_000
 
-    const nameFont = new TextEffectsFont()
-    nameFont.size = { height: 1.27, width: 1.27 }
-    const nameEffects = new TextEffects({ font: nameFont })
-    const pinName = port.labels?.[0] || "~"
-    pin._sxName = new SymbolPinName({ value: pinName, effects: nameEffects })
+    if (shouldSnap) {
+      pinX = roundSchematicCoordinate(Math.round(pinX / gridSize) * gridSize)
+      pinY = roundSchematicCoordinate(Math.round(pinY / gridSize) * gridSize)
+    }
 
-    const numFont = new TextEffectsFont()
-    numFont.size = { height: 1.27, width: 1.27 }
-    const numEffects = new TextEffects({ font: numFont })
+    pin.at = [pinX, pinY, angle]
+
     const pinNum =
       port.pinNumber?.toString() ?? circuitPinNumbers.get(i) ?? `${i + 1}`
+    const pinName = port.labels?.[0] || "~"
+
     const schematicPort = schematicPorts.find((candidate) => {
       if (
         candidate.schematic_component_id !==
@@ -271,7 +290,73 @@ export function createPinSubsymbol({
     const sourcePort = schematicPort
       ? sourcePortsById.get(schematicPort.source_port_id)
       : undefined
-    pin.pinElectricalType = getKicadPinElectricalType(sourcePort)
+
+    const portPinMeta =
+      (port as any).kicadPinMetadata ??
+      (schematicPort as any)?.metadata?.kicad_pin ??
+      (sourcePort as any)?.metadata?.kicad_pin ??
+      kicadSymbolMetadata?.pins?.[pinNum] ??
+      kicadSymbolMetadata?.pins?.[pinName]
+
+    const stemLength =
+      (port as any).stemLength ??
+      (port as any).schStemLength ??
+      schematicPort?.distance_from_component_edge
+
+    const useStemLength = Boolean(
+      converterOptions?.useStemLengthAsPinLength ||
+        kicadSymbolMetadata?.useStemLengthAsPinLength,
+    )
+
+    let resolvedPinLength: number | undefined
+    if (portPinMeta?.pinLength !== undefined) {
+      resolvedPinLength = Number(portPinMeta.pinLength)
+    } else if (kicadSymbolMetadata?.pinLength !== undefined) {
+      resolvedPinLength = Number(kicadSymbolMetadata.pinLength)
+    } else if (kicadSymbolMetadata?.defaultPinLength !== undefined) {
+      resolvedPinLength = Number(kicadSymbolMetadata.defaultPinLength)
+    } else if (converterOptions?.customSymbolPinLength !== undefined) {
+      resolvedPinLength = Number(converterOptions.customSymbolPinLength)
+    } else if (stemLength !== undefined && useStemLength) {
+      resolvedPinLength = roundSchematicCoordinate(stemLength * effectiveScale)
+    }
+
+    if (shouldSnap && resolvedPinLength !== undefined && useStemLength) {
+      resolvedPinLength = roundSchematicCoordinate(
+        Math.round(resolvedPinLength / gridSize) * gridSize,
+      )
+    }
+
+    pin.length = isChip
+      ? CHIP_PIN_LENGTH
+      : (resolvedPinLength ?? CUSTOM_SYMBOL_PIN_LENGTH)
+
+    const nameFont = new TextEffectsFont()
+    const nameTextSize =
+      portPinMeta?.nameTextSize !== undefined
+        ? Number(portPinMeta.nameTextSize)
+        : 1.27
+    nameFont.size = { height: nameTextSize, width: nameTextSize }
+    const nameEffects = new TextEffects({ font: nameFont })
+    pin._sxName = new SymbolPinName({ value: pinName, effects: nameEffects })
+
+    const numFont = new TextEffectsFont()
+    const numTextSize =
+      portPinMeta?.numberTextSize !== undefined
+        ? Number(portPinMeta.numberTextSize)
+        : 1.27
+    numFont.size = { height: numTextSize, width: numTextSize }
+    const numEffects = new TextEffects({ font: numFont })
+
+    if (portPinMeta?.electricalType) {
+      pin.pinElectricalType = portPinMeta.electricalType
+    } else {
+      pin.pinElectricalType = getKicadPinElectricalType(sourcePort)
+    }
+    if (portPinMeta?.graphicStyle) {
+      pin.pinGraphicStyle = portPinMeta.graphicStyle
+    }
+
     pin._sxNumber = new SymbolPinNumber({
       value: getPhysicalPinName(sourcePort) ?? pinNum,
       effects: numEffects,

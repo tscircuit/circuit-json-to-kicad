@@ -2,7 +2,6 @@ import type {
   CircuitJson,
   SchematicComponent,
   SchematicNetLabel,
-  SchematicPort,
   SourceComponentBase,
 } from "circuit-json"
 import type { KicadSch } from "kicadts"
@@ -15,6 +14,7 @@ import {
   SymbolPower,
 } from "kicadts"
 import { symbols } from "schematic-symbols"
+import { applyKicadSymbolMetadataToSymbol } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { ConverterStage } from "../../types"
 import {
   getKicadCompatibleComponentName,
@@ -29,9 +29,8 @@ import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converte
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
-import { applyKicadSymbolMetadataToSymbol } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
-import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 import { alignSchematicConnectionsToGrid } from "./utils/alignSchematicConnectionsToGrid"
+import { createPinSubsymbol } from "./utils/createPinSubsymbol"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
@@ -310,6 +309,16 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       return null
     }
 
+    const metadata =
+      schematicSymbol.metadata?.kicad_symbol ??
+      schematicComponent.metadata?.kicad_symbol ??
+      (sourceComp as any).metadata?.kicad_symbol
+
+    const useStemLengthAsPinLength = Boolean(
+      metadata?.useStemLengthAsPinLength ??
+        this.ctx.converterOptions?.useStemLengthAsPinLength,
+    )
+
     // Build symbol data from schematic primitives linked to this schematic_symbol
     const symbolData = buildSymbolDataFromSchematicPrimitives({
       circuitJson: this.ctx.circuitJson,
@@ -318,6 +327,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       schematicComponentId: schematicComponent.schematic_component_id,
       schematicComponentCenter: schematicComponent.center,
       schematicComponentSize: schematicComponent.size,
+      useStemLengthAsPinLength,
     })
 
     // Core resolves {REF} to the component name. Render that label using the
@@ -337,18 +347,32 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       cadComponent,
     )
 
-    return this.createLibrarySymbol({
+    const symbolScale =
+      metadata?.scaleFactor ??
+      metadata?.schematicScaleFactor ??
+      this.ctx.kicadSchematicScaleFactor ??
+      15
+
+    const symbol = this.createLibrarySymbol({
       libId: libraryId,
       symbolData,
       isChip: false, // Custom symbols are not treated as generic chips
       schematicComponent,
+      schematicSymbol,
+      metadata,
       description: this.getDescription(sourceComp),
       keywords: this.getKeywords(sourceComp),
       fpFilters: this.getFpFilters(sourceComp, schematicSymbol.name),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
-      symbolScale: this.ctx.kicadSchematicScaleFactor!,
+      symbolScale,
     })
+
+    if (metadata) {
+      applyKicadSymbolMetadataToSymbol(symbol, metadata)
+    }
+
+    return symbol
   }
 
   /**
@@ -419,6 +443,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     isChip,
     hidePinNames = false,
     schematicComponent,
+    schematicSymbol,
+    metadata,
     description,
     keywords,
     fpFilters,
@@ -431,6 +457,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     isChip: boolean
     hidePinNames?: boolean
     schematicComponent?: SchematicComponent
+    schematicSymbol?: any
+    metadata?: any
     description: string
     keywords: string
     fpFilters: string
@@ -484,9 +512,16 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       symbolData,
       isChip,
       schematicComponent,
+      schematicSymbol,
       schematicPorts: this.ctx.db.schematic_port.list(),
       sourcePorts: this.ctx.db.source_port.list(),
       c2kMatSch: this.ctx.c2kMatSch!,
+      symbolScale,
+      kicadSymbolMetadata:
+        metadata ??
+        schematicSymbol?.metadata?.kicad_symbol ??
+        schematicComponent?.metadata?.kicad_symbol,
+      converterOptions: this.ctx.converterOptions,
     })
     symbol.subSymbols.push(pinSymbol)
 

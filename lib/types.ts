@@ -1,6 +1,6 @@
 import type { CircuitJsonUtilObjects } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, SchematicComponent } from "circuit-json"
-import type { KicadSch, KicadPcb, SchematicSymbol } from "kicadts"
+import type { KicadPcb, KicadSch, SchematicSymbol } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import type { PaperDimensions } from "./schematic/selectSchematicPaperSize"
 import type { SchematicConnectionGrid } from "./schematic/stages/utils/schematicCoordinates"
@@ -106,6 +106,8 @@ export interface ConverterContext {
   // PCB 3D model options
   /** Project name used as the .3dshapes folder for user-provided 3D models */
   projectName?: string
+  /** Options passed to the converter */
+  converterOptions?: any
   /** CDN URLs of 3D models needed for this PCB (collected during footprint stage) */
   pcbModel3dSourcePaths?: string[]
 
