@@ -29,6 +29,8 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
   CircuitJson,
   KicadSch
 > {
+  private powerSymbolCounter = 0
+
   override _step(): void {
     const { kicadSch, db } = this.ctx
 
@@ -127,7 +129,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       y += pinPosition.y
     }
 
-    const reference = `#PWR${netLabel.schematic_net_label_id}`
+    const reference = `#PWR${String(++this.powerSymbolCounter).padStart(2, "0")}`
     const uuid = crypto.randomUUID()
 
     const symbol = new SchematicSymbol({
