@@ -44,6 +44,7 @@ import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedH
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
 import { convertSolderPaste } from "./footprints-stage-converters/convertSolderPaste"
+import { flipFootprintToBack } from "../utils/flipFootprintToBack"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -192,7 +193,6 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         silkscreenTexts: pcbSilkscreenTexts,
         componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
-        sourceComponentName: sourceComponent?.name,
       }),
     )
 
@@ -532,6 +532,10 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     }
 
     applyInferredFootprintType(footprint)
+
+    if (component.layer === "bottom") {
+      flipFootprintToBack(footprint)
+    }
 
     const footprints = kicadPcb.footprints
     footprints.push(footprint)
