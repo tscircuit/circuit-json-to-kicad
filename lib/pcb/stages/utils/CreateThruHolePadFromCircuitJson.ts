@@ -122,13 +122,20 @@ export function createThruHolePadFromCircuitJson({
     drill = new PadDrill({ diameter: 0.8, offset: drillOffset })
   }
 
+  const padAtPos = drillOffset
+    ? {
+        x: rotatedPos.x - drillOffset.x,
+        y: rotatedPos.y - drillOffset.y,
+      }
+    : rotatedPos
+
   // Generate deterministic UUID for pad
   const padData = `thruhole:${componentId}:${padNumber}:${rotatedPos.x},${rotatedPos.y}`
   const pad = new FootprintPad({
     number: String(padNumber),
     padType: "thru_hole",
     shape: padShape,
-    at: [rotatedPos.x, rotatedPos.y, rotation],
+    at: [padAtPos.x, padAtPos.y, rotation],
     size: padSize,
     drill: drill,
     layers: ["*.Cu", "*.Mask"],
