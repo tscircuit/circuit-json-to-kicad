@@ -3,7 +3,7 @@ import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import { Circuit } from "tscircuit"
 
-test.failing("KiCad keepouts honor allowPlacements", async () => {
+test("KiCad keepouts honor allowPlacements", async () => {
   const circuit = new Circuit()
   circuit.add(
     <board width="14mm" height="10mm" routingDisabled schematicDisabled>
