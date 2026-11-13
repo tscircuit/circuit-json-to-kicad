@@ -5,10 +5,17 @@ import type {
   PcbSilkscreenPath,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { GrCircle, GrLine, GrPoly } from "kicadts"
+import { GrCircle, GrLine, GrPoly, Stroke } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
-import { applyToPoint, rotate, type Matrix } from "transformation-matrix"
+import {
+  applyToPoint,
+  compose,
+  rotate,
+  translate,
+  type Matrix,
+} from "transformation-matrix"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
 import { getRectanglePoints } from "./utils/getRectanglePoints"
@@ -158,6 +165,41 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
         appendGraphicLine(kicadPcb, grLine)
       }
+    }
+
+    // Board-level silkscreen rects (component-owned ones are footprint polys)
+    const standaloneSilkscreenRects =
+      this.ctx.db.pcb_silkscreen_rect
+        ?.list()
+        .filter((rect) => !rect.pcb_component_id) || []
+
+    for (const rect of standaloneSilkscreenRects) {
+      const hasStroke = rect.has_stroke ?? rect.stroke_width > 0
+      if (!hasStroke && !rect.is_filled) continue
+
+      const fromRectCenter = compose(
+        translate(rect.center.x, rect.center.y),
+        rotate(((rect.ccw_rotation ?? 0) * Math.PI) / 180),
+      )
+      const points = getRectanglePoints(rect).map((point) =>
+        applyToPoint(c2kMatPcb, applyToPoint(fromRectCenter, point)),
+      )
+      const stroke = hasStroke ? new Stroke() : undefined
+      if (stroke) {
+        stroke.width = rect.stroke_width
+        stroke.type = rect.is_stroke_dashed ? "dash" : "default"
+      }
+
+      appendGraphicPoly(
+        kicadPcb,
+        new GrPoly({
+          points,
+          layer: rect.layer === "bottom" ? "B.SilkS" : "F.SilkS",
+          stroke,
+          fill: rect.is_filled ?? false,
+          uuid: generateDeterministicUuid(rect.pcb_silkscreen_rect_id),
+        }),
+      )
     }
 
     // Add standalone silkscreen text elements (not associated with components)
