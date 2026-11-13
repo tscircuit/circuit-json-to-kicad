@@ -1,6 +1,7 @@
 import type { PcbCourtyardCircle } from "circuit-json"
 import { FpCircle, Stroke } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
+import { parseColor } from "../../../schematic/stages/utils/parseColor"
 import {
   type FootprintGraphicsPlacement,
   getBoardToFootprintTransform,
@@ -20,7 +21,7 @@ export function convertCourtyardCircles(
       top: "F.CrtYd",
       bottom: "B.CrtYd",
     }
-    const kicadLayer = layerMap[circle.layer] || "F.CrtYd"
+    const kicadLayer = layerMap[circle.layer] || circle.layer || "F.CrtYd"
 
     const fpCircle = new FpCircle({
       center,
@@ -33,6 +34,9 @@ export function convertCourtyardCircles(
     if (fpCircle.stroke) {
       fpCircle.stroke.width = 0.05
       fpCircle.stroke.type = "default"
+      const color = (circle as PcbCourtyardCircle & { color?: string }).color
+      const parsedColor = color ? parseColor(color) : undefined
+      if (parsedColor) fpCircle.stroke.color = parsedColor
     }
 
     fpCircles.push(fpCircle)
