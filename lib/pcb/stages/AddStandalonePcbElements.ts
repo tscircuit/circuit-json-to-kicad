@@ -10,11 +10,12 @@ import type {
   PcbSolderPaste,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Footprint } from "kicadts"
+import { Footprint, FootprintAttr } from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { applyInferredFootprintType } from "./utils/applyInferredFootprintType"
+import { applyMetadataToFootprint } from "./utils/applyMetadataToFootprint"
 import { createSmdPadFromCircuitJson } from "./utils/CreateSmdPadFromCircuitJson"
 import {
   createSolderPastePadFromCircuitJson,
@@ -28,6 +29,7 @@ export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
 > {
+  private holeCount = 0
   private unprocessedElements: Array<
     PcbHole | PcbPlatedHole | PcbSmtPad | PcbSolderPaste
   > = []
@@ -126,9 +128,11 @@ export class AddStandalonePcbElements extends ConverterStage<
       kicadPcb.footprints = footprints
     } else if (elm.type === "pcb_hole") {
       const hole = elm
+      const reference = `H${++this.holeCount}`
       const footprintSeed = `standalone_hole:${hole.pcb_hole_id}:${hole.x},${hole.y}`
       const kicadPos = applyToPoint(c2kMatPcb, { x: hole.x, y: hole.y })
       const libraryLink = this.getHoleLibraryLink(hole)
+      const footprintName = libraryLink.replace(/^tscircuit:/, "")
 
       const footprint = new Footprint({
         libraryLink,
@@ -136,6 +140,20 @@ export class AddStandalonePcbElements extends ConverterStage<
         at: [kicadPos.x, kicadPos.y, 0],
         uuid: generateDeterministicUuid(footprintSeed),
       })
+
+      applyMetadataToFootprint({
+        footprint,
+        metadata: undefined,
+        componentProperty: {
+          reference,
+          kicadComponentValue: footprintName,
+          manufacturerPartNumber: "",
+          supplierPartNumber: "",
+        },
+      })
+      footprint.attr = new FootprintAttr()
+      footprint.attr.excludeFromPosFiles = true
+      footprint.attr.excludeFromBom = true
 
       const ccwRotationDegrees = 0
       const npthPads = convertNpthHoles({
