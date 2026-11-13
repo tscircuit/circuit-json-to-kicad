@@ -36,8 +36,8 @@ test("repro: standalone vias export an extra anonymous footprint", async () => {
   const outputString = converter.getOutputString()
   const kicadPcb = KicadPcb.parse(outputString)[0] as KicadPcb
 
-  // Capture the current bug; after the fix, only R1's footprint should remain.
-  expect(kicadPcb.footprints).toHaveLength(2)
+  // Only R1's footprint should be emitted; standalone vias are exported as KiCad vias.
+  expect(kicadPcb.footprints).toHaveLength(1)
   expect(
     kicadPcb.footprints.map((footprint) => ({
       libraryLink: footprint.libraryLink,
@@ -48,11 +48,6 @@ test("repro: standalone vias export an extra anonymous footprint", async () => {
     })),
   ).toMatchInlineSnapshot(`
     [
-      {
-        "libraryLink": "tscircuit:Unknown",
-        "padCount": 0,
-        "reference": null,
-      },
       {
         "libraryLink": "tscircuit:resistor_res0402",
         "padCount": 4,
