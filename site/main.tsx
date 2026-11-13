@@ -99,7 +99,6 @@ convertBtn.addEventListener("click", async () => {
 
     const schematicFileName = `${baseName}.kicad_sch`
     const boardFileName = `${baseName}.kicad_pcb`
-    const projectFileName = `${baseName}.kicad_pro`
 
     const schConverter = new CircuitJsonToKicadSchConverter(circuitJson)
     schConverter.runUntilFinished()
@@ -125,7 +124,9 @@ convertBtn.addEventListener("click", async () => {
       zip.file(filename, content)
     }
     zip.file(boardFileName, pcbConverter.getOutputString())
-    zip.file(projectFileName, proConverter.getOutputString())
+    for (const { filename, content } of proConverter.getOutputFiles()) {
+      zip.file(filename, content)
+    }
 
     await resolveAndLoadKicad3dModelFiles({
       projectName: baseName,

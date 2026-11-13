@@ -132,6 +132,7 @@ export class CircuitJsonToKicadProConverter {
   }
 
   private project: KicadProProject
+  private viaToPadClearance?: number
 
   private createBaseNetClass(params: {
     name: string
@@ -172,6 +173,9 @@ export class CircuitJsonToKicadProConverter {
     const pcbBoard = circuitJson.filter(
       (component) => component.type === "pcb_board",
     )[0] as PcbBoard
+    this.viaToPadClearance =
+      pcbBoard?.min_via_edge_to_pad_edge_clearance ??
+      pcbBoard?.min_pad_edge_to_pad_edge_clearance
 
     // Build the `sheets` list. When a sheet plan is supplied (hierarchical
     // schematic), reuse its UUIDs so the project matches the .kicad_sch files;
@@ -356,5 +360,30 @@ export class CircuitJsonToKicadProConverter {
 
   getOutputString(): string {
     return `${JSON.stringify(this.project, null, 2)}\n`
+  }
+
+  getOutputFiles(): Array<{ filename: string; content: string }> {
+    const name = this.project.head.project_name
+    const files = [
+      { filename: `${name}.kicad_pro`, content: this.getOutputString() },
+    ]
+    if (this.viaToPadClearance === undefined) return files
+
+    const minimum = `${this.viaToPadClearance}mm`
+    const viaAndPad =
+      "A.Type == 'Via' && B.Type == 'Pad' && B.Pad_Type != 'NPTH, mechanical'"
+    // Electrical clearance skips two items with net code 0. For just that
+    // pair, check physical spacing on copper layers, including standalone pads.
+    const rules = `(version 1)
+(rule "Via to pad copper clearance"
+  (condition "${viaAndPad}")
+  (constraint clearance (min ${minimum})))
+(rule "Unassigned via to unassigned pad copper clearance"
+  (layer "*.Cu")
+  (condition "${viaAndPad} && A.Net == 0 && B.Net == 0")
+  (constraint physical_clearance (min ${minimum})))
+`
+    files.push({ filename: `${name}.kicad_dru`, content: rules })
+    return files
   }
 }

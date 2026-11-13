@@ -36,9 +36,10 @@ test("KiCad uses the exported via-to-pad minimum for the 0.14 mm copper gap", as
     new CircuitJsonToKicadProConverter(json, { projectName: "board" })
 
   const viaPadErrors = async () => {
-    const drc = await getKicadPcbDrc(pcb.getOutputString(), [
-      { filename: "board.kicad_pro", content: project().getOutputString() },
-    ])
+    const drc = await getKicadPcbDrc(
+      pcb.getOutputString(),
+      project().getOutputFiles(),
+    )
     return drc.violations.filter((v) => v.type === "clearance")
   }
   const errors = await viaPadErrors()
@@ -48,4 +49,14 @@ test("KiCad uses the exported via-to-pad minimum for the 0.14 mm copper gap", as
   board.min_via_edge_to_pad_edge_clearance = 0.1
   board.min_pad_edge_to_pad_edge_clearance = 0.2
   expect(await viaPadErrors()).toHaveLength(0)
+
+  board.min_via_edge_to_pad_edge_clearance = 0
+  expect(project().getOutputFiles()[1]?.content).toContain("(min 0mm)")
+  delete board.min_via_edge_to_pad_edge_clearance
+  expect(project().getOutputFiles()[1]?.content).toContain("(min 0.2mm)")
+  delete board.min_pad_edge_to_pad_edge_clearance
+  const legacy = project()
+  expect(legacy.getOutputFiles()).toEqual([
+    { filename: "board.kicad_pro", content: legacy.getOutputString() },
+  ])
 }, 30_000)
