@@ -3,12 +3,18 @@ import { tmpdir } from "node:os"
 import { join } from "node:path"
 import { $ } from "bun"
 
-export const getKicadPcbDrc = async (kicadPcb: string) => {
+export const getKicadPcbDrc = async (
+  kicadPcb: string,
+  projectFiles: Array<{ filename: string; content: string }> = [],
+) => {
   const directory = await mkdtemp(join(tmpdir(), "kicad-pcb-drc-"))
   try {
     const pcbPath = join(directory, "board.kicad_pcb")
     const reportPath = join(directory, "drc.json")
     await writeFile(pcbPath, kicadPcb)
+    for (const { filename, content } of projectFiles) {
+      await writeFile(join(directory, filename), content)
+    }
     await $`kicad-cli pcb drc --format json --output ${reportPath} ${pcbPath}`.quiet()
     return JSON.parse(await readFile(reportPath, "utf8")) as {
       violations: { type: string; description: string }[]
