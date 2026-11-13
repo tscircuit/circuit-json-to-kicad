@@ -131,7 +131,10 @@ export function createThruHolePadFromCircuitJson({
     at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
     drill: drill,
-    layers: ["*.Cu", "*.Mask"],
+    layers: platedHole.is_covered_with_solder_mask
+      ? ["*.Cu"]
+      : ["*.Cu", "*.Mask"],
+    solderMaskMargin: platedHole.soldermask_margin,
     removeUnusedLayers: false,
     uuid: generateDeterministicUuid(padData),
   })
