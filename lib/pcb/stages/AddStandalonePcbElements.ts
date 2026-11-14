@@ -10,7 +10,13 @@ import type {
   PcbSolderPaste,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Footprint } from "kicadts"
+import {
+  Footprint,
+  FootprintAttr,
+  Property,
+  TextEffects,
+  TextEffectsFont,
+} from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
@@ -31,9 +37,14 @@ export class AddStandalonePcbElements extends ConverterStage<
   private unprocessedElements: Array<
     PcbHole | PcbPlatedHole | PcbSmtPad | PcbSolderPaste
   > = []
+  private holeReferenceCount = 0
+  private usedReferences = new Set<string>()
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
+    for (const sourceComponent of this.ctx.db.source_component.list()) {
+      if (sourceComponent.name) this.usedReferences.add(sourceComponent.name)
+    }
     this.unprocessedElements = [
       ...(this.ctx.db.pcb_hole.list() as PcbHole[]).filter(
         (hole) => !hole.pcb_component_id,
@@ -146,6 +157,7 @@ export class AddStandalonePcbElements extends ConverterStage<
 
       if (npthPads.length > 0) {
         footprint.fpPads = npthPads
+        this.markAsMountingHole(footprint, footprintSeed)
         const footprints = kicadPcb.footprints
         footprints.push(footprint)
         kicadPcb.footprints = footprints
@@ -178,6 +190,44 @@ export class AddStandalonePcbElements extends ConverterStage<
         kicadPcb.footprints = footprints
       }
     }
+  }
+
+  /**
+   * Give a standalone hole footprint what KiCad's MountingHole footprints have:
+   * a reference (H1, H2, ...) and exclusion from the BOM and position files.
+   * Without these, assembly tools treat the hole as a part to buy and place.
+   */
+  private markAsMountingHole(footprint: Footprint, seed: string): void {
+    let reference: string
+    do {
+      this.holeReferenceCount += 1
+      reference = `H${this.holeReferenceCount}`
+    } while (this.usedReferences.has(reference))
+    this.usedReferences.add(reference)
+
+    const hiddenText = (key: string, value: string, y: number, layer: string) =>
+      new Property({
+        key,
+        value,
+        position: [0, y, 0],
+        layer,
+        uuid: generateDeterministicUuid(`${seed}-property-${key}`),
+        effects: new TextEffects({
+          font: Object.assign(new TextEffectsFont(), {
+            size: { width: 1, height: 1 },
+            thickness: 0.15,
+          }),
+        }),
+        hidden: true,
+      })
+    footprint.properties = [
+      hiddenText("Reference", reference, -2, "F.SilkS"),
+      hiddenText("Value", "MountingHole", 2, "F.Fab"),
+    ]
+
+    footprint.attr ??= new FootprintAttr()
+    footprint.attr.excludeFromPosFiles = true
+    footprint.attr.excludeFromBom = true
   }
 
   private getHoleLibraryLink(hole: PcbHole): string {
