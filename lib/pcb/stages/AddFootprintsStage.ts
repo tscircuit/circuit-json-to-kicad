@@ -109,7 +109,26 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     options?: { includeBuiltin3dModels?: boolean },
   ) {
     super(input, ctx)
-    this.pcbComponents = this.ctx.db.pcb_component.list()
+    // A standalone <via> gets a pcb_component that only holds its ports; its
+    // source_component_id points at a source_manually_placed_via, not a
+    // source_component. The via itself is exported as a KiCad (via ...), so a
+    // footprint for that container would be an empty, reference-less
+    // "tscircuit:Unknown" part that assembly BOMs list as a missing component.
+    const manuallyPlacedViaIds = new Set(
+      input
+        .filter((element) => element.type === "source_manually_placed_via")
+        .map(
+          (element) =>
+            (element as { source_manually_placed_via_id: string })
+              .source_manually_placed_via_id,
+        ),
+    )
+    this.pcbComponents = this.ctx.db.pcb_component
+      .list()
+      .filter(
+        (component) =>
+          !manuallyPlacedViaIds.has(component.source_component_id ?? ""),
+      )
     this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
 
     // Imported ports may have trace membership without connectivity keys.
