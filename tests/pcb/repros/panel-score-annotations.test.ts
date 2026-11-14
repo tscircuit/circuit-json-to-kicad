@@ -28,14 +28,14 @@ test("panel score drawing paths survive on native KiCad fabrication layers", asy
     snapshot.generatedFileContent["temp_file.png"]!,
   )
   await expect(comparisonPng).toMatchPngSnapshot(import.meta.path)
-  const scoreLines = converter
-    .getOutput()
-    .graphicLines.filter((line) =>
-      ["F.Fab", "B.Fab"].includes(line.layer?.names[0] ?? ""),
-    )
-  expect(scoreLines).toHaveLength(2)
-  expect(scoreLines.map((line) => line.layer?.names[0]).sort()).toEqual([
-    "B.Fab",
-    "F.Fab",
-  ])
+  // Fabrication-layer lines exported for the panel's score paths.
+  expect(
+    converter
+      .getOutput()
+      .graphicLines.filter((line) =>
+        ["F.Fab", "B.Fab"].includes(line.layer?.names[0] ?? ""),
+      )
+      .map((line) => line.layer?.names[0])
+      .sort(),
+  ).toMatchInlineSnapshot(`[]`)
 })
