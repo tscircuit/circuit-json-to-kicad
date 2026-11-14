@@ -37,5 +37,10 @@ test("panel score drawing paths survive on native KiCad fabrication layers", asy
       )
       .map((line) => line.layer?.names[0])
       .sort(),
-  ).toMatchInlineSnapshot(`[]`)
+  ).toMatchInlineSnapshot(`
+    [
+      "B.Fab",
+      "F.Fab",
+    ]
+  `)
 })
