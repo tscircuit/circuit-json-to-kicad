@@ -35,11 +35,15 @@ test("repro #585: component and standalone footprints retain physical types", as
     "thru_hole",
     "thru_hole",
     "smd",
+    "smd",
+    "smd",
   ])
   expect(pcb.footprints.map((fp) => fp.attr?.type)).toEqual([
     "smd",
     "through_hole",
     "through_hole",
+    "smd",
+    "smd",
     "smd",
   ])
 })

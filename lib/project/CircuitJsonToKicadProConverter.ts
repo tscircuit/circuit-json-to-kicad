@@ -1,4 +1,4 @@
-import { cju } from "@tscircuit/circuit-json-util"
+import { cju, createBoardOwnerMap } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
 import { resolveKicadPcbNetName } from "../pcb/utils/resolveKicadPcbNetName"
 import {
@@ -229,6 +229,10 @@ export class CircuitJsonToKicadProConverter {
     }
 
     const netClassByNetName = new Map<string, string>()
+    const boardOwnerMap =
+      this.ctx.db.pcb_board.list().length > 1
+        ? createBoardOwnerMap(this.ctx.circuitJson)
+        : undefined
     const sourceNetsWithTraceWidths = sourceNets
       .filter((sourceNet) => sourceNet.trace_width !== undefined)
       .map((sourceNet) => {
@@ -236,10 +240,12 @@ export class CircuitJsonToKicadProConverter {
           sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id
         return {
           sourceNet,
-          netName: resolveKicadPcbNetName(
-            sourceNet.name || sourceNet.source_net_id,
+          netName: resolveKicadPcbNetName({
+            candidateName: sourceNet.name || sourceNet.source_net_id,
             connectivityKey,
-          ),
+            boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")
+              ?.pcb_board_id,
+          }),
         }
       })
       .sort(

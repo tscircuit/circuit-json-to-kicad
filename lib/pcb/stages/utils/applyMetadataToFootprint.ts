@@ -1,3 +1,4 @@
+import { applyCustomFootprintProperties } from "./applyCustomFootprintProperties"
 import {
   Footprint,
   Property,
@@ -167,6 +168,12 @@ export function applyMetadataToFootprint({
       }),
     )
   }
+
+  applyCustomFootprintProperties({
+    properties: newProperties,
+    metadata,
+    footprintName: componentProperty.reference,
+  })
 
   footprint.properties = newProperties
   // Apply attributes if provided

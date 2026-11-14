@@ -1,3 +1,4 @@
+import { applySymbolProperty } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { getPhysicalPinName } from "../../utils/getPhysicalPinName"
 import type {
   CircuitJson,
@@ -22,7 +23,7 @@ import {
   TextEffectsJustify,
   Uuid,
 } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
+import { applyToPoint, compose, translate } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
@@ -131,7 +132,9 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           value,
         })
 
-      const symbolMetadata = schematicSymbol?.metadata?.kicad_symbol
+      const symbolMetadata = schematicSymbol
+        ? schematicSymbol.metadata?.kicad_symbol
+        : schematicComponent.metadata?.kicad_symbol
 
       // Match the resolved {REF} label within this custom symbol instance.
       // AddLibrarySymbolsStage omits the same label from the shared drawing.
@@ -269,6 +272,40 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         symbol.properties.push(fpFiltersProperty)
       }
 
+      const builtInPropertyNames = new Set([
+        "Reference",
+        "Value",
+        "Footprint",
+        "Datasheet",
+        "Description",
+        "ki_keywords",
+        "ki_fp_filters",
+      ])
+      let nextPropertyId = 7
+      for (const propertyMeta of Object.values(
+        symbolMetadata?.properties ?? {},
+      )) {
+        const propertyId = Number(propertyMeta?.id)
+        if (Number.isFinite(propertyId)) {
+          nextPropertyId = Math.max(nextPropertyId, propertyId + 1)
+        }
+      }
+      for (const [key, propertyMeta] of Object.entries(
+        symbolMetadata?.properties ?? {},
+      )) {
+        if (!propertyMeta || builtInPropertyNames.has(key)) continue
+        applySymbolProperty({
+          symbol,
+          key,
+          propertyMeta: {
+            ...propertyMeta,
+            id: propertyMeta.id ?? nextPropertyId++,
+            at: propertyMeta.at ?? { x, y, rotation: 0 },
+            effects: { hide: true, ...propertyMeta.effects },
+          },
+        })
+      }
+
       // Apply additional symbol metadata fields
       if (symbolMetadata) {
         // Apply inBom if provided
@@ -315,7 +352,25 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         }
       }
 
-      // Add pin instances with UUIDs based on schematic ports
+      // Keep fields at their existing offsets from the placed symbol.
+      const placed = this.ctx.schematicComponentPositions?.get(
+        schematicComponent.schematic_component_id,
+      )
+      if (placed) {
+        const placementTransform = compose(
+          translate(placed.x, placed.y),
+          translate(-x, -y),
+        )
+        symbol.at = [placed.x, placed.y, 0]
+        for (const property of symbol.properties) {
+          if (!property.at) continue
+          const position = applyToPoint(placementTransform, property.at)
+          property.at.x = position.x
+          property.at.y = position.y
+        }
+      }
+
+      // Add pin instances with UUIDs based on schematic ports.
       // For custom symbols, use only ports with display_pin_label
       // For regular components, use all ports
       let schematicPorts = db.schematic_port
