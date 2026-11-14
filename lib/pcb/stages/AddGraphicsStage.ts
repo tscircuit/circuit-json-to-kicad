@@ -8,10 +8,17 @@ import type { KicadPcb } from "kicadts"
 import { GrCircle, GrLine, GrPoly } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
-import { applyToPoint, rotate } from "transformation-matrix"
+import { applyToPoint, rotate, type Matrix } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
-import polygonClipping, { type Geom } from "polygon-clipping"
+import { getRectanglePoints } from "./utils/getRectanglePoints"
+import polygonClipping, { type MultiPolygon } from "polygon-clipping"
+import { signedDistanceToPolygon } from "./utils/signedDistanceToPolygon"
+import {
+  KICAD_PCB_GRID_MM,
+  roundBoardCoordinate,
+  roundPolygonToKicadPrecision,
+} from "./utils/roundPolygonToKicadPrecision"
 
 const pointsAreEqual = (
   a?: { x: number; y: number },
@@ -41,6 +48,19 @@ const normalizeOutlineCorners = (corners: Array<{ x: number; y: number }>) => {
 
 const DEFAULT_EDGE_CUTS_WIDTH = 0.1
 
+// Clip geometry on KiCad's coordinate grid. Coincident rounded slots must
+// share vertices instead of differing by sub-nanometer rotation noise.
+const toKicadPoint = (
+  point: { x: number; y: number },
+  c2kMatPcb: Matrix,
+): [number, number] => {
+  const transformed = applyToPoint(c2kMatPcb, point)
+  return [
+    roundBoardCoordinate(transformed.x),
+    roundBoardCoordinate(transformed.y),
+  ]
+}
+
 const appendGraphicLine = (kicadPcb: KicadPcb, grLine: GrLine) => {
   const graphicLines = kicadPcb.graphicLines
   graphicLines.push(grLine)
@@ -69,17 +89,7 @@ const rotatePointAroundOrigin = (
 }
 
 const getRectCutoutCorners = (cutout: PcbCutoutRect) => {
-  const halfWidth = cutout.width / 2
-  const halfHeight = cutout.height / 2
-
-  const localCorners = [
-    { x: -halfWidth, y: -halfHeight },
-    { x: halfWidth, y: -halfHeight },
-    { x: halfWidth, y: halfHeight },
-    { x: -halfWidth, y: halfHeight },
-  ]
-
-  return localCorners.map((point) => {
+  return getRectanglePoints(cutout).map((point) => {
     const rotatedPoint = rotatePointAroundOrigin(point, cutout.rotation)
 
     return {
@@ -193,21 +203,20 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
       }
     }
 
-    // Add board outline from pcb_board
-    const pcbBoards = this.ctx.db.pcb_board?.list() || []
-
-    if (pcbBoards.length > 0) {
-      const board = pcbBoards[0]
-
-      if (!board) {
-        this.finished = true
-        return
-      }
-
+    const outlineElements = [
+      ...this.ctx.db.pcb_panel.list(),
+      ...this.ctx.db.pcb_board.list(),
+    ]
+    const outlinePolys: MultiPolygon[] = []
+    for (const board of outlineElements) {
       let corners: Array<{ x: number; y: number }>
 
       // Check if board has a custom outline, otherwise use width/height to create rectangle
-      if (board.outline && board.outline.length > 0) {
+      if (
+        board.type === "pcb_board" &&
+        board.outline &&
+        board.outline.length > 0
+      ) {
         // Use the custom outline points
         corners = normalizeOutlineCorners(board.outline)
       } else {
@@ -224,33 +233,158 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
         ]
       }
 
+      outlinePolys.push([
+        [corners.map((point) => toKicadPoint(point, c2kMatPcb))],
+      ])
+    }
+
+    const [firstOutline, ...otherOutlines] = outlinePolys
+    if (firstOutline) {
       const pcbCutouts = (this.ctx.db.pcb_cutout?.list() as PcbCutout[]) || []
 
-      const cutoutPolys: Geom[] = []
+      const cutoutPolys: MultiPolygon[] = []
+      const circularCutouts = new Map<
+        MultiPolygon,
+        {
+          graphic: GrCircle
+          cx: number
+          cy: number
+          radius: number
+        }
+      >()
       for (const cutout of pcbCutouts) {
         if (cutout.shape === "rect") {
           const cutoutCorners = getRectCutoutCorners(cutout)
-          cutoutPolys.push([[cutoutCorners.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([
+            [cutoutCorners.map((point) => toKicadPoint(point, c2kMatPcb))],
+          ])
         } else if (cutout.shape === "circle") {
-          // Approximate the circle as a polygon so polygon-clipping can process it.
-          // Scaling the number of steps based on the radius to maintain smooth curves
-          cutoutPolys.push([[circleToPolygon(cutout.center, cutout.radius)]])
+          const geometry: MultiPolygon = [
+            [
+              circleToPolygon(cutout.center, cutout.radius).map(([x, y]) =>
+                toKicadPoint({ x, y }, c2kMatPcb),
+              ),
+            ],
+          ]
+          cutoutPolys.push(geometry)
+          const [cx, cy] = toKicadPoint(cutout.center, c2kMatPcb)
+          const [ex, ey] = toKicadPoint(
+            { x: cutout.center.x + cutout.radius, y: cutout.center.y },
+            c2kMatPcb,
+          )
+          const radius = Math.hypot(ex - cx, ey - cy)
+          if (radius === 0) continue
+          circularCutouts.set(geometry, {
+            cx,
+            cy,
+            radius,
+            graphic: new GrCircle({
+              center: { x: cx, y: cy },
+              end: { x: ex, y: ey },
+              layer: "Edge.Cuts",
+              width: edgeCutsWidth,
+              fill: "none",
+            }),
+          })
         } else if (cutout.shape === "polygon") {
-          cutoutPolys.push([[cutout.points.map((c) => [c.x, c.y])]])
+          cutoutPolys.push([
+            [cutout.points.map((point) => toKicadPoint(point, c2kMatPcb))],
+          ])
         }
       }
 
-      let boardGeom: Geom = [[corners.map((c) => [c.x, c.y])]]
-      if (cutoutPolys.length > 0) {
-        boardGeom = polygonClipping.difference(boardGeom, ...cutoutPolys)
+      // Boards inside a panel are part of the same substrate. Union their
+      // outlines before subtracting routing slots, so board interiors do not
+      // become holes or add crossing Edge.Cuts. Disjoint boards remain islands.
+      let boardGeom: MultiPolygon =
+        otherOutlines.length > 0
+          ? polygonClipping.union(firstOutline, ...otherOutlines)
+          : firstOutline
+      // A complete, isolated circle is an exact KiCad primitive. Keep polygon
+      // clipping for notches, intersecting cutouts and ambiguous near contacts.
+      const bounds = cutoutPolys.map((geometry) => {
+        const circle = circularCutouts.get(geometry)
+        if (circle) {
+          const r = circle.radius + KICAD_PCB_GRID_MM
+          return {
+            minX: circle.cx - r,
+            maxX: circle.cx + r,
+            minY: circle.cy - r,
+            maxY: circle.cy + r,
+          }
+        }
+        const ring = geometry[0]![0]!
+        let minX = Infinity,
+          minY = Infinity,
+          maxX = -Infinity,
+          maxY = -Infinity
+        for (const [x, y] of ring) {
+          minX = Math.min(minX, x)
+          maxX = Math.max(maxX, x)
+          minY = Math.min(minY, y)
+          maxY = Math.max(maxY, y)
+        }
+        return { minX, maxX, minY, maxY }
+      })
+      const clippedCutouts = cutoutPolys.filter((geometry, index) => {
+        const circle = circularCutouts.get(geometry)
+        if (!circle) return true
+        const requiredClearance = circle.radius + KICAD_PCB_GRID_MM
+        if (
+          signedDistanceToPolygon(circle.cx, circle.cy, boardGeom) <=
+          requiredClearance
+        )
+          return true
+        const box = bounds[index]!
+        const intersectsAnotherCutout = cutoutPolys.some(
+          (other, otherIndex) => {
+            if (index === otherIndex) return false
+            const otherBox = bounds[otherIndex]!
+            if (
+              box.minX > otherBox.maxX ||
+              box.maxX < otherBox.minX ||
+              box.minY > otherBox.maxY ||
+              box.maxY < otherBox.minY
+            )
+              return false
+            const otherCircle = circularCutouts.get(other)
+            if (otherCircle) {
+              return (
+                Math.hypot(
+                  circle.cx - otherCircle.cx,
+                  circle.cy - otherCircle.cy,
+                ) <=
+                requiredClearance + otherCircle.radius
+              )
+            }
+            return (
+              signedDistanceToPolygon(circle.cx, circle.cy, other) >=
+              -requiredClearance
+            )
+          },
+        )
+        if (intersectsAnotherCutout) return true
+        appendGraphicCircle(kicadPcb, circle.graphic)
+        return false
+      })
+      if (clippedCutouts.length > 0) {
+        boardGeom = polygonClipping.difference(
+          roundPolygonToKicadPrecision(boardGeom),
+          ...clippedCutouts,
+        )
       }
+
+      // Intersections can lie between grid points. Quantize them before
+      // the existing duplicate-endpoint check to avoid zero-length edges.
+      boardGeom = roundPolygonToKicadPrecision(boardGeom)
 
       // Convert resulting polygons back to lines on Edge.Cuts
       for (const poly of boardGeom) {
         for (const ring of poly) {
-          const transformedRing = ring.map((point: [number, number]) =>
-            applyToPoint(c2kMatPcb, { x: point[0], y: point[1] }),
-          )
+          const transformedRing = ring.map(([x, y]) => ({
+            x,
+            y,
+          }))
 
           for (let i = 0; i < transformedRing.length; i++) {
             const start = transformedRing[i]

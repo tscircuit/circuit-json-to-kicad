@@ -6,6 +6,7 @@ import {
   TextEffects,
   TextEffectsFont,
   TextEffectsJustify,
+  type SchematicSymbol,
 } from "kicadts"
 import type {
   KicadSymbolEffects,
@@ -104,11 +105,15 @@ const createJustify = (
   return new TextEffectsJustify(options)
 }
 
-const applySymbolProperty = (
-  symbol: SymbolEntry["symbol"],
-  key: string,
-  propertyMeta: KicadSymbolProperty,
-): void => {
+export const applySymbolProperty = ({
+  symbol,
+  key,
+  propertyMeta,
+}: {
+  symbol: SymbolEntry["symbol"]
+  key: string
+  propertyMeta: KicadSymbolProperty
+}): void => {
   const existingProperty = symbol.properties.find((prop) => prop.key === key)
   const nextId =
     propertyMeta.id !== undefined
@@ -159,8 +164,14 @@ export function applyKicadSymbolMetadata(
   kicadSymbol: SymbolEntry,
   metadata: KicadSymbolMetadata,
 ): SymbolEntry {
-  const { symbol } = kicadSymbol
+  applyKicadSymbolMetadataToSymbol(kicadSymbol.symbol, metadata)
+  return kicadSymbol
+}
 
+export function applyKicadSymbolMetadataToSymbol(
+  symbol: SchematicSymbol,
+  metadata: KicadSymbolMetadata,
+): void {
   if (metadata.excludeFromSim !== undefined) {
     symbol.excludeFromSim = metadata.excludeFromSim
   }
@@ -194,9 +205,7 @@ export function applyKicadSymbolMetadata(
   if (metadata.properties) {
     for (const [key, propertyMeta] of Object.entries(metadata.properties)) {
       if (!propertyMeta) continue
-      applySymbolProperty(symbol, key, propertyMeta)
+      applySymbolProperty({ symbol, key, propertyMeta })
     }
   }
-
-  return kicadSymbol
 }

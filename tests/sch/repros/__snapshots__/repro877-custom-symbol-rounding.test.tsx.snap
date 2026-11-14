@@ -1,0 +1,35 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`repro877: identical custom symbols at a coordinate rounding boundary 1`] = `
+{
+  "instanceLibraryIds": [
+    "Custom:MyPart",
+    "Custom:MyPart",
+  ],
+  "libraryDrawings": [
+    {
+      "libraryId": "Custom:MyPart",
+      "polylines": [
+        
+"(polyline
+  (pts
+    (xy -5.6142 -1.0829)
+    (xy 5.6142 -1.0829)
+    (xy 5.6142 1.0829)
+    (xy -5.6142 1.0829)
+    (xy -5.6142 -1.0829)
+  )
+  (stroke
+    (width 0.75)
+    (type default)
+  )
+  (fill
+    (type none)
+  )
+)"
+,
+      ],
+    },
+  ],
+}
+`;

@@ -29,7 +29,9 @@ import { buildSymbolDataFromSchematicPrimitives } from "./symbols-stage-converte
 import { createDrawingSubsymbol } from "./symbols-stage-converters/createDrawingSubsymbol"
 import { createGenericChipSymbolData } from "./symbols-stage-converters/createGenericChipSymbolData"
 import { addSymbolProperties } from "./utils/addSymbolProperties"
+import { applyKicadSymbolMetadataToSymbol } from "../../kicad-library/kicad-library-converter-utils/applyKicadSymbolMetadata"
 import { createPinSubsymbol } from "./utils/createPinSubsymbol"
+import { alignSchematicConnectionsToGrid } from "./utils/alignSchematicConnectionsToGrid"
 
 /**
  * Adds library symbol definitions from schematic-symbols to the lib_symbols section.
@@ -60,6 +62,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
         return symbol ? [{ component, symbol }] : []
       })
     const netLabelSymbols: SchematicSymbol[] = []
+
+    const placement = alignSchematicConnectionsToGrid(
+      { components: componentSymbols },
+      this.ctx,
+    )
+    this.ctx.schematicConnectionGrid = placement.grid
+    this.ctx.schematicComponentPositions = placement.origins
 
     // Rail artwork is shared, while each instance's Value names its global net.
     const netLabels = db.schematic_net_label?.list?.() || []
@@ -232,10 +241,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       referencePrefix: getReferencePrefixForComponent(sourceComp),
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
     }
-    return this.createLibrarySymbol({
+    const symbol = this.createLibrarySymbol({
       libId: libraryId,
       ...librarySymbolOptions,
     })
+    if (schematicComponent.metadata?.kicad_symbol) {
+      applyKicadSymbolMetadataToSymbol(
+        symbol,
+        schematicComponent.metadata.kicad_symbol,
+      )
+    }
+    return symbol
   }
 
   /**

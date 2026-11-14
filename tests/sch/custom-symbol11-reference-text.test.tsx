@@ -83,6 +83,20 @@ test("custom-symbol11: native references preserve label placement and follow ren
       converter.ctx.c2kMatSch!,
       sourceText.position,
     )
+    const component = circuitJson.find(
+      (element) =>
+        element.type === "schematic_component" &&
+        element.schematic_component_id === sourceText.schematic_component_id,
+    )!
+    if (component.type !== "schematic_component")
+      throw new Error("Missing component")
+    const originalOrigin = applyToPoint(
+      converter.ctx.c2kMatSch!,
+      component.center,
+    )
+    // Reference placement stays relative to the symbol when its origin moves.
+    expectedPosition.x += symbol.at!.x - originalOrigin.x
+    expectedPosition.y += symbol.at!.y - originalOrigin.y
     expect(reference.effects?.hiddenText).toBe(false)
     expect(reference.at?.x).toBeCloseTo(expectedPosition.x, 5)
     expect(reference.at?.y).toBeCloseTo(expectedPosition.y, 5)

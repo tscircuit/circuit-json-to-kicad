@@ -2,7 +2,7 @@ import { SymbolCircle } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import {
   roundSchematicCoordinate,
-  transformSchematicPoint,
+  transformSymbolPoint,
 } from "../utils/schematicCoordinates"
 import { createSymbolFillSexprPrimitives } from "./createSymbolFillSexprPrimitives"
 
@@ -25,7 +25,7 @@ export function createCircleFromPrimitive({
   transform: Matrix
   scale: number
 }): SymbolCircle {
-  const scaledPos = transformSchematicPoint(transform, {
+  const scaledPos = transformSymbolPoint(transform, {
     x: primitive.x,
     y: primitive.y,
   })

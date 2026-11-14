@@ -2,7 +2,7 @@ import { SymbolText, TextEffects, TextEffectsFont } from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import {
   roundSchematicCoordinate,
-  transformSchematicPoint,
+  transformSymbolPoint,
 } from "../utils/schematicCoordinates"
 
 export function createTextFromPrimitive({
@@ -22,7 +22,7 @@ export function createTextFromPrimitive({
 }): SymbolText {
   const symbolText = new SymbolText()
 
-  const scaledPos = transformSchematicPoint(transform, {
+  const scaledPos = transformSymbolPoint(transform, {
     x: schText.x,
     y: schText.y,
   })

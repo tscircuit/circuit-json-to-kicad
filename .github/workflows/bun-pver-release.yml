@@ -13,7 +13,7 @@ permissions:
   pull-requests: write
 
 env:
-  UPSTREAM_REPOS: "runframe" # comma-separated list, e.g. "eval,tscircuit,docs"
+  UPSTREAM_REPOS: "runframe,cli" # comma-separated list, e.g. "eval,tscircuit,docs"
   UPSTREAM_PACKAGES_TO_UPDATE: "circuit-json-to-kicad" # comma-separated list, e.g. "@tscircuit/core,@tscircuit/protos"
 
 jobs:
