@@ -1,0 +1,33 @@
+// Bun Snapshot v1, https://bun.sh/docs/test/snapshots
+
+exports[`standalone bottom SMT pad is placed in a B.Cu footprint 1`] = `
+[
+  {
+    "footprintLayer": "(layer F.Cu)",
+    "libraryLink": "tscircuit:resistor_res0402",
+    "padLayers": [
+      [
+        "F.Cu",
+        "F.Paste",
+        "F.Mask",
+      ],
+      [
+        "F.Cu",
+        "F.Paste",
+        "F.Mask",
+      ],
+    ],
+  },
+  {
+    "footprintLayer": "(layer B.Cu)",
+    "libraryLink": "tscircuit:smtpad_rect_width1mm_height1mm",
+    "padLayers": [
+      [
+        "B.Cu",
+        "B.Paste",
+        "B.Mask",
+      ],
+    ],
+  },
+]
+`;
