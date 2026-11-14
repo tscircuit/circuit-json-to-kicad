@@ -1,0 +1,88 @@
+[
+  {
+    "type": "pcb_board",
+    "pcb_board_id": "pcb_board_0",
+    "width": 24,
+    "height": 24,
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "thickness": 1.6,
+    "num_layers": 2
+  },
+  {
+    "type": "pcb_panel",
+    "pcb_panel_id": "pcb_panel_0",
+    "width": 24,
+    "height": 24,
+    "center": {
+      "x": 0,
+      "y": 0
+    },
+    "thickness": 1.6,
+    "covered_with_solder_mask": true
+  },
+  {
+    "type": "pcb_fabrication_note_path",
+    "pcb_fabrication_note_path_id": "pcb_fabrication_note_path_0",
+    "pcb_panel_id": "pcb_panel_0",
+    "layer": "top",
+    "route": [
+      {
+        "x": 0,
+        "y": -12
+      },
+      {
+        "x": 0,
+        "y": 12
+      }
+    ],
+    "stroke_width": 0.1
+  },
+  {
+    "type": "pcb_fabrication_note_path",
+    "pcb_fabrication_note_path_id": "pcb_fabrication_note_path_1",
+    "pcb_panel_id": "pcb_panel_0",
+    "layer": "bottom",
+    "route": [
+      {
+        "x": -12,
+        "y": 0
+      },
+      {
+        "x": 12,
+        "y": 0
+      }
+    ],
+    "stroke_width": 0.1
+  },
+  {
+    "type": "pcb_fabrication_note_text",
+    "pcb_fabrication_note_text_id": "pcb_fabrication_note_text_0",
+    "pcb_panel_id": "pcb_panel_0",
+    "layer": "top",
+    "text": "V-SCORE TOP",
+    "font": "tscircuit2024",
+    "font_size": 0.8,
+    "anchor_position": {
+      "x": 2,
+      "y": 10
+    },
+    "anchor_alignment": "center"
+  },
+  {
+    "type": "pcb_fabrication_note_text",
+    "pcb_fabrication_note_text_id": "pcb_fabrication_note_text_1",
+    "pcb_panel_id": "pcb_panel_0",
+    "layer": "bottom",
+    "text": "V-SCORE BOTTOM",
+    "font": "tscircuit2024",
+    "font_size": 0.8,
+    "anchor_position": {
+      "x": 4,
+      "y": 2
+    },
+    "anchor_alignment": "center"
+  }
+]
