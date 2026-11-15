@@ -1,3 +1,5 @@
+import { escapeKicadString } from "../../utils/escapeKicadString"
+
 /**
  * Generate fp-lib-table content for KiCad footprint library.
  */
@@ -6,7 +8,8 @@ export function generateFpLibTable(params: {
   includeUser: boolean
   includeBuiltin: boolean
 }): string {
-  const { kicadLibraryName, includeUser, includeBuiltin } = params
+  const { includeUser, includeBuiltin } = params
+  const kicadLibraryName = escapeKicadString(params.kicadLibraryName)
   let content = "(fp_lib_table\n"
   if (includeUser) {
     content += `  (lib (name "${kicadLibraryName}")(type "KiCad")(uri "\${KIPRJMOD}/footprints/${kicadLibraryName}.pretty")(options "")(descr ""))\n`
