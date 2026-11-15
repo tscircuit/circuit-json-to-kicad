@@ -1,5 +1,5 @@
 import { expect, test } from "bun:test"
-import type { CircuitJson } from "circuit-json"
+import type { CircuitJson, PcbCopperPour } from "circuit-json"
 import { parseKicadPcb } from "kicadts"
 import { CircuitJsonToKicadPcbConverter } from "lib/pcb/CircuitJsonToKicadPcbConverter"
 import fixture from "../../assets/nema34-zone-clearance/circuit.json"
@@ -24,7 +24,7 @@ test("NEMA34 repro: fixture and exported net/layer identities", () => {
   ])
 })
 
-test.failing("NEMA34: preserve local clearance rather than hard-code 0.15 mm", () => {
+test("NEMA34: preserve local clearance rather than hard-code 0.15 mm", () => {
   expect(pcb.zones.map((z) => z.connectPads?.clearance)).toEqual([
     0.16, 0.3, 0.3,
   ])
@@ -42,3 +42,48 @@ test("NEMA34 repro: KiCad PCB snapshot", async () => {
     import.meta.path,
   )
 })
+
+function exportPcb(input: CircuitJson) {
+  const converter = new CircuitJsonToKicadPcbConverter(input)
+  converter.runUntilFinished()
+  return parseKicadPcb(converter.getOutputString())
+}
+
+const vertices = [
+  { x: -2, y: -2 },
+  { x: 2, y: -2 },
+  { x: 0, y: 2 },
+]
+const shapes = [
+  { shape: "polygon", points: vertices },
+  { shape: "rect", center: { x: 0, y: 0 }, width: 4, height: 4 },
+  { shape: "brep", brep_shape: { outer_ring: { vertices }, inner_rings: [] } },
+] as const
+
+for (const shape of shapes) {
+  test(`${shape.shape}: preserve explicit clearance including zero; default only when absent`, () => {
+    const pour = {
+      type: "pcb_copper_pour",
+      pcb_copper_pour_id: "pour",
+      layer: "top",
+      ...shape,
+    } as PcbCopperPour
+    const base = [
+      fixture.find((e) => e.type === "pcb_board")!,
+      pour,
+    ] as CircuitJson
+    const defaultZone = exportPcb(base).zones[0]!
+    expect(defaultZone.connectPads?.clearance).toBe(0.15)
+    for (const clearance of [0, 0.16, 0.3, 0.5]) {
+      const withClearance = { ...pour, clearance }
+      const zone = exportPcb([base[0]!, withClearance]).zones[0]!
+      expect(zone.connectPads?.clearance).toBe(clearance)
+      expect(zone.polygons.map((p) => p.getString())).toEqual(
+        defaultZone.polygons.map((p) => p.getString()),
+      )
+      expect(zone.filledPolygons.map((p) => p.getString())).toEqual(
+        defaultZone.filledPolygons.map((p) => p.getString()),
+      )
+    }
+  })
+}
