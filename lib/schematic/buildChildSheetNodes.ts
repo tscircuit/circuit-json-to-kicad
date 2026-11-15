@@ -16,6 +16,7 @@ import {
 } from "kicadts"
 import type { ChildSchematicSheetPlanEntry } from "./buildSchematicSheetPlan"
 import type { KicadSchematicSheetOptions } from "./CircuitJsonToKicadSchConverter"
+import { roundSchematicCoordinate } from "./stages/utils/schematicCoordinates"
 
 // Sheet box + grid layout constants (millimeters)
 const BOX_WIDTH = 40
@@ -43,6 +44,11 @@ function buildSheetNode(
   width: number,
   height: number,
 ): Sheet {
+  const roundedX = roundSchematicCoordinate(x)
+  const roundedY = roundSchematicCoordinate(y)
+  const roundedWidth = roundSchematicCoordinate(width)
+  const roundedHeight = roundSchematicCoordinate(height)
+
   const stroke = new Stroke()
   stroke.width = SHEET_BORDER_WIDTH
   stroke.type = "solid"
@@ -54,7 +60,7 @@ function buildSheetNode(
     key: "Sheetname",
     value: entry.sheetName,
     id: 0,
-    at: At.from([x, y - 0.7, 0]),
+    at: At.from([roundedX, roundSchematicCoordinate(roundedY - 0.7), 0]),
     effects: createSheetPropertyEffects("bottom"),
   })
 
@@ -62,7 +68,11 @@ function buildSheetNode(
     key: "Sheetfile",
     value: entry.filename,
     id: 1,
-    at: At.from([x, y + height + 0.7, 0]),
+    at: At.from([
+      roundedX,
+      roundSchematicCoordinate(roundedY + roundedHeight + 0.7),
+      0,
+    ]),
     effects: createSheetPropertyEffects("top"),
   })
 
@@ -77,8 +87,8 @@ function buildSheetNode(
   instances.projects = [instancesProject]
 
   return new Sheet({
-    position: [x, y],
-    size: new SheetSize(width, height),
+    position: [roundedX, roundedY],
+    size: new SheetSize(roundedWidth, roundedHeight),
     excludeFromSim: false,
     inBom: true,
     onBoard: true,
