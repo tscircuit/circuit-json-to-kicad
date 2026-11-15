@@ -1,3 +1,5 @@
+import { resolveKicad3dModelPaths } from "./resolveKicad3dModelPaths"
+
 type ModelFetchResponse = {
   ok: boolean
   arrayBuffer: () => Promise<ArrayBuffer>
@@ -26,20 +28,6 @@ export interface ResolveAndLoadKicad3dModelFilesOptions {
 const isRemotePath = (modelPath: string) =>
   modelPath.startsWith("http://") || modelPath.startsWith("https://")
 
-const isBuiltinModelPath = (modelPath: string) =>
-  modelPath.startsWith("http://modelcdn.tscircuit.com") ||
-  modelPath.startsWith("https://modelcdn.tscircuit.com")
-
-const getModelFileName = (modelPath: string) => {
-  // Strip URL suffixes and normalize local paths before taking the filename.
-  const modelPathWithoutQuery = modelPath.split("?")[0] || modelPath
-  const modelPathWithoutHash =
-    modelPathWithoutQuery.split("#")[0] || modelPathWithoutQuery
-  const normalizedModelPath = modelPathWithoutHash.replaceAll("\\", "/")
-
-  return normalizedModelPath.split("/").pop() || modelPath
-}
-
 export const resolveAndLoadKicad3dModelFiles = async ({
   model3dSourcePaths,
   projectName,
@@ -48,14 +36,9 @@ export const resolveAndLoadKicad3dModelFiles = async ({
   onModelFile,
   onError,
 }: ResolveAndLoadKicad3dModelFilesOptions) => {
-  for (const sourcePath of model3dSourcePaths) {
-    // Builtin tscircuit models share one KiCad 3D model folder.
-    let shapesDir = `${projectName}.3dshapes`
-    if (isBuiltinModelPath(sourcePath)) {
-      shapesDir = "tscircuit_builtin.3dshapes"
-    }
-
-    const outputPath = `3dmodels/${shapesDir}/${getModelFileName(sourcePath)}`
+  const outputPaths = resolveKicad3dModelPaths(model3dSourcePaths, projectName)
+  for (const sourcePath of new Set(model3dSourcePaths)) {
+    const outputPath = outputPaths.get(sourcePath)!
 
     let content: Uint8Array
     try {
