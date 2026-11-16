@@ -57,9 +57,9 @@ test("repro924: horizontal and vertical chipRef symbols preserve native KiCad co
   converter.runUntilFinished()
   // The standalone export embeds its symbols without installing their libraries.
   // No electrical, dangling-wire, or off-grid violations are expected.
-  expect(
-    (await readSchematicErc(converter.getOutputString())).filter(
-      (type) => type !== "lib_symbol_issues",
-    ),
-  ).toEqual([])
+  expect(await readSchematicErc(converter.getOutputString())).toEqual([
+    "lib_symbol_issues",
+    "lib_symbol_issues",
+    "lib_symbol_issues",
+  ])
 }, 30_000)
