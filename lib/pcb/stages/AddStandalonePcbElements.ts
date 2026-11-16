@@ -30,6 +30,35 @@ import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromC
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { getSolderPasteLibraryLink } from "./utils/getSolderPasteLibraryLink"
 
+/** A hidden footprint text property, sized like KiCad's MountingHole text. */
+const createHiddenFootprintText = ({
+  key,
+  value,
+  y,
+  layer,
+  uuidSeed,
+}: {
+  key: string
+  value: string
+  y: number
+  layer: string
+  uuidSeed: string
+}) =>
+  new Property({
+    key,
+    value,
+    position: [0, y, 0],
+    layer,
+    uuid: generateDeterministicUuid(`${uuidSeed}-property-${key}`),
+    effects: new TextEffects({
+      font: Object.assign(new TextEffectsFont(), {
+        size: { width: 1, height: 1 },
+        thickness: 0.15,
+      }),
+    }),
+    hidden: true,
+  })
+
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
@@ -38,13 +67,11 @@ export class AddStandalonePcbElements extends ConverterStage<
     PcbHole | PcbPlatedHole | PcbSmtPad | PcbSolderPaste
   > = []
   private holeReferenceCount = 0
-  private usedReferences = new Set<string>()
+  /** References already on the board; filled when the first hole needs one. */
+  private usedReferences: Set<string> | undefined
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
-    for (const sourceComponent of this.ctx.db.source_component.list()) {
-      if (sourceComponent.name) this.usedReferences.add(sourceComponent.name)
-    }
     this.unprocessedElements = [
       ...(this.ctx.db.pcb_hole.list() as PcbHole[]).filter(
         (hole) => !hole.pcb_component_id,
@@ -193,36 +220,53 @@ export class AddStandalonePcbElements extends ConverterStage<
   }
 
   /**
+   * The references the board's footprints were exported with. A component's
+   * reference can come from its KiCad footprint metadata rather than its
+   * name, so read the exported Reference properties. Component footprints are
+   * added by an earlier stage, so they're all present by the first hole.
+   */
+  private getUsedReferences(): Set<string> {
+    if (!this.usedReferences) {
+      this.usedReferences = new Set(
+        (this.ctx.kicadPcb?.footprints ?? []).flatMap((footprint) =>
+          footprint.properties
+            .filter((property) => property.key === "Reference")
+            .map((property) => property.value),
+        ),
+      )
+    }
+    return this.usedReferences
+  }
+
+  /**
    * Give a standalone hole footprint what KiCad's MountingHole footprints have:
    * a reference (H1, H2, ...) and exclusion from the BOM and position files.
    * Without these, assembly tools treat the hole as a part to buy and place.
    */
   private markAsMountingHole(footprint: Footprint, seed: string): void {
+    const usedReferences = this.getUsedReferences()
     let reference: string
     do {
       this.holeReferenceCount += 1
       reference = `H${this.holeReferenceCount}`
-    } while (this.usedReferences.has(reference))
-    this.usedReferences.add(reference)
+    } while (usedReferences.has(reference))
+    usedReferences.add(reference)
 
-    const hiddenText = (key: string, value: string, y: number, layer: string) =>
-      new Property({
-        key,
-        value,
-        position: [0, y, 0],
-        layer,
-        uuid: generateDeterministicUuid(`${seed}-property-${key}`),
-        effects: new TextEffects({
-          font: Object.assign(new TextEffectsFont(), {
-            size: { width: 1, height: 1 },
-            thickness: 0.15,
-          }),
-        }),
-        hidden: true,
-      })
     footprint.properties = [
-      hiddenText("Reference", reference, -2, "F.SilkS"),
-      hiddenText("Value", "MountingHole", 2, "F.Fab"),
+      createHiddenFootprintText({
+        key: "Reference",
+        value: reference,
+        y: -2,
+        layer: "F.SilkS",
+        uuidSeed: seed,
+      }),
+      createHiddenFootprintText({
+        key: "Value",
+        value: "MountingHole",
+        y: 2,
+        layer: "F.Fab",
+        uuidSeed: seed,
+      }),
     ]
 
     footprint.attr ??= new FootprintAttr()
