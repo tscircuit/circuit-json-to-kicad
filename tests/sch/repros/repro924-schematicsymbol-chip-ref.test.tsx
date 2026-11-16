@@ -56,22 +56,16 @@ test("repro924: schematicsymbol chipRef connections survive KiCad export", async
   )
 
   expect(await exportNativeSchematicNets(circuitJson)).toEqual([
-    { name: "/B", pins: ["R1.1"] },
+    { name: "/A", pins: ["D1_SYM.1"] },
+    { name: "/B", pins: ["D1_SYM.2", "R1.1"] },
     { name: "GND", pins: ["R1.2"] },
-    { name: "unconnected-(D1_SYM-Pad1)", pins: ["D1_SYM.1"] },
-    { name: "unconnected-(D1_SYM-Pad2)", pins: ["D1_SYM.2"] },
   ])
   expect((await readSchematicErc(output)).sort()).toEqual([
     "isolated_pin_label",
-    "label_dangling",
     "lib_symbol_issues",
     "lib_symbol_issues",
     "lib_symbol_issues",
-    "pin_not_connected",
-    "pin_not_connected",
     "power_pin_not_driven",
-    "unconnected_wire_endpoint",
-    "unconnected_wire_endpoint",
     "unconnected_wire_endpoint",
   ])
 

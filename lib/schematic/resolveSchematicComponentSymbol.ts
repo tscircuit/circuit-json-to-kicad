@@ -109,10 +109,14 @@ export function resolveSchematicComponentSymbol({
         cadComponent,
         schematicSymbolName,
       )
+  // Named artwork already defines its pins and leads, even when its source
+  // component is a chip (as with <schematicsymbol chipRef>). Only generated
+  // box symbols need the generic chip pin geometry.
   const isChip =
-    sourceComponent.ftype === "simple_chip" ||
-    sourceComponent.ftype === "simple_pin_header" ||
-    sourceComponent.ftype === "simple_connector"
+    !schematicComponent.symbol_name &&
+    (sourceComponent.ftype === "simple_chip" ||
+      sourceComponent.ftype === "simple_pin_header" ||
+      sourceComponent.ftype === "simple_connector")
 
   return {
     cadComponent,
