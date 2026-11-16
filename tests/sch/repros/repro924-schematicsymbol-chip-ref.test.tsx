@@ -1,6 +1,8 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
+import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
+import { readSchematicErc } from "../../fixtures/read-schematic-erc"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -52,6 +54,20 @@ test("repro924: schematicsymbol chipRef connections survive KiCad export", async
     "./debug-output/repro924-schematicsymbol-chip-ref.kicad_sch",
     output,
   )
+
+  expect(await exportNativeSchematicNets(circuitJson)).toEqual([
+    { name: "/A", pins: ["D1_SYM.1"] },
+    { name: "/B", pins: ["D1_SYM.2", "R1.1"] },
+    { name: "GND", pins: ["R1.2"] },
+  ])
+  expect((await readSchematicErc(output)).sort()).toEqual([
+    "isolated_pin_label",
+    "lib_symbol_issues",
+    "lib_symbol_issues",
+    "lib_symbol_issues",
+    "power_pin_not_driven",
+    "unconnected_wire_endpoint",
+  ])
 
   const snapshot = await takeKicadSnapshot({
     kicadFileContent: output,
