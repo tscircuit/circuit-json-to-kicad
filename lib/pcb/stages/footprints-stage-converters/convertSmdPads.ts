@@ -1,3 +1,4 @@
+import { getExplicitPadNumber } from "../../../utils/getExplicitPadNumber"
 import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import type { PcbSmtPad } from "circuit-json"
 import type { FootprintPad } from "kicadts"
@@ -44,7 +45,8 @@ export function convertSmdPads(
       /^[A-Za-z]*\d+[A-Za-z0-9_]*$/.test(h),
     )
     const resolvedPadNumber =
-      getPhysicalPinName(sourcePort, pcbPad.port_hints) ??
+      getExplicitPadNumber(pcbPad) ??
+      getPhysicalPinName(sourcePort) ??
       (sourcePort?.pin_number != null
         ? String(sourcePort.pin_number)
         : pinHint
