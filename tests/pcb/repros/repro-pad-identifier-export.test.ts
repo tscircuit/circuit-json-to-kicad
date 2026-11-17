@@ -25,7 +25,7 @@ beforeAll(() => {
   expect(ballPads.map((pad) => pad.net?.name)).toEqual(["DATA", "GND", "GND"])
 })
 
-test.failing("BGA pads keep their package names alongside numeric source pins", () => {
+test("BGA pads keep their package names alongside numeric source pins", () => {
   expect(ballPads.map((pad) => pad.number)).toEqual(ballNames)
 })
 

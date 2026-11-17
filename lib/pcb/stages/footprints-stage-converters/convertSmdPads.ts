@@ -28,9 +28,8 @@ export function convertSmdPads(
   for (const pcbPad of pcbPads) {
     const netInfo = getNetInfo(pcbPad.pcb_port_id)
 
-    // Preserve source pin identity — not pad array index — as the KiCad pad
-    // number (see issue #212). Walk pcb_port -> source_port.pin_number; fall
-    // back to pin-like port_hints, then to the sequential counter.
+    // Prefer a physical name confirmed by the pad, then preserve numeric
+    // source identity (issue #212) before falling back to hints or order.
     const pcbPort = pcbPad.pcb_port_id
       ? ctx.db.pcb_port?.get(pcbPad.pcb_port_id)
       : undefined
@@ -44,7 +43,7 @@ export function convertSmdPads(
       /^[A-Za-z]*\d+[A-Za-z0-9_]*$/.test(h),
     )
     const resolvedPadNumber =
-      getPhysicalPinName(sourcePort) ??
+      getPhysicalPinName(sourcePort, pcbPad.port_hints) ??
       (sourcePort?.pin_number != null
         ? String(sourcePort.pin_number)
         : pinHint
