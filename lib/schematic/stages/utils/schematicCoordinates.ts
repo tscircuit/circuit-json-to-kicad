@@ -1,6 +1,11 @@
 import type { Point } from "circuit-json"
 import { applyToPoint, type Matrix } from "transformation-matrix"
 
+export type SchematicConnectionGrid = {
+  x: ReadonlyMap<number, number>
+  y: ReadonlyMap<number, number>
+}
+
 // KiCad's SCH_IU_PER_MM is 1e4 (100 nm per schematic internal unit).
 // https://docs.kicad.org/doxygen/base__units_8h.html
 const SCHEMATIC_INTERNAL_UNITS_PER_MM = 10_000
@@ -21,8 +26,12 @@ export function toSchematicInternalUnits(mm: number): number {
   )
 }
 
+export function fromSchematicInternalUnits(coordinate: number): number {
+  return coordinate / SCHEMATIC_INTERNAL_UNITS_PER_MM
+}
+
 export function roundSchematicCoordinate(mm: number): number {
-  return toSchematicInternalUnits(mm) / SCHEMATIC_INTERNAL_UNITS_PER_MM
+  return fromSchematicInternalUnits(toSchematicInternalUnits(mm))
 }
 
 export function transformSchematicPoint(
@@ -31,6 +40,25 @@ export function transformSchematicPoint(
 ): Point {
   const { x, y } = applyToPoint(transform, point)
   return { x: roundSchematicCoordinate(x), y: roundSchematicCoordinate(y) }
+}
+
+export function transformSchematicConnectionPoint({
+  transform,
+  point,
+  grid,
+}: {
+  transform: Matrix
+  point: Point
+  grid?: SchematicConnectionGrid
+}): Point {
+  const transformed = applyToPoint(transform, point)
+  if (!grid) return transformed
+  const x = grid.x.get(toSchematicInternalUnits(transformed.x))
+  const y = grid.y.get(toSchematicInternalUnits(transformed.y))
+  if (x === undefined || y === undefined) {
+    throw new Error("Schematic connection was not included in grid placement")
+  }
+  return { x: fromSchematicInternalUnits(x), y: fromSchematicInternalUnits(y) }
 }
 
 function roundSymbolCoordinate(mm: number, magnitude: number): number {

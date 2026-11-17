@@ -3,7 +3,7 @@ import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
 import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
-import { applyToPoint } from "transformation-matrix"
+import { transformSchematicConnectionPoint } from "lib/schematic/stages/utils/schematicCoordinates"
 import { stackCircuitJsonKicadPngs } from "../../fixtures/stackCircuitJsonKicadPngs"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 import { takeKicadSnapshot } from "../../fixtures/take-kicad-snapshot"
@@ -75,10 +75,11 @@ test("repro18: component fields and inline labels preserve placement", async () 
     )
     // Core places these labels at their inner edge, with text extending left
     // along the wire. Preserve that supplied attachment and alignment.
-    const expectedPosition = applyToPoint(
-      converter.ctx.c2kMatSch!,
-      inlineNetLabel.position,
-    )
+    const expectedPosition = transformSchematicConnectionPoint({
+      transform: converter.ctx.c2kMatSch!,
+      point: inlineNetLabel.position,
+      grid: converter.ctx.schematicConnectionGrid,
+    })
     expect(inlineNetLabel.anchor).toBe("bottom_right")
     expect(convertedText?.effects?.justify?.horizontal).toBe("right")
     expect(convertedText?.at?.x).toBeCloseTo(expectedPosition.x)

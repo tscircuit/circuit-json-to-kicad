@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
 import { CircuitJsonToKicadSchConverter } from "lib"
-import { applyToPoint } from "transformation-matrix"
+import { transformSchematicConnectionPoint } from "lib/schematic/stages/utils/schematicCoordinates"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 
 test("source-trace-backed inline labels connect without a source_net record", async () => {
@@ -48,10 +48,11 @@ test("source-trace-backed inline labels connect without a source_net record", as
   converter.runUntilFinished()
   expect(converter.getOutput().labels).toHaveLength(labels.length)
   for (const [index, text] of labels.entries()) {
-    const expectedPosition = applyToPoint(
-      converter.ctx.c2kMatSch!,
-      text.position,
-    )
+    const expectedPosition = transformSchematicConnectionPoint({
+      transform: converter.ctx.c2kMatSch!,
+      point: text.position,
+      grid: converter.ctx.schematicConnectionGrid,
+    })
     const label = converter.getOutput().labels[index]!
     expect(label.at?.x).toBeCloseTo(expectedPosition.x)
     expect(label.at?.y).toBeCloseTo(expectedPosition.y)

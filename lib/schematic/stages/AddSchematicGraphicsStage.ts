@@ -251,6 +251,7 @@ export class AddSchematicGraphicsStage extends ConverterStage<
           db,
           transform: this.ctx.c2kMatSch,
           fontSize: DEFAULT_SECTION_TEXT_SIZE_MM,
+          connectionGrid: this.ctx.schematicConnectionGrid,
         })
         if (inlineLabel) {
           labels.push(inlineLabel)

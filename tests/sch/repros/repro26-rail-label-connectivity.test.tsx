@@ -61,6 +61,7 @@ test("repro26: repeated power rail labels share nets in KiCad", async () => {
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
+  expect(converter.ctx.schematicConnectionGrid).toBeDefined()
   const output = converter.getOutputString()
   await Bun.write(
     "./debug-output/repro26-rail-label-connectivity.kicad_sch",
@@ -73,6 +74,32 @@ test("repro26: repeated power rail labels share nets in KiCad", async () => {
     const schematicPath = join(tempDir, "rails.kicad_sch")
     const netlistPath = join(tempDir, "rails.xml")
     await writeFile(schematicPath, output)
+    const reportPath = join(tempDir, "erc.json")
+    const erc = Bun.spawnSync([
+      "kicad-cli",
+      "sch",
+      "erc",
+      "--format",
+      "json",
+      "--output",
+      reportPath,
+      schematicPath,
+    ])
+    expect(erc.exitCode).toBe(0)
+    const report: { sheets: { violations: { type: string }[] }[] } = JSON.parse(
+      await readFile(reportPath, "utf8"),
+    )
+    // This passive fixture has no power source; library lookup and undriven
+    // power warnings are expected, but off-grid or disconnected pins are not.
+    expect(
+      report.sheets
+        .flatMap((sheet) => sheet.violations)
+        .map((violation) => violation.type)
+        .filter(
+          (type) =>
+            !["lib_symbol_issues", "power_pin_not_driven"].includes(type),
+        ),
+    ).toEqual([])
     const result = Bun.spawnSync([
       "kicad-cli",
       "sch",

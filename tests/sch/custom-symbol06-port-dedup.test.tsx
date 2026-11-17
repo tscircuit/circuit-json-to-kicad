@@ -98,9 +98,10 @@ test("custom-symbol06: deduplicates ports with same pin_number", () => {
   const pin1Matches = kicadOutput.match(/\(number "1"/g)
   expect(pin1Matches?.length).toBe(1)
 
-  // Verify the pin is at the FIRST port's position, scaled to KiCad units.
-  // With default schematic scale factor (15), x=1.5 becomes x=22.5.
-  expect(kicadOutput).toContain("(at 22.5 0")
+  // The FIRST port is scaled by 15 and placed on the nearest connection grid.
+  expect(kicadOutput).toContain("(at 22.86 0")
+  // The body retains its original scale: radius 0.5 becomes 7.5 mm.
+  expect(kicadOutput).toContain("(radius 7.5)")
 })
 
 /**
@@ -246,5 +247,6 @@ test("custom-symbol06: custom symbol pins use default schematic scaling", () => 
   converter.runUntilFinished()
   const kicadOutput = converter.getOutputString()
 
-  expect(kicadOutput).toContain("(at 22.5 0 180)")
+  expect(kicadOutput).toContain("(at 22.86 0 180)")
+  expect(kicadOutput).toContain("(radius 7.5)")
 })

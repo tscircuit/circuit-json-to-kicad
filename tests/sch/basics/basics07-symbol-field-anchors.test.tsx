@@ -5,7 +5,7 @@ import { symbols } from "schematic-symbols"
 import { applyToPoint } from "transformation-matrix"
 import { Circuit } from "tscircuit"
 
-test("symbol fields preserve primitive positions and anchors in every orientation", async () => {
+test("symbol fields preserve offsets and anchors in every orientation", async () => {
   for (const rotation of [0, 90, 180, 270]) {
     const circuit = new Circuit()
     circuit.pcbDisabled = true
@@ -66,8 +66,18 @@ test("symbol fields preserve primitive positions and anchors in every orientatio
         const property = symbol.properties.find(
           (property) => property.key === key,
         )!
-        expect(property.at!.x).toBeCloseTo(expected.x, 4)
-        expect(property.at!.y).toBeCloseTo(expected.y, 4)
+        const originalOrigin = applyToPoint(
+          converter.ctx.c2kMatSch!,
+          component.center,
+        )
+        expect(property.at!.x - symbol.at!.x).toBeCloseTo(
+          expected.x - originalOrigin.x,
+          4,
+        )
+        expect(property.at!.y - symbol.at!.y).toBeCloseTo(
+          expected.y - originalOrigin.y,
+          4,
+        )
         expect(property.effects?.justify?.horizontal).toBe(
           vertical ? "left" : undefined,
         )

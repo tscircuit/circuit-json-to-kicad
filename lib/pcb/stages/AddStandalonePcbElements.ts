@@ -10,7 +10,13 @@ import type {
   PcbSolderPaste,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { Footprint } from "kicadts"
+import {
+  Footprint,
+  FootprintAttr,
+  Property,
+  TextEffects,
+  TextEffectsFont,
+} from "kicadts"
 import { applyToPoint } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
@@ -24,6 +30,35 @@ import { createThruHolePadFromCircuitJson } from "./utils/CreateThruHolePadFromC
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { getSolderPasteLibraryLink } from "./utils/getSolderPasteLibraryLink"
 
+/** A hidden footprint text property, sized like KiCad's MountingHole text. */
+const createHiddenFootprintText = ({
+  key,
+  value,
+  y,
+  layer,
+  uuidSeed,
+}: {
+  key: string
+  value: string
+  y: number
+  layer: string
+  uuidSeed: string
+}) =>
+  new Property({
+    key,
+    value,
+    position: [0, y, 0],
+    layer,
+    uuid: generateDeterministicUuid(`${uuidSeed}-property-${key}`),
+    effects: new TextEffects({
+      font: Object.assign(new TextEffectsFont(), {
+        size: { width: 1, height: 1 },
+        thickness: 0.15,
+      }),
+    }),
+    hidden: true,
+  })
+
 export class AddStandalonePcbElements extends ConverterStage<
   CircuitJson,
   KicadPcb
@@ -31,6 +66,9 @@ export class AddStandalonePcbElements extends ConverterStage<
   private unprocessedElements: Array<
     PcbHole | PcbPlatedHole | PcbSmtPad | PcbSolderPaste
   > = []
+  private holeReferenceCount = 0
+  /** References already on the board; filled when the first hole needs one. */
+  private usedReferences: Set<string> | undefined
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
@@ -146,6 +184,7 @@ export class AddStandalonePcbElements extends ConverterStage<
 
       if (npthPads.length > 0) {
         footprint.fpPads = npthPads
+        this.markAsMountingHole(footprint, footprintSeed)
         const footprints = kicadPcb.footprints
         footprints.push(footprint)
         kicadPcb.footprints = footprints
@@ -178,6 +217,61 @@ export class AddStandalonePcbElements extends ConverterStage<
         kicadPcb.footprints = footprints
       }
     }
+  }
+
+  /**
+   * The references the board's footprints were exported with. A component's
+   * reference can come from its KiCad footprint metadata rather than its
+   * name, so read the exported Reference properties. Component footprints are
+   * added by an earlier stage, so they're all present by the first hole.
+   */
+  private getUsedReferences(): Set<string> {
+    if (!this.usedReferences) {
+      this.usedReferences = new Set(
+        (this.ctx.kicadPcb?.footprints ?? []).flatMap((footprint) =>
+          footprint.properties
+            .filter((property) => property.key === "Reference")
+            .map((property) => property.value),
+        ),
+      )
+    }
+    return this.usedReferences
+  }
+
+  /**
+   * Give a standalone hole footprint what KiCad's MountingHole footprints have:
+   * a reference (H1, H2, ...) and exclusion from the BOM and position files.
+   * Without these, assembly tools treat the hole as a part to buy and place.
+   */
+  private markAsMountingHole(footprint: Footprint, seed: string): void {
+    const usedReferences = this.getUsedReferences()
+    let reference: string
+    do {
+      this.holeReferenceCount += 1
+      reference = `H${this.holeReferenceCount}`
+    } while (usedReferences.has(reference))
+    usedReferences.add(reference)
+
+    footprint.properties = [
+      createHiddenFootprintText({
+        key: "Reference",
+        value: reference,
+        y: -2,
+        layer: "F.SilkS",
+        uuidSeed: seed,
+      }),
+      createHiddenFootprintText({
+        key: "Value",
+        value: "MountingHole",
+        y: 2,
+        layer: "F.Fab",
+        uuidSeed: seed,
+      }),
+    ]
+
+    footprint.attr ??= new FootprintAttr()
+    footprint.attr.excludeFromPosFiles = true
+    footprint.attr.excludeFromBom = true
   }
 
   private getHoleLibraryLink(hole: PcbHole): string {

@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 import { Circuit } from "tscircuit"
+import { applyToPoint } from "transformation-matrix"
 import type {
   CircuitJson,
   PcbComponent,
@@ -136,7 +137,14 @@ test("schematic instances preserve custom symbol properties and their presentati
   )!
   expect(customProperty.value).toBe("6.4")
   expect(customProperty.id).toBe(42)
-  expect(customProperty.at).toMatchObject({ x: 20, y: 30, angle: 90 })
+  const originalOrigin = applyToPoint(
+    converter.ctx.c2kMatSch!,
+    schematicComponent.center,
+  )
+  // Custom fields retain their offset when grid placement moves the instance.
+  expect(customProperty.at!.x - symbol.at!.x).toBeCloseTo(20 - originalOrigin.x)
+  expect(customProperty.at!.y - symbol.at!.y).toBeCloseTo(30 - originalOrigin.y)
+  expect(customProperty.at!.angle).toBe(90)
   expect(customProperty.effects?.hiddenText).toBe(true)
   expect(customProperty.effects?.font?.size).toEqual({ width: 1, height: 2 })
   expect(customProperty.effects?.font?.thickness).toBe(0.2)

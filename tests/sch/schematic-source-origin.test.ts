@@ -3,7 +3,7 @@ import type { CircuitJson } from "circuit-json"
 import { parseKicadSch } from "kicadts"
 import { CircuitJsonToKicadSchConverter } from "../../lib"
 
-test("uses the matching source origin for each schematic sheet", () => {
+test("places connections on grid relative to the matching source origin for each schematic sheet", () => {
   const circuitJson: CircuitJson = [
     {
       type: "schematic_sheet",
@@ -72,7 +72,7 @@ test("uses the matching source origin for each schematic sheet", () => {
       y: schematic.globalLabels[0]?.at?.y,
     })),
   ).toEqual([
-    { x: 25, y: 30 },
-    { x: 75, y: 80 },
+    { x: 25.4, y: 30.48 },
+    { x: 74.93, y: 80.01 },
   ])
 })

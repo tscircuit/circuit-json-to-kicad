@@ -15,6 +15,14 @@ test("repro25: convert the blood pressure monitor multisheet generated system", 
     name: "VREF_2_5",
     pins: ["C2.1", "C3.1", "R3.2", "R4.1", "U3.1", "U3.2"],
   })
+  expect(nets).toContainEqual({
+    name: "Net-(R4-Pad2)",
+    pins: ["R4.2", "R6.1", "U2A.1"],
+  })
+  expect(nets).toContainEqual({
+    name: "Net-(R18-Pad2)",
+    pins: ["R18.2", "R21.1", "U2D.1"],
+  })
   await runGeneratedSystemRepro({
     fixtureUrl,
     rootFilename: "blood_pressure_monitor.kicad_sch",
