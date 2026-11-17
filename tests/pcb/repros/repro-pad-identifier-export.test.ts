@@ -3,14 +3,20 @@ import type { CircuitJson } from "circuit-json"
 import { parseKicadPcb } from "kicadts"
 import sharp from "sharp"
 import { CircuitJsonToKicadPcbConverter } from "../../../lib/pcb/CircuitJsonToKicadPcbConverter"
+import { CircuitJsonToKicadSchConverter } from "../../../lib/schematic/CircuitJsonToKicadSchConverter"
 import { createPadNameRoundTrip } from "../../fixtures/create-pad-name-round-trip"
 import fixture from "../../fixtures/physical-bga-balls.circuit.json"
 
 const ballNames = ["A1", "A2", "B1"]
+let schematic: string
 let ballPads: ReturnType<typeof parseKicadPcb>["footprints"][number]["fpPads"]
 
 beforeAll(() => {
-  const circuitJson = structuredClone(fixture) as CircuitJson
+  const circuitJson = fixture.map((element) => {
+    if (element.type !== "pcb_smtpad") return structuredClone(element)
+    const pinIndex = Number(element.pcb_port_id?.split("_").at(-1))
+    return { ...structuredClone(element), pad_number: ballNames[pinIndex] }
+  }) as CircuitJson
   for (const element of circuitJson) {
     if (element.type === "source_port") {
       element.pin_number = ballNames.indexOf(element.name) + 1
@@ -22,11 +28,26 @@ beforeAll(() => {
   ballPads = parseKicadPcb(pcb.getOutputString()).footprints[0]!.fpPads.filter(
     (pad) => pad.net,
   )
+  const sch = new CircuitJsonToKicadSchConverter(circuitJson)
+  sch.runUntilFinished()
+  schematic = sch.getOutputString()
   expect(ballPads.map((pad) => pad.net?.name)).toEqual(["DATA", "GND", "GND"])
 })
 
 test.failing("BGA pads keep their package names alongside numeric source pins", () => {
   expect(ballPads.map((pad) => pad.number)).toEqual(ballNames)
+})
+
+test.failing("BGA schematic library pins keep the physical pad numbers", () => {
+  for (const ball of ballNames) {
+    expect(schematic).toContain(`(number "${ball}"`)
+  }
+})
+
+test.failing("BGA schematic instance pins keep the physical pad numbers", () => {
+  for (const ball of ballNames) {
+    expect(schematic).toContain(`(pin "${ball}"`)
+  }
 })
 
 test("snapshot physical pad names in the source and serialized KiCad PCB", async () => {
