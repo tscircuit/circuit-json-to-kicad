@@ -23,11 +23,13 @@ export function getExplicitPadNumbersBySourcePort(
     const sourcePortId = db.pcb_port.get(pad.pcb_port_id)?.source_port_id
     if (!sourcePortId) continue
 
-    // A single schematic pin cannot represent conflicting physical IDs.
-    if (!numbers.has(sourcePortId)) numbers.set(sourcePortId, number)
-    else if (numbers.get(sourcePortId) !== number) {
-      numbers.set(sourcePortId, undefined)
+    const previous = numbers.get(sourcePortId)
+    if (previous !== undefined && previous !== number) {
+      throw new Error(
+        `Conflicting pad IDs for ${sourcePortId}: ${previous} and ${number}. Use separate source ports for distinct physical pins.`,
+      )
     }
+    numbers.set(sourcePortId, number)
   }
   return numbers
 }
