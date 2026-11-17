@@ -5,10 +5,8 @@ export function getPhysicalPinName(
   sourcePort?: SourcePort | null,
   padHints?: readonly string[],
 ): string | undefined {
-  return sourcePort &&
-    (sourcePort.pin_number === undefined ||
-      padHints?.includes(sourcePort.name)) &&
-    /^[A-Z]+[1-9]\d*$/.test(sourcePort.name)
-    ? sourcePort.name
-    : undefined
+  if (!sourcePort) return undefined
+  const { name, pin_number } = sourcePort
+  if (pin_number !== undefined && !padHints?.includes(name)) return undefined
+  return /^[A-Z]+[1-9]\d*$/.test(name) ? name : undefined
 }

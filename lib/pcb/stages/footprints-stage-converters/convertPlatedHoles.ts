@@ -28,8 +28,9 @@ export function convertPlatedHoles(
   for (const platedHole of platedHoles) {
     const netInfo = getNetInfo(platedHole.pcb_port_id)
 
-    // Prefer a physical name confirmed by the pad, then preserve numeric
-    // source identity (issue #212) before falling back to hints or order.
+    // Preserve source pin identity — not pad array index — as the KiCad pad
+    // number (see issue #212). Walk pcb_port -> source_port.pin_number; fall
+    // back to pin-like port_hints, then to the sequential counter.
     const pcbPort = platedHole.pcb_port_id
       ? ctx.db.pcb_port?.get(platedHole.pcb_port_id)
       : undefined
