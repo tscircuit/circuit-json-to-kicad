@@ -41,7 +41,7 @@ export function convertSmdPads(
       /^pin[A-Za-z0-9_]+$/i.test(h),
     )
     const gridHint = pcbPad.port_hints?.find((h) =>
-      /^[A-Za-z]?\d+[A-Za-z0-9_]*$/.test(h),
+      /^[A-Za-z]*\d+[A-Za-z0-9_]*$/.test(h),
     )
     const resolvedPadNumber =
       getPhysicalPinName(sourcePort) ??
