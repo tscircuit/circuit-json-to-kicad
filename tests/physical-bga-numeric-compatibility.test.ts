@@ -45,6 +45,8 @@ for (const shape of ["smd", "thru_hole"] as const) {
       const pin = Number(element.pcb_port_id?.split("_").at(-1)) + 1
       const port_hints = [String(pin), `pin${pin}`, `IN${pin}`]
       if (shape === "smd") return { ...element, port_hints }
+      if (element.shape !== "circle")
+        throw new Error("Expected a circular BGA pad")
       return {
         type: "pcb_plated_hole",
         pcb_plated_hole_id: element.pcb_smtpad_id,
