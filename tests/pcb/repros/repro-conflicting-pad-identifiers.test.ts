@@ -13,10 +13,11 @@ beforeAll(() => {
   }
   const pad = input.find((element) => element.type === "pcb_smtpad")
   if (!pad || pad.type !== "pcb_smtpad") throw new Error("Missing BGA pad")
-  input.push(
+  const explicitPads = [
     { ...pad, pad_number: "A1" },
     { ...pad, pcb_smtpad_id: "conflicting_pad", pad_number: "A3" },
-  )
+  ]
+  input.push(...explicitPads)
   try {
     const exporter = new CircuitJsonToKicadSchConverter(input)
     exporter.runUntilFinished()
