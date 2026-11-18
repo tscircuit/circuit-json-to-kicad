@@ -42,6 +42,11 @@ export function getNamedNetClassSettings({
       track_width: sourceNetClass.trace_width,
       priority: sourceNetClass.priority ?? 0,
     }
+    if (netClass.priority! > 2147483647) {
+      throw new Error(
+        `Net class "${sourceNetClass.name}" has a priority outside KiCad's supported range`,
+      )
+    }
     if (netClass.name === "Default") {
       Object.assign(netClass, {
         ...defaultNetClass,
@@ -63,10 +68,11 @@ export function getNamedNetClassSettings({
     definedNames.add(sourceNetClass.name)
   }
 
+  const pcbBoards = circuitJson.filter(
+    (element) => element.type === "pcb_board",
+  )
   const boardOwnerMap =
-    circuitJson.filter((element) => element.type === "pcb_board").length > 1
-      ? createBoardOwnerMap(circuitJson)
-      : undefined
+    pcbBoards.length > 1 ? createBoardOwnerMap(circuitJson) : undefined
   const assignments: Record<string, string[]> = Object.create(null)
   const sourceNets = circuitJson.filter(
     (element) => element.type === "source_net",
@@ -74,11 +80,14 @@ export function getNamedNetClassSettings({
   const netOverrides: Array<{ netName: string; width: number }> = []
   const effectiveWidthsByNetName = new Map<string, number | undefined>()
   for (const sourceNet of sourceNets) {
+    const ownerBoard =
+      boardOwnerMap?.get(sourceNet.subcircuit_id ?? "") ??
+      (pcbBoards.length === 1 ? pcbBoards[0] : undefined)
     const netName = resolveKicadPcbNetName({
       candidateName: sourceNet.name || sourceNet.source_net_id,
       connectivityKey:
         sourceNet.subcircuit_connectivity_map_key || sourceNet.source_net_id,
-      boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")?.pcb_board_id,
+      boardId: boardOwnerMap ? ownerBoard?.pcb_board_id : undefined,
     })
     const assignedClasses = (sourceNet.source_net_class_ids ?? []).map((id) => {
       const netClass = sourceNetClassesById.get(id)
@@ -105,7 +114,11 @@ export function getNamedNetClassSettings({
       )
     }
     const names = Array.from(
-      new Set(assignedClasses.map((netClass) => netClass.name)),
+      new Set(
+        assignedClasses
+          .filter((netClass) => netClass.name !== "Default")
+          .map((netClass) => netClass.name),
+      ),
     )
     const existing = assignments[netName]
     if (existing && JSON.stringify(existing) !== JSON.stringify(names)) {
@@ -114,10 +127,34 @@ export function getNamedNetClassSettings({
       )
     }
     assignments[netName] = names
+    const boardWidth =
+      ownerBoard?.default_nominal_trace_width ??
+      ownerBoard?.min_trace_width ??
+      defaultNetClass.track_width
+    const scopedDefault =
+      sourceNetClasses.find(
+        (netClass) =>
+          netClass.name === "Default" &&
+          netClass.subcircuit_id === sourceNet.subcircuit_id,
+      ) ??
+      sourceNetClasses.find(
+        (netClass) =>
+          netClass.name === "Default" && netClass.subcircuit_id === undefined,
+      )
     const classWidth =
       assignedClasses.find((netClass) => netClass.trace_width !== undefined)
-        ?.trace_width ?? classesByName.get("Default")?.track_width
+        ?.trace_width ??
+      scopedDefault?.trace_width ??
+      boardWidth
     const effectiveWidth = sourceNet.trace_width ?? classWidth
+    // KiCad has one project-global Default class. Preserve an owning board's
+    // fallback, or a net outside an authored Default's scope, with an explicit
+    // width class when the native global fallback would change its width.
+    const kicadClassWidth =
+      names
+        .map((name) => classesByName.get(name)!)
+        .find((netClass) => netClass.track_width !== undefined)?.track_width ??
+      classesByName.get("Default")?.track_width
     if (
       effectiveWidthsByNetName.has(netName) &&
       effectiveWidthsByNetName.get(netName) !== effectiveWidth
@@ -127,20 +164,25 @@ export function getNamedNetClassSettings({
       )
     }
     effectiveWidthsByNetName.set(netName, effectiveWidth)
-    if (
-      sourceNet.trace_width !== undefined &&
-      sourceNet.trace_width !== classWidth
-    ) {
-      netOverrides.push({ netName, width: sourceNet.trace_width })
+    if (effectiveWidth !== undefined && effectiveWidth !== kicadClassWidth) {
+      netOverrides.push({ netName, width: effectiveWidth })
     }
   }
 
-  // An explicit per-net width must win over the named classes without deleting
-  // those memberships. Reserve priority zero for generated override classes,
-  // shifting authored priorities only when necessary to keep their ordering.
+  // Reserve zero for generated width classes. Shift only the occupied initial
+  // priority block into its first free slot, preserving relative precedence
+  // and leaving higher values (including KiCad's maximum) unchanged.
   if (netOverrides.length > 0) {
+    const priorities = new Set(
+      Array.from(classesByName.values())
+        .filter((netClass) => netClass.name !== "Default")
+        .map((netClass) => netClass.priority ?? 0),
+    )
+    let firstFreePriority = 0
+    while (priorities.has(firstFreePriority)) firstFreePriority++
     for (const [name, netClass] of classesByName) {
-      if (name !== "Default") netClass.priority = (netClass.priority ?? 0) + 1
+      if (name !== "Default" && (netClass.priority ?? 0) < firstFreePriority)
+        netClass.priority = (netClass.priority ?? 0) + 1
     }
     const overrideNames = new Map<number, string>()
     for (const { netName, width } of netOverrides.sort(

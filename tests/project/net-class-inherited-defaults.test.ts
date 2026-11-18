@@ -1,7 +1,11 @@
 import { expect, test } from "bun:test"
 import "bun-match-svg"
 import type { CircuitJson } from "circuit-json"
-import { CircuitJsonToKicadProConverter } from "lib"
+import {
+  CircuitJsonToKicadPcbConverter,
+  CircuitJsonToKicadProConverter,
+} from "lib"
+import { KicadToCircuitJsonConverter } from "kicad-to-circuit-json"
 
 const circuitJson: CircuitJson = [
   {
@@ -72,7 +76,7 @@ test("snapshot class assignments for nets inheriting different board defaults", 
   await expect(svg).toMatchSvgSnapshot(import.meta.path, "inherited-defaults")
 })
 
-test.failing("a net with an unset class width inherits its own board default", () => {
+test("a net with an unset class width inherits its own board default", () => {
   const exported = settings()
   expect(exported.netclass_assignments?.["b/VCC"]).toEqual([
     "Trace Width 0.5 mm",
@@ -84,7 +88,66 @@ test.failing("a net with an unset class width inherits its own board default", (
   ).toBe(0.5)
 })
 
-test.failing("a scoped Default class does not change the width of nets outside its scope", () => {
+test("inherited board widths survive serialized PCB/project export and re-import", () => {
+  const withCopper: CircuitJson = [
+    ...circuitJson,
+    {
+      type: "source_trace",
+      source_trace_id: "ta",
+      subcircuit_id: "sa",
+      subcircuit_connectivity_map_key: "va",
+      connected_source_port_ids: [],
+      connected_source_net_ids: ["va"],
+    },
+    {
+      type: "source_trace",
+      source_trace_id: "tb",
+      subcircuit_id: "sb",
+      subcircuit_connectivity_map_key: "vb",
+      connected_source_port_ids: [],
+      connected_source_net_ids: ["vb"],
+    },
+    {
+      type: "pcb_trace",
+      pcb_trace_id: "pa",
+      source_trace_id: "ta",
+      subcircuit_id: "sa",
+      route: [
+        { route_type: "wire", x: -2, y: 0, layer: "top", width: 0.1 },
+        { route_type: "wire", x: 2, y: 0, layer: "top", width: 0.1 },
+      ],
+    },
+    {
+      type: "pcb_trace",
+      pcb_trace_id: "pb",
+      source_trace_id: "tb",
+      subcircuit_id: "sb",
+      route: [
+        { route_type: "wire", x: 18, y: 0, layer: "top", width: 0.1 },
+        { route_type: "wire", x: 22, y: 0, layer: "top", width: 0.1 },
+      ],
+    },
+  ]
+  const pcb = new CircuitJsonToKicadPcbConverter(withCopper)
+  pcb.runUntilFinished()
+  const project = new CircuitJsonToKicadProConverter(withCopper)
+  const importer = new KicadToCircuitJsonConverter()
+  importer.addFile("boards.kicad_pcb", pcb.getOutputString())
+  importer.addFile("boards.kicad_pro", project.getOutputString())
+  importer.runUntilFinished()
+  expect(
+    importer
+      .getOutput()
+      .filter((element) => element.type === "source_net")
+      .map((net) => ({ name: net.name, width: net.trace_width }))
+      .sort((a, b) => a.name.localeCompare(b.name)),
+  ).toEqual([
+    { name: "a_VCC", width: 0.2 },
+    { name: "b_VCC", width: 0.5 },
+  ])
+})
+
+test("a scoped Default class does not change the width of nets outside its scope", () => {
   const data: CircuitJson = [
     {
       type: "pcb_board",
@@ -149,7 +212,7 @@ test("an explicit Default assignment and its implicit fallback are equivalent", 
   expect(() => new CircuitJsonToKicadProConverter(data)).not.toThrow()
 })
 
-test.failing("a width override keeps an authored priority at KiCad's maximum in range", () => {
+test("a width override keeps an authored priority at KiCad's maximum in range", () => {
   const data: CircuitJson = [
     {
       type: "source_net_class",

@@ -71,11 +71,11 @@ function classState(circuitJson: CircuitJson) {
   )
   return {
     classes: classes
-      .filter((netClass) => netClass.name !== "Default")
       .map((netClass) => ({
         name: netClass.name,
         width: netClass.trace_width,
-        priority: netClass.priority ?? 0,
+        priority:
+          netClass.name === "Default" ? 2147483647 : (netClass.priority ?? 0),
       }))
       .sort((a, b) => a.name.localeCompare(b.name)),
     nets: circuitJson
@@ -110,6 +110,19 @@ test("native authored classes survive serialized KiCad export and re-import", as
     { name: "SENSE", width: 0.8, classes: ["Sense"] },
     { name: "VCC", width: 0.8, classes: ["Inherited", "Power"] },
   ])
+  const restored = new Circuit()
+  restored.add(
+    <board width={26} height={20} routingDisabled schematicDisabled>
+      <subcircuit
+        name="RESTORED"
+        circuitJson={JSON.parse(JSON.stringify(imported))}
+      />
+    </board>,
+  )
+  await restored.renderUntilSettled()
+  expect(classState(restored.getCircuitJson())).toEqual(
+    classState(exported.authored),
+  )
   await expect(convertCircuitJsonToPcbSvg(imported)).toMatchSvgSnapshot(
     import.meta.path,
     "round-trip",

@@ -8,10 +8,15 @@ export and re-import; classes with equal widths remain distinct.
 
 An explicit `source_net.trace_width` that differs from its class width gets a
 generated width class in addition to its named memberships. Generated classes
-have priority zero. Authored priorities shift up by one in that case, preserving
-their relative precedence. Generated names avoid collisions with authored names.
+have priority zero. Authored priorities adjust only as needed to reserve that
+slot, preserving relative precedence and valid KiCad integer values. Generated
+names avoid collisions with authored names.
 Default remains the final fallback and uses the board's nominal width when no
 explicit Default width was provided.
+
+Board defaults and scoped Default classes are resolved for each net before
+mapping them to KiCad's project-global Default. An additional width class keeps
+an inherited width intact when that global fallback would change it.
 
 Assignments use exact exported PCB net names rather than wildcard/regex patterns.
 Import materializes existing matches; the original patterns for assigning future

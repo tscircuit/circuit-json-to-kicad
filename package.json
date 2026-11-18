@@ -31,7 +31,7 @@
     "@biomejs/biome": "2.5.15",
     "@tscircuit/circuit-json-util": "^0.0.131",
     "@tscircuit/common": "^0.0.5",
-    "@tscircuit/core": "https://pkg.pr.new/@tscircuit/core@1846fec3d1859f39f7a0c73ba299eb322cc03e04",
+    "@tscircuit/core": "https://pkg.pr.new/@tscircuit/core@3ba486911f11349c1abe4cc0538a3facd7efd866",
     "@tscircuit/eval": "0.0.1660",
     "@tscircuit/footprinter": "0.0.451",
     "@tscircuit/props": "https://pkg.pr.new/@tscircuit/props@f55af2063a9de9728809df3e75ce35aea8d2ab56",
