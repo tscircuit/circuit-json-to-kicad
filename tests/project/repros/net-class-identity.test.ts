@@ -29,11 +29,11 @@ test("snapshot retained KiCad settings at the export boundary", async () => {
   await expect(svg).toMatchSvgSnapshot(import.meta.path, "class-identity")
 })
 
-test.failing("export retains imported settings without interpreting them as native classes", () => {
+test("export retains imported settings without interpreting them as native classes", () => {
   expect(exportedSettings()).toEqual(netSettings)
 })
 
-test.failing("PCB export restores original names so imported assignments still match", () => {
+test("PCB export restores original names so imported assignments still match", () => {
   const pcb = new CircuitJsonToKicadPcbConverter(circuitJson)
   pcb.runUntilFinished()
   expect(

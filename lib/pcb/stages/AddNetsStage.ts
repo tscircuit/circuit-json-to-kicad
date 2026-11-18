@@ -5,6 +5,7 @@ import type { KicadPcb } from "kicadts"
 import { PcbNet } from "kicadts"
 import { ConverterStage, type PcbNetInfo } from "../../types"
 import { resolveKicadPcbNetName } from "../utils/resolveKicadPcbNetName"
+import { getKicadSourceNetName } from "../utils/getKicadSourceNetName"
 
 /**
  * Adds nets to the PCB from circuit JSON connections
@@ -33,7 +34,8 @@ export class AddNetsStage extends ConverterStage<CircuitJson, KicadPcb> {
       if (!connectivityKey) continue
 
       const netName = resolveKicadPcbNetName({
-        candidateName: sourceNet.name || sourceNet.source_net_id,
+        candidateName:
+          getKicadSourceNetName(sourceNet) || sourceNet.source_net_id,
         connectivityKey,
         boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")
           ?.pcb_board_id,

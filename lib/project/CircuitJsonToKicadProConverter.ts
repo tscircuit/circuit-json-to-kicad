@@ -1,6 +1,7 @@
 import { cju, createBoardOwnerMap } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, PcbBoard } from "circuit-json"
-import { getNamedNetClassSettings } from "./getNamedNetClassSettings"
+import { getKicadSourceNetName } from "../pcb/utils/getKicadSourceNetName"
+import { getImportedKicadNetSettings } from "./getImportedKicadNetSettings"
 import { resolveKicadPcbNetName } from "../pcb/utils/resolveKicadPcbNetName"
 import {
   buildSchematicSheetPlan,
@@ -19,7 +20,7 @@ interface CircuitJsonToKicadProOptions {
   schematicSheetPlan?: SchematicSheetPlan
 }
 
-export interface KicadProNetClass {
+interface KicadProNetClass {
   bus_width?: number
   clearance?: number
   diff_pair_gap?: number
@@ -78,7 +79,6 @@ interface KicadProProject {
       netclass: string
       pattern: string
     }>
-    netclass_assignments?: Record<string, string[]>
   }
   pcbnew: {
     page_layout_descr_file: string
@@ -243,7 +243,8 @@ export class CircuitJsonToKicadProConverter {
         return {
           sourceNet,
           netName: resolveKicadPcbNetName({
-            candidateName: sourceNet.name || sourceNet.source_net_id,
+            candidateName:
+              getKicadSourceNetName(sourceNet) || sourceNet.source_net_id,
             connectivityKey,
             boardId: boardOwnerMap?.get(sourceNet.subcircuit_id ?? "")
               ?.pcb_board_id,
@@ -314,13 +315,7 @@ export class CircuitJsonToKicadProConverter {
         last_net_id: 0,
         classes: netClasses,
         netclass_patterns: netclassPatterns,
-        ...getNamedNetClassSettings({
-          circuitJson,
-          defaultNetClass: {
-            ...netClasses[0]!,
-            track_width: pcbBoard?.default_nominal_trace_width ?? minTrackWidth,
-          },
-        }),
+        ...getImportedKicadNetSettings(circuitJson),
       },
       pcbnew: {
         page_layout_descr_file: "",
