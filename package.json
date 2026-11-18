@@ -32,6 +32,8 @@
     "@tscircuit/circuit-json-util": "^0.0.131",
     "@tscircuit/common": "^0.0.5",
     "@tscircuit/core": "https://pkg.pr.new/@tscircuit/core@1846fec3d1859f39f7a0c73ba299eb322cc03e04",
+    "@tscircuit/footprinter": "0.0.451",
+    "@tscircuit/props": "https://pkg.pr.new/@tscircuit/props@f55af2063a9de9728809df3e75ce35aea8d2ab56",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
     "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9",
@@ -46,7 +48,7 @@
     "poppygl": "0.0.27",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "0.0.3230",
+    "tscircuit": "^0.0.3014",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
     "tsup": "^8.5.0"
   },
@@ -54,8 +56,6 @@
     "typescript": "^5"
   },
   "overrides": {
-    "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9",
-    "@tscircuit/props": "https://pkg.pr.new/@tscircuit/props@f55af2063a9de9728809df3e75ce35aea8d2ab56",
-    "@tscircuit/core": "https://pkg.pr.new/@tscircuit/core@1846fec3d1859f39f7a0c73ba299eb322cc03e04"
+    "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9"
   }
 }
