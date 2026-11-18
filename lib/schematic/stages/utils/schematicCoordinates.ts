@@ -52,7 +52,12 @@ export function transformSchematicConnectionPoint({
   grid?: SchematicConnectionGrid
 }): Point {
   const transformed = applyToPoint(transform, point)
-  if (!grid) return transformed
+  if (!grid) {
+    return {
+      x: roundSchematicCoordinate(transformed.x),
+      y: roundSchematicCoordinate(transformed.y),
+    }
+  }
   const x = grid.x.get(toSchematicInternalUnits(transformed.x))
   const y = grid.y.get(toSchematicInternalUnits(transformed.y))
   if (x === undefined || y === undefined) {

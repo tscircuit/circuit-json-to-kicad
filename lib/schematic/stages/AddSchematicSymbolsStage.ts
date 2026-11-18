@@ -32,6 +32,7 @@ import {
   getTextJustificationFromAnchor,
   type TextJustification,
 } from "./utils/getTextJustificationFromAnchor"
+import { roundSchematicCoordinate } from "./utils/schematicCoordinates"
 
 const DEFAULT_PROPERTY_FONT_SIZE = 1.27
 
@@ -92,7 +93,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       const uuid = crypto.randomUUID()
 
       const symbol = new SchematicSymbol({
-        at: [x, y, 0],
+        at: [roundSchematicCoordinate(x), roundSchematicCoordinate(y), 0],
         unit: 1,
         excludeFromSim: false,
         inBom: true,
@@ -361,12 +362,22 @@ export class AddSchematicSymbolsStage extends ConverterStage<
           translate(placed.x, placed.y),
           translate(-x, -y),
         )
-        symbol.at = [placed.x, placed.y, 0]
+        symbol.at = [
+          roundSchematicCoordinate(placed.x),
+          roundSchematicCoordinate(placed.y),
+          0,
+        ]
         for (const property of symbol.properties) {
           if (!property.at) continue
           const position = applyToPoint(placementTransform, property.at)
-          property.at.x = position.x
-          property.at.y = position.y
+          property.at.x = roundSchematicCoordinate(position.x)
+          property.at.y = roundSchematicCoordinate(position.y)
+        }
+      } else {
+        for (const property of symbol.properties) {
+          if (!property.at) continue
+          property.at.x = roundSchematicCoordinate(property.at.x)
+          property.at.y = roundSchematicCoordinate(property.at.y)
         }
       }
 
@@ -732,7 +743,8 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }: { hide?: boolean; justify?: TextJustification } = {},
   ): TextEffects {
     const font = new TextEffectsFont()
-    font.size = { height: size, width: size }
+    const roundedSize = roundSchematicCoordinate(size)
+    font.size = { height: roundedSize, width: roundedSize }
 
     const justifyObj = justify ? new TextEffectsJustify(justify) : undefined
 
