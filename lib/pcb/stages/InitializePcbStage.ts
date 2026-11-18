@@ -46,10 +46,9 @@ export class InitializePcbStage extends ConverterStage<CircuitJson, KicadPcb> {
     kicadPcb.setup = setup
 
     // Initialize PCB layers based on number of copper layers
-    // KiCad layer indices:
-    // - F.Cu = 0, B.Cu = 31 (for 2-layer) or inner positions
-    // - Inner layers use indices 1-30
-    // Standard convention for 4-layer: F.Cu(0), In1.Cu(1), In2.Cu(2), B.Cu(31)
+    // KiCad 9 layer ordinals (include/layer_ids.h), matching the
+    // (version 20241229) stamp: copper layers are even (F.Cu 0, B.Cu 2,
+    // In1.Cu 4, In2.Cu 6, ...) and technical layers are odd.
     const layers = new PcbLayers()
 
     const layerDefinitions: PcbLayerDefinition[] = [
@@ -58,40 +57,43 @@ export class InitializePcbStage extends ConverterStage<CircuitJson, KicadPcb> {
     ]
 
     // Add inner copper layers for boards with more than 2 layers
-    // Inner layers use sequential indices starting from 1
     for (let i = 1; i < numLayers - 1; i++) {
       layerDefinitions.push(
-        new PcbLayerDefinition({ index: i, name: `In${i}.Cu`, type: "signal" }),
+        new PcbLayerDefinition({
+          index: 2 * i + 2,
+          name: `In${i}.Cu`,
+          type: "signal",
+        }),
       )
     }
 
-    // Back copper layer - index 31 in KiCad for standard boards
+    // Back copper layer
     layerDefinitions.push(
-      new PcbLayerDefinition({ index: 31, name: "B.Cu", type: "signal" }),
+      new PcbLayerDefinition({ index: 2, name: "B.Cu", type: "signal" }),
     )
 
-    // Technical layers (standard KiCad indices)
+    // Technical layers
     layerDefinitions.push(
-      new PcbLayerDefinition({ index: 32, name: "B.Adhes", type: "user" }),
-      new PcbLayerDefinition({ index: 33, name: "F.Adhes", type: "user" }),
-      new PcbLayerDefinition({ index: 34, name: "B.Paste", type: "user" }),
-      new PcbLayerDefinition({ index: 35, name: "F.Paste", type: "user" }),
-      new PcbLayerDefinition({ index: 36, name: "B.SilkS", type: "user" }),
-      new PcbLayerDefinition({ index: 37, name: "F.SilkS", type: "user" }),
-      new PcbLayerDefinition({ index: 38, name: "B.Mask", type: "user" }),
-      new PcbLayerDefinition({ index: 39, name: "F.Mask", type: "user" }),
+      new PcbLayerDefinition({ index: 11, name: "B.Adhes", type: "user" }),
+      new PcbLayerDefinition({ index: 9, name: "F.Adhes", type: "user" }),
+      new PcbLayerDefinition({ index: 15, name: "B.Paste", type: "user" }),
+      new PcbLayerDefinition({ index: 13, name: "F.Paste", type: "user" }),
+      new PcbLayerDefinition({ index: 7, name: "B.SilkS", type: "user" }),
+      new PcbLayerDefinition({ index: 5, name: "F.SilkS", type: "user" }),
+      new PcbLayerDefinition({ index: 3, name: "B.Mask", type: "user" }),
+      new PcbLayerDefinition({ index: 1, name: "F.Mask", type: "user" }),
       // Drawing layers
-      new PcbLayerDefinition({ index: 40, name: "Dwgs.User", type: "user" }),
-      new PcbLayerDefinition({ index: 41, name: "Cmts.User", type: "user" }),
-      new PcbLayerDefinition({ index: 42, name: "Eco1.User", type: "user" }),
-      new PcbLayerDefinition({ index: 43, name: "Eco2.User", type: "user" }),
-      new PcbLayerDefinition({ index: 44, name: "Edge.Cuts", type: "user" }),
-      new PcbLayerDefinition({ index: 45, name: "Margin", type: "user" }),
+      new PcbLayerDefinition({ index: 17, name: "Dwgs.User", type: "user" }),
+      new PcbLayerDefinition({ index: 19, name: "Cmts.User", type: "user" }),
+      new PcbLayerDefinition({ index: 21, name: "Eco1.User", type: "user" }),
+      new PcbLayerDefinition({ index: 23, name: "Eco2.User", type: "user" }),
+      new PcbLayerDefinition({ index: 25, name: "Edge.Cuts", type: "user" }),
+      new PcbLayerDefinition({ index: 27, name: "Margin", type: "user" }),
       // Fabrication layers
-      new PcbLayerDefinition({ index: 46, name: "B.CrtYd", type: "user" }),
-      new PcbLayerDefinition({ index: 47, name: "F.CrtYd", type: "user" }),
-      new PcbLayerDefinition({ index: 48, name: "B.Fab", type: "user" }),
-      new PcbLayerDefinition({ index: 49, name: "F.Fab", type: "user" }),
+      new PcbLayerDefinition({ index: 29, name: "B.CrtYd", type: "user" }),
+      new PcbLayerDefinition({ index: 31, name: "F.CrtYd", type: "user" }),
+      new PcbLayerDefinition({ index: 33, name: "B.Fab", type: "user" }),
+      new PcbLayerDefinition({ index: 35, name: "F.Fab", type: "user" }),
     )
 
     layers.definitions = layerDefinitions
