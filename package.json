@@ -29,11 +29,12 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
+    "@tscircuit/circuit-json-util": "^0.0.131",
     "@tscircuit/common": "^0.0.5",
     "@tscircuit/core": "^0.0.2203",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "^0.0.547",
+    "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9",
     "circuit-json-to-gltf": "0.0.118",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
@@ -46,8 +47,7 @@
     "transformation-matrix": "^3.1.0",
     "tscircuit": "^0.0.3014",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
-    "tsup": "^8.5.0",
-    "@tscircuit/circuit-json-util": "^0.0.131"
+    "tsup": "^8.5.0"
   },
   "peerDependencies": {
     "typescript": "^5"
