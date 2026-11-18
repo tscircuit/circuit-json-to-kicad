@@ -50,6 +50,8 @@ export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
         return new Xy(t.x, t.y)
       })
 
+      const placementRule = keepout.allow_placements ? "allowed" : "not_allowed"
+
       const zone = new Zone({
         net: 0,
         netName: "",
@@ -58,9 +60,9 @@ export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
         keepout: new ZoneKeepout({
           tracks: "not_allowed",
           vias: "not_allowed",
-          pads: "not_allowed",
+          pads: placementRule,
           copperpour: "not_allowed",
-          footprints: "not_allowed",
+          footprints: placementRule,
         }),
         polygons: [new ZonePolygon(new Pts(kicadPoints))],
       })
