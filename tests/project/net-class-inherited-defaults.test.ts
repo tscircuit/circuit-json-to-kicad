@@ -55,12 +55,12 @@ const circuitJson: CircuitJson = [
   },
 ]
 
-function settings() {
-  return JSON.parse(
-    new CircuitJsonToKicadProConverter(circuitJson).getOutputString(),
-  ).net_settings as ReturnType<
-    CircuitJsonToKicadProConverter["getOutput"]
-  >["net_settings"]
+function settings(data: CircuitJson = circuitJson) {
+  return JSON.parse(new CircuitJsonToKicadProConverter(data).getOutputString())
+    .net_settings as {
+    classes: { name: string; track_width?: number; priority?: number }[]
+    netclass_assignments?: Record<string, string[]>
+  }
 }
 
 test("snapshot class assignments for nets inheriting different board defaults", async () => {
@@ -182,8 +182,7 @@ test("a scoped Default class does not change the width of nets outside its scope
       member_source_group_ids: [],
     },
   ]
-  const exported = new CircuitJsonToKicadProConverter(data).getOutput()
-    .net_settings
+  const exported = settings(data)
   expect(exported.netclass_assignments?.CONTROL).toEqual(["Trace Width 0.1 mm"])
 })
 
