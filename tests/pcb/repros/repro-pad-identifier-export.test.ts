@@ -34,17 +34,17 @@ beforeAll(() => {
   expect(ballPads.map((pad) => pad.net?.name)).toEqual(["DATA", "GND", "GND"])
 })
 
-test.failing("BGA pads keep their package names alongside numeric source pins", () => {
+test("BGA pads keep their package names alongside numeric source pins", () => {
   expect(ballPads.map((pad) => pad.number)).toEqual(ballNames)
 })
 
-test.failing("BGA schematic library pins keep the physical pad numbers", () => {
+test("BGA schematic library pins keep the physical pad numbers", () => {
   for (const ball of ballNames) {
     expect(schematic).toContain(`(number "${ball}"`)
   }
 })
 
-test.failing("BGA schematic instance pins keep the physical pad numbers", () => {
+test("BGA schematic instance pins keep the physical pad numbers", () => {
   for (const ball of ballNames) {
     expect(schematic).toContain(`(pin "${ball}"`)
   }

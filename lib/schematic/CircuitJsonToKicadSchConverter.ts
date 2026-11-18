@@ -1,3 +1,4 @@
+import { getExplicitPadNumbersBySourcePort } from "../utils/getExplicitPadNumber"
 import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, Point } from "circuit-json"
 import { KicadSch, type Sheet } from "kicadts"
@@ -199,6 +200,10 @@ export class CircuitJsonToKicadSchConverter {
     this.ctx = {
       db,
       circuitJson,
+      explicitPadNumbersBySourcePort: getExplicitPadNumbersBySourcePort(
+        circuitJson,
+        db,
+      ),
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",
@@ -400,6 +405,7 @@ export class CircuitJsonToKicadSchConverter {
     const ctx: ConverterContext = {
       db,
       circuitJson,
+      explicitPadNumbersBySourcePort: this.ctx.explicitPadNumbersBySourcePort,
       kicadSch: new KicadSch({
         generator: "circuit-json-to-kicad",
         generatorVersion: "0.0.1",

@@ -162,6 +162,7 @@ export function createPinSubsymbol({
   schematicComponent,
   schematicPorts,
   sourcePorts,
+  explicitPadNumbersBySourcePort,
   c2kMatSch,
 }: {
   libId: string
@@ -170,6 +171,7 @@ export function createPinSubsymbol({
   schematicComponent?: SchematicComponent
   schematicPorts: SchematicPort[]
   sourcePorts: SourcePort[]
+  explicitPadNumbersBySourcePort?: ReadonlyMap<string, string | undefined>
   c2kMatSch: Matrix
 }): SchematicSymbol {
   const pinSymbol = new SchematicSymbol({
@@ -273,7 +275,11 @@ export function createPinSubsymbol({
       : undefined
     pin.pinElectricalType = getKicadPinElectricalType(sourcePort)
     pin._sxNumber = new SymbolPinNumber({
-      value: getPhysicalPinName(sourcePort) ?? pinNum,
+      value:
+        (sourcePort &&
+          explicitPadNumbersBySourcePort?.get(sourcePort.source_port_id)) ??
+        getPhysicalPinName(sourcePort) ??
+        pinNum,
       effects: numEffects,
     })
 

@@ -1,3 +1,4 @@
+import { getExplicitPadNumber } from "../../../utils/getExplicitPadNumber"
 import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
 import type { PcbPlatedHole } from "circuit-json"
 import type { FootprintPad } from "kicadts"
@@ -41,9 +42,10 @@ export function convertPlatedHoles(
       /^pin[A-Za-z0-9_]+$/i.test(h),
     )
     const gridHint = platedHole.port_hints?.find((h) =>
-      /^[A-Za-z]?\d+[A-Za-z0-9_]*$/.test(h),
+      /^[A-Za-z]*\d+[A-Za-z0-9_]*$/.test(h),
     )
     const resolvedPadNumber =
+      getExplicitPadNumber(platedHole) ??
       getPhysicalPinName(sourcePort) ??
       (sourcePort?.pin_number != null
         ? String(sourcePort.pin_number)
