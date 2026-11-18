@@ -13,10 +13,12 @@ export function applyCustomFootprintProperties({
   properties,
   metadata,
   footprintName,
+  defaultLayer = "F.Fab",
 }: {
   properties: Property[]
   metadata: KicadFootprintMetadata | undefined
   footprintName: string
+  defaultLayer?: string
 }): void {
   for (const [key, propertyMeta] of Object.entries(
     metadata?.properties ?? {},
@@ -38,7 +40,7 @@ export function applyCustomFootprintProperties({
         Number(propertyMeta.at?.y ?? 0),
         Number(propertyMeta.at?.rotation ?? 0),
       ],
-      layer: propertyMeta.layer ?? "F.Fab",
+      layer: propertyMeta.layer ?? defaultLayer,
       hidden: propertyMeta.hide ?? true,
       uuid:
         propertyMeta.uuid ??

@@ -47,6 +47,11 @@ export function applyMetadataToFootprint({
   metadata,
   componentProperty,
 }: ApplyMetadataToFootprintParams): void {
+  // Bottom footprints keep their fields on the back layers, like a KiCad flip
+  const isBottom = footprint.layer?.names[0] === "B.Cu"
+  const silkLayer = isBottom ? "B.SilkS" : "F.SilkS"
+  const fabLayer = isBottom ? "B.Fab" : "F.Fab"
+
   // Apply properties if provided
   let newProperties: Property[] = []
   // Reference property - use explicit metadata value if provided, otherwise fall back to componentLabels.reference
@@ -62,7 +67,7 @@ export function applyMetadataToFootprint({
             Number(refMeta.at.rotation ?? 0),
           ]
         : [0, -3, 0],
-      layer: refMeta?.layer ?? "F.SilkS",
+      layer: refMeta?.layer ?? silkLayer,
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Reference`,
       ),
@@ -85,7 +90,7 @@ export function applyMetadataToFootprint({
             Number(valMeta.at.rotation ?? 0),
           ]
         : [0, 3, 0],
-      layer: valMeta?.layer ?? "F.Fab",
+      layer: valMeta?.layer ?? fabLayer,
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Value`,
       ),
@@ -107,7 +112,7 @@ export function applyMetadataToFootprint({
             Number(dsMeta.at.rotation ?? 0),
           ]
         : [0, 0, 0],
-      layer: dsMeta?.layer ?? "F.Fab",
+      layer: dsMeta?.layer ?? fabLayer,
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Datasheet`,
       ),
@@ -129,7 +134,7 @@ export function applyMetadataToFootprint({
             Number(descMeta.at.rotation ?? 0),
           ]
         : [0, 0, 0],
-      layer: descMeta?.layer ?? "F.Fab",
+      layer: descMeta?.layer ?? fabLayer,
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-Description`,
       ),
@@ -144,7 +149,7 @@ export function applyMetadataToFootprint({
       key: "Supplier Part Number",
       value: componentProperty.supplierPartNumber,
       position: [0, 0, 0],
-      layer: "F.Fab",
+      layer: fabLayer,
       uuid: generateDeterministicUuid(
         `${componentProperty.reference}-property-SupplierPartNumber`,
       ),
@@ -159,7 +164,7 @@ export function applyMetadataToFootprint({
         key: "MPN",
         value: componentProperty.manufacturerPartNumber,
         position: [0, 0, 0],
-        layer: "F.Fab",
+        layer: fabLayer,
         uuid: generateDeterministicUuid(
           `${componentProperty.reference}-property-MPN`,
         ),
@@ -173,6 +178,7 @@ export function applyMetadataToFootprint({
     properties: newProperties,
     metadata,
     footprintName: componentProperty.reference,
+    defaultLayer: fabLayer,
   })
 
   footprint.properties = newProperties
