@@ -6,12 +6,14 @@ import type {
   SourceSimpleResistor,
 } from "circuit-json"
 import { getReferenceDesignator } from "../../../utils/getKicadCompatibleComponentName"
+import { getKicadComponentDescription } from "../../../utils/getKicadComponentDescription"
 
 export interface kicadComponentProperty {
   reference: string
   kicadComponentValue?: string
   supplierPartNumber?: string
   manufacturerPartNumber?: string
+  description?: string
 }
 
 function getJlcpcbSupplierPartNumber(
@@ -34,6 +36,7 @@ export function getkicadComponentProperty(
   const reference = getReferenceDesignator(sourceComp)
   const supplierPartNumber = getJlcpcbSupplierPartNumber(sourceComp)
   const manufacturerPartNumber = sourceComp.manufacturer_part_number
+  const description = getKicadComponentDescription(sourceComp.ftype)
 
   if (sourceComp.ftype === "simple_resistor") {
     const resistor = sourceComp as SourceSimpleResistor
@@ -42,6 +45,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: resistor.display_resistance || "R",
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -52,6 +56,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: capacitor.display_capacitance || "C",
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -62,6 +67,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: inductor.display_inductance || "L",
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -71,6 +77,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: "D",
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -80,6 +87,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: sourceComp?.manufacturer_part_number,
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -89,6 +97,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: sourceComp.manufacturer_part_number || "LED",
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -98,6 +107,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: sourceComp.manufacturer_part_number || "SW",
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -108,6 +118,7 @@ export function getkicadComponentProperty(
       kicadComponentValue: potentiometer.display_max_resistance || "POT",
       supplierPartNumber,
       manufacturerPartNumber,
+      description,
     }
   }
 
@@ -116,5 +127,6 @@ export function getkicadComponentProperty(
     kicadComponentValue: name,
     supplierPartNumber,
     manufacturerPartNumber,
+    description,
   }
 }

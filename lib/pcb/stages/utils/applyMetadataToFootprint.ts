@@ -121,7 +121,7 @@ export function applyMetadataToFootprint({
   newProperties.push(
     new Property({
       key: "Description",
-      value: descMeta?.value ?? "",
+      value: descMeta?.value ?? componentProperty.description ?? "",
       position: descMeta?.at
         ? [
             Number(descMeta.at.x),

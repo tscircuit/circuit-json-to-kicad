@@ -26,6 +26,7 @@ import {
 import { applyToPoint, compose, translate } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
+import { getKicadComponentDescription } from "../../utils/getKicadComponentDescription"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
@@ -636,7 +637,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       return {
         reference,
         value: sourceComp.display_resistance || "R",
-        description: "Resistor",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
 
@@ -644,7 +645,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       return {
         reference,
         value: sourceComp.display_capacitance || "C",
-        description: "Capacitor",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
 
@@ -652,7 +653,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       return {
         reference,
         value: sourceComp.display_inductance || "L",
-        description: "Inductor",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
 
@@ -665,7 +666,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       return {
         reference,
         value: `${frequencyDisplay}${loadCapacitanceDisplay}`,
-        description: "Crystal oscillator",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
 
@@ -673,7 +674,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       return {
         reference,
         value: sourceComp.manufacturer_part_number || "",
-        description: "Diode",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
 
@@ -681,35 +682,35 @@ export class AddSchematicSymbolsStage extends ConverterStage<
       return {
         reference,
         value: sourceComp.manufacturer_part_number || "",
-        description: "Integrated Circuit",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
     if (sourceComp.ftype === "simple_led") {
       return {
         reference,
         value: sourceComp.manufacturer_part_number || "",
-        description: "LED",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
     if (sourceComp.ftype === "simple_switch") {
       return {
         reference,
         value: sourceComp.manufacturer_part_number || "",
-        description: "Switch",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
     if (sourceComp.ftype === "simple_potentiometer") {
       return {
         reference,
         value: sourceComp.display_max_resistance || "",
-        description: "Potentiometer",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
     if (sourceComp.ftype === "simple_connector") {
       return {
         reference,
         value: sourceComp.manufacturer_part_number || "",
-        description: "Connector",
+        description: getKicadComponentDescription(sourceComp.ftype),
       }
     }
 
@@ -717,7 +718,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     return {
       reference,
       value: schematicComp.symbol_display_value ?? name,
-      description: "Component",
+      description: getKicadComponentDescription(sourceComp.ftype),
     }
   }
 
