@@ -53,7 +53,7 @@ test("kicad-library includes stepUrl user model in model3dSourcePaths", async ()
   const output = converter.getOutput()
   expect(output.model3dSourcePaths.sort()).toMatchInlineSnapshot(`
     [
-      "https://modelcdn.tscircuit.com/jscad_models/cap0402.step",
+      "https://modelcdn.tscircuit.com/jscad_models/cap0402_nonpolarized.step",
       "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
       "https://modelcdn.tscircuit.com/jscad_models/soic8.step",
     ]

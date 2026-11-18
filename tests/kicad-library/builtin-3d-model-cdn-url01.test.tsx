@@ -35,7 +35,7 @@ test("builtin footprints get 3D model CDN URLs and use tscircuit_builtin.3dshape
   expect(output.model3dSourcePaths.sort()).toMatchInlineSnapshot(`
 [
   "https://modelcdn.tscircuit.com/jscad_models/0805.step",
-  "https://modelcdn.tscircuit.com/jscad_models/cap0603.step",
+  "https://modelcdn.tscircuit.com/jscad_models/cap0603_nonpolarized.step",
   "https://modelcdn.tscircuit.com/jscad_models/res0402.step",
 ]
 `)
@@ -50,7 +50,7 @@ test("builtin footprints get 3D model CDN URLs and use tscircuit_builtin.3dshape
 
   expect(builtinFpKeys).toMatchInlineSnapshot(`
 [
-  "footprints/tscircuit_builtin.pretty/capacitor_cap0603.kicad_mod",
+  "footprints/tscircuit_builtin.pretty/capacitor_cap0603_nonpolarized.kicad_mod",
   "footprints/tscircuit_builtin.pretty/diode_0805.kicad_mod",
   "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
 ]
@@ -65,7 +65,7 @@ test("builtin footprints get 3D model CDN URLs and use tscircuit_builtin.3dshape
 
   expect(modelLines).toMatchInlineSnapshot(`
 [
-  "capacitor_cap0603.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/cap0603.step",
+  "capacitor_cap0603_nonpolarized.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/cap0603_nonpolarized.step",
   "diode_0805.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/0805.step",
   "resistor_res0402.kicad_mod: ../../3dmodels/tscircuit_builtin.3dshapes/res0402.step",
 ]

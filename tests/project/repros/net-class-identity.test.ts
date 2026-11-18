@@ -75,7 +75,7 @@ test("snapshot serialized KiCad classes and assignments", async () => {
   await expect(svg).toMatchSvgSnapshot(import.meta.path, "class-identity")
 })
 
-test.failing("export preserves class names, unused definitions and multi-class assignments", () => {
+test("export preserves class names, unused definitions and multi-class assignments", () => {
   const settings = exportedSettings()
   expect(
     settings.classes.map((netClass: { name: string }) => netClass.name).sort(),

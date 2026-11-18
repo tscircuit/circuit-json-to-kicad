@@ -31,25 +31,31 @@
     "@biomejs/biome": "2.5.15",
     "@tscircuit/circuit-json-util": "^0.0.131",
     "@tscircuit/common": "^0.0.5",
-    "@tscircuit/core": "^0.0.2203",
+    "@tscircuit/core": "https://pkg.pr.new/@tscircuit/core@1846fec3d1859f39f7a0c73ba299eb322cc03e04",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
     "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9",
-    "circuit-json-to-gltf": "0.0.118",
+    "circuit-json-to-gltf": "0.0.164",
+    "circuit-to-svg": "0.0.460",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
     "jszip": "^3.10.1",
-    "kicad-to-circuit-json": "^0.0.137",
+    "kicad-to-circuit-json": "https://pkg.pr.new/kicad-to-circuit-json@14ea14158c47309c11587c63956bc9df478861bd",
     "kicadts": "^0.0.65",
     "polygon-clipping": "^0.15.7",
     "poppygl": "0.0.27",
     "sharp": "^0.34.4",
     "transformation-matrix": "^3.1.0",
-    "tscircuit": "^0.0.3014",
+    "tscircuit": "0.0.3230",
     "tscircuit-latest": "npm:tscircuit@0.0.2460",
     "tsup": "^8.5.0"
   },
   "peerDependencies": {
     "typescript": "^5"
+  },
+  "overrides": {
+    "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9",
+    "@tscircuit/props": "https://pkg.pr.new/@tscircuit/props@f55af2063a9de9728809df3e75ce35aea8d2ab56",
+    "@tscircuit/core": "https://pkg.pr.new/@tscircuit/core@1846fec3d1859f39f7a0c73ba299eb322cc03e04"
   }
 }
