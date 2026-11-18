@@ -34,7 +34,7 @@
     "@tscircuit/core": "^0.0.2203",
     "@types/bun": "latest",
     "@types/earcut": "^3.0.0",
-    "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9",
+    "circuit-json": "https://pkg.pr.new/circuit-json@78e395aee2bb4ec241af6cb1ef0193db3d9a36ab",
     "circuit-json-to-gltf": "0.0.118",
     "earcut": "^3.0.2",
     "format-si-unit": "^0.0.14",
@@ -53,6 +53,6 @@
     "typescript": "^5"
   },
   "overrides": {
-    "circuit-json": "https://pkg.pr.new/circuit-json@334e0cc5718dc02106a7f6f92214f9484da8e2e9"
+    "circuit-json": "https://pkg.pr.new/circuit-json@78e395aee2bb4ec241af6cb1ef0193db3d9a36ab"
   }
 }
