@@ -68,7 +68,7 @@ test("kicad-library includes stepUrl user model in model3dSourcePaths", async ()
   expect(kicadModKeys.sort()).toMatchInlineSnapshot(`
     [
       "footprints/test_lib.pretty/TestCircuit.kicad_mod",
-      "footprints/tscircuit_builtin.pretty/capacitor_cap0402.kicad_mod",
+      "footprints/tscircuit_builtin.pretty/capacitor_cap0402_nonpolarized.kicad_mod",
       "footprints/tscircuit_builtin.pretty/resistor_res0402.kicad_mod",
     ]
   `)
