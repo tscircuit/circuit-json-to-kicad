@@ -10,6 +10,7 @@ import type {
   SchematicRect,
   SchematicSymbol,
   SourceComponentBase,
+  SourcePort,
 } from "circuit-json"
 import { getKicadCompatibleCustomSymbolName } from "../utils/getKicadCompatibleComponentName"
 import { getComponentLevelLibraryId, getLibraryId } from "./getLibraryId"
@@ -97,6 +98,9 @@ export function resolveSchematicComponentSymbol({
     circuitJson,
     schematicComponent,
   )
+  const sourcePorts = circuitJson.filter(
+    (element): element is SourcePort => element.type === "source_port",
+  )
   const libraryId = usesComponentLevelSymbolPrimitives
     ? getComponentLevelLibraryId(
         sourceComponent,
@@ -108,6 +112,7 @@ export function resolveSchematicComponentSymbol({
         schematicComponent,
         cadComponent,
         schematicSymbolName,
+        sourcePorts,
       )
   // Named artwork already defines its pins and leads, even when its source
   // component is a chip (as with <schematicsymbol chipRef>). Only generated
