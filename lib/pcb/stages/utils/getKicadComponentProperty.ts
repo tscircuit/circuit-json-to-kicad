@@ -6,6 +6,10 @@ import type {
   SourceSimpleResistor,
 } from "circuit-json"
 import { getReferenceDesignator } from "../../../utils/getKicadCompatibleComponentName"
+import {
+  getRotarySwitchDimensions,
+  isRotarySwitchSourceComponent,
+} from "../../../schematic/rotarySwitchKicadSymbol"
 
 export interface kicadComponentProperty {
   reference: string
@@ -96,6 +100,21 @@ export function getkicadComponentProperty(
     return {
       reference,
       kicadComponentValue: sourceComp.manufacturer_part_number || "SW",
+      supplierPartNumber,
+      manufacturerPartNumber,
+    }
+  }
+
+  if (isRotarySwitchSourceComponent(sourceComp)) {
+    const rotaryDims = getRotarySwitchDimensions({
+      sourceComponent: sourceComp,
+    })
+    return {
+      reference,
+      kicadComponentValue:
+        sourceComp.manufacturer_part_number ||
+        rotaryDims?.kicadSymbolName ||
+        "SW_Rotary",
       supplierPartNumber,
       manufacturerPartNumber,
     }
