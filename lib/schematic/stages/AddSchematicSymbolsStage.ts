@@ -59,6 +59,12 @@ export class AddSchematicSymbolsStage extends ConverterStage<
     }
 
     const symbols: SchematicSymbol[] = []
+    const dnpSourceComponentIds = new Set(
+      db.pcb_component
+        .list()
+        .filter((component) => component.do_not_place)
+        .map((component) => component.source_component_id),
+    )
 
     // Place each component on the schematic
     for (const schematicComponent of schematicComponents) {
@@ -97,7 +103,7 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         excludeFromSim: false,
         inBom: true,
         onBoard: true,
-        dnp: false,
+        dnp: dnpSourceComponentIds.has(sourceComponent.source_component_id),
         uuid: uuid,
         // Circuit JSON already supplies the intended field positions. Marking
         // these fields as autoplaced lets KiCad rearrange them on load and
