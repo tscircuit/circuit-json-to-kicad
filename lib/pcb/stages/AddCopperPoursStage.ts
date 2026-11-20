@@ -31,6 +31,7 @@ import {
 } from "../../types"
 import { getKicadLayer } from "../utils/layerMapping"
 import { triangulatePolygonWithHoles } from "./utils/custom-pad-geometry"
+import { fracturePolygonWithHoles } from "./utils/fracture-polygon-with-holes"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 
 const isPcbCopperPour = (
@@ -234,6 +235,16 @@ const createZoneFilledPolygons = (
       new ZoneFilledPolygon({
         layer,
         pts: new Pts(outerRing),
+      }),
+    ]
+  }
+
+  const fracturedContour = fracturePolygonWithHoles(outerRing, innerRings)
+  if (fracturedContour) {
+    return [
+      new ZoneFilledPolygon({
+        layer,
+        pts: new Pts(fracturedContour.map((point) => new Xy(point.x, point.y))),
       }),
     ]
   }
