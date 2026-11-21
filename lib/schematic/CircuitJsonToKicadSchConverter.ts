@@ -1,3 +1,8 @@
+import {
+  MM_PER_SCHEMATIC_UNIT,
+  convertSchematicLengthUnits,
+  LEGACY_SCHEMATIC_LENGTH_UNIT,
+} from "circuit-json"
 import { cju } from "@tscircuit/circuit-json-util"
 import type { CircuitJson, Point } from "circuit-json"
 import { KicadSch, type Sheet } from "kicadts"
@@ -31,14 +36,15 @@ const DEFAULT_SCHEMATIC_SCALE_FACTOR = 15
 const COMPACT_LARGE_SHEET_MARGIN_MM = 15
 const TITLE_BLOCK_CONTENT_OFFSET_MM = 5
 
-const getSingleSheetSchematicLayout = (db: ReturnType<typeof cju>) => {
+const getSingleSheetSchematicLayout = (
+  db: ReturnType<typeof cju>,
+  scaleFactor: number,
+) => {
   let measurement = getSchematicBoundsAndCenter(db)
   let contentWidthMm =
-    (measurement.bounds.maxX - measurement.bounds.minX) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxX - measurement.bounds.minX) * scaleFactor
   let contentHeightMm =
-    (measurement.bounds.maxY - measurement.bounds.minY) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxY - measurement.bounds.minY) * scaleFactor
   let paperSize = selectSchematicPaperSize(contentWidthMm, contentHeightMm)
 
   if (
@@ -57,11 +63,9 @@ const getSingleSheetSchematicLayout = (db: ReturnType<typeof cju>) => {
     useComponentLevelSourceGeometry: true,
   })
   contentWidthMm =
-    (measurement.bounds.maxX - measurement.bounds.minX) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxX - measurement.bounds.minX) * scaleFactor
   contentHeightMm =
-    (measurement.bounds.maxY - measurement.bounds.minY) *
-    DEFAULT_SCHEMATIC_SCALE_FACTOR
+    (measurement.bounds.maxY - measurement.bounds.minY) * scaleFactor
   paperSize = selectSchematicPaperSize(
     contentWidthMm,
     contentHeightMm,
@@ -173,16 +177,28 @@ export class CircuitJsonToKicadSchConverter {
     circuitJson: CircuitJson,
     options: CircuitJsonToKicadSchConverterOptions = {},
   ) {
+    const physicalUnits = circuitJson.some(
+      (group) =>
+        group.type === "source_group" &&
+        group.is_subcircuit &&
+        (group.default_schematic_length_unit === "mm" ||
+          group.default_schematic_length_unit === "in"),
+    )
+    const kicadSchematicScaleFactor = physicalUnits
+      ? MM_PER_SCHEMATIC_UNIT
+      : DEFAULT_SCHEMATIC_SCALE_FACTOR
+    circuitJson = convertSchematicLengthUnits(
+      circuitJson,
+      LEGACY_SCHEMATIC_LENGTH_UNIT,
+    )
     this.circuitJson = circuitJson
     this.options = options
     this.schematicSheetPlan = buildSchematicSheetPlan(circuitJson)
 
-    const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
-
     const db = cju(circuitJson)
 
     const { center, paperSize: fittedPaperSize } =
-      getSingleSheetSchematicLayout(db)
+      getSingleSheetSchematicLayout(db, kicadSchematicScaleFactor)
     const paperSize = options.paperSize ?? fittedPaperSize
     const sheetOptions = getSchematicSheetOptions({
       options,
@@ -371,7 +387,7 @@ export class CircuitJsonToKicadSchConverter {
       extraPaperExtentMm,
     } = options
 
-    const kicadSchematicScaleFactor = DEFAULT_SCHEMATIC_SCALE_FACTOR
+    const kicadSchematicScaleFactor = this.ctx.kicadSchematicScaleFactor!
     const db = cju(circuitJson)
     const { center, bounds } = getSchematicBoundsAndCenter(db)
 
