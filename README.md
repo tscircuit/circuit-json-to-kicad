@@ -69,6 +69,15 @@ const kicadProjectContent = converter.getOutputString()
 Bun.write("my_project.kicad_pro", kicadProjectContent)
 ```
 
+The project exports `pcb_board.min_trace_width` as KiCad's
+`board.design_settings.rules.min_track_width`, and an explicitly supplied
+`pcb_board.min_board_edge_clearance` as `min_copper_edge_clearance`. Both use
+millimeters. An explicit edge clearance of `0` is preserved; when the source
+omits it, the project leaves that rule unset so KiCad uses its own default.
+
+These are board-wide minimum constraints. Pair-specific spacing constraints
+are not translated into scoped KiCad custom rules (`.kicad_dru`) by this exporter.
+
 ### Complete Example with tscircuit
 
 ```typescript
