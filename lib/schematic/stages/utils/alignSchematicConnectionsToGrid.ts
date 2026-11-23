@@ -1,10 +1,11 @@
 import type { Point, SchematicComponent } from "circuit-json"
-import type { SchematicSymbol, SymbolPin } from "kicadts"
+import type { SchematicSymbol, SymbolPin, SymbolPolyline } from "kicadts"
 import {
   SymbolRectangleStart,
   SymbolRectangleEnd,
   SymbolCircleCenter,
   SymbolCircleRadius,
+  Xy,
 } from "kicadts"
 import {
   applyToPoint,
@@ -37,8 +38,9 @@ const samePoint = (a: Point, b: Point) => a.x === b.x && a.y === b.y
 type SchematicComponentId = SchematicComponent["schematic_component_id"]
 
 type AxisPoint = { lower: number; upper: number }
+type LeadStroke = { polyline: SymbolPolyline; endpoint: Point; inner: Point }
 type Attachment =
-  | { type: "lead"; endpoints: Point[]; inner: Point }
+  | { type: "lead"; strokes: LeadStroke[]; inner: Point }
   | { type: "edge"; from: Point; to: Point }
   | { type: "circle"; center: Point; radius: number }
   | SymbolArcAttachment
@@ -90,7 +92,7 @@ function findAttachment({
   point: Point
   direction: Point
 }): Attachment | undefined {
-  const leads: Extract<Attachment, { type: "lead" }>[] = []
+  const leads: LeadStroke[] = []
   for (const unit of symbol.subSymbols) {
     for (const polyline of unit.polylines) {
       const vertices = polyline.points?.points ?? []
@@ -106,14 +108,14 @@ function findAttachment({
       if (open) {
         if (samePoint(first, point))
           leads.push({
-            type: "lead",
-            endpoints: [points[0]!],
+            polyline,
+            endpoint: points[0]!,
             inner: toSchematicPointInternalUnits(points[1]!),
           })
         if (samePoint(last, point))
           leads.push({
-            type: "lead",
-            endpoints: [points.at(-1)!],
+            polyline,
+            endpoint: points.at(-1)!,
             inner: toSchematicPointInternalUnits(points.at(-2)!),
           })
       }
@@ -194,15 +196,22 @@ function findAttachment({
       if (attachment) return attachment
     }
   }
-  // Explicit schematic lines and generated stems can describe the same lead.
-  // Move every copy together, but reject a vertex shared by different strokes.
-  const lead = leads[0]
-  if (leads.some((candidate) => !samePoint(candidate.inner, lead!.inner)))
+  if (leads.length === 0) return undefined
+  // A generated stem and drawn lead can overlap up to the nearest inner
+  // vertex. Only move that shared segment. Distinct rays are still ambiguous.
+  const lead = leads.find(({ inner }) =>
+    leads.every(
+      ({ inner: other }) =>
+        samePoint(inner, other) ||
+        (!samePoint(inner, point) &&
+          isPointOnSegment({ point: inner, from: point, to: other })),
+    ),
+  )
+  if (!lead)
     throw new GridPlacementError(
       "A pin meets multiple drawing strokes; its stem cannot move without changing the symbol body.",
     )
-  if (lead) lead.endpoints = leads.flatMap((candidate) => candidate.endpoints)
-  return lead
+  return { type: "lead", strokes: leads, inner: lead.inner }
 }
 
 class GridPlacementError extends Error {}
@@ -755,7 +764,30 @@ export function alignSchematicConnectionsToGrid(
   // Commit the placement only after all connection and attachment checks pass.
   for (const { pin, local: point, attachment } of pinPlacements) {
     if (attachment?.type === "lead") {
-      for (const endpoint of attachment.endpoints) {
+      for (const { polyline, endpoint, inner } of attachment.strokes) {
+        if (!samePoint(inner, attachment.inner)) {
+          const vertices = polyline.points!.points
+          const startsAtPin = vertices[0] === endpoint
+          const adjacent = vertices[startsAtPin ? 1 : vertices.length - 2]
+          if (
+            adjacent instanceof Xy &&
+            !samePoint(
+              toSchematicPointInternalUnits(adjacent),
+              attachment.inner,
+            )
+          ) {
+            // Keep the remainder of the longer stroke fixed at its original
+            // coordinates while its shared segment follows the pin.
+            vertices.splice(
+              startsAtPin ? 1 : vertices.length - 1,
+              0,
+              new Xy(
+                fromSchematicInternalUnits(attachment.inner.x),
+                fromSchematicInternalUnits(attachment.inner.y),
+              ),
+            )
+          }
+        }
         endpoint.x = fromSchematicInternalUnits(point.x)
         endpoint.y = fromSchematicInternalUnits(point.y)
       }

@@ -1,8 +1,9 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
+import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 
-test("overlapping generated and authored pin strokes fail schematic export", async () => {
+test("overlapping pin strokes follow the pin and retain the connected net", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
   circuit.add(
@@ -42,8 +43,29 @@ test("overlapping generated and authored pin strokes fail schematic export", asy
   await circuit.renderUntilSettled()
 
   // NEMA17 Wago v1.0.1's D_STATUS has the same overlap on its cathode pins.
-  const converter = new CircuitJsonToKicadSchConverter(circuit.getCircuitJson())
-  expect(() => converter.runUntilFinished()).toThrow(
-    "A pin meets multiple drawing strokes; its stem cannot move without changing the symbol body.",
+  const circuitJson = circuit.getCircuitJson()
+  const converter = new CircuitJsonToKicadSchConverter(circuitJson)
+  converter.runUntilFinished()
+
+  const definition = converter
+    .getOutput()
+    .libSymbols!.symbols.find((symbol) =>
+      symbol.libraryId?.startsWith("Custom:"),
+    )!
+  const [stem, drawnLead, body] = definition.subSymbols.flatMap(
+    (unit) => unit.polylines,
   )
+  const [pin] = definition.subSymbols.flatMap((unit) => unit.pins)
+  const pinTip = { x: pin!.at!.x, y: pin!.at!.y }
+  const join = { x: -1.425, y: 0 }
+  const bodyContact = { x: -3.075, y: 0 }
+  expect(stem!.points!.points).toMatchObject([pinTip, join])
+  expect(drawnLead!.points!.points).toMatchObject([bodyContact, join, pinTip])
+  expect(body!.points!.points).toMatchObject([
+    { x: bodyContact.x, y: -6 },
+    { x: bodyContact.x, y: 6 },
+  ])
+
+  const nets = await exportNativeSchematicNets(circuitJson)
+  expect(nets.map((net) => net.pins)).toContainEqual(["D1.1", "R1.1"])
 })
