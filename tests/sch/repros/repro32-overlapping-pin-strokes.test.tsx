@@ -9,35 +9,31 @@ test("overlapping generated and authored pin strokes fail schematic export", asy
   circuit.add(
     <board routingDisabled>
       <chip
-        name="D1"
+        name="U1"
         schX={0.3}
         symbol={
           <symbol>
+            <schematicrect width={1.2} height={0.9} strokeWidth={0.02} />
+            <schematictext text="{REF}" schX={0} schY={0} fontSize={0.22} />
             <schematicpath
               points={[
-                { x: 0.13, y: 0.8 },
-                { x: 0.54, y: 0.8 },
-              ]}
-            />
-            <schematicpath
-              points={[
-                { x: 0.13, y: 0.4 },
-                { x: 0.13, y: 1.2 },
+                { x: 0.6, y: 0.15 },
+                { x: 1.05, y: 0.15 },
               ]}
             />
             <port
               name="pin1"
               pinNumber={1}
               direction="right"
-              schX={0.54}
-              schY={0.8}
+              schX={1.05}
+              schY={0.15}
               schStemLength={0.3}
             />
           </symbol>
         }
       />
-      <resistor name="R1" resistance="1k" schX={3} />
-      <trace from=".D1 > .pin1" to=".R1 > .pin1" />
+      <resistor name="R1" resistance="1k" schX={3.4} schY={0.15} />
+      <trace from=".U1 > .pin1" to=".R1 > .pin1" />
     </board>,
   )
   await circuit.renderUntilSettled()
