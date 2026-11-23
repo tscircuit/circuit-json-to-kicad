@@ -1,9 +1,10 @@
 import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
+import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
 import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 
-test("overlapping generated and authored pin strokes fail schematic export", async () => {
+test("overlapping pin strokes follow the pin and retain the connected net", async () => {
   const circuit = new Circuit()
   circuit.pcbDisabled = true
   circuit.add(
@@ -47,7 +48,26 @@ test("overlapping generated and authored pin strokes fail schematic export", asy
   await expect(sourceSnapshot).toMatchPngSnapshot(import.meta.path)
 
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
-  expect(() => converter.runUntilFinished()).toThrow(
-    "A pin meets multiple drawing strokes; its stem cannot move without changing the symbol body.",
+  converter.runUntilFinished()
+
+  const definition = converter
+    .getOutput()
+    .libSymbols!.symbols.find((symbol) =>
+      symbol.libraryId?.startsWith("Custom:"),
+    )!
+  const [stem, drawnLead] = definition.subSymbols.flatMap(
+    (unit) => unit.polylines,
   )
+  const [body] = definition.subSymbols.flatMap((unit) => unit.rectangles)
+  const [pin] = definition.subSymbols.flatMap((unit) => unit.pins)
+  const pinTip = { x: pin!.at!.x, y: pin!.at!.y }
+  const join = { x: 7.875, y: 2.25 }
+  const bodyContact = { x: 5.625, y: 2.25 }
+  expect(stem!.points!.points).toMatchObject([pinTip, join])
+  expect(drawnLead!.points!.points).toMatchObject([bodyContact, join, pinTip])
+  expect(body!.getString()).toContain("(start -12.375 -6.75)")
+  expect(body!.getString()).toContain("(end 5.625 6.75)")
+
+  const nets = await exportNativeSchematicNets(circuitJson)
+  expect(nets.map((net) => net.pins)).toContainEqual(["R1.1", "U1.1"])
 })
