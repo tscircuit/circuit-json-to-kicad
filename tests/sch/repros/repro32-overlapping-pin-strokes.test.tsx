@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 import { CircuitJsonToKicadSchConverter } from "lib"
 import { Circuit } from "tscircuit"
 import { exportNativeSchematicNets } from "../../fixtures/export-native-schematic-nets"
+import { takeCircuitJsonSnapshot } from "../../fixtures/take-circuit-json-snapshot"
 
 test("overlapping pin strokes follow the pin and retain the connected net", async () => {
   const circuit = new Circuit()
@@ -44,6 +45,12 @@ test("overlapping pin strokes follow the pin and retain the connected net", asyn
 
   // NEMA17 Wago v1.0.1's D_STATUS has the same overlap on its cathode pins.
   const circuitJson = circuit.getCircuitJson()
+  const sourceSnapshot = await takeCircuitJsonSnapshot({
+    circuitJson,
+    outputType: "schematic",
+  })
+  await expect(sourceSnapshot).toMatchPngSnapshot(import.meta.path)
+
   const converter = new CircuitJsonToKicadSchConverter(circuitJson)
   converter.runUntilFinished()
 
