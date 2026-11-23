@@ -10,35 +10,31 @@ test("overlapping pin strokes follow the pin and retain the connected net", asyn
   circuit.add(
     <board routingDisabled>
       <chip
-        name="D1"
+        name="U1"
         schX={0.3}
         symbol={
           <symbol>
+            <schematicrect width={1.2} height={0.9} strokeWidth={0.02} />
+            <schematictext text="{REF}" schX={0} schY={0} fontSize={0.22} />
             <schematicpath
               points={[
-                { x: 0.13, y: 0.8 },
-                { x: 0.54, y: 0.8 },
-              ]}
-            />
-            <schematicpath
-              points={[
-                { x: 0.13, y: 0.4 },
-                { x: 0.13, y: 1.2 },
+                { x: 0.6, y: 0.15 },
+                { x: 1.05, y: 0.15 },
               ]}
             />
             <port
               name="pin1"
               pinNumber={1}
               direction="right"
-              schX={0.54}
-              schY={0.8}
+              schX={1.05}
+              schY={0.15}
               schStemLength={0.3}
             />
           </symbol>
         }
       />
-      <resistor name="R1" resistance="1k" schX={3} />
-      <trace from=".D1 > .pin1" to=".R1 > .pin1" />
+      <resistor name="R1" resistance="1k" schX={3.4} schY={0.15} />
+      <trace from=".U1 > .pin1" to=".R1 > .pin1" />
     </board>,
   )
   await circuit.renderUntilSettled()
@@ -59,20 +55,19 @@ test("overlapping pin strokes follow the pin and retain the connected net", asyn
     .libSymbols!.symbols.find((symbol) =>
       symbol.libraryId?.startsWith("Custom:"),
     )!
-  const [stem, drawnLead, body] = definition.subSymbols.flatMap(
+  const [stem, drawnLead] = definition.subSymbols.flatMap(
     (unit) => unit.polylines,
   )
+  const [body] = definition.subSymbols.flatMap((unit) => unit.rectangles)
   const [pin] = definition.subSymbols.flatMap((unit) => unit.pins)
   const pinTip = { x: pin!.at!.x, y: pin!.at!.y }
-  const join = { x: -1.425, y: 0 }
-  const bodyContact = { x: -3.075, y: 0 }
+  const join = { x: 7.875, y: 2.25 }
+  const bodyContact = { x: 5.625, y: 2.25 }
   expect(stem!.points!.points).toMatchObject([pinTip, join])
   expect(drawnLead!.points!.points).toMatchObject([bodyContact, join, pinTip])
-  expect(body!.points!.points).toMatchObject([
-    { x: bodyContact.x, y: -6 },
-    { x: bodyContact.x, y: 6 },
-  ])
+  expect(body!.getString()).toContain("(start -12.375 -6.75)")
+  expect(body!.getString()).toContain("(end 5.625 6.75)")
 
   const nets = await exportNativeSchematicNets(circuitJson)
-  expect(nets.map((net) => net.pins)).toContainEqual(["D1.1", "R1.1"])
+  expect(nets.map((net) => net.pins)).toContainEqual(["R1.1", "U1.1"])
 })
