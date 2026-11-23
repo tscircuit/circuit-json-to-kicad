@@ -2,6 +2,7 @@ import type {
   CadComponent,
   SchematicComponent,
   SourceComponentBase,
+  SourcePort,
   SourceSimplePinHeader,
 } from "circuit-json"
 import { symbols } from "schematic-symbols"
@@ -9,6 +10,10 @@ import {
   getKicadCompatibleComponentName,
   getReferencePrefixForComponent,
 } from "../utils/getKicadCompatibleComponentName"
+import {
+  getRotarySwitchDimensions,
+  getRotarySwitchLibraryId,
+} from "./rotarySwitchKicadSymbol"
 
 /**
  * Checks if a symbol name is a known builtin symbol from schematic-symbols package.
@@ -40,10 +45,20 @@ export function getLibraryId(
   schematicComp: SchematicComponent,
   cadComponent?: CadComponent | null,
   schematicSymbolName?: string,
+  sourcePorts?: SourcePort[],
 ): string {
   // Highest priority: schematic_symbol.name (for custom symbols)
   if (schematicSymbolName) {
     return `Custom:${schematicSymbolName}`
+  }
+
+  const rotaryDims = getRotarySwitchDimensions({
+    sourceComponent: sourceComp,
+    schematicComponent: schematicComp,
+    sourcePorts,
+  })
+  if (rotaryDims) {
+    return getRotarySwitchLibraryId(rotaryDims)
   }
 
   if (sourceComp.type !== "source_component") {

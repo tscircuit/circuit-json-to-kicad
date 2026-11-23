@@ -112,6 +112,7 @@ const referencePrefixByFtype: Record<string, string> = {
   simple_mosfet: "Q",
   simple_fuse: "F",
   simple_switch: "SW",
+  simple_rotary_switch: "SW",
   simple_push_button: "SW",
   simple_potentiometer: "RV",
   simple_crystal: "Y",

@@ -22,6 +22,12 @@ import {
 } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
 import {
+  annotateRotaryBuiltinSymbolPinNumbers,
+  createRotarySwitchSymbolData,
+  getRotarySwitchDimensions,
+  type RotarySwitchDimensions,
+} from "../rotarySwitchKicadSymbol"
+import {
   type ResolvedSchematicComponentSymbol,
   resolveSchematicComponentSymbol,
 } from "../resolveSchematicComponentSymbol"
@@ -211,17 +217,29 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       }
     }
 
+    const rotaryDims = getRotarySwitchDimensions({
+      sourceComponent: sourceComp,
+      schematicComponent,
+      sourcePorts: db.source_port?.list?.() ?? [],
+    })
+
     const symbolName =
       schematicComponent.symbol_name ||
-      (sourceComp.ftype === "simple_chip" ||
-      sourceComp.ftype === "simple_pin_header" ||
-      sourceComp.ftype === "simple_connector"
-        ? `generic_chip_${schematicComponent.source_component_id}`
-        : null)
+      (rotaryDims
+        ? `rotary_switch_${rotaryDims.poles}x${rotaryDims.positions}`
+        : sourceComp.ftype === "simple_chip" ||
+            sourceComp.ftype === "simple_pin_header" ||
+            sourceComp.ftype === "simple_connector"
+          ? `generic_chip_${schematicComponent.source_component_id}`
+          : null)
 
     if (!symbolName) return null
 
-    const symbolData = this.getSymbolData(symbolName, schematicComponent)
+    const symbolData = this.getSymbolData(
+      symbolName,
+      schematicComponent,
+      rotaryDims,
+    )
     if (!symbolData) return null
 
     // Get footprint name for symbol-footprint linkage using ergonomic naming
@@ -233,10 +251,12 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     const librarySymbolOptions = {
       symbolData,
       isChip,
+      showPinNumbers: Boolean(rotaryDims),
+      hidePinNames: Boolean(rotaryDims),
       schematicComponent,
-      description: this.getDescription(sourceComp),
-      keywords: this.getKeywords(sourceComp),
-      fpFilters: this.getFpFilters(sourceComp),
+      description: this.getDescription(sourceComp, rotaryDims),
+      keywords: this.getKeywords(sourceComp, rotaryDims),
+      fpFilters: this.getFpFilters(sourceComp, undefined, rotaryDims),
       footprintRef: footprintName ? `tscircuit:${footprintName}` : "",
       referencePrefix: getReferencePrefixForComponent(sourceComp),
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
@@ -401,12 +421,29 @@ export class AddLibrarySymbolsStage extends ConverterStage<
   private getSymbolData(
     symbolName: string,
     schematicComponent: SchematicComponent,
+    rotaryDims?: RotarySwitchDimensions | null,
   ): any {
     if (symbolName.startsWith("generic_chip_")) {
       return createGenericChipSymbolData(schematicComponent, this.ctx.db)
     }
 
-    return getSchematicSymbolData(symbolName) || null
+    const builtin = getSchematicSymbolData(symbolName)
+    if (builtin) {
+      return rotaryDims
+        ? annotateRotaryBuiltinSymbolPinNumbers(builtin, rotaryDims)
+        : builtin
+    }
+
+    if (rotaryDims) {
+      return createRotarySwitchSymbolData({
+        dims: rotaryDims,
+        schematicComponent,
+        schematicPorts: this.ctx.db.schematic_port?.list?.() ?? [],
+        sourcePorts: this.ctx.db.source_port?.list?.() ?? [],
+      })
+    }
+
+    return null
   }
 
   /**
@@ -417,6 +454,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     libId,
     symbolData,
     isChip,
+    showPinNumbers = false,
     hidePinNames = false,
     schematicComponent,
     description,
@@ -429,6 +467,7 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     libId: string
     symbolData: any
     isChip: boolean
+    showPinNumbers?: boolean
     hidePinNames?: boolean
     schematicComponent?: SchematicComponent
     description: string
@@ -447,8 +486,8 @@ export class AddLibrarySymbolsStage extends ConverterStage<
 
     // Setup pin numbers
     const pinNumbers = new SymbolPinNumbers()
-    // For chips, show pin numbers (outside); for other components, hide them
-    pinNumbers.hide = !isChip
+    // For chips and multi-position rotary switches, show pin numbers (outside)
+    pinNumbers.hide = !isChip && !showPinNumbers
     symbol._sxPinNumbers = pinNumbers
 
     // Setup pin names
@@ -496,7 +535,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     return symbol
   }
 
-  private getDescription(sourceComp: any): string {
+  private getDescription(
+    sourceComp: any,
+    rotaryDims?: RotarySwitchDimensions | null,
+  ): string {
+    if (rotaryDims) {
+      return `Rotary switch ${rotaryDims.poles}x${rotaryDims.positions}`
+    }
     if (sourceComp?.ftype === "simple_resistor") return "Resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "Capacitor"
     if (sourceComp?.ftype === "simple_chip") return "Integrated Circuit"
@@ -504,7 +549,13 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     return "Component"
   }
 
-  private getKeywords(sourceComp: any): string {
+  private getKeywords(
+    sourceComp: any,
+    rotaryDims?: RotarySwitchDimensions | null,
+  ): string {
+    if (rotaryDims) {
+      return `rotary switch ${rotaryDims.poles}x${rotaryDims.positions}`
+    }
     if (sourceComp?.ftype === "simple_resistor") return "R res resistor"
     if (sourceComp?.ftype === "simple_capacitor") return "C cap capacitor"
     if (sourceComp?.ftype === "simple_chip") return "U IC chip"
@@ -512,12 +563,17 @@ export class AddLibrarySymbolsStage extends ConverterStage<
     return ""
   }
 
-  private getFpFilters(sourceComp: any, symbolName?: string): string {
+  private getFpFilters(
+    sourceComp: any,
+    symbolName?: string,
+    rotaryDims?: RotarySwitchDimensions | null,
+  ): string {
     // For custom symbols with an explicit name, use that name with wildcard
     // This allows matching footprint variants like MachineContactLarge, MachineContactMedium
     if (symbolName) {
       return `${symbolName}*`
     }
+    if (rotaryDims) return "SW*Rotary*"
     if (sourceComp?.ftype === "simple_resistor") return "R_*"
     if (sourceComp?.ftype === "simple_capacitor") return "C_*"
     if (sourceComp?.ftype === "simple_chip") return "*"

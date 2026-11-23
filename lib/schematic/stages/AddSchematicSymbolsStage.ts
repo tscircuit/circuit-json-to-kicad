@@ -27,6 +27,10 @@ import { applyToPoint, compose, translate } from "transformation-matrix"
 import { type ConverterContext, ConverterStage } from "../../types"
 import { getReferenceDesignator } from "../../utils/getKicadCompatibleComponentName"
 import { getSchematicSymbolData } from "../getSchematicSymbolData"
+import {
+  getRotarySwitchDimensions,
+  isRotarySwitchMountSourcePort,
+} from "../rotarySwitchKicadSymbol"
 import { resolveSchematicComponentSymbol } from "../resolveSchematicComponentSymbol"
 import {
   getTextJustificationFromAnchor,
@@ -397,17 +401,28 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         (a: any, b: any) => (a.pin_number || 0) - (b.pin_number || 0),
       )
 
+      const isRotaryComponent = Boolean(
+        getRotarySwitchDimensions({
+          sourceComponent,
+          schematicComponent,
+          sourcePorts: db.source_port?.list?.() ?? [],
+        }),
+      )
+
       for (let i = 0; i < schematicPorts.length; i++) {
         const port = schematicPorts[i]
         if (!port) continue
+        const linkedSourcePort = port.source_port_id
+          ? db.source_port.get(port.source_port_id)
+          : undefined
         const pin = new SymbolPin()
         // Use pin_number if available, otherwise use 1-based index
         pin.numberString =
-          getPhysicalPinName(
-            port.source_port_id
-              ? db.source_port.get(port.source_port_id)
-              : undefined,
-          ) ?? `${port.pin_number || i + 1}`
+          (isRotaryComponent && isRotarySwitchMountSourcePort(linkedSourcePort)
+            ? "MP"
+            : undefined) ??
+          getPhysicalPinName(linkedSourcePort) ??
+          `${port.pin_number ?? (isRotaryComponent ? linkedSourcePort?.pin_number : undefined) ?? i + 1}`
         pin.uuid = crypto.randomUUID()
         symbol.pins.push(pin)
       }
@@ -696,6 +711,21 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         reference,
         value: sourceComp.manufacturer_part_number || "",
         description: "Switch",
+      }
+    }
+    const rotaryDims = getRotarySwitchDimensions({
+      sourceComponent: sourceComp,
+      schematicComponent: schematicComp,
+      sourcePorts: this.ctx.db.source_port?.list?.() ?? [],
+    })
+    if (rotaryDims) {
+      return {
+        reference,
+        value:
+          sourceComp.manufacturer_part_number ||
+          schematicComp.symbol_display_value ||
+          rotaryDims.kicadSymbolName,
+        description: `Rotary switch ${rotaryDims.poles}x${rotaryDims.positions}`,
       }
     }
     if (sourceComp.ftype === "simple_potentiometer") {

@@ -1,4 +1,8 @@
 import { getPhysicalPinName } from "../../../utils/getPhysicalPinName"
+import {
+  isRotarySwitchMountSourcePort,
+  isRotarySwitchSourceComponent,
+} from "../../../schematic/rotarySwitchKicadSymbol"
 import type { PcbPlatedHole } from "circuit-json"
 import type { FootprintPad } from "kicadts"
 import type { ConverterContext, PcbNetInfo } from "../../../types"
@@ -37,6 +41,14 @@ export function convertPlatedHoles(
     const sourcePort = pcbPort?.source_port_id
       ? ctx.db.source_port?.get(pcbPort.source_port_id)
       : undefined
+    const sourceComp = sourcePort?.source_component_id
+      ? ctx.db.source_component?.get(sourcePort.source_component_id)
+      : undefined
+    const rotaryMountPad =
+      isRotarySwitchSourceComponent(sourceComp) &&
+      isRotarySwitchMountSourcePort(sourcePort)
+        ? "MP"
+        : undefined
     const pinHint = platedHole.port_hints?.find((h) =>
       /^pin[A-Za-z0-9_]+$/i.test(h),
     )
@@ -44,6 +56,7 @@ export function convertPlatedHoles(
       /^[A-Za-z]?\d+[A-Za-z0-9_]*$/.test(h),
     )
     const resolvedPadNumber =
+      rotaryMountPad ??
       getPhysicalPinName(sourcePort) ??
       (sourcePort?.pin_number != null
         ? String(sourcePort.pin_number)
