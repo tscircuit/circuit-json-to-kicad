@@ -15,9 +15,10 @@ import { AddGraphicsStage } from "./stages/AddGraphicsStage"
 
 export interface CircuitJsonToKicadPcbOptions {
   /**
-   * Set to true to embed "${KIPRJMOD}/3dmodels" 3D model references for
-   * builtin footprints. Enable this in the CLI zip export.
-   * Defaults to false.
+   * Embed "${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/..." 3D model
+   * references for builtin footprints (defaults to true). When explicitly set
+   * to true, user-provided model paths are also rewritten into
+   * "${KIPRJMOD}/3dmodels/..." for project archive packaging.
    */
   includeBuiltin3dModels?: boolean
   /**
