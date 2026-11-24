@@ -386,7 +386,9 @@ export class AddLibrarySymbolsStage extends ConverterStage<
       referencePrefix: "#PWR",
       symbolScale: this.ctx.kicadSchematicScaleFactor!,
     })
-    symbol._sxPower = new SymbolPower("global")
+    // Bare `(power)`: the file declares the KiCad 9 format, whose parser
+    // rejects `(power global)`. KiCad 10 also reads a bare `(power)` as global.
+    symbol._sxPower = new SymbolPower()
     symbol.inBom = false
     symbol.onBoard = false
     for (const unit of symbol.subSymbols) {
