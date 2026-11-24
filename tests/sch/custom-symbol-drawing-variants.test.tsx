@@ -54,3 +54,56 @@ test("same-name symbols share only when their artwork and text match", async () 
   )
   expect(texts).toEqual(["3.30001V", "3.30002V", "3.30001V", "3.30001V"])
 })
+
+test("identical custom symbols placed off-origin share one library symbol at half-unit rounding boundaries", async () => {
+  const MySymbol = () => (
+    <symbol name="MyPart">
+      <schematicpath
+        strokeWidth={0.05}
+        points={[
+          { x: -0.374283, y: -0.07219 },
+          { x: 0.374283, y: -0.07219 },
+          { x: 0.374283, y: 0.07219 },
+          { x: -0.374283, y: 0.07219 },
+          { x: -0.374283, y: -0.07219 },
+        ]}
+      />
+      <port name="1" pinNumber={1} direction="right" schX={0.374283} schY={0} />
+    </symbol>
+  )
+
+  const circuit = new Circuit()
+  circuit.pcbDisabled = true
+  circuit.add(
+    <board width="20mm" height="10mm">
+      <chip
+        name="U1"
+        footprint="0402"
+        symbol={<MySymbol />}
+        pcbX={-3}
+        schX={0}
+        schY={0}
+      />
+      <chip
+        name="U2"
+        footprint="0402"
+        symbol={<MySymbol />}
+        pcbX={3}
+        schX={2.205}
+        schY={-2.55}
+      />
+    </board>,
+  )
+  await circuit.renderUntilSettled()
+  const converter = new CircuitJsonToKicadSchConverter(circuit.getCircuitJson())
+  converter.runUntilFinished()
+  const schematic = parseKicadSch(converter.getOutputString())
+
+  expect(schematic.symbols.map((symbol) => symbol.libraryId)).toEqual([
+    "Custom:MyPart",
+    "Custom:MyPart",
+  ])
+  expect(
+    schematic.libSymbols!.symbols.map((symbol) => symbol.libraryId),
+  ).toEqual(["Custom:MyPart"])
+})
