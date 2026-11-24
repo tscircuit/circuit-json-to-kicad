@@ -34,6 +34,10 @@ import { convertFabricationNoteRects } from "./footprints-stage-converters/conve
 import { convertNoteRects } from "./footprints-stage-converters/convertNoteRects"
 import { convertCourtyardRects } from "./footprints-stage-converters/convertCourtyardRects"
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
+import {
+  convertCourtyardPills,
+  convertCourtyardPolygons,
+} from "./footprints-stage-converters/convertCourtyardPolygonsAndPills"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
 import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
 import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
@@ -437,7 +441,32 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       componentCenter: footprintOrigin,
       componentRotation: component.rotation || 0,
     })
+
+    const pcbCourtyardPolygons =
+      this.ctx.db.pcb_courtyard_polygon
+        ?.list()
+        .filter(
+          (polygon) => polygon.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const pcbCourtyardPills =
+      this.ctx.db.pcb_courtyard_pill
+        ?.list()
+        .filter(
+          (pill) => pill.pcb_component_id === component.pcb_component_id,
+        ) || []
+
     fpPolys.push(
+      ...convertCourtyardPolygons({
+        courtyardPolygons: pcbCourtyardPolygons,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
+      ...convertCourtyardPills({
+        courtyardPills: pcbCourtyardPills,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
       ...fabricationNoteRects.fpPolys,
       ...noteRects.fpPolys,
       ...courtyardRects.fpPolys,
