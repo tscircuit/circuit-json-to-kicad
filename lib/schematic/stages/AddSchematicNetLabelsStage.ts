@@ -13,7 +13,12 @@ import {
   TextEffectsJustify,
   GlobalLabel,
 } from "kicadts"
-import { transformSchematicConnectionPoint } from "./utils/schematicCoordinates"
+import {
+  fromSchematicInternalUnits,
+  roundSchematicCoordinate,
+  toSchematicInternalUnits,
+  transformSchematicConnectionPoint,
+} from "./utils/schematicCoordinates"
 import { ConverterStage } from "../../types"
 import { symbols } from "schematic-symbols"
 import { calculatePinPosition } from "./utils/calculatePinPosition"
@@ -110,7 +115,8 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       point: anchorPoint,
       grid: this.ctx.schematicConnectionGrid,
     })
-    let { x, y } = anchorInKicad
+    let x = roundSchematicCoordinate(anchorInKicad.x)
+    let y = roundSchematicCoordinate(anchorInKicad.y)
 
     const symbolData = symbols[symbolName as keyof typeof symbols]
     const port = symbolData?.ports?.[0]
@@ -123,8 +129,17 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
         schematicPorts: [],
         c2kMatSchScale: this.ctx.kicadSchematicScaleFactor ?? 1,
       })
-      x -= pinPosition.x
-      y += pinPosition.y
+      // Derive the placed origin from the same integer internal-unit pin offset
+      // emitted by createPinSubsymbol so (symbol.at + pin.at) lands on
+      // anchorInKicad without IEEE-754 float residue or half-unit drift.
+      x = fromSchematicInternalUnits(
+        toSchematicInternalUnits(anchorInKicad.x) -
+          toSchematicInternalUnits(pinPosition.x),
+      )
+      y = fromSchematicInternalUnits(
+        toSchematicInternalUnits(anchorInKicad.y) +
+          toSchematicInternalUnits(pinPosition.y),
+      )
     }
 
     const reference = `#PWR${netLabel.schematic_net_label_id}`
@@ -149,13 +164,14 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
     const isUpSymbol =
       symbolName.includes("_up") || symbolName.toLowerCase().includes("vcc")
     const referenceOffset = isUpSymbol ? -4 : 4
+    const referenceY = roundSchematicCoordinate(y + referenceOffset)
 
     // Add properties
     const referenceProperty = new SymbolProperty({
       key: "Reference",
       value: reference,
       id: 0,
-      at: [x, y + referenceOffset, 0],
+      at: [x, referenceY, 0],
       effects: this.createTextEffects(1.27, true),
     })
 
@@ -163,7 +179,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Value",
       value: labelText,
       id: 1,
-      at: [x, y + referenceOffset, 0],
+      at: [x, referenceY, 0],
       effects: this.createTextEffects(1.27, false),
     })
 
@@ -171,7 +187,7 @@ export class AddSchematicNetLabelsStage extends ConverterStage<
       key: "Footprint",
       value: "",
       id: 2,
-      at: [x - 1.778, y, 90],
+      at: [roundSchematicCoordinate(x - 1.778), y, 90],
       effects: this.createTextEffects(1.27, true),
     })
 
