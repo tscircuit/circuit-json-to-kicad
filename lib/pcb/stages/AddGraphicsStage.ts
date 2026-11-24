@@ -5,13 +5,18 @@ import type {
   PcbSilkscreenPath,
 } from "circuit-json"
 import type { KicadPcb } from "kicadts"
-import { GrCircle, GrLine, GrPoly } from "kicadts"
+import { GrCircle, GrLine, GrPoly, Stroke } from "kicadts"
 import { ConverterStage, type ConverterContext } from "../../types"
 import { createFabricationNoteTextFromCircuitJson } from "./utils/CreateFabricationNoteTextFromCircuitJson"
 import { applyToPoint, rotate, type Matrix } from "transformation-matrix"
 import { createGrTextFromCircuitJson } from "./utils/CreateGrTextFromCircuitJson"
 import { circleToPolygon } from "./utils/circleToPolygon"
+import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
 import { getRectanglePoints } from "./utils/getRectanglePoints"
+import {
+  getSilkscreenOvalBoardPoints,
+  getSilkscreenPillBoardPoints,
+} from "./footprints-stage-converters/convertSilkscreenPillsAndOvals"
 import polygonClipping, { type MultiPolygon } from "polygon-clipping"
 import { signedDistanceToPolygon } from "./utils/signedDistanceToPolygon"
 import {
@@ -167,6 +172,52 @@ export class AddGraphicsStage extends ConverterStage<CircuitJson, KicadPcb> {
 
         appendGraphicLine(kicadPcb, grLine)
       }
+    }
+
+    const standaloneSilkscreenPills =
+      this.ctx.db.pcb_silkscreen_pill
+        ?.list()
+        .filter((pill) => !pill.pcb_component_id) || []
+
+    for (const pill of standaloneSilkscreenPills) {
+      const boardPoints = getSilkscreenPillBoardPoints(pill)
+      if (boardPoints.length < 3) continue
+      const stroke = new Stroke()
+      stroke.width = 0.1
+      stroke.type = "default"
+      appendGraphicPoly(
+        kicadPcb,
+        new GrPoly({
+          points: boardPoints.map((point) => applyToPoint(c2kMatPcb, point)),
+          layer: pill.layer === "bottom" ? "B.SilkS" : "F.SilkS",
+          stroke,
+          fill: false,
+          uuid: generateDeterministicUuid(pill.pcb_silkscreen_pill_id),
+        }),
+      )
+    }
+
+    const standaloneSilkscreenOvals =
+      this.ctx.db.pcb_silkscreen_oval
+        ?.list()
+        .filter((oval) => !oval.pcb_component_id) || []
+
+    for (const oval of standaloneSilkscreenOvals) {
+      const boardPoints = getSilkscreenOvalBoardPoints(oval)
+      if (boardPoints.length < 3) continue
+      const stroke = new Stroke()
+      stroke.width = 0.1
+      stroke.type = "default"
+      appendGraphicPoly(
+        kicadPcb,
+        new GrPoly({
+          points: boardPoints.map((point) => applyToPoint(c2kMatPcb, point)),
+          layer: oval.layer === "bottom" ? "B.SilkS" : "F.SilkS",
+          stroke,
+          fill: false,
+          uuid: generateDeterministicUuid(oval.pcb_silkscreen_oval_id),
+        }),
+      )
     }
 
     // Add standalone silkscreen text elements (not associated with components)

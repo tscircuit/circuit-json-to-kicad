@@ -36,6 +36,7 @@ import { convertCourtyardRects } from "./footprints-stage-converters/convertCour
 import { convertCourtyardOutlines } from "./footprints-stage-converters/convertCourtyardOutlines"
 import { convertSilkscreenTexts } from "./footprints-stage-converters/convertSilkscreenTexts"
 import { convertSilkscreenPaths } from "./footprints-stage-converters/convertSilkscreenPaths"
+import { convertSilkscreenPillsAndOvals } from "./footprints-stage-converters/convertSilkscreenPillsAndOvals"
 import { convertSilkscreenRects } from "./footprints-stage-converters/convertSilkscreenRects"
 import { convertNoteTexts } from "./footprints-stage-converters/convertNoteTexts"
 import { create3DModelsFromCadComponent } from "./footprints-stage-converters/create3DModelsFromCadComponent"
@@ -453,6 +454,29 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpPolys.push(
       ...convertSilkscreenRects({
         silkscreenRects: pcbSilkscreenRects,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+      }),
+    )
+
+    const pcbSilkscreenPills =
+      this.ctx.db.pcb_silkscreen_pill
+        ?.list()
+        .filter(
+          (pill) => pill.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    const pcbSilkscreenOvals =
+      this.ctx.db.pcb_silkscreen_oval
+        ?.list()
+        .filter(
+          (oval) => oval.pcb_component_id === component.pcb_component_id,
+        ) || []
+
+    fpPolys.push(
+      ...convertSilkscreenPillsAndOvals({
+        silkscreenPills: pcbSilkscreenPills,
+        silkscreenOvals: pcbSilkscreenOvals,
         componentCenter: footprintOrigin,
         componentRotation: component.rotation || 0,
       }),
