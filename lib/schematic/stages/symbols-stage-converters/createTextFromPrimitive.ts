@@ -1,9 +1,15 @@
-import { SymbolText, TextEffects, TextEffectsFont } from "kicadts"
+import {
+  SymbolText,
+  TextEffects,
+  TextEffectsFont,
+  TextEffectsJustify,
+} from "kicadts"
 import type { Matrix } from "transformation-matrix"
 import {
   roundSchematicCoordinate,
   transformSymbolPoint,
 } from "../utils/schematicCoordinates"
+import { getTextJustificationFromAnchor } from "../utils/getTextJustificationFromAnchor"
 
 export function createTextFromPrimitive({
   schText,
@@ -34,7 +40,14 @@ export function createTextFromPrimitive({
   const scaledFontSize = roundSchematicCoordinate(schText.fontSize * scale)
   const font = new TextEffectsFont()
   font.size = { height: scaledFontSize, width: scaledFontSize }
-  symbolText.effects = new TextEffects({ font })
+
+  // The text position is the anchor point, so keep the authored alignment;
+  // otherwise non-centered text shifts relative to the rest of the artwork.
+  const justification = getTextJustificationFromAnchor(schText.anchor)
+  symbolText.effects = new TextEffects({
+    font,
+    justify: justification ? new TextEffectsJustify(justification) : undefined,
+  })
 
   return symbolText
 }
