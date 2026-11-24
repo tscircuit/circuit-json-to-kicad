@@ -49,6 +49,7 @@ export interface KicadLibraryOutput {
 export interface ConverterContext {
   db: CircuitJsonUtilObjects
   circuitJson: CircuitJson
+  explicitPadNumbersBySourcePort?: ReadonlyMap<string, string | undefined>
   kicadSch?: KicadSch
   kicadPcb?: KicadPcb
 

@@ -403,11 +403,11 @@ export class AddSchematicSymbolsStage extends ConverterStage<
         const pin = new SymbolPin()
         // Use pin_number if available, otherwise use 1-based index
         pin.numberString =
-          getPhysicalPinName(
-            port.source_port_id
-              ? db.source_port.get(port.source_port_id)
-              : undefined,
-          ) ?? `${port.pin_number || i + 1}`
+          (port.source_port_id
+            ? (this.ctx.explicitPadNumbersBySourcePort?.get(
+                port.source_port_id,
+              ) ?? getPhysicalPinName(db.source_port.get(port.source_port_id)))
+            : undefined) ?? `${port.pin_number || i + 1}`
         pin.uuid = crypto.randomUUID()
         symbol.pins.push(pin)
       }

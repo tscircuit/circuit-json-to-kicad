@@ -27,7 +27,7 @@ beforeAll(() => {
   }
 })
 
-test.failing("reports distinct physical IDs linked to the same source pin", () => {
+test("reports distinct physical IDs linked to the same source pin", () => {
   expect(error).toContain("source_port_0")
   expect(error).toContain("A1")
   expect(error).toContain("A3")
