@@ -43,6 +43,25 @@ export function createNpthPadFromCircuitJson({
     drill = new PadDrill({
       diameter: diameter,
     })
+  } else if (pcbHole.hole_shape === "square") {
+    // Square non-plated hole: square pad with a round drill
+    padShape = "rect"
+    const diameter = pcbHole.hole_diameter
+    padSize = [diameter, diameter]
+    drill = new PadDrill({
+      diameter: diameter,
+    })
+  } else if (pcbHole.hole_shape === "rect") {
+    // Rectangular non-plated slot: rect pad with a slot (oval) drill
+    padShape = "rect"
+    const width = pcbHole.hole_width
+    const height = pcbHole.hole_height
+    padSize = [width, height]
+    drill = new PadDrill({
+      oval: true,
+      diameter: width,
+      width: height,
+    })
   } else if (pcbHole.hole_shape === "oval" || pcbHole.hole_shape === "pill") {
     // Oval or Pill-shaped non-plated hole
     padShape = "oval"
@@ -81,7 +100,8 @@ export function createNpthPadFromCircuitJson({
     at: [rotatedPos.x, rotatedPos.y, rotation],
     size: padSize,
     drill: drill,
-    layers: ["*.Cu", "*.Mask"],
+    layers: pcbHole.is_covered_with_solder_mask ? ["*.Cu"] : ["*.Cu", "*.Mask"],
+    solderMaskMargin: pcbHole.soldermask_margin,
     removeUnusedLayers: false,
     uuid: crypto.randomUUID(),
   })
