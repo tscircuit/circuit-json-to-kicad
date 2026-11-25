@@ -51,6 +51,7 @@ export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
       })
 
       const placementRule = keepout.allow_placements ? "allowed" : "not_allowed"
+      const traceRule = keepout.allow_traces ? "allowed" : "not_allowed"
 
       const zone = new Zone({
         net: 0,
@@ -58,7 +59,7 @@ export class AddKeepoutsStage extends ConverterStage<CircuitJson, KicadPcb> {
         layers: kicadLayers,
         uuid: generateDeterministicUuid(`keepout:${keepout.pcb_keepout_id}`),
         keepout: new ZoneKeepout({
-          tracks: "not_allowed",
+          tracks: traceRule,
           vias: "not_allowed",
           pads: placementRule,
           copperpour: "not_allowed",
