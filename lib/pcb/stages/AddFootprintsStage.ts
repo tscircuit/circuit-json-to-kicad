@@ -44,6 +44,8 @@ import { convertPlatedHoles } from "./footprints-stage-converters/convertPlatedH
 import { convertNpthHoles } from "./footprints-stage-converters/convertNpthHoles"
 import { convertFabricationNotePaths } from "./footprints-stage-converters/convertFabricationNotePaths"
 import { convertSolderPaste } from "./footprints-stage-converters/convertSolderPaste"
+import { convertComponentBridgeTraces } from "./footprints-stage-converters/convertComponentBridgeTraces"
+import { isFootprintBridgeTrace } from "./utils/isFootprintBridgeTrace"
 
 /**
  * Adds footprints to the PCB from circuit JSON components
@@ -276,7 +278,11 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (pad: any) => pad.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    const { pads: smdPads, nextPadNumber } = convertSmdPads(
+    const {
+      pads: smdPads,
+      nextPadNumber,
+      padNumberByPortId: smdPadNumberByPortId,
+    } = convertSmdPads(
       {
         pcbPads,
         componentCenter: footprintOrigin,
@@ -318,17 +324,18 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
           (hole: any) => hole.pcb_component_id === component.pcb_component_id,
         ) || []
 
-    const { pads: thruHolePads } = convertPlatedHoles(
-      {
-        platedHoles: pcbPlatedHoles,
-        componentCenter: footprintOrigin,
-        componentRotation: component.rotation || 0,
-        componentId: component.pcb_component_id,
-        startPadNumber: nextPadNumber,
-        getNetInfo,
-      },
-      this.ctx,
-    )
+    const { pads: thruHolePads, padNumberByPortId: thruHolePadNumberByPortId } =
+      convertPlatedHoles(
+        {
+          platedHoles: pcbPlatedHoles,
+          componentCenter: footprintOrigin,
+          componentRotation: component.rotation || 0,
+          componentId: component.pcb_component_id,
+          startPadNumber: nextPadNumber,
+          getNetInfo,
+        },
+        this.ctx,
+      )
     fpPads.push(...thruHolePads)
 
     const pcbHoles =
@@ -347,6 +354,39 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
     fpPads.push(...npthPads)
 
     footprint.fpPads = fpPads
+
+    const componentBridgeTraces =
+      this.ctx.db.pcb_trace
+        ?.list()
+        .filter(
+          (trace) =>
+            trace.pcb_component_id === component.pcb_component_id &&
+            isFootprintBridgeTrace(trace, this.ctx.db),
+        ) || []
+
+    if (componentBridgeTraces.length > 0) {
+      const padNumberByPortId: Record<string, string> = Object.assign(
+        Object.create(null),
+        smdPadNumberByPortId,
+        thruHolePadNumberByPortId,
+      )
+      const bridgeResult = convertComponentBridgeTraces({
+        bridgeTraces: componentBridgeTraces,
+        componentCenter: footprintOrigin,
+        componentRotation: component.rotation || 0,
+        padNumberByPortId,
+        fpPads,
+      })
+      if (bridgeResult.fpLines.length > 0) {
+        fpLines.push(...bridgeResult.fpLines)
+        footprint.fpLines = fpLines
+      }
+      if (bridgeResult.netTiePadGroups.length > 0) {
+        footprint.netTiePadGroups = bridgeResult.netTiePadGroups
+        footprint.attr ??= new FootprintAttr()
+        footprint.attr.allowSoldermaskBridges = true
+      }
+    }
 
     // Convert circles
     const pcbSilkscreenCircles =

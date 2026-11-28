@@ -14,6 +14,7 @@ import {
 } from "../../types"
 import { applyToPoint } from "transformation-matrix"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { isFootprintBridgeTrace } from "./utils/isFootprintBridgeTrace"
 import { getKicadLayer } from "../utils/layerMapping"
 
 type PcbTraceRoutePointThroughPad = {
@@ -67,7 +68,9 @@ export class AddTracesStage extends ConverterStage<CircuitJson, KicadPcb> {
 
   constructor(input: CircuitJson, ctx: ConverterContext) {
     super(input, ctx)
-    this.pcbTraces = this.ctx.db.pcb_trace.list()
+    this.pcbTraces = this.ctx.db.pcb_trace
+      .list()
+      .filter((trace) => !isFootprintBridgeTrace(trace, this.ctx.db))
     // Process every trace and allow one final step to mark the stage finished.
     this.MAX_ITERATIONS = Math.max(
       this.MAX_ITERATIONS,
