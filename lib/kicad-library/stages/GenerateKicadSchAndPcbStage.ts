@@ -26,6 +26,7 @@ export class GenerateKicadSchAndPcbStage extends ConverterStage<
     // Generate PCB to extract footprints
     const pcbConverter = new CircuitJsonToKicadPcbConverter(
       this.ctx.circuitJson,
+      { includeBuiltin3dModels: false },
     )
     pcbConverter.runUntilFinished()
     this.ctx.kicadPcbString = pcbConverter.getOutputString()

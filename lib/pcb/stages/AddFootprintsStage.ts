@@ -52,6 +52,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
   private componentsProcessed = 0
   private pcbComponents: any[] = []
   private includeBuiltin3dModels: boolean
+  private rewriteUserModelPaths: boolean
   private sourcePortNetKeys: Record<string, string[]> = Object.create(null)
 
   private getNetInfoForPcbPort(pcbPortId?: string): PcbNetInfo | undefined {
@@ -129,7 +130,8 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
         (component) =>
           !manuallyPlacedViaIds.has(component.source_component_id ?? ""),
       )
-    this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? false
+    this.includeBuiltin3dModels = options?.includeBuiltin3dModels ?? true
+    this.rewriteUserModelPaths = options?.includeBuiltin3dModels === true
 
     // Imported ports may have trace membership without connectivity keys.
     for (const trace of ctx.db.source_trace.list()) {
@@ -483,7 +485,7 @@ export class AddFootprintsStage extends ConverterStage<CircuitJson, KicadPcb> {
       )
       const KICAD_3D_BASE = "${KIPRJMOD}/3dmodels"
       if (models.length > 0) {
-        if (this.includeBuiltin3dModels) {
+        if (this.rewriteUserModelPaths) {
           // Rewrite user model paths to ${KIPRJMOD}/... and track source URLs
           footprint.models = models.map((model) => {
             if (!model.path) return model
