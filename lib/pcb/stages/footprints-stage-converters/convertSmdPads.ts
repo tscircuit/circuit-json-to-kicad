@@ -21,8 +21,13 @@ export function convertSmdPads(
     getNetInfo: (pcbPortId?: string) => PcbNetInfo | undefined
   },
   ctx: ConverterContext,
-): { pads: FootprintPad[]; nextPadNumber: number } {
+): {
+  pads: FootprintPad[]
+  nextPadNumber: number
+  padNumberByPortId: Record<string, string>
+} {
   const pads: FootprintPad[] = []
+  const padNumberByPortId: Record<string, string> = Object.create(null)
   let padNumber = startPadNumber
 
   for (const pcbPad of pcbPads) {
@@ -60,8 +65,11 @@ export function convertSmdPads(
       componentId,
     })
     pads.push(pad)
+    if (pcbPad.pcb_port_id) {
+      padNumberByPortId[pcbPad.pcb_port_id] = String(resolvedPadNumber)
+    }
     padNumber++
   }
 
-  return { pads, nextPadNumber: padNumber }
+  return { pads, nextPadNumber: padNumber, padNumberByPortId }
 }

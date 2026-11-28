@@ -21,8 +21,13 @@ export function convertPlatedHoles(
     getNetInfo: (pcbPortId?: string) => PcbNetInfo | undefined
   },
   ctx: ConverterContext,
-): { pads: FootprintPad[]; nextPadNumber: number } {
+): {
+  pads: FootprintPad[]
+  nextPadNumber: number
+  padNumberByPortId: Record<string, string>
+} {
   const pads: FootprintPad[] = []
+  const padNumberByPortId: Record<string, string> = Object.create(null)
   let padNumber = startPadNumber
 
   for (const platedHole of platedHoles) {
@@ -61,9 +66,12 @@ export function convertPlatedHoles(
     })
     if (pad) {
       pads.push(pad)
+      if (platedHole.pcb_port_id) {
+        padNumberByPortId[platedHole.pcb_port_id] = String(resolvedPadNumber)
+      }
       padNumber++
     }
   }
 
-  return { pads, nextPadNumber: padNumber }
+  return { pads, nextPadNumber: padNumber, padNumberByPortId }
 }
