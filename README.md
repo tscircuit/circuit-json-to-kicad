@@ -49,6 +49,8 @@ const kicadPcbContent = converter.getOutputString()
 Bun.write("output.kicad_pcb", kicadPcbContent)
 ```
 
+Built-in footprint 3D models are referenced relative to the KiCad project directory at `${KIPRJMOD}/3dmodels/tscircuit_builtin.3dshapes/<footprint>.step`. For a self-contained board directory with those `.step` assets bundled alongside the PCB, use `KicadLibraryConverter` (or `tsci export -f kicad_zip`).
+
 ### Generating a KiCad Project
 
 ```typescript
