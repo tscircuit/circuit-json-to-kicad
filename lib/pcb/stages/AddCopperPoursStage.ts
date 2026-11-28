@@ -1,7 +1,6 @@
 import type {
   CircuitJson,
   PcbCopperPour,
-  PcbCopperPourBRep,
   PcbCopperPourPolygon,
   PcbCopperPourRect,
 } from "circuit-json"
@@ -32,6 +31,7 @@ import {
 import { getKicadLayer } from "../utils/layerMapping"
 import { triangulatePolygonWithHoles } from "./utils/custom-pad-geometry"
 import { generateDeterministicUuid } from "./utils/generateDeterministicUuid"
+import { getBrepZoneRings } from "./utils/get-brep-zone-rings"
 
 const isPcbCopperPour = (
   element: CircuitJson[number],
@@ -153,30 +153,6 @@ const getPolygonRingPoints = (
     ),
   )
 
-const getBrepZoneRings = (
-  pour: PcbCopperPourBRep,
-  c2kMatPcb: Matrix,
-): [outerRing: Xy[], innerRings: Xy[][]] => [
-  removeRepeatedClosingPoint(
-    removeConsecutiveDuplicatePoints(
-      rotateRingToStartAtTopRight(
-        convertPointsToKicadXy(pour.brep_shape.outer_ring.vertices, c2kMatPcb),
-      ),
-    ),
-  ),
-  pour.brep_shape.inner_rings
-    .map((ring) =>
-      removeRepeatedClosingPoint(
-        removeConsecutiveDuplicatePoints(
-          rotateRingToStartAtTopRight(
-            convertPointsToKicadXy(ring.vertices, c2kMatPcb),
-          ),
-        ),
-      ),
-    )
-    .filter((ringPoints) => ringPoints.length >= 3),
-]
-
 const getCopperPourZoneRings = (
   pour: PcbCopperPour,
   c2kMatPcb: Matrix,
@@ -196,7 +172,15 @@ const getCopperPourZoneRings = (
       return [getPolygonRingPoints(pour, c2kMatPcb), []]
 
     case "brep":
-      return getBrepZoneRings(pour, c2kMatPcb)
+      return getBrepZoneRings(pour, (points) =>
+        removeRepeatedClosingPoint(
+          removeConsecutiveDuplicatePoints(
+            rotateRingToStartAtTopRight(
+              convertPointsToKicadXy(points, c2kMatPcb),
+            ),
+          ),
+        ),
+      )
   }
 }
 
